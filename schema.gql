@@ -1,0 +1,135 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+directive @upper on FIELD_DEFINITION
+
+type User {
+  """Unique identifier of the user"""
+  email: String!
+}
+
+type Session {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+type Query {
+  users: [User!]!
+  user(id: Int!): User!
+  session(id: Int!): Session!
+}
+
+type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  removeUser(id: Int!): User!
+  createSession(createSessionInput: CreateSessionInput!): Session!
+  updateSession(updateSessionInput: UpdateSessionInput!): Session!
+  removeSession(id: Int!): Session!
+}
+
+input CreateUserInput {
+  """First name of the user"""
+  firstName: String!
+
+  """Last name of the user"""
+  lastName: String
+
+  """Username of the user"""
+  username: String!
+
+  """Email of the user"""
+  email: String!
+
+  """Date of birth of the user"""
+  dateOfBirth: DateTime
+
+  """Preferences of the user"""
+  preferences: String
+
+  """Status of the user"""
+  status: String!
+
+  """Last login time of the user"""
+  lastLoginAt: DateTime
+
+  """Last failed login time of the user"""
+  lastFailedLoginAt: DateTime
+
+  """Is the user verified"""
+  isVerified: Boolean!
+
+  """Email verified time of the user"""
+  emailVerifiedAt: DateTime
+
+  """Phone number of the user"""
+  phoneNumber: String
+
+  """Is the user deleted"""
+  isDeleted: Boolean!
+
+  """Metadata of the user"""
+  metadata: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+input UpdateUserInput {
+  """First name of the user"""
+  firstName: String
+
+  """Last name of the user"""
+  lastName: String
+
+  """Username of the user"""
+  username: String
+
+  """Email of the user"""
+  email: String
+
+  """Date of birth of the user"""
+  dateOfBirth: DateTime
+
+  """Preferences of the user"""
+  preferences: String
+
+  """Status of the user"""
+  status: String
+
+  """Last login time of the user"""
+  lastLoginAt: DateTime
+
+  """Last failed login time of the user"""
+  lastFailedLoginAt: DateTime
+
+  """Is the user verified"""
+  isVerified: Boolean
+
+  """Email verified time of the user"""
+  emailVerifiedAt: DateTime
+
+  """Phone number of the user"""
+  phoneNumber: String
+
+  """Is the user deleted"""
+  isDeleted: Boolean
+
+  """Metadata of the user"""
+  metadata: String
+  id: Int!
+}
+
+input CreateSessionInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
+}
+
+input UpdateSessionInput {
+  """Example field (placeholder)"""
+  exampleField: Int
+  id: Int!
+}
