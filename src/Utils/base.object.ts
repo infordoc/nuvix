@@ -1,16 +1,20 @@
-import { Field } from "@nestjs/graphql";
+import { Type } from "@nestjs/common";
+import { Field, ObjectType } from "@nestjs/graphql";
+import { PageInfo } from "src/base/objects/base.object";
 
+export interface IPaginatedType<T> {
+  nodes: T[];
+  pageInfo: PageInfo;
+}
 
-export default abstract class BaseObject {
-  @Field({ description: 'Unique identifier of an Entity' })
-  _id: string;
+export function Paginated<T>(classRef: Type<T>): Type<IPaginatedType<T>> {
+  @ObjectType({ isAbstract: true })
+  abstract class PaginatedType implements IPaginatedType<T> {
+    @Field(() => [classRef])
+    nodes: T[];
 
-  @Field({ description: 'Date of creation' })
-  _createdAt: Date;
-
-  @Field({ description: 'Date of last update' })
-  _updatedAt: Date;
-
-  @Field({ description: 'Date of deletion' })
-  _deletedAt: Date | null;
+    @Field()
+    pageInfo: PageInfo;
+  }
+  return PaginatedType as Type<IPaginatedType<T>>;
 }

@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Type } from '@nestjs/common';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { buildQuery } from 'src/Utils/filter.utility';
+import { PageInfo } from 'src/base/objects/base.object';
+import { UserArgs } from './entities/user.object';
+import { GqlResolver } from 'src/Utils/graphql';
 
 @Injectable()
 export class UserService {
@@ -17,13 +21,14 @@ export class UserService {
     return this.userRepository.save(createUserInput);
   }
 
-  async findAll() {
-    let users = await this.userRepository.find();
-    return users;
+  async findAll(args: UserArgs) {
+    console.log(args.filter)
+    let resolver = new GqlResolver(this.userRepository);
+    return await resolver.resolveQuery('user', args);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: string) {
+    return await this.userRepository.findOne({ where: { _id: id } });
   }
 
   update(id: number, updateUserInput: UpdateUserInput) {

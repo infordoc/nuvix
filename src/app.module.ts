@@ -10,13 +10,33 @@ import { AccountModule } from './account/account.module';
 import { SessionModule } from './session/session.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { config } from 'dotenv';
+import { BaseModule } from './base/base.module';
 
 config();
+
+
+class CustomLogger {
+  debug(message?: any): void {
+    console.debug(message);
+  }
+  info(message?: any): void {
+    console.info(message);
+  }
+  warn(message?: any): void {
+    console.warn(message);
+  }
+  error(message?: any): void {
+    console.error(message);
+  }
+}
+
+const customLogger = new CustomLogger();
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'mysql',
+      logging: true,
       host: process.env.DB_HOST || 'localhost',
       port: 3306,
       username: process.env.DB_USER,
@@ -25,10 +45,15 @@ config();
       autoLoadEntities: true,
       entities: [],
       synchronize: true,
+      timezone: 'Z',
+      extra: {
+        timezone: 'Z'
+      }
     }),
     TypeOrmModule.forRoot({
       name: 'mongo',
       type: 'mongodb',
+      logging: true,
       url: process.env.MONGO_URL,
       autoLoadEntities: true,
       entities: [],
@@ -37,6 +62,7 @@ config();
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
+      logger: customLogger,
       installSubscriptionHandlers: true,
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
@@ -49,6 +75,7 @@ config();
         ],
       },
     }),
+    BaseModule,
     UserModule,
     AccountModule,
     SessionModule,
