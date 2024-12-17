@@ -4,7 +4,7 @@ import { Entity, Column, ManyToOne } from 'typeorm';
 
 @Entity('sessions')
 export class Session extends BaseEntity {
-  @ManyToOne(() => User, user => user.sessions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.sessions, { onDelete: 'CASCADE', nullable: true })
   user: User;
 
   @Column({ type: 'varchar', length: 255, unique: true })
@@ -33,4 +33,8 @@ export class Session extends BaseEntity {
 
   @Column({ type: 'timestamp', nullable: true })
   lastUsedAt: Date; // Tracks the last usage for activity monitoring
+
+  isAnonyams() {
+    return !this.user;
+  }
 }

@@ -57,3 +57,9 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Database & Migration files
 /src/database/
+
+# Dependency directories & server files
+.htaccess
+app.js
+tmp/
+yarn.lock
