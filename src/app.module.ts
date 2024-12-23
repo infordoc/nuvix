@@ -9,6 +9,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountModule } from './account/account.module';
 import { SessionModule } from './session/session.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { MongooseModule } from '@nestjs/mongoose';
 import { config } from 'dotenv';
 import { BaseModule } from './base/base.module';
 
@@ -32,6 +33,8 @@ class CustomLogger {
 
 const customLogger = new CustomLogger();
 
+let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
+
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -44,22 +47,20 @@ const customLogger = new CustomLogger();
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       entities: [],
-      synchronize: true,
+      synchronize: false,
       timezone: 'Z',
       extra: {
         timezone: 'Z'
       }
     }),
-    TypeOrmModule.forRoot({
-      name: 'mongo',
-      type: 'mongodb',
-      logging: true,
-      url: process.env.MONGO_URL,
-      autoLoadEntities: true,
-      entities: [],
-      synchronize: true,
+    MongooseModule.forRoot(`${process.env.MONGO_URL}/server${mongo_url_params}`, {
+      connectionName: 'server',
+      onConnectionCreate: (connection) => {
+        console.log(`MongoDB connected to "${connection.host}" database`);
+      }
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
+      path: '/graphql',
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
       logger: customLogger,
