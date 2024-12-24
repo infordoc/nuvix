@@ -12,6 +12,9 @@ import { Organization, OrganizationSchema, User, UserSchema } from './schemas/us
       { name: User.name, schema: UserSchema },
       { name: Organization.name, schema: OrganizationSchema },
     ], 'server')
+  ],
+  exports: [
+    UserService
   ]
 })
 export class UserModule { }

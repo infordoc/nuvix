@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
@@ -15,7 +15,6 @@ export class UserService {
   ) { }
 
   async create(createUserDto: CreateUserDto) {
-    console.log(createUserDto);
     let password = await this.hashPassword(createUserDto.password);
     createUserDto.password = password;
     let user = this.catModel.create(createUserDto);
@@ -36,6 +35,11 @@ export class UserService {
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async findOneByEmail(email: string) {
+    let user = await this.catModel.findOne({ email: email });
+    return user;
   }
 
   async hashPassword(password: string) {

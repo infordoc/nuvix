@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Res, Req } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { Request } from 'express';
 
 @Controller()
 export class AccountController {
@@ -34,12 +35,12 @@ export class AccountController {
   }
 
   @Post('login')
-  login(@Body() loginDto: LoginDto) {
-    return this.accountService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Headers() headers: Request["headers"], @Res() res, @Req() req) {
+    return this.accountService.login(loginDto, res, req, headers);
   }
 
   @Post('register')
-  register(@Body() registerDto: RegisterDto) {
-    return this.accountService.register(registerDto);
+  register(@Body() registerDto: RegisterDto, @Res() res) {
+    return this.accountService.register(registerDto, res);
   }
 }

@@ -89,12 +89,17 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
         path: "v1",
         children: [
           {
-            path: "user",
-            module: UserModule
-          },
-          {
-            path: "account",
-            module: AccountModule
+            path: "console",
+            children: [
+              {
+                path: "user",
+                module: UserModule
+              },
+              {
+                path: "account",
+                module: AccountModule
+              }
+            ]
           },
           {
             path: "database",
