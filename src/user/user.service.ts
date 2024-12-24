@@ -1,41 +1,50 @@
-import { Injectable, Type } from '@nestjs/common';
-import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import { buildQuery } from 'src/Utils/filter.utility';
-import { PageInfo } from 'src/base/objects/base.object';
-import { UserArgs } from './entities/user.object';
-import { GqlResolver } from 'src/Utils/graphql';
+import { Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './schemas/user.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UserService {
 
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>
+    @InjectModel(User.name, 'server')
+    private readonly catModel: Model<User>,
   ) { }
 
-  create(createUserInput: CreateUserInput) {
-    return this.userRepository.save(createUserInput);
+  async create(createUserDto: CreateUserDto) {
+    console.log(createUserDto);
+    let password = await this.hashPassword(createUserDto.password);
+    createUserDto.password = password;
+    let user = this.catModel.create(createUserDto);
+    return user;
   }
 
-  async findAll(args: UserArgs) {
-    console.log(args.filter)
-    let resolver = new GqlResolver(this.userRepository);
-    return await resolver.resolveQuery('user', args);
+  findAll() {
+    return `This action returns all user`;
   }
 
-  async findOne(id: string) {
-    return await this.userRepository.findOne({ where: { _id: id } });
+  findOne(id: number) {
+    return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserInput: UpdateUserInput) {
+  update(id: number, updateUserDto: UpdateUserDto) {
     return `This action updates a #${id} user`;
   }
 
   remove(id: number) {
     return `This action removes a #${id} user`;
+  }
+
+  async hashPassword(password: string) {
+    const saltRounds = 12;  // Higher is more secure but slower
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    return hashedPassword;
+  }
+
+  async comparePasswords(newPassword: string, oldPassword: string) {
+    return await bcrypt.compare(newPassword, oldPassword);
   }
 }

@@ -1,8 +1,0 @@
-import { ObjectType, Field, Int } from '@nestjs/graphql';
-import BaseObject from 'src/base/objects/base.object';
-
-@ObjectType()
-export class Session extends BaseObject {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
-}

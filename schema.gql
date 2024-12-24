@@ -4,64 +4,6 @@
 
 directive @upper on FIELD_DEFINITION
 
-type PageInfo {
-  """Current page number"""
-  page: Int!
-
-  """Number of items per page"""
-  pageSize: Int!
-
-  """Total number of pages"""
-  pageCount: Int!
-
-  """Total number of items"""
-  total: Int!
-}
-
-type User {
-  """Unique identifier of an Entity"""
-  _id: String!
-
-  """Date of creation"""
-  _createdAt: DateTime!
-
-  """Date of last update"""
-  _updatedAt: DateTime!
-
-  """Date of deletion"""
-  _deletedAt: DateTime
-
-  """Unique identifier of the user"""
-  email: String!
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
-type UserConnection {
-  nodes: [User!]!
-  pageInfo: PageInfo!
-}
-
-type Session {
-  """Unique identifier of an Entity"""
-  _id: String!
-
-  """Date of creation"""
-  _createdAt: DateTime!
-
-  """Date of last update"""
-  _updatedAt: DateTime!
-
-  """Date of deletion"""
-  _deletedAt: DateTime
-
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
 type Base {
   """Example field (placeholder)"""
   exampleField: Int!
@@ -69,58 +11,12 @@ type Base {
 
 type Query {
   base(id: Int!): Base!
-  users(pagination: PaginationInput, sort: [String!], filter: UserFilterInput): UserConnection!
-  user(id: String!): User
-  session(id: Int!): Session!
-}
-
-input PaginationInput {
-  page: Int! = 1
-  pageSize: Int! = 10
-}
-
-input UserFilterInput {
-  _id: StringFilter
-  _createdAt: DateFilter
-  _updatedAt: DateFilter
-  _deletedAt: DateFilter
-  email: StringFilter
-  and: [UserFilterInput!]
-  or: [UserFilterInput!]
-  not: UserFilterInput
-}
-
-input StringFilter {
-  eq: String
-  ne: String
-  contains: String
-  notContains: String
-  containsi: String
-  notContainsi: String
-  startsWith: String
-  endsWith: String
-}
-
-input DateFilter {
-  eq: DateTime
-  ne: DateTime
-  lt: DateTime
-  lte: DateTime
-  gt: DateTime
-  gte: DateTime
-  between: [DateTime!]
 }
 
 type Mutation {
   createBase(createBaseInput: CreateBaseInput!): Base!
   updateBase(updateBaseInput: UpdateBaseInput!): Base!
   removeBase(id: Int!): Base!
-  createUser(createUserInput: CreateUserInput!): User!
-  updateUser(updateUserInput: UpdateUserInput!): User!
-  removeUser(id: Int!): User!
-  createSession(createSessionInput: CreateSessionInput!): Session!
-  updateSession(updateSessionInput: UpdateSessionInput!): Session!
-  removeSession(id: Int!): Session!
 }
 
 input CreateBaseInput {
@@ -129,106 +25,6 @@ input CreateBaseInput {
 }
 
 input UpdateBaseInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateUserInput {
-  """First name of the user"""
-  firstName: String!
-
-  """Last name of the user"""
-  lastName: String
-
-  """Username of the user"""
-  username: String!
-
-  """Email of the user"""
-  email: String!
-
-  """Date of birth of the user"""
-  dateOfBirth: DateTime
-
-  """Preferences of the user"""
-  preferences: String
-
-  """Status of the user"""
-  status: String!
-
-  """Last login time of the user"""
-  lastLoginAt: DateTime
-
-  """Last failed login time of the user"""
-  lastFailedLoginAt: DateTime
-
-  """Is the user verified"""
-  isVerified: Boolean!
-
-  """Email verified time of the user"""
-  emailVerifiedAt: DateTime
-
-  """Phone number of the user"""
-  phoneNumber: String
-
-  """Is the user deleted"""
-  isDeleted: Boolean!
-
-  """Metadata of the user"""
-  metadata: String
-}
-
-input UpdateUserInput {
-  """First name of the user"""
-  firstName: String
-
-  """Last name of the user"""
-  lastName: String
-
-  """Username of the user"""
-  username: String
-
-  """Email of the user"""
-  email: String
-
-  """Date of birth of the user"""
-  dateOfBirth: DateTime
-
-  """Preferences of the user"""
-  preferences: String
-
-  """Status of the user"""
-  status: String
-
-  """Last login time of the user"""
-  lastLoginAt: DateTime
-
-  """Last failed login time of the user"""
-  lastFailedLoginAt: DateTime
-
-  """Is the user verified"""
-  isVerified: Boolean
-
-  """Email verified time of the user"""
-  emailVerifiedAt: DateTime
-
-  """Phone number of the user"""
-  phoneNumber: String
-
-  """Is the user deleted"""
-  isDeleted: Boolean
-
-  """Metadata of the user"""
-  metadata: String
-  id: Int!
-}
-
-input CreateSessionInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateSessionInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!

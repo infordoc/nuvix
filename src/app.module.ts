@@ -4,14 +4,17 @@ import { AppService } from './app.service';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { GraphQLModule } from '@nestjs/graphql';
 import { DirectiveLocation, GraphQLDirective } from 'graphql';
-import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AccountModule } from './account/account.module';
-import { SessionModule } from './session/session.module';
+import { UserModule } from './user/user.module';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { MongooseModule } from '@nestjs/mongoose';
 import { config } from 'dotenv';
 import { BaseModule } from './base/base.module';
+import { DatabaseModule } from './database/database.module';
+import { AccountModule } from './account/account.module';
+import { ProjectModule } from './project/project.module';
+import { RouterModule } from '@nestjs/core';
+import path from 'path';
 
 config();
 
@@ -79,7 +82,31 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
     BaseModule,
     UserModule,
     AccountModule,
-    SessionModule,
+    DatabaseModule,
+    ProjectModule,
+    RouterModule.register([
+      {
+        path: "v1",
+        children: [
+          {
+            path: "user",
+            module: UserModule
+          },
+          {
+            path: "account",
+            module: AccountModule
+          },
+          {
+            path: "database",
+            module: DatabaseModule
+          },
+          {
+            path: "project",
+            module: ProjectModule
+          }
+        ]
+      }
+    ])
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,22 +1,47 @@
-import { randomBytes } from 'crypto';
-
+/**
+ * Helper class to generate ID strings for resources.
+ */
 export class ID {
-  static unique(padding: number = 7): string {
-    const uniqid = Date.now().toString(16) + Math.floor(Math.random() * 10000).toString(16);
+  /**
+   * Generate an hex ID based on timestamp.
+   * Recreated from https://www.php.net/manual/en/function.uniqid.php
+   *
+   * @returns {string}
+   */
+  static #hexTimestamp(): string {
+    const now = new Date();
+    const sec = Math.floor(now.getTime() / 1000);
+    const msec = now.getMilliseconds();
 
-    if (padding > 0) {
-      try {
-        const bytes = randomBytes(Math.ceil(padding / 2));
-        return uniqid + bytes.toString('hex').slice(0, padding);
-      } catch (error) {
-        throw new Error(`Failed to generate unique ID: ${error.message}`);
-      }
-    }
-
-    return uniqid;
+    // Convert to hexadecimal
+    const hexTimestamp = sec.toString(16) + msec.toString(16).padStart(5, '0');
+    return hexTimestamp;
   }
 
-  static custom($id: string): string {
-    return $id
+  /**
+   * Uses the provided ID as the ID for the resource.
+   *
+   * @param {string} id
+   * @returns {string}
+   */
+  public static custom(id: string): string {
+    return id
+  }
+
+  /**
+   * Have Buildo generate a unique ID for you.
+   * 
+   * @param {number} padding. Default is 7.
+   * @returns {string}
+   */
+  public static unique(padding: number = 7): string {
+    // Generate a unique ID with padding to have a longer ID
+    const baseId = ID.#hexTimestamp();
+    let randomPadding = '';
+    for (let i = 0; i < padding; i++) {
+      const randomHexDigit = Math.floor(Math.random() * 16).toString(16);
+      randomPadding += randomHexDigit;
+    }
+    return baseId + randomPadding;
   }
 }
