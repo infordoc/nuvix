@@ -29,7 +29,7 @@ export class ID {
   }
 
   /**
-   * Have Buildo generate a unique ID for you.
+   * Have Nuvix generate a unique ID for you.
    * 
    * @param {number} padding. Default is 7.
    * @returns {string}

@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, UseGuards, Req, Res } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from 'src/account/jwt-auth.guard';
+import { Request, Response } from 'express';
 
 @Controller()
 export class UserController {
@@ -18,6 +19,14 @@ export class UserController {
   findAll(@Headers() headers, @Req() req) {
     console.log(req.user)
     return this.userService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  me(@Req() req: Request, @Res() res: Response) {
+    let user = req.user as any
+    delete user?.session;
+    return res.json(user)
   }
 
   @Get(':id')

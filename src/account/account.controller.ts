@@ -1,11 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Res, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, Res, Req, UseFilters } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { CreateAccountDto } from './dto/create-account.dto';
 import { UpdateAccountDto } from './dto/update-account.dto';
-import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { Request } from 'express';
+import { LoginDto, RefreshDto, RegisterDto } from './dto/auth.dto';
+import { Request, Response } from 'express';
+import { Exception } from 'src/core/extend/exception';
+import { HttpExceptionFilter } from 'src/core/filters/http-exception.filter';
 
 @Controller()
+@UseFilters(new HttpExceptionFilter())
 export class AccountController {
   constructor(private readonly accountService: AccountService) { }
 
@@ -42,5 +45,13 @@ export class AccountController {
   @Post('register')
   register(@Body() registerDto: RegisterDto, @Res() res) {
     return this.accountService.register(registerDto, res);
+  }
+
+  @Post('refresh')
+  async refresh(@Body() refreshDto: RefreshDto, @Res() res: Response) {
+    let token = await this.accountService.refreshToken(refreshDto.refreshToken)
+    return res.json({
+      accessToken: token
+    }).status(200)
   }
 }

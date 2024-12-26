@@ -10,6 +10,8 @@ import { Session } from './schemas/account.schema';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/user/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
+import { Exception } from 'src/core/extend/exception';
+import { ID } from 'src/core/helper/ID.helper';
 
 @Injectable()
 export class AccountService {
@@ -53,10 +55,7 @@ export class AccountService {
       if (isPasswordValid) {
         let session = await this.createSession(user, req, headers);
         if (!session.success) {
-          return res.json({
-            success: false,
-            message: "An error occured while creating session."
-          })
+          throw new Exception(undefined, "Session creation failed.", 200)
         }
         return res.json({
           success: true,
@@ -64,21 +63,14 @@ export class AccountService {
           session: session.session
         })
       } else {
-        return res.json({
-          success: false,
-          message: "Invalid password",
-          session: null
-        })
+        throw new Exception(Exception.USER_PASSWORD_MISMATCH)
       }
     }
   }
 
   async register(registerDto: RegisterDto, @Res() res: Response) {
     if (!registerDto.email || !registerDto.password) {
-      return res.json({
-        success: false,
-        message: "Email and password are required"
-      })
+      throw new Exception(Exception.ATTRIBUTE_VALUE_INVALID)
     }
     try {
       let user = await this.userSerice.create(registerDto);
@@ -101,12 +93,28 @@ export class AccountService {
     }
   }
 
+  async refreshToken(token: string) {
+    if (!token) throw new Exception(null, 'Please include refreshToken in body to refresh the access token.', 401)
+    try {
+      let session = await this.sessionModel.findOne({ where: { refreshToken: token } })
+      if (session && session.refreshTokenExpires < new Date()) {
+        session.accessToken = this.jwtService.sign({ _id: session.id })
+        await session.save()
+        return session.accessToken
+      } else throw new Exception(Exception.USER_SESSION_NOT_FOUND)
+    } catch (err: any) {
+      if (err instanceof Exception) {
+        throw err
+      } else throw new Exception(Exception.GENERAL_SERVER_ERROR)
+    }
+  }
+
   async createSession(user: UserDocument, @Req() req: Request, @Headers() headers: Request["headers"],) {
     let userAgent = headers['user-agent'];
     let ipAddress = req.ip;
     let location = req.headers['cf-ipcountry'];
     let device = req.headers['device'];
-    let refresh_token = crypto.getRandomValues(new Uint8Array(32)).toString();
+    let refresh_token = ID.unique(15);
 
     try {
       let session = await this.sessionModel.create({

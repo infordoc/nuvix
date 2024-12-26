@@ -10,3 +10,7 @@ export class RegisterDto {
   password: string;
   name: string;
 }
+
+export class RefreshDto {
+  refreshToken: string
+}
