@@ -1,13 +1,11 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
 export type DatabaseDocument = HydratedDocument<Database>;
 
-
 /**
  * Represents a database schema with necessary properties.
- * 
+ *
  * @schema Database
  * @property {string} $id - The unique identifier for the database.
  * @property {string} $internalId - The internal identifier for the database.
@@ -17,25 +15,25 @@ export type DatabaseDocument = HydratedDocument<Database>;
  */
 @Schema({ timestamps: true })
 export class Database {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   $id: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   $internalId: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   name: string;
 
-  @Prop({ required: true })
-  projectId: string
+  @Prop({ required: true, type: String })
+  projectId: string;
 }
 
 /**
  * Represents the attributes of a collection in the schema.
- * 
+ *
  * @schema
  * @id CollectionAttribute
- * 
+ *
  * @property {string} $id - The unique identifier for the collection attribute. This field is required.
  * @property {string} type - The type of the collection attribute. This field is required.
  * @property {string} format - The format of the collection attribute. This field is required.
@@ -48,38 +46,37 @@ export class Database {
  */
 @Schema({ _id: false })
 export class CollectionAttribute {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   $id: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   type: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   format: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Number })
   size: number;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Boolean })
   signed: boolean;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Boolean })
   required: boolean;
 
-  @Prop({ default: null })
+  @Prop({ default: null, type: String })
   default: string | null;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Boolean })
   array: boolean;
 
   @Prop({ type: [String], default: [] })
   filters: string[];
 }
 
-
 /**
  * Represents the schema for collection indexes.
- * 
+ *
  * @schema CollectionIndexes
  * @property {string} $id - The unique identifier for the collection index.
  * @property {string} type - The type of the collection index.
@@ -89,10 +86,10 @@ export class CollectionAttribute {
  */
 @Schema({ _id: false })
 export class CollectionIndexes {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   $id: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   type: string;
 
   @Prop({ type: [String], required: true })
@@ -105,67 +102,68 @@ export class CollectionIndexes {
   orders: string[];
 }
 
-
-export const CollectionAttributeSchema = SchemaFactory.createForClass(CollectionAttribute);
-export const CollectionIndexesSchema = SchemaFactory.createForClass(CollectionIndexes);
+export const CollectionAttributeSchema =
+  SchemaFactory.createForClass(CollectionAttribute);
+export const CollectionIndexesSchema =
+  SchemaFactory.createForClass(CollectionIndexes);
 
 /**
  * Represents a collection schema for the database.
- * 
+ *
  * @schema Collection
  * @decorator `@Schema({ timestamps: true })`
  */
 export class Collection {
   /**
    * The unique identifier for the collection.
-   * 
+   *
    * @prop
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   $id: string;
 
   /**
    * The name of the collection.
-   * 
+   *
    * @prop
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   name: string;
 
   /**
    * The identifier of the database to which the collection belongs.
-   * 
+   *
    * @prop
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   databaseId: string;
 
   /**
    * Indicates whether the collection is active.
-   * 
+   *
    * @prop
    * @required
    * @default true
    */
-  @Prop({ required: true, default: true })
+  @Prop({ required: true, default: true, type: Boolean })
   isActive: boolean;
 
   /**
    * Indicates whether the documents in the collection are secured.
-   * 
+   *
    * @prop
    * @required
    * @default false
    */
-  @Prop({ required: true, default: false })
+  @Prop({ required: true, default: false, type: Boolean })
   documentSecured: boolean;
 
   /**
    * The attributes of the collection.
-   * 
+   *
    * @prop
    * @type {CollectionAttribute[]}
    */
@@ -174,7 +172,7 @@ export class Collection {
 
   /**
    * The indexes of the collection.
-   * 
+   *
    * @prop
    * @type {CollectionIndexes[]}
    */
@@ -190,4 +188,7 @@ type CollectionDocumentOverride = {
   indexes: Types.DocumentArray<CollectionIndexes>;
 };
 
-export type CollectionDocument = HydratedDocument<Collection, CollectionDocumentOverride>;
+export type CollectionDocument = HydratedDocument<
+  Collection,
+  CollectionDocumentOverride
+>;

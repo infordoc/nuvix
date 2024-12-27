@@ -1,5 +1,5 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { HydratedDocument, Types } from 'mongoose';
 
 export type IdentitiesDocument = HydratedDocument<Identities>;
@@ -7,7 +7,7 @@ export type SessionDocument = HydratedDocument<Session>;
 
 /**
  * Represents the schema for identity providers.
- * 
+ *
  * @schema Identities
  * @property {string} provider - The name of the identity provider (e.g., Google, Facebook).
  * @property {string} providerId - The unique identifier for the user from the identity provider.
@@ -18,25 +18,24 @@ export type SessionDocument = HydratedDocument<Session>;
  */
 @Schema({ timestamps: true })
 export class Identities {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   provider: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   providerId: string;
 
-  @Prop()
+  @Prop({ type: String })
   accessToken: string;
 
-  @Prop()
+  @Prop({ type: String })
   refreshToken: string;
 
-  @Prop()
+  @Prop({ type: Number })
   expiresIn: number;
 
-  @Prop()
+  @Prop({ type: String })
   tokenType: string;
 }
-
 
 /**
  * Represents a user session.
@@ -49,7 +48,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   userId: string;
 
   /**
@@ -58,7 +57,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop()
+  @Prop({ type: String })
   userAgent: string;
 
   /**
@@ -67,7 +66,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop()
+  @Prop({ type: String })
   ipAddress: string;
 
   /**
@@ -75,7 +74,7 @@ export class Session {
    * @type {string}
    * @memberof Session
    */
-  @Prop()
+  @Prop({ type: String })
   location: string;
 
   /**
@@ -83,7 +82,7 @@ export class Session {
    * @type {string}
    * @memberof Session
    */
-  @Prop()
+  @Prop({ type: String })
   device: string;
 
   /**
@@ -92,7 +91,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   refreshToken: string;
 
   /**
@@ -101,7 +100,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: Date })
   refreshTokenExpires: Date;
 
   /**
@@ -110,7 +109,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   accessToken: string;
 
   /**
@@ -119,7 +118,7 @@ export class Session {
    * @memberof Session
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: Date })
   accessTokenExpires: Date;
 }
 

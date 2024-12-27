@@ -1,9 +1,7 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 
 export type ProjectDocument = HydratedDocument<Project>;
-
 
 /**
  * Represents a project with its details.
@@ -14,28 +12,28 @@ export class Project {
    * Unique identifier for the project.
    * @type {string}
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, index: true, unique: true })
   $id: string;
 
   /**
    * User of the project.
    * @type {string}
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, index: true })
   $userId: string;
 
   /**
    * Name of the project.
    * @type {string}
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   name: string;
 
   /**
    * Identifier for the organization to which the project belongs.
    * @type {string}
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String, index: true })
   orgnizationId: string;
 
   /**
@@ -44,10 +42,13 @@ export class Project {
    * @type {Record<string, any>[]}
    */
   @Prop({
-    type: [{
-      name: String,
-      status: String
-    }], default: []
+    type: [
+      {
+        name: String,
+        status: String,
+      },
+    ],
+    default: [],
   })
   services: Record<string, any>[];
 }

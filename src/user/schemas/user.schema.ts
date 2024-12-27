@@ -1,7 +1,10 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, Types } from 'mongoose';
-import { Identities, Session, SessionDocument } from 'src/account/schemas/account.schema';
+import mongoose, { HydratedDocument } from 'mongoose';
+import {
+  Identities,
+  Session,
+  SessionDocument,
+} from 'src/account/schemas/account.schema';
 
 export type UserDocument = HydratedDocument<User>;
 export type OrganizationDocument = HydratedDocument<Organization>;
@@ -17,7 +20,7 @@ export class User {
    * @memberof User
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true, index: true, type: String })
   email: string;
 
   /**
@@ -26,7 +29,7 @@ export class User {
    * @memberof User
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   password: string;
 
   /**
@@ -35,7 +38,7 @@ export class User {
    * @memberof User
    * @required
    */
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   name: string;
 
   /**
@@ -52,7 +55,7 @@ export class User {
    * @memberof User
    * @default false
    */
-  @Prop({ default: false })
+  @Prop({ default: false, type: Boolean })
   mfa: boolean;
 
   /**
@@ -61,7 +64,7 @@ export class User {
    * @memberof User
    * @default false
    */
-  @Prop({ default: false })
+  @Prop({ default: false, type: Boolean })
   emailVerified: boolean;
 
   /**
@@ -75,24 +78,22 @@ export class User {
   session: SessionDocument;
 }
 
-
 /**
  * Represents an organization with a unique identifier, name, and associated users.
  */
 export class Organization {
-  @Prop({ required: true })
-  $id: string
+  @Prop({ required: true, unique: true, index: true, type: String })
+  $id: string;
 
-  @Prop({ required: true })
-  $userId: string
+  @Prop({ required: true, type: String, index: true })
+  $userId: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   name: string;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   users: User[];
 }
-
 
 export const UserSchema = SchemaFactory.createForClass(User);
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
