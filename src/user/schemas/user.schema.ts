@@ -81,12 +81,13 @@ export class User {
 /**
  * Represents an organization with a unique identifier, name, and associated users.
  */
+@Schema({ id: false })
 export class Organization {
   @Prop({ required: true, unique: true, index: true, type: String })
-  $id: string;
+  id: string;
 
   @Prop({ required: true, type: String, index: true })
-  $userId: string;
+  userId: string;
 
   @Prop({ required: true, type: String })
   name: string;

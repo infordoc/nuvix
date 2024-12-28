@@ -14,7 +14,7 @@ export class ServiceDto {
 export class CreateProjectDto {
     @IsString()
     @IsNotEmpty()
-    $id: string;
+    id: string;
 
     @IsString()
     @IsNotEmpty()

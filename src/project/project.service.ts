@@ -17,12 +17,12 @@ export class ProjectService {
 
   async create(createProjectDto: CreateProjectDto, userId: string): Promise<Project> {
     try {
-      let org = await this.orgModel.findOne({ $id: createProjectDto.orgnizationId, $userId: userId })
+      let org = await this.orgModel.findOne({ id: createProjectDto.orgnizationId, userId: userId })
       if (!org) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Organization not found.")
 
       const createdProject = new this.projectModel({
         ...createProjectDto,
-        $userIduserId: userId, // Associate the project with the user
+        userId: userId, // Associate the project with the user
       });
 
       const savedProject = await createdProject.save();
@@ -57,7 +57,7 @@ export class ProjectService {
   }
 
   findOne(id: number) {
-    return this.projectModel.findOne({ $id: id })
+    return this.projectModel.findOne({ id: id })
   }
 
   update(id: number, updateProjectDto: UpdateProjectDto) {

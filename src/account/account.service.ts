@@ -31,6 +31,7 @@ export class AccountService {
     return `This action returns all account`;
   }
 
+
   findOne(id: number) {
     return `This action returns a #${id} account`;
   }

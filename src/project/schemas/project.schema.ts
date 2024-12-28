@@ -13,14 +13,14 @@ export class Project {
    * @type {string}
    */
   @Prop({ required: true, type: String, index: true, unique: true })
-  $id: string;
+  id: string;
 
   /**
    * User of the project.
    * @type {string}
    */
   @Prop({ required: true, type: String, index: true })
-  $userId: string;
+  userId: string;
 
   /**
    * Name of the project.

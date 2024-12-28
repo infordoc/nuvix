@@ -7,19 +7,19 @@ export type DatabaseDocument = HydratedDocument<Database>;
  * Represents a database schema with necessary properties.
  *
  * @schema Database
- * @property {string} $id - The unique identifier for the database.
- * @property {string} $internalId - The internal identifier for the database.
+ * @property {string} id - The unique identifier for the database.
+ * @property {string} internalId - The internal identifier for the database.
  * @property {string} name - The name of the database.
  * @property {string} projectId - The identifier of the project associated with the database.
  * @timestamps true - Indicates that timestamps are enabled for this schema.
  */
 @Schema({ timestamps: true })
 export class Database {
-  @Prop({ required: true, type: String })
-  $id: string;
+  @Prop({ required: true, type: String, unique: true })
+  id: string;
 
   @Prop({ required: true, type: String })
-  $internalId: string;
+  internalId: string;
 
   @Prop({ required: true, type: String })
   name: string;
@@ -34,7 +34,7 @@ export class Database {
  * @schema
  * @id CollectionAttribute
  *
- * @property {string} $id - The unique identifier for the collection attribute. This field is required.
+ * @property {string} id - The unique identifier for the collection attribute. This field is required.
  * @property {string} type - The type of the collection attribute. This field is required.
  * @property {string} format - The format of the collection attribute. This field is required.
  * @property {number} size - The size of the collection attribute. This field is required.
@@ -47,7 +47,7 @@ export class Database {
 @Schema({ _id: false })
 export class CollectionAttribute {
   @Prop({ required: true, type: String })
-  $id: string;
+  id: string;
 
   @Prop({ required: true, type: String })
   type: string;
@@ -78,7 +78,7 @@ export class CollectionAttribute {
  * Represents the schema for collection indexes.
  *
  * @schema CollectionIndexes
- * @property {string} $id - The unique identifier for the collection index.
+ * @property {string} id - The unique identifier for the collection index.
  * @property {string} type - The type of the collection index.
  * @property {string[]} attributes - The attributes associated with the collection index.
  * @property {number[]} lengths - The lengths of the attributes.
@@ -87,7 +87,7 @@ export class CollectionAttribute {
 @Schema({ _id: false })
 export class CollectionIndexes {
   @Prop({ required: true, type: String })
-  $id: string;
+  id: string;
 
   @Prop({ required: true, type: String })
   type: string;
@@ -121,7 +121,7 @@ export class Collection {
    * @required
    */
   @Prop({ required: true, type: String })
-  $id: string;
+  id: string;
 
   /**
    * The name of the collection.

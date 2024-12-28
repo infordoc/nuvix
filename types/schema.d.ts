@@ -1,14 +1,14 @@
 
 interface Collection {
   $collection: string;
-  $id: string;
+  id: string;
   name: string;
   attributes: CollectionAttributes[];
   indexes: CollectionIndexes[];
 }
 
 interface CollectionAttributes {
-  $id: string;
+  id: string;
   type: string;
   format: string;
   size: number;
@@ -20,7 +20,7 @@ interface CollectionAttributes {
 }
 
 interface CollectionIndexes {
-  $id: string;
+  id: string;
   type: string;
   attributes: string[];
   lengths: number[];

@@ -1,12 +1,13 @@
 import { Injectable, UseGuards } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Organization, User } from './schemas/user.schema';
+import { Organization, OrganizationDocument, User } from './schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { CreateOrgDto, UpdateOrgDto } from './dto/org.dto';
 import { Exception } from 'src/core/extend/exception';
+import { ID } from 'src/core/helper/ID.helper';
 
 @Injectable()
 export class UserService {
@@ -42,26 +43,25 @@ export class UserService {
   }
 
   async findOneOrganization(id: string, userId: string) {
-    let org = await this.orgModel.findOne({
-      where: { $id: id, $userId: userId }
-    })
+    let org = await this.orgModel.findOne(
+      { id: id, userId: userId }
+    )
     return org
   }
 
-  async findUserOrganizations(userId: string) {
-    return await this.orgModel.find({
-      where: { $userId: userId }
-    })
+  async findUserOrganizations(userId: string): Promise<OrganizationDocument[]> {
+    return await this.orgModel.find({ userId }).exec();
   }
 
   async createOrganization(userId: string, input: CreateOrgDto): Promise<Organization> {
     try {
       // Create a new Organization document
+      input.id = ID.auto(input.id);
       const createdOrg = new this.orgModel({
         ...input,
-        $userId: userId, // Associate the organization with the user
+        userId: userId, // Associate the organization with the user
       });
-
+      console.log(createdOrg, createdOrg.toObject(), input, userId);
       // Save the new organization to the database
       const savedOrg = await createdOrg.save();
 
@@ -87,7 +87,7 @@ export class UserService {
   async updateOrganization(id: string, userId: string, input: UpdateOrgDto): Promise<Organization> {
     try {
       // Find the organization by ID and user ID
-      const org = await this.orgModel.findOne({ $id: id, $userId: userId }).exec(); // exec() for a proper Promise
+      const org = await this.orgModel.findOne({ id: id, userId: userId }).exec(); // exec() for a proper Promise
 
       if (!org) {
         throw new Exception(null, 'Organization not found.');
@@ -115,7 +115,7 @@ export class UserService {
   async deleteOrganization(id: string, userId: string) {
     try {
       // Find the organization by ID and user ID
-      const org = await this.orgModel.findOneAndDelete({ $id: id, $userId: userId }).exec(); // exec() for a proper Promise
+      const org = await this.orgModel.findOneAndDelete({ id: id, userId: userId }).exec(); // exec() for a proper Promise
 
       if (!org) {
         throw new Exception(null, 'Organization not found.');
