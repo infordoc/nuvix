@@ -1,6 +1,6 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Req } from '@nestjs/common';
 import { JWT_SECRET } from 'src/Utils/constants';
 import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
@@ -22,11 +22,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         if (req && req.headers) {
           token = req.headers['x-nuvix-jwt'];
           console.log(req.cookies, req.signedCookies)
-          if (!token) token = req.headers.cookie
+          if (!token) token = req.cookies["a_session"]
         }
         return token || ExtractJwt.fromAuthHeaderAsBearerToken;
       },
-      ignoreExpiration: false,
+      ignoreExpiration: true,
       secretOrKey: JWT_SECRET,
     });
   }

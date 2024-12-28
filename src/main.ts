@@ -3,11 +3,14 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { config } from 'dotenv'
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
+const cookieParser = require('cookie-parser')
 
 config();
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(cookieParser())
 
   app.use((req, res, next) => {
     res.header('X-Powered-By', 'Nuvix-Server');

@@ -27,7 +27,7 @@ export class AccountController {
   async createEmailSession(@Body() createEmailSessionDto: CreateEmailSessionDto, @Req() req, @Res() res: Response) {
     let session = await this.accountService.emailLogin(createEmailSessionDto, req, req.headers)
     if (session) {
-      res.cookie('a_session', session.id, { expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), httpOnly: true, sameSite: 'none', secure: true });
+      res.cookie('a_session', session.accessToken, { expires: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), httpOnly: true, sameSite: 'none', secure: true });
       return res;
     }
   }

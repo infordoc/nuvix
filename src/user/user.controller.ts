@@ -21,7 +21,7 @@ import { CreateOrgDto, UpdateOrgDto } from './dto/org.dto';
 
 @Controller()
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
@@ -44,10 +44,13 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('organization')
-  async findOrganizations(@Req() req: Request) {
+  @Get('organizations')
+  async findOrganizations(@Req() req: Request, @Res() res: Response) {
     const orgs = await this.userService.findUserOrganizations(req.user.id);
-    return orgs;
+    return res.json({
+      total: orgs.length,
+      organizations: orgs
+    }).status(200)
   }
 
   @UseGuards(JwtAuthGuard)
@@ -99,7 +102,7 @@ export class UserController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Res() res: Response) {
     return this.userService.findOne(+id);
   }
 
