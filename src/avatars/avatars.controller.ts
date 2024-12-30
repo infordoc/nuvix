@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { AvatarsService } from './avatars.service';
 import { Response } from 'express';
-import sharp from 'sharp';
+import { createCanvas } from 'canvas';
 
 @Controller()
 export class AvatarsController {
@@ -15,14 +15,21 @@ export class AvatarsController {
     @Query('background') background: string = '#3498db',
     @Res() res: Response
   ) {
-    const svg = this.avatarsService.createSvg(name, Number(width), Number(height), background);
-    const buffer = Buffer.from(svg);
-    const finalImage = await sharp(buffer)
-      .resize(Number(width), Number(height))
-      .toFormat('png')
-      .toBuffer();
+    const canvas = createCanvas(Math.max(1, Number(width)), Math.max(1, Number(height)));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Could not get canvas context');
+
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, Number(width), Number(height));
+
+    ctx.font = `${Number(width) / 2}px sans-serif`;
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.avatarsService.getInitials(name), Number(width) / 2, Number(height) / 2);
 
     res.set('Content-Type', 'image/png');
-    res.send(finalImage);
+    canvas.createPNGStream().pipe(res);
+
   }
 }

@@ -41,6 +41,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "bcryptjs": "^2.4.3",
+    "canvas": "^3.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
@@ -54,7 +55,6 @@
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
-    "sharp": "^0.33.5",
     "typeorm": "^0.3.20"
   },
   "devDependencies": {
@@ -100,6 +100,7 @@
   "trustedDependencies": [
     "@apollo/protobufjs",
     "@nestjs/core",
-    "@swc/core"
+    "@swc/core",
+    "canvas"
   ]
 }
