@@ -16,14 +16,19 @@ export class AvatarsController {
 
   @Get('initials')
   async generateAvatar(
-    @Query('name') name: string = 'NA',
-    @Query('width') width: number = 100,
-    @Query('height') height: number = 100,
-    @Query('background') background: string = '#3498db',
+    @Query('name') name: string | string[] = 'NA',
+    @Query('width') width: number | number[] = 100,
+    @Query('height') height: number | number[] = 100,
+    @Query('background') background: string | string[] = '#3498db',
     @Res() res: Response
   ) {
     try {
-      const url = PYTHON_API_URL + `/avatar/generate?name=${name}&width=${width}&height=${height}&background=${background}`;
+      const nameValue = Array.isArray(name) ? name[0] : name;
+      const widthValue = Array.isArray(width) ? width[0] : width;
+      const heightValue = Array.isArray(height) ? height[0] : height;
+      const backgroundValue = Array.isArray(background) ? background[0] : background;
+
+      const url = PYTHON_API_URL + `/avatar/generate?name=${nameValue}&width=${widthValue}&height=${heightValue}&background=${backgroundValue}`;
       const response: AxiosResponse<any> = await firstValueFrom(
         this.httpService.get(url, { responseType: 'arraybuffer' })
       );

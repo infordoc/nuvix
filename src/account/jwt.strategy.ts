@@ -4,9 +4,9 @@ import { Injectable, Req } from '@nestjs/common';
 import { JWT_SECRET } from 'src/Utils/constants';
 import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
-import { Session } from './schemas/account.schema';
 import { Model } from 'mongoose';
 import { User, UserDocument } from 'src/user/schemas/user.schema';
+import { Session } from './schemas/account.schema';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {

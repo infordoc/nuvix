@@ -120,7 +120,7 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
       }
     ]),
     ConsoleModule,
-    AvatarsModule
+    AvatarsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

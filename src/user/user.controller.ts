@@ -36,7 +36,6 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
   me(@Req() req: Request, @Res() res: Response) {
     const user = req.user as any;

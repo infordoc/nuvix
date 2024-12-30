@@ -7,14 +7,15 @@ import { UserService } from 'src/user/user.service';
 import { Organization, OrganizationSchema, User, UserSchema } from 'src/user/schemas/user.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/Utils/constants';
-import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { JwtStrategy } from './jwt.strategy';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   controllers: [AccountController],
-  providers: [AccountService, UserService, JwtStrategy, {
-    provide: 'AUTH_GUARD',
-    useValue: JwtAuthGuard
+  providers: [JwtStrategy, AccountService, UserService, {
+    provide: APP_GUARD,
+    useClass: JwtAuthGuard
   }],
   imports: [
     JwtModule.register({
