@@ -15,7 +15,7 @@ import { AccountModule } from './account/account.module';
 import { ProjectModule } from './project/project.module';
 import { RouterModule } from '@nestjs/core';
 import { ConsoleModule } from './console/console.module';
-import path from 'path';
+import { AvatarsModule } from './avatars/avatars.module';
 
 config();
 
@@ -111,11 +111,16 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
           {
             path: "projects",
             module: ProjectModule
+          },
+          {
+            path: 'avatars',
+            module: AvatarsModule
           }
         ]
       }
     ]),
-    ConsoleModule
+    ConsoleModule,
+    AvatarsModule
   ],
   controllers: [AppController],
   providers: [AppService],
