@@ -42,17 +42,16 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
 @Module({
   imports: [
     TypeOrmModule.forRoot({
-      type: 'mysql',
+      type: 'postgres',
       logging: true,
       host: process.env.DB_HOST || 'localhost',
-      port: 3306,
       username: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
+      // database: process.env.DB_NAME,
       autoLoadEntities: true,
       entities: [],
+      ssl: true,
       synchronize: false,
-      timezone: 'Z',
       extra: {
         timezone: 'Z'
       }

@@ -136,6 +136,18 @@ export class UserController {
     });
   }
 
+  @Get('organizations/:id/prefs')
+  /**
+   * @todo Implement this method.
+   * [GET]: /organization/:id/prefs - Retrieves the prefs for the organization.
+   * @param id - The ID of the organization to retrieve prefs for.
+   * @param req - The request object containing user information.
+   * @param res - The response object to send the prefs data.
+   */
+  async getOrganizationPrefs(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+    return {}
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('organizations/:id/aggregations')
   /**
