@@ -8,11 +8,15 @@ import { Request, Response } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Session, SessionDocument } from './schemas/account.schema';
 import { Model } from 'mongoose';
-import { User, UserDocument } from 'src/user/schemas/user.schema';
+import { Target, User, UserDocument } from 'src/user/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { Exception } from 'src/core/extend/exception';
 import { ID } from 'src/core/helper/ID.helper';
 import { CreateEmailSessionDto } from './dto/create-email-session.dto';
+import Permission from 'src/core/helper/permission.helper';
+import Role from 'src/core/helper/role.helper';
+import { validate } from 'class-validator';
+import Permissions from 'src/core/validators/permissions.validator';
 
 @Injectable()
 export class AccountService {
@@ -20,15 +24,67 @@ export class AccountService {
     private readonly userSerice: UserService,
     @InjectModel(Session.name, 'server')
     private readonly sessionModel: Model<Session>,
+    @InjectModel(User.name, 'server')
+    private readonly userModel: Model<User>,
+    @InjectModel(Target.name, 'server')
+    private readonly targetModel: Model<Target>,
     private jwtService: JwtService
   ) { }
 
-  create(createAccountDto: CreateAccountDto) {
-    return 'This action adds a new account';
+  async create(createAccountDto: CreateAccountDto) {
+    validate(createAccountDto).then(errors => {
+      if (errors.length > 0) {
+        throw new Exception(Exception.ATTRIBUTE_VALUE_INVALID)
+      }
+    })
+    let userId = createAccountDto.userId === 'unique()' ? ID.unique() : createAccountDto.userId;
+    try {
+      let user = await this.userModel.create({
+        id: userId,
+        name: createAccountDto.name,
+        email: createAccountDto.email,
+        password: await this.userSerice.hashPassword(createAccountDto.password), // Hash the password
+        registration: new Date(),
+        status: true,
+        $permissions: [
+          Permission.Read(Role.Any()).toString(),
+          Permission.Update(Role.User(userId)).toString(),
+          Permission.Delete(Role.User(userId)).toString(),
+        ]
+      })
+      await user.save()
+      let target = await this.targetModel.create({
+        id: ID.unique(),
+        userId: user.$id,
+        userInternalId: user._id,
+        providerType: 'email',
+        identifier: createAccountDto.email,
+        $permissions: [
+          Permission.Read(Role.User(userId)).toString(),
+          Permission.Update(Role.User(userId)).toString(),
+          Permission.Delete(Role.User(userId)).toString(),
+        ]
+      })
+      await target.save()
+      user.targets.push(target)
+      await user.save()
+      console.log(user)
+      return user
+    } catch (e) {
+      console.log(e)
+      throw new Exception(Exception.GENERAL_SERVER_ERROR)
+    }
   }
 
   findAll() {
-    return `This action returns all account`;
+    let userId = ID.unique();
+    return {
+      id: [
+        Permission.Read(Role.Any()).toString(),
+        Permission.Update(Role.User(userId)).toString(),
+        Permission.Delete(Role.User(userId)).toString(),
+      ]
+    }
   }
 
 
@@ -40,8 +96,17 @@ export class AccountService {
     return `This action updates a #${id} account`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} account`;
+  async remove(id: string, userId: string) {
+    let account = await this.userModel.findOne({ id: id });
+    if (!account) {
+      throw new Exception(Exception.USER_NOT_FOUND)
+    }
+    let isValid = new Permissions(0, [Permission.Delete(Role.User(userId)).toString()]).isValid(account.$permissions)
+    if (!isValid) {
+      throw new Exception(Exception.GENERAL_REGION_ACCESS_DENIED)
+    }
+    await this.targetModel.deleteMany({ userInternalId: account._id })
+    await account.deleteOne()
   }
 
   async emailLogin(input: CreateEmailSessionDto, req: Request, headers: Request["headers"]): Promise<SessionDocument> {

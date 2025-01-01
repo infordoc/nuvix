@@ -5,101 +5,163 @@ import {
   Session,
   SessionDocument,
 } from 'src/account/schemas/account.schema';
+import { BaseSchema } from 'src/base/schemas/base.schema';
 
 export type UserDocument = HydratedDocument<User>;
 export type OrganizationDocument = HydratedDocument<Organization>;
+export type TargetDocument = HydratedDocument<Target>;
+
+enum UserStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  BLOCKED = 'blocked'
+}
 
 /**
  * Represents a User in the system.
  */
-@Schema({ id: false, toJSON: { virtuals: true }, toObject: { virtuals: true } })
-export class User {
-  @Prop({ required: true, unique: true, index: true, type: String })
+@Schema({ timestamps: { createdAt: "$createdAt" }, versionKey: false, id: false, toJSON: { virtuals: true }, toObject: { virtuals: true }, virtuals: true })
+export class User extends BaseSchema {
+
+  @Prop({ type: String, unique: true, index: true, required: true })
   id: string;
 
-  /**
-   * The email address of the user.
-   * @type {string}
-   * @memberof User
-   * @required
-   */
   @Prop({ required: true, unique: true, index: true, type: String })
   email: string;
 
-  /**
-   * The password of the user.
-   * @type {string}
-   * @memberof User
-   * @required
-   */
+  @Prop({ type: String, maxlength: 16, match: /^\+\d{1,15}$/ })
+  phone: string;
+
   @Prop({ required: true, type: String })
   password: string;
 
-  /**
-   * The name of the user.
-   * @type {string}
-   * @memberof User
-   * @required
-   */
   @Prop({ required: true, type: String })
   name: string;
 
-  /**
-   * The identities associated with the user.
-   * @type {Identities[]}
-   * @memberof User
-   */
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Identities' }] })
   identities: Identities[];
 
-  /**
-   * Indicates whether multi-factor authentication (MFA) is enabled for the user.
-   * @type {boolean}
-   * @memberof User
-   * @default false
-   */
   @Prop({ default: false, type: Boolean })
   mfa: boolean;
 
-  /**
-   * Indicates whether the user's email is verified.
-   * @type {boolean}
-   * @memberof User
-   * @default false
-   */
   @Prop({ default: false, type: Boolean })
-  emailVerified: boolean;
+  emailVerification: boolean;
 
-  /**
-   * The sessions associated with the user.
-   * @type {Session[]}
-   * @memberof User
-   */
+  @Prop({ default: false, type: Boolean })
+  phoneVerification: boolean;
+
+  @Prop({ type: Date, default: new Date() })
+  registration: Date;
+
+  @Prop({ type: Date })
+  passwordUpdate: Date;
+
+  @Prop({ type: Boolean, default: true })
+  status: boolean;
+
+  @Prop({ type: [String], default: [] })
+  labels: string[]
+
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Session' }] })
   sessions: Session[];
 
-  @Prop({ type: mongoose.Schema.Types.Mixed })
-  prefs: any;
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Target' }] })
+  targets: Target[];
+
+  @Prop({ type: mongoose.Schema.Types.Mixed, default: {} })
+  prefs: { [key: string]: any };
 
   @Virtual({
-    get(this: User) {
+    get(this: any) {
+      return this.deletedAt !== null && this.deletedAt !== undefined;
+    },
+    set(this: any, deleted: Boolean) {
+      this.deletedAt = deleted ? new Date() : null;
+    }
+  })
+  $deleted: Boolean;
+
+  @Virtual({
+    get(this: any) {
       return this.id;
     },
-    set(id: string) {
-      this.id
+    set(this: any, id: string) {
+      this.id = id;
     }
   })
   $id: string;
 
+  @Virtual({
+    get(this: any) {
+      return this.updatedAt;
+    }
+  })
+  $updatedAt: Date;
+
   session: SessionDocument;
+}
+
+
+@Schema({ timestamps: { createdAt: "$createdAt" }, versionKey: false, id: false, toJSON: { virtuals: true }, toObject: { virtuals: true }, virtuals: true })
+export class Target extends BaseSchema {
+  @Prop({ type: String, required: true, index: true, unique: true })
+  id: string;
+
+  @Prop({ type: String, default: "" })
+  name: string;
+
+  @Prop({ type: String, required: true })
+  userId: string;
+
+  @Prop({ type: mongoose.Types.ObjectId, required: true })
+  userInternalId: mongoose.Types.ObjectId;
+
+  @Prop({ type: String })
+  providerId: string | null;
+
+  @Prop({ type: String, required: true })
+  providerType: string;
+
+  @Prop({ type: String, required: true })
+  identifier: string;
+
+  @Prop({ type: Boolean, required: true, default: false })
+  expired: boolean;
+
+  @Virtual({
+    get(this: any) {
+      return this.id;
+    },
+    set(this: any, id: string) {
+      this.id = id;
+    }
+  })
+  $id: string;
+
+  @Virtual({
+    get(this: any) {
+      return this.deletedAt !== null && this.deletedAt !== undefined;
+    },
+    set(this: any, deleted: Boolean) {
+      this.deletedAt = deleted ? new Date() : null;
+    }
+  })
+  $deleted: Boolean;
+
+  @Virtual({
+    get(this: any) {
+      return this.updatedAt;
+    }
+  })
+  $updatedAt: Date;
 }
 
 /**
  * Represents an organization with a unique identifier, name, and associated users.
  */
-@Schema({ id: false, toJSON: { virtuals: true }, toObject: { virtuals: true } })
-export class Organization {
-  @Prop({ required: true, unique: true, index: true, type: String })
+@Schema({ timestamps: { createdAt: "$createdAt" }, versionKey: false, id: false, toJSON: { virtuals: true }, toObject: { virtuals: true }, virtuals: true })
+export class Organization extends BaseSchema {
+  @Prop({ type: String, unique: true, index: true, required: true })
   id: string;
 
   @Prop({ required: true, type: String, index: true })
@@ -108,17 +170,11 @@ export class Organization {
   @Prop({ required: true, type: String })
   name: string;
 
-  @Prop({ required: true, type: Date })
-  $createdAt: Date;
-
-  @Prop({ required: true, type: Date })
-  $updatedAt: Date;
-
   @Prop({ type: Number })
   total: number;
 
-  @Prop({ type: mongoose.Schema.Types.Mixed })
-  prefs: any;
+  @Prop({ type: mongoose.Schema.Types.Mixed, default: {} })
+  prefs: { [key: string]: any };
 
   @Prop({ type: Number })
   billingBudget: number;
@@ -187,15 +243,33 @@ export class Organization {
   markedForDeletion: boolean;
 
   @Virtual({
-    get(this: Organization) {
+    get(this: any) {
+      return this.deletedAt !== null && this.deletedAt !== undefined;
+    },
+    set(this: any, deleted: Boolean) {
+      this.deletedAt = deleted ? new Date() : null;
+    }
+  })
+  $deleted: Boolean;
+
+  @Virtual({
+    get(this: any) {
       return this.id;
     },
-    set(id: string) {
-      this.id
+    set(this: any, id: string) {
+      this.id = id;
     }
   })
   $id: string;
+
+  @Virtual({
+    get(this: any) {
+      return this.updatedAt;
+    }
+  })
+  $updatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 export const OrganizationSchema = SchemaFactory.createForClass(Organization);
+export const TargetSchema = SchemaFactory.createForClass(Target);

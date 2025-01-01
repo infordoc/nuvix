@@ -21,7 +21,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         let token = null;
         if (req && req.headers) {
           token = req.headers['x-nuvix-jwt'];
-          console.log(req.cookies, req.signedCookies)
           if (!token) token = req.cookies["a_session"]
         }
         return token || ExtractJwt.fromAuthHeaderAsBearerToken;
@@ -35,9 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!payload) return null;
     const session = await this.sessionModel.findById(payload._id);
     if (!session || !session.$isValid) return null;
-    const user = await this.userModel.findById(session.userId);
+    const user = await this.userModel.findById(session.userId).select('-password');
     if (!user || !user.$isValid) return null;
-    user.password = null;
     user.session = session;
     return user as UserDocument;
   }

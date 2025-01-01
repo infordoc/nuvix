@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Organization, OrganizationSchema, User, UserSchema } from './schemas/user.schema';
+import { Organization, OrganizationSchema, Target, TargetSchema, User, UserSchema } from './schemas/user.schema';
 import { JwtAuthGuard } from 'src/account/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 
@@ -16,6 +16,7 @@ import { APP_GUARD } from '@nestjs/core';
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Organization.name, schema: OrganizationSchema },
+      { name: Target.name, schema: TargetSchema }
     ], 'server')
   ],
   exports: [

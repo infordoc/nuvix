@@ -19,20 +19,27 @@ import { JwtAuthGuard } from 'src/account/jwt-auth.guard';
 import { Request, Response } from 'express';
 import { Exception } from 'src/core/extend/exception';
 import { CreateOrgDto, UpdateOrgDto } from './dto/org.dto';
+import { Public } from 'src/Utils/decorator';
+import { InjectModel } from '@nestjs/mongoose';
+import { Organization } from './schemas/user.schema';
+import { Model } from 'mongoose';
 
 @Controller()
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(
+    private readonly userService: UserService,
+    @InjectModel(Organization.name, 'server') private readonly orgModel: Model<Organization>,
+  ) { }
 
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get()
+  @Public()
   findAll(@Headers() headers, @Req() req) {
-    console.log(req.user);
+    // console.log(req.user);
     return this.userService.findAll();
   }
 
@@ -44,14 +51,7 @@ export class UserController {
   }
 
 
-  @UseGuards(JwtAuthGuard)
   @Get('organizations')
-  /**
-   * [GET]: /organizations - Retrieves the organizations associated with the user.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the organizations data.
-   * @returns A JSON response with the total number of organizations and the organizations data.
-   */
   async findOrganizations(@Req() req: Request, @Res() res: Response) {
     const orgs = await this.userService.findUserOrganizations(req.user.id);
     return res.json({
@@ -60,16 +60,7 @@ export class UserController {
     }).status(200)
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('organizations')
-  /**
-   * createOrganization: POST /organization - Creates a new organization with the provided details.
-   * @param req - The request object containing user information.
-   * @param createOrgDto - The DTO containing organization details.
-   * @param res - The response object to send the result.
-   * @throws Exception if required fields are missing in createOrgDto.
-   * @returns The created organization details.
-   */
   async createOrganization(
     @Req() req: Request,
     @Body() createOrgDto: CreateOrgDto,
@@ -83,15 +74,7 @@ export class UserController {
     return res.status(200).json(await this.userService.createOrganization(req.user.id, createOrgDto));
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('organizations/:id')
-  /**
-   * [GET]: /organization/:id - Retrieves a single organization by its ID.
-   * @param id - The ID of the organization to retrieve.
-   * @param req - The request object containing user information.
-   * @returns The organization if found.
-   * @throws Exception if the organization is not found.
-   */
   async findOneOrganization(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
     const org = await this.userService.findOneOrganization(id, req.user.id);
     if (org) {
@@ -101,13 +84,6 @@ export class UserController {
   }
 
   @Put('organizations/:id')
-  /**
-   * updateOrganization: PUT /user/:id/organization - Updates the organization details for a user.
-   * @param id - The ID of the user.
-   * @param req - The request object containing user information.
-   * @param input - The DTO containing updated organization details.
-   * @returns The updated organization details.
-   */
   async updateOrganization(
     @Param('id') id: string,
     @Req() req,
@@ -117,13 +93,6 @@ export class UserController {
   }
 
   @Delete('organizations/:id')
-  /**
-   * DELETE /organization/:id - Deletes an organization by its ID.
-   * @param id - The ID of the organization to delete.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the result.
-   * @returns A JSON response indicating the success of the deletion.
-   */
   async deleteOrganization(
     @Param('id') id: string,
     @Req() req: Request,
@@ -137,27 +106,18 @@ export class UserController {
   }
 
   @Get('organizations/:id/prefs')
-  /**
-   * @todo Implement this method.
-   * [GET]: /organization/:id/prefs - Retrieves the prefs for the organization.
-   * @param id - The ID of the organization to retrieve prefs for.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the prefs data.
-   */
   async getOrganizationPrefs(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    return {}
+    let prefs = await this.orgModel.findOne({ id: id }).select('prefs').exec();
+    return prefs ?? {};
   }
 
-  @UseGuards(JwtAuthGuard)
+  @Patch('organizations/:id/prefs')
+  async updateOrganizationPrefs(@Param('id') id: string, @Req() req: Request, @Body() prefs: any, @Res() res: Response) {
+    await this.orgModel.updateOne({ id: id }, { prefs: prefs }).exec();
+    return prefs;
+  }
+
   @Get('organizations/:id/aggregations')
-  /**
-   * @todo Implement this method.
-   * [GET]: /organization/:id/aggregations - Retrieves the aggregations for the organization.
-   * @param id - The ID of the organization to retrieve aggregations for.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the aggregations data.
-   * @returns A JSON response with the total number of aggregations and the aggregations data.
-   */
   async findOrganizationAggregations(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
     // const aggs = await this.userService.findOrganizationAggregations(id, req.user.id);
     return res.json({

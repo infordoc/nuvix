@@ -5,7 +5,6 @@ import { UpdateAccountDto } from './dto/update-account.dto';
 import { LoginDto, RefreshDto, RegisterDto } from './dto/auth.dto';
 import { Request, Response } from 'express';
 import { Exception } from 'src/core/extend/exception';
-import { HttpExceptionFilter } from 'src/core/filters/http-exception.filter';
 import { CreateEmailSessionDto } from './dto/create-email-session.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserService } from 'src/user/user.service';
@@ -19,48 +18,24 @@ export class AccountController {
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  /**
-   * [GET]: /account - Retrieves the user information from the request.
-   * @param req - The request object.
-   * @returns The user information.
-   */
   find(@Req() req) {
     return req.user;
   }
 
   @Public()
   @Post()
-  /**
-   * [POST]: /account - Creates a new account.
-   * @param createAccountDto - The account information.
-   * @returns The new account.
-   * @throws Exception - If the account already exists.
-   * @throws Exception - If the account creation fails.
-   **/
-  create(@Body() createAccountDto: CreateAccountDto) {
-    return this.accountService.create(createAccountDto);
+  async create(@Body() createAccountDto: CreateAccountDto) {
+    let account = await this.accountService.create(createAccountDto);
+    return account;
   }
 
   @Delete()
-  /**
-   * @todo: Implement the delete account functionality.
-   * [DELETE]: /account - Deletes the account.
-   * @param req - The request object.
-   * @returns The account information.
-   * @throws Exception - If the account deletion fails.
-   **/
-  delete(@Req() req: Request, @Res() res: Response) {
-    // return this.accountService.delete(req.user.id);
-    return res.clearCookie('a_session').status(200).json({ message: 'Logged out' })
+  async delete(@Req() req: Request, @Res() res: Response) {
+    await this.accountService.remove(req.user.id, req.user.id);
+    return res.clearCookie('a_session').status(200).json()
   }
 
   @Get('prefs')
-  /**
-   * [GET]: /account/prefs - Retrieves the user preferences.
-   * @param req - The request object.
-   * @returns The user preferences.
-   * @throws Exception - If the user preferences retrieval fails.
-   */
   async getPrefs(@Res() res: Response, @Req() req: Request) {
     return res.json(await this.userService.getPrefs(req.user.id)).status(200)
   }
@@ -601,11 +576,6 @@ export class AccountController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto) {
     return this.accountService.update(+id, updateAccountDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.accountService.remove(+id);
   }
 
   @Post('login')
