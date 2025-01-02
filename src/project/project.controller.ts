@@ -16,8 +16,8 @@ export class ProjectController {
   }
 
   @Get()
-  findAll() {
-    return this.projectService.findAll();
+  async findAll() {
+    return await this.projectService.findAll();
   }
 
   @Get(':id')

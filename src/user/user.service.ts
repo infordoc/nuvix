@@ -1,13 +1,15 @@
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Organization, OrganizationDocument, User } from './schemas/user.schema';
+import { User } from './schemas/user.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { CreateOrgDto, UpdateOrgDto } from './dto/org.dto';
 import { Exception } from 'src/core/extend/exception';
 import { ID } from 'src/core/helper/ID.helper';
+import { Organization, OrganizationDocument } from './schemas/organization.schema';
+import { Membership } from './schemas/membersip.schema';
 
 @Injectable()
 export class UserService {
@@ -17,6 +19,7 @@ export class UserService {
     private readonly userModel: Model<User>,
     @InjectModel(Organization.name, 'server')
     private readonly orgModel: Model<Organization>,
+    @InjectModel(Membership.name, 'server') private readonly membershipModel: Model<Membership>
   ) { }
 
   async create(createUserDto: CreateUserDto) {
@@ -44,29 +47,43 @@ export class UserService {
 
   async findOneOrganization(id: string, userId: string) {
     let org = await this.orgModel.findOne(
-      { id: id, userId: userId }
+      { id: id }
     )
     return org
   }
 
   async findUserOrganizations(userId: string): Promise<OrganizationDocument[]> {
-    return await this.orgModel.find({ userId }).exec();
+    return await this.orgModel.find().exec();
   }
 
-  async createOrganization(userId: string, input: CreateOrgDto): Promise<Organization> {
+  async createOrganization(user: Express.User, input: CreateOrgDto): Promise<Organization> {
     try {
       // Create a new Organization document
       input.organizationId = ID.auto(input.organizationId);
       const createdOrg = new this.orgModel({
         id: input.organizationId,
         ...input,
-        $createdAt: new Date(),
-        $updatedAt: new Date(),
-        userId: userId, // Associate the organization with the user
+        total: 1
       });
-      // Save the new organization to the database
+
       const savedOrg = await createdOrg.save();
 
+      // Create a new Membership document for the user as the owner of the organization
+      const member = await this.membershipModel.create({
+        id: ID.unique(),
+        userId: user.id,
+        orgId: createdOrg.id,
+        role: ['owner'],
+        userEmail: user.email,
+        userName: user.name,
+        invited: new Date(),
+        joined: new Date(),
+        confirm: true,
+        orgName: createdOrg.name,
+        mfa: false
+      });
+
+      await member.save();
       return savedOrg;
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -89,7 +106,7 @@ export class UserService {
   async updateOrganization(id: string, userId: string, input: UpdateOrgDto): Promise<Organization> {
     try {
       // Find the organization by ID and user ID
-      const org = await this.orgModel.findOne({ id: id, userId: userId }).exec(); // exec() for a proper Promise
+      const org = await this.orgModel.findOne({ id: id, }).exec(); // exec() for a proper Promise
 
       if (!org) {
         throw new Exception(null, 'Organization not found.');
@@ -117,7 +134,7 @@ export class UserService {
   async deleteOrganization(id: string, userId: string) {
     try {
       // Find the organization by ID and user ID
-      const org = await this.orgModel.findOneAndDelete({ id: id, userId: userId }).exec(); // exec() for a proper Promise
+      const org = await this.orgModel.findOneAndDelete({ id: id, }).exec(); // exec() for a proper Promise
 
       if (!org) {
         throw new Exception(null, 'Organization not found.');
@@ -132,6 +149,11 @@ export class UserService {
         throw new Exception(null, "Failed to delete organization."); // Wrap other errors in custom exception
       }
     }
+  }
+
+  async getOrganizationMembers(id: string) {
+    let members = await this.membershipModel.find({ orgId: id })
+    return members;
   }
 
   /**

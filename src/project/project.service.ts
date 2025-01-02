@@ -5,7 +5,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Project } from './schemas/project.schema';
 import { Model } from 'mongoose';
 import { Exception } from 'src/core/extend/exception';
-import { Organization } from 'src/user/schemas/user.schema';
+import { Organization } from 'src/user/schemas/organization.schema';
 
 @Injectable()
 export class ProjectService {
@@ -52,8 +52,11 @@ export class ProjectService {
     }
   }
 
-  findAll() {
-    return this.projectModel.find()
+  async findAll() {
+    return {
+      total: await this.projectModel.countDocuments(),
+      projects: await this.projectModel.find()
+    }
   }
 
   findOne(id: number) {

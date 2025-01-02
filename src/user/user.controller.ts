@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Headers,
-  UseGuards,
   Req,
   Res,
   Put,
@@ -15,13 +14,12 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from 'src/account/jwt-auth.guard';
 import { Request, Response } from 'express';
 import { Exception } from 'src/core/extend/exception';
 import { CreateOrgDto, UpdateOrgDto } from './dto/org.dto';
 import { Public } from 'src/Utils/decorator';
 import { InjectModel } from '@nestjs/mongoose';
-import { Organization } from './schemas/user.schema';
+import { Organization } from './schemas/organization.schema';
 import { Model } from 'mongoose';
 
 @Controller()
@@ -56,7 +54,8 @@ export class UserController {
     const orgs = await this.userService.findUserOrganizations(req.user.id);
     return res.json({
       total: orgs.length,
-      organizations: orgs
+      organizations: orgs,
+      teams: orgs // ....
     }).status(200)
   }
 
@@ -71,7 +70,7 @@ export class UserController {
         Exception.MISSING_REQUIRED_PARMS,
         'Please provide `organizationId` and `name` fields in body.',
       );
-    return res.status(200).json(await this.userService.createOrganization(req.user.id, createOrgDto));
+    return res.status(200).json(await this.userService.createOrganization(req.user, createOrgDto));
   }
 
   @Get('organizations/:id')
@@ -106,7 +105,7 @@ export class UserController {
   }
 
   @Get('organizations/:id/prefs')
-  async getOrganizationPrefs(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
+  async getOrganizationPrefs(@Param('id') id: string, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     let prefs = await this.orgModel.findOne({ id: id }).select('prefs').exec();
     return prefs ?? {};
   }
@@ -127,19 +126,75 @@ export class UserController {
   }
 
   @Get('organizations/:id/roles')
-  /**
-   * @todo Implement this method.
-   * [GET]: /organization/:id/roles - Retrieves the roles for the organization.
-   * @param id - The ID of the organization to retrieve roles for.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the roles data.
-   * @returns A JSON response with the total number of roles and the roles data.
-   */
   async findOrganizationRoles(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
     // const roles = await this.userService.findOrganizationRoles(id, req.user.id);
     return res.json({
-      total: 0,// roles.length,
-      roles: {} // roles
+      "scopes": [
+        "global",
+        "public",
+        "home",
+        "console",
+        "graphql",
+        "sessions.write",
+        "documents.read",
+        "documents.write",
+        "files.read",
+        "files.write",
+        "locale.read",
+        "avatars.read",
+        "execution.write",
+        "organizations.write",
+        "account",
+        "teams.read",
+        "projects.read",
+        "users.read",
+        "databases.read",
+        "collections.read",
+        "buckets.read",
+        "assistant.read",
+        "functions.read",
+        "execution.read",
+        "platforms.read",
+        "keys.read",
+        "webhooks.read",
+        "rules.read",
+        "migrations.read",
+        "vcs.read",
+        "providers.read",
+        "messages.read",
+        "topics.read",
+        "targets.read",
+        "subscribers.read",
+        "teams.write",
+        "targets.write",
+        "subscribers.write",
+        "buckets.write",
+        "users.write",
+        "databases.write",
+        "collections.write",
+        "platforms.write",
+        "keys.write",
+        "webhooks.write",
+        "functions.write",
+        "rules.write",
+        "migrations.write",
+        "vcs.write",
+        "providers.write",
+        "messages.write",
+        "topics.write",
+        "policies.write",
+        "policies.read",
+        "archives.read",
+        "archives.write",
+        "restorations.read",
+        "restorations.write",
+        "billing.read",
+        "billing.write",
+        "projects.write"
+      ],
+      "roles": [
+        "owner"
+      ]
     }).status(200)
   }
 
@@ -246,7 +301,7 @@ export class UserController {
     // const invoices = await this.userService.findOrganizationInvoices(id, req.user.id);
     return res.json({
       total: 0,// invoices.length,
-      invoices: {} // invoices
+      invoices: [] // invoices
     }).status(200)
   }
 
@@ -346,19 +401,11 @@ export class UserController {
   }
 
   @Get('organizations/:id/memberships')
-  /**
-   * @todo Implement this method.
-   * [GET]: /organization/:id/memberships - Retrieves the memberships for the organization.
-   * @param id - The ID of the organization to retrieve memberships for.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the memberships data.
-   * @returns A JSON response with the total number of memberships and the memberships data.
-   */
   async findOrganizationMemberships(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    // const memberships = await this.userService.findOrganizationMemberships(id, req.user.id);
+    const memberships = await this.userService.getOrganizationMembers(id);
     return res.json({
-      total: 0,// memberships.length,
-      memberships: {} // memberships
+      total: memberships.length,
+      members: memberships
     }).status(200)
   }
 
