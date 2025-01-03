@@ -16,6 +16,8 @@ import { ProjectModule } from './project/project.module';
 import { RouterModule } from '@nestjs/core';
 import { ConsoleModule } from './console/console.module';
 import { AvatarsModule } from './avatars/avatars.module';
+import { UsersModule } from './users/users.module';
+import { AccountModule } from './account/account.module';
 
 config();
 
@@ -62,28 +64,32 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
         console.log(`MongoDB connected to "${connection.host}" database`);
       },
     }),
-    GraphQLModule.forRoot<ApolloDriverConfig>({
-      path: '/graphql',
-      driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
-      logger: customLogger,
-      installSubscriptionHandlers: true,
-      playground: false,
-      plugins: [ApolloServerPluginLandingPageLocalDefault()],
-      buildSchemaOptions: {
-        directives: [
-          new GraphQLDirective({
-            name: 'upper',
-            locations: [DirectiveLocation.FIELD_DEFINITION],
-          }),
-        ],
-      },
-    }),
+    // GraphQLModule.forRoot<ApolloDriverConfig>({
+    //   path: '/graphql',
+    //   driver: ApolloDriver,
+    //   autoSchemaFile: 'schema.gql',
+    //   logger: customLogger,
+    //   installSubscriptionHandlers: true,
+    //   playground: false,
+    //   plugins: [ApolloServerPluginLandingPageLocalDefault()],
+    //   buildSchemaOptions: {
+    //     directives: [
+    //       new GraphQLDirective({
+    //         name: 'upper',
+    //         locations: [DirectiveLocation.FIELD_DEFINITION],
+    //       }),
+    //     ],
+    //   },
+    // }),
     BaseModule,
     UserModule,
     ConsoleAccountModule,
     DatabaseModule,
     ProjectModule,
+    ConsoleModule,
+    AvatarsModule,
+    UsersModule,
+    AccountModule,
     RouterModule.register([
       {
         path: "v1",
@@ -104,6 +110,14 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
             ]
           },
           {
+            path: "account",
+            module: AccountModule
+          },
+          {
+            path: "users",
+            module: UsersModule
+          },
+          {
             path: "databases",
             module: DatabaseModule
           },
@@ -118,8 +132,6 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Buildo"
         ]
       }
     ]),
-    ConsoleModule,
-    AvatarsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
