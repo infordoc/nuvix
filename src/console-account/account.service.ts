@@ -17,6 +17,7 @@ import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
 import { validate } from 'class-validator';
 import Permissions from 'src/core/validators/permissions.validator';
+import { BillingAddress } from 'src/console-user/schemas/billing.schema';
 
 @Injectable()
 export class AccountService {
@@ -30,6 +31,8 @@ export class AccountService {
     private readonly userModel: Model<User>,
     @InjectModel(Target.name, 'server')
     private readonly targetModel: Model<Target>,
+    @InjectModel(BillingAddress.name, 'server')
+    private readonly billingModel: Model<BillingAddress>,
     private jwtService: JwtService
   ) { }
 
@@ -89,6 +92,13 @@ export class AccountService {
     }
   }
 
+  async getBillingAddresses(userId: string) {
+    let addresses = await this.billingModel.find({ userId })
+    return {
+      total: addresses.length,
+      billingAddresses: addresses
+    }
+  }
 
   findOne(id: string) {
     return this.userModel.findOne({ id: id });

@@ -108,12 +108,12 @@ export class ProjectService {
   async findAll() {
     return {
       total: await this.projectModel.countDocuments(),
-      projects: await this.projectModel.find()
+      projects: await this.projectModel.find().populate(['platforms', 'keys', 'webhooks'])
     }
   }
 
-  findOne(id: number) {
-    return this.projectModel.findOne({ id: id })
+  findOne(id: string) {
+    return this.projectModel.findOne({ id: id });
   }
 
   update(id: number, updateProjectDto: UpdateProjectDto) {
@@ -122,6 +122,42 @@ export class ProjectService {
 
   remove(id: number) {
     return `This action removes a #${id} project`;
+  }
+
+  /**
+   * Get platforms of a project.
+   */
+  async getPlatforms(id: string) {
+    let project = await this.projectModel.findOne({ id: id }).select('platforms').populate('platforms');
+    if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
+    return {
+      total: project.platforms.length,
+      platforms: project.platforms
+    }
+  }
+
+  /**
+   * Get keys of a project.
+   */
+  async getKeys(id: string) {
+    let project = await this.projectModel.findOne({ id: id }).select('keys').populate('keys');
+    if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
+    return {
+      total: project.keys.length,
+      keys: project.keys
+    }
+  }
+
+  /**
+   * Get webhooks of a project.
+   */
+  async getWebhooks(id: string) {
+    let project = await this.projectModel.findOne({ id: id }).select('webhooks').populate('webhooks');
+    if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
+    return {
+      total: project.webhooks.length,
+      webhooks: project.webhooks
+    }
   }
 }
 

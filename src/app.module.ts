@@ -19,6 +19,7 @@ import { AvatarsModule } from './avatars/avatars.module';
 import { UsersModule } from './users/users.module';
 import { AccountModule } from './account/account.module';
 import { TeamsModule } from './teams/teams.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 config();
 
@@ -46,9 +47,6 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Nuvix"
   imports: [
     MongooseModule.forRoot(`${process.env.MONGO_URL}/server${mongo_url_params}`, {
       connectionName: 'server',
-      onConnectionCreate: (connection) => {
-        console.log(`MongoDB connected to "${connection.host}" database`);
-      },
     }),
     // GraphQLModule.forRoot<ApolloDriverConfig>({
     //   path: '/graphql',
@@ -76,6 +74,8 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Nuvix"
     AvatarsModule,
     UsersModule,
     AccountModule,
+    TeamsModule,
+    RealtimeModule,
     RouterModule.register([
       {
         path: "v1",
@@ -116,13 +116,16 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Nuvix"
             module: ProjectModule
           },
           {
+            path: 'realtime',
+            module: RealtimeModule
+          },
+          {
             path: 'avatars',
             module: AvatarsModule
           }
         ]
       }
     ]),
-    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

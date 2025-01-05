@@ -46,7 +46,7 @@ type ProjectOAuthProvider = {}
   minimize: false
 })
 export class Project extends BaseSchema {
-  @Prop({ required: true, type: String, index: true, unique: true })
+  @Prop({ required: true, type: String, index: true })
   orgInternalId: string;
 
   @Prop({ required: false, type: String, index: true })
@@ -130,7 +130,7 @@ export class Project extends BaseSchema {
   @Prop({ required: false, type: mongoose.Types.ObjectId, index: true, ref: 'Platform' })
   platforms: Platform[];
 
-  @Prop({ required: false, type: mongoose.Types.ObjectId, ref: 'Webhook'})
+  @Prop({ required: false, type: mongoose.Types.ObjectId, ref: 'Webhook' })
   webhooks: Webhook[];
 
   @Prop({ required: false, type: mongoose.Types.ObjectId, index: true, ref: 'Key' })

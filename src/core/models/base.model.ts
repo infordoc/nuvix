@@ -1,6 +1,6 @@
 import { Exclude, Expose } from "class-transformer";
 import mongoose, { Document } from "mongoose";
-import { dataToObject } from "../helper/model.helper";
+import { dataToObject, DataToObjectOptions } from "../helper/model.helper";
 
 @Exclude()
 export default abstract class BaseModel {
@@ -17,12 +17,14 @@ export default abstract class BaseModel {
    */
   @Expose() $updatedAt: Date;
 
+  @Expose() $permissions: string[];
+
   @Exclude() _id: mongoose.Types.ObjectId | any;
   @Exclude() id: string;
 
-  constructor(doc?: any) {
+  constructor(doc?: any, options?: DataToObjectOptions) {
     if (doc) {
-      Object.assign(this, dataToObject(doc));
+      Object.assign(this, dataToObject(doc, options));
     }
   }
 }

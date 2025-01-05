@@ -1,5 +1,5 @@
 import { Exclude, Expose } from "class-transformer";
-import BaseModel from "src/core/models/base.model";
+import BaseModel, { BaseListModel } from "src/core/models/base.model";
 
 
 @Exclude()
@@ -32,4 +32,22 @@ export class PlatformModel extends BaseModel {
    * HTTP basic authentication password.
    */
   @Expose() httpPass: string;
+
+  constructor(data: Partial<PlatformModel | any> = {}) {
+    super(data);
+  }
+}
+
+
+export class PlatformListModel extends BaseListModel {
+  /**
+   * List of platforms.
+   */
+  platforms: PlatformModel[];
+
+  constructor(data: any) {
+    super();
+    this.platforms = data.platforms.map((platform: any) => new PlatformModel(platform));
+    this.total = data.total;
+  }
 }

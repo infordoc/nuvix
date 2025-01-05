@@ -11,6 +11,12 @@ import { ID } from 'src/core/helper/ID.helper';
 import { Organization, OrganizationDocument } from './schemas/organization.schema';
 import { Membership } from './schemas/membersip.schema';
 import { UpdateEmailDto } from 'src/console-account/dto/update-account.dto';
+import { Plan } from 'src/console/schemas/plan.schema';
+import { PaymentMethod } from './schemas/payment.schema';
+import { BillingAddress } from './schemas/billing.schema';
+import Token from './schemas/token.schema';
+import Challenges from './schemas/challenge.schema';
+import Authenticator from './schemas/authenticator.schema';
 
 @Injectable()
 export class UserService {
@@ -20,7 +26,13 @@ export class UserService {
     private readonly userModel: Model<User>,
     @InjectModel(Organization.name, 'server')
     private readonly orgModel: Model<Organization>,
-    @InjectModel(Membership.name, 'server') private readonly membershipModel: Model<Membership>
+    @InjectModel(Membership.name, 'server') private readonly membershipModel: Model<Membership>,
+    @InjectModel(Plan.name, 'server') private readonly planModel: Model<Plan>,
+    @InjectModel(PaymentMethod.name, 'server') private readonly paymentModel: Model<PaymentMethod>,
+    @InjectModel(BillingAddress.name, 'server') private readonly billingModel: Model<BillingAddress>,
+    @InjectModel(Token.name, 'server') private readonly tokenModel: Model<Token>,
+    @InjectModel(Challenges.name, 'server') private readonly challengeModel: Model<Challenges>,
+    @InjectModel(Authenticator.name, 'server') private readonly authenticatorModel: Model<Authenticator>
   ) { }
 
   async create(createUserDto: CreateUserDto) {
@@ -170,6 +182,14 @@ export class UserService {
     return members;
   }
 
+  async getOrganizationPlan(orgId: string) {
+    let org = await this.orgModel.findOne({ id: orgId })
+    if (!org) throw new Exception(Exception.TEAM_NOT_FOUND)
+    let plan = this.planModel.findOne({ id: org.billingPlan })
+    if (!plan) throw new Exception(undefined, 'Plan not Exists.')
+    return plan;
+  }
+
   /**
  * Retrieves the preferences of a user by their ID.
  *
@@ -198,6 +218,34 @@ export class UserService {
     user.prefs = prefs
     await user.save()
     return user.prefs ?? {}
+  }
+
+  // ****************
+
+  async getPaymentMethods(userId: string) {
+    let paymentMethods = await this.paymentModel.find({ userId })
+    return {
+      total: paymentMethods.length,
+      paymentMethods: paymentMethods
+    };
+  }
+
+  async getPaymentMethod(paymentMethodId: string) {
+    let paymentMethod = await this.paymentModel.findOne({ id: paymentMethodId })
+    return paymentMethod;
+  }
+
+  async getBillingAddresses(userId: string) {
+    let addresses = await this.billingModel.find({ userId })
+    return {
+      total: addresses.length,
+      billingAddresses: addresses
+    };
+  }
+
+  async getBillingAddress(addressId: string) {
+    let address = await this.billingModel.findOne({ id: addressId })
+    return address;
   }
 
   async findOneByEmail(email: string) {

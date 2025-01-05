@@ -165,20 +165,9 @@ export class AccountController {
   }
 
   @Get('billing-addresses')
-  /**
-   * @todo: Implement the get billing addresses functionality.
-   * [GET]: /account/billing-addresses - Retrieves the billing addresses.
-   * @param req - The request object.
-   * @returns The billing addresses.
-   * @throws Exception - If the billing addresses retrieval fails.
-   * @throws Exception - If the billing addresses are not found.
-   **/
-  async getBillingAddresses(@Req() req: Request, @Res() res: Response) {
-    // Some logic to get the billing addresses.
-    return res.json({
-      total: 0,
-      data: []
-    }).status(200)
+  async getBillingAddresses(@User() user: UserDocument) {
+    let data = await this.accountService.getBillingAddresses(user.id)
+    return data
   }
 
   @Post('billing-addresses')
@@ -195,19 +184,8 @@ export class AccountController {
   }
 
   @Get('payment-methods')
-  /**
-   * @todo: Implement the get payment methods functionality.
-   * [GET]: /account/payment-methods - Retrieves the payment methods.
-   * @param req - The request object.
-   * @returns The payment methods.
-   * @throws Exception - If the payment methods retrieval fails.
-   **/
-  async getPaymentMethods(@Req() req: Request, @Res() res: Response) {
-    // Some logic to get the payment methods.
-    return res.json({
-      total: 0,
-      methods: []
-    }).status(200)
+  async getPaymentMethods(@User() user: UserDocument) {
+    return this.userService.getPaymentMethods(user.id)
   }
 
   @Post('payment-methods')
@@ -300,16 +278,8 @@ export class AccountController {
   /*  ** 2 **   */
 
   @Get('billing-addresses/:id')
-  /**
-   * @todo: Implement the get billing address functionality.
-   * [GET]: /account/billing-addresses/:id - Retrieves the billing address.
-   * @param req - The request object.
-   * @returns The billing address.
-   * @throws Exception - If the billing address retrieval fails.
-   **/
-  async getBillingAddress(@Req() req: Request, @Res() res: Response) {
-    // Some logic to get the billing address.
-    return res.json({}).status(200)
+  async getBillingAddress(@Param('id') id: string) {
+    return this.userService.getBillingAddress(id)
   }
 
   @Put('billing-addresses/:id')
@@ -338,16 +308,8 @@ export class AccountController {
   }
 
   @Get('payment-methods/:id')
-  /**
-   *  @todo: Implement the get payment method functionality.
-   * [GET]: /account/payment-methods/:id - Retrieves the payment method.
-   * @param req - The request object.
-   * @returns The payment method.
-   * @throws Exception - If the payment method retrieval fails.
-   **/
-  async getPaymentMethod(@Req() req: Request, @Res() res: Response) {
-    // Some logic to get the payment method.
-    return res.json({}).status(200)
+  async getPaymentMethod(@Param('id') id: string) {
+    return this.userService.getPaymentMethod(id)
   }
 
   @Patch('payment-methods/:id')

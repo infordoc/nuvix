@@ -1,5 +1,5 @@
 import { Expose } from "class-transformer";
-import BaseModel from "src/core/models/base.model";
+import BaseModel, { BaseListModel } from "src/core/models/base.model";
 
 
 export class WebhookModel extends BaseModel {
@@ -43,4 +43,21 @@ export class WebhookModel extends BaseModel {
    * Number of consecutive failed webhook attempts.
    */
   @Expose() attempts: number;
+
+  constructor(data: Partial<WebhookModel | any> = {}) {
+    super(data);
+  }
+}
+
+export class WebhookListModel extends BaseListModel {
+  /**
+   * List of webhooks.
+   */
+  webhooks: WebhookModel[];
+
+  constructor(data: Partial<WebhookListModel | any> = {}) {
+    super();
+    this.webhooks = data.webhooks ? data.webhooks.map((webhook: any) => new WebhookModel(webhook)) : [];
+    this.total = data.total || 0;
+  }
 }

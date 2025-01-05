@@ -6,7 +6,7 @@ import { PlatformModel } from "./platform.model";
 import { WebhookModel } from "./webhook.model";
 import { KeyModel } from "./key.model";
 
-// @Exclude()
+@Exclude()
 export class ProjectModel extends BaseModel {
 
   /**
@@ -104,15 +104,15 @@ export class ProjectModel extends BaseModel {
   /**
    * List of Platforms.
    */
-  @Expose() platforms: PlatformModel[];
+  @Expose() platforms: PlatformModel[] = [];
   /**
    * List of Webhooks.
    */
-  @Expose() webhooks: WebhookModel[];
+  @Expose() webhooks: WebhookModel[] = [];
   /**
    * List of API Keys.
    */
-  @Expose() keys: KeyModel[];
+  @Expose() keys: KeyModel[] = [];
   /**
    * Status for custom SMTP
    */
@@ -235,7 +235,51 @@ export class ProjectModel extends BaseModel {
   @Expose() region: string;
 
   constructor(partial: Partial<ProjectModel> | Document) {
-    super(partial);
+    super(partial, {
+      flattenObj: true,
+      covertOption: {
+        conversionMap: {
+          'auths.emailPassword': 'authEmailPassword',
+          'auths.usersAuthMagicURL': 'authUsersAuthMagicURL',
+          'auths.emailOtp': 'authEmailOtp',
+          'auths.anonymous': 'authAnonymous',
+          'auths.invites': 'authInvites',
+          'auths.duration': 'authDuration',
+          'auths.limit': 'authLimit',
+          'auths.sessionsLimit': 'authSessionsLimit',
+          'auths.passwordHistory': 'authPasswordHistory',
+          'auths.passwordDictionary': 'authPasswordDictionary',
+          'auths.personalDataCheck': 'authPersonalDataCheck',
+          'auths.mockNumbers': 'authMockNumbers',
+          'auths.sessionAlerts': 'authSessionAlerts',
+          'auths.membershipsUserName': 'authMembershipsUserName',
+          'auths.membershipsUserEmail': 'authMembershipsUserEmail',
+          'auths.membershipsMfa': 'authMembershipsMfa',
+          'auths.jwt': 'authJWT',
+          'auths.phone': 'authPhone',
+          'smtp.enabled': 'smtpEnabled',
+          'smtp.senderName': 'smtpSenderName',
+          'smtp.senderEmail': 'smtpSenderEmail',
+          'smtp.replyTo': 'smtpReplyTo',
+          'smtp.host': 'smtpHost',
+          'smtp.port': 'smtpPort',
+          'smtp.username': 'smtpUsername',
+          'smtp.password': 'smtpPassword',
+          'smtp.secure': 'smtpSecure',
+          'services.account': 'serviceStatusForAccount',
+          'services.avatars': 'serviceStatusForAvatars',
+          'services.databases': 'serviceStatusForDatabases',
+          'services.locale': 'serviceStatusForLocale',
+          'services.health': 'serviceStatusForHealth',
+          'services.storage': 'serviceStatusForStorage',
+          'services.teams': 'serviceStatusForTeams',
+          'services.users': 'serviceStatusForUsers',
+          'services.functions': 'serviceStatusForFunctions',
+          'services.graphql': 'serviceStatusForGraphql',
+          'services.messaging': 'serviceStatusForMessaging'
+        }
+      }
+    });
   }
 }
 

@@ -98,7 +98,7 @@ export class UsersListModel {
     if (partial.users) {
       this.users = partial.users.map((user: any) => new UserModel(user));
     }
-    Object.assign(this, { ...partial, memberships: this.users });
+    Object.assign(this, { ...partial, users: this.users });
   }
 
 }

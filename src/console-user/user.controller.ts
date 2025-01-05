@@ -25,6 +25,7 @@ import { Organization } from './schemas/organization.schema';
 import { Model } from 'mongoose';
 import OrganizationModel, { OrganizationListModel } from './models/organization.model';
 import { MembershipsListModel } from './models/membership.model';
+import { BillingPlanModel } from './models/plan.model';
 
 @Controller()
 @UseInterceptors(ClassSerializerInterceptor)
@@ -341,21 +342,9 @@ export class UserController {
   }
 
   @Get('organizations/:id/plan')
-  /**
-   * @todo Implement this method.
-   * [GET]: /organization/:id/plan - Retrieves the plan for the organization.
-   * @param id - The ID of the organization to retrieve plan for.
-   * @param req - The request object containing user information.
-   * @param res - The response object to send the plan data.
-   * @returns The plan if found.
-   * @throws Exception if the plan is not found.
-   */
-  async findOneOrganizationPlan(@Param('id') id: string, @Req() req: Request, @Res() res: Response) {
-    // const plan = await this.userService.findOneOrganizationPlan(id, req.user.id);
-    // if (plan) {
-    //   return res.status(200).json(plan);
-    // }
-    throw new Exception(null, 'Plan not found.', 404);
+  async findOneOrganizationPlan(@Param('id') id: string): Promise<BillingPlanModel> {
+    const plan = await this.userService.getOrganizationPlan(id);
+    return new BillingPlanModel(plan)
   }
 
   @Patch('organizations/:id/plan')

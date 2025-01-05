@@ -1,5 +1,5 @@
 import { Exclude, Expose } from "class-transformer";
-import BaseModel from "src/core/models/base.model";
+import BaseModel, { BaseListModel } from "src/core/models/base.model";
 
 
 @Exclude()
@@ -28,5 +28,24 @@ export class KeyModel extends BaseModel {
    * List of SDK user agents that used this key.
    */
   @Expose() sdks: string[];
+
+  constructor(data: Partial<KeyModel> = {}) {
+    super(data);
+  }
+
+}
+
+
+export class KeyListModel extends BaseListModel {
+  /**
+   * List of keys.
+   */
+  keys: KeyModel[];
+
+  constructor(data: Partial<KeyListModel | any> = {}) {
+    super();
+    this.keys = data.keys ? data.keys.map((key: any) => new KeyModel(key)) : [];
+    this.total = data.total || 0;
+  }
 
 }
