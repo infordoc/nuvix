@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import Role from "./role.helper";
 import Roles from "../validators/roles.validator";
 import { TokenEntity } from "../entities/users/token.entity";
@@ -7,6 +8,10 @@ import { ClsServiceManager } from "nestjs-cls";
 import { Authorization } from "../validators/authorization.validator";
 import { createHash, randomBytes, createHmac, scryptSync } from 'crypto';
 import { Exception } from "../extend/exception";
+
+const algorithm = 'aes-256-cbc';
+const key = process.env.ENCRYPTION_KEY ? Buffer.from(process.env.ENCRYPTION_KEY, 'hex') : undefined;
+
 
 export class Auth {
 
@@ -336,5 +341,25 @@ export class Auth {
     } catch (e) {
       throw new Exception(Exception.GENERAL_SERVER_ERROR, 'Argon2 library is not available on the server.')
     }
+  }
+
+  static encrypt(text: string): string {
+    if (!key) throw Error('ENCRYPTION_KEY is required, make sure you have added in current environment.')
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(text);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+  }
+
+  static decrypt(text: string): string {
+    if (!key) throw Error('ENCRYPTION_KEY is required, make sure you have added in current environment.')
+    const textParts = text.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
   }
 }

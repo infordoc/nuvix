@@ -7,17 +7,30 @@ import { Webhook } from './webhook.schema';
 
 export type ProjectDocument = HydratedDocument<Project>;
 
-type ProjectService = {
+class ProjectService {
   [key: string]: boolean;
 }
 
-type ProjectApi = {}
+class ProjectApi {
+  [key: string]: boolean;
+}
 
-type ProjectSmtp = {}
+class ProjectSmtp {
+  host: string;
+  port: string;
+  user: string;
+  pass: string;
+  from: string;
+  enabled: boolean;
+  senderName: string;
+  senderEmail: string;
+  replyTo: string;
+  secure: boolean;
+}
 
 type ProjectTemplate = {}
 
-export interface AuthConfig {
+export class AuthConfig {
   limit: number;
   maxSessions: number;
   passwordHistory: number;
@@ -30,7 +43,13 @@ export interface AuthConfig {
 }
 
 
-type ProjectOAuthProvider = {}
+class ProjectOAuthProvider {
+  key: string;
+  name: string;
+  appId?: string;
+  secret?: string;
+  enabled?: boolean;
+}
 
 /**
  * Represents a project with its details.
@@ -45,8 +64,8 @@ type ProjectOAuthProvider = {}
   minimize: false
 })
 export class Project extends BaseSchema {
-  @Prop({ required: true, type: String, index: true })
-  orgInternalId: string;
+  @Prop({ required: true, type: mongoose.Types.ObjectId, index: true })
+  orgInternalId: mongoose.Types.ObjectId;
 
   @Prop({ required: false, type: String, index: true })
   orgId: string;
@@ -94,19 +113,17 @@ export class Project extends BaseSchema {
   accessedAt: Date;
 
   @Prop({
-    required: false, type: {}, default: []
+    required: false, type: ProjectService, default: []
   })
-  services: ProjectService[];
+  services: ProjectService;
 
   @Prop({
-    required: false, type: [{
-
-    }], default: []
+    required: false, type: [ProjectApi], default: []
   })
   apis: ProjectApi[];
 
   @Prop({
-    required: false, type: {}, default: {}
+    required: false, type: ProjectSmtp, default: {}
   })
   smtp: ProjectSmtp;
 
@@ -115,10 +132,10 @@ export class Project extends BaseSchema {
   })
   templates: any[];
 
-  @Prop({ required: false, type: mongoose.Schema.Types.Mixed, default: [] })
-  auths: AuthConfig[];
+  @Prop({ required: false, type: AuthConfig, default: {} })
+  auths: AuthConfig;
 
-  @Prop({ required: false, type: [], default: [] })
+  @Prop({ required: false, type: [ProjectOAuthProvider], default: [] })
   oAuthProviders: ProjectOAuthProvider[];
 
   @Prop({ required: false, type: mongoose.Types.ObjectId, index: true, ref: 'Platform' })

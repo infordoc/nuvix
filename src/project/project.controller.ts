@@ -1,21 +1,44 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards, UseInterceptors, ClassSerializerInterceptor, Query } from '@nestjs/common';
-import { ProjectService } from './project.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+  Query,
+  Put
+} from '@nestjs/common';
 import { Request } from 'express';
-import { JwtAuthGuard } from 'src/console-account/jwt-auth.guard';
+import { ClsService } from 'nestjs-cls';
+import authMethods from 'src/core/config/auth';
+import { Exception } from 'src/core/extend/exception';
+import { ProjectService } from './project.service';
+
+// Models
 import { ProjectListModel, ProjectModel } from './models/project.model';
 import { PlatformListModel } from './models/platform.model';
 import { KeyListModel } from './models/key.model';
-import { WebhookListModel } from './models/webhook.model';
-import { User } from 'src/console-user/decorators';
-import { UserDocument } from 'src/console-user/schemas/user.schema';
-import { Auth } from 'src/console-account/auth';
-import { ClsService } from 'nestjs-cls';
-import { Authorization } from 'src/core/validators/authorization.validator';
-import { Input } from 'src/core/validators/authorization-input.validator';
-import { Database } from 'src/core/config/database';
-import { Exception } from 'src/core/extend/exception';
+import { WebhookListModel, WebhookModel } from './models/webhook.model';
+
+// DTO
+import { oAuth2Dto } from './dto/oauth2.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto, UpdateProjectTeamDto } from './dto/update-project.dto';
+import { ProjectApiStatusAllDto, ProjectApiStatusDto } from './dto/project-api.dto';
+import { UpdateProjectAllServiceDto, UpdateProjectServiceDto } from './dto/project-service.dto';
+import {
+  AuthSessionAlertsDto,
+  AuthLimitDto, AuthDurationDto,
+  AuthMethodStatusDto, AuthPasswordHistoryDto,
+  AuthPasswordDictionaryDto, AuthPersonalDataDto,
+  AuthMaxSessionsDto, AuthMockNumbersDto
+} from './dto/project-auth.dto';
+import { CreateWebhookDto, UpdateWebhookDto } from './dto/webhook.dto';
 
 @Controller()
 @UseInterceptors(ClassSerializerInterceptor)
@@ -45,8 +68,8 @@ export class ProjectController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectService.update(+id, updateProjectDto);
+  async update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.update(id, updateProjectDto));
   }
 
   @Delete(':id')
@@ -67,8 +90,121 @@ export class ProjectController {
   }
 
   @Get(':id/webhooks')
-  async getWebhooks(@Param('id') id: string): Promise<WebhookListModel> {
+  async getWebhooks(
+    @Param('id') id: string
+  ): Promise<WebhookListModel> {
     let data = await this.projectService.getWebhooks(id);
     return new WebhookListModel(data);
   }
+
+  @Post(':id/webhooks')
+  async createWebhook(
+    @Param('id') id: string,
+    @Body() input: CreateWebhookDto
+  ): Promise<WebhookModel> {
+    let data = await this.projectService.createWebhook(id, input);
+    return new WebhookModel(data);
+  }
+
+  @Get(':id/webhooks/:webhookId')
+  async getWebhook(
+    @Param('id') id: string,
+    @Param('webhookId') webhookId: string,
+  ): Promise<WebhookModel> {
+    return new WebhookModel(await this.projectService.getWebhook(id, webhookId))
+  }
+
+  @Put(':id/webhooks/:webhookId')
+  async updateWebhook(
+    @Param('id') id: string,
+    @Param('webhookId') webhookId: string,
+    @Body() input: UpdateWebhookDto
+  ): Promise<WebhookModel> {
+    return new WebhookModel(await this.projectService.updateWebhook(id, webhookId, input))
+  }
+
+  @Patch(':id/webhooks/:webhookId/signature')
+  async updateWebhookSignature(
+    @Param('id') id: string,
+    @Param('webhookId') webhookId: string,
+  ): Promise<WebhookModel> {
+    return new WebhookModel(await this.projectService.updateWebhookSignature(id, webhookId))
+  }
+
+  @Patch([':id/organization', ':id/team'])
+  async updateTeam(@Param('id') id: string, @Body() updateProjectTeamDto: UpdateProjectTeamDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateProjectOrganization(id, updateProjectTeamDto));
+  }
+
+  @Patch(':id/service')
+  async updateService(@Param('id') id: string, @Body() input: UpdateProjectServiceDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateServiceStatus(id, input));
+  }
+
+  @Patch(':id/api')
+  async updateApi(@Param('id') id: string, @Body() input: ProjectApiStatusDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateApiStatus(id, input));
+  }
+
+  @Patch(':id/oauth2')
+  async updateOAuth2(@Param('id') id: string, @Body() input: oAuth2Dto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateOAuth2(id, input));
+  }
+
+  @Patch(':id/service/all')
+  async updateServiceAll(@Param('id') id: string, @Body() input: UpdateProjectAllServiceDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateAllServiceStatus(id, input.status));
+  }
+
+  @Patch(':id/api/all')
+  async updateApiAll(@Param('id') id: string, @Body() input: ProjectApiStatusAllDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateAllApiStatus(id, input.status));
+  }
+
+  @Patch(':id/auth/session-alerts')
+  async updateSessionAlerts(@Param('id') id: string, @Body() input: AuthSessionAlertsDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateSessionAlerts(id, input.alerts));
+  }
+
+  @Patch(':id/auth/limit')
+  async updateAuthLimit(@Param('id') id: string, @Body() input: AuthLimitDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateSessionLimit(id, input.limit));
+  }
+
+  @Patch(':id/auth/duration')
+  async updateAuthDuration(@Param('id') id: string, @Body() input: AuthDurationDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateSessionDuration(id, input.duration));
+  }
+
+  @Patch(':id/auth/password-history')
+  async updatePasswordHistory(@Param('id') id: string, @Body() input: AuthPasswordHistoryDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updatePasswordHistory(id, input.limit));
+  }
+
+  @Patch(':id/auth/password-dictionary')
+  async updatePasswordDictionary(@Param('id') id: string, @Body() input: AuthPasswordDictionaryDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updatePasswordDictionary(id, input.enabled));
+  }
+
+  @Patch(':id/auth/personal-data')
+  async updatePersonalData(@Param('id') id: string, @Body() input: AuthPersonalDataDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updatePersonalData(id, input.enabled));
+  }
+
+  @Patch(':id/auth/max-sessions')
+  async updateMaxSessions(@Param('id') id: string, @Body() input: AuthMaxSessionsDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateMaxSessions(id, input.limit));
+  }
+
+  @Patch(':id/auth/mock-numbers')
+  async updateMockNumbers(@Param('id') id: string, @Body() input: AuthMockNumbersDto): Promise<ProjectModel> {
+    return new ProjectModel(await this.projectService.updateMockNumbers(id, input));
+  }
+
+  @Patch(':id/auth/:method')
+  async updateAuthMethod(@Param('id') id: string, @Param('method') method: string, @Body() input: AuthMethodStatusDto): Promise<ProjectModel> {
+    if (Object.values(authMethods).map((m) => m.key).indexOf(method) === -1) throw new Exception(Exception.INVALID_PARAMS, 'Invalid auth method');
+    return new ProjectModel(await this.projectService.updateAuthMethod(id, method, input.status));
+  }
+
 }
