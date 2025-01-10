@@ -9,16 +9,13 @@ import { Organization } from 'src/console-user/schemas/organization.schema';
 import { ID } from 'src/core/helper/ID.helper';
 import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
-import { APP_VERSION_STABLE } from 'src/Utils/constants';
+import { API_KEY_DYNAMIC, API_KEY_STANDARD, APP_VERSION_STABLE } from 'src/Utils/constants';
 import authMethods, { AuthMethod, defaultAuthConfig } from 'src/core/config/auth';
 import { DbService } from 'src/core/db.provider';
 import { QueryBuilder } from 'src/Utils/mongo.filter';
 import { oAuthProviders } from 'src/core/config/authProviders';
 import { defaultSmtpConfig } from 'src/core/config/smtp';
 import { services } from 'src/core/config/services';
-import { UserDocument } from 'src/console-user/schemas/user.schema';
-import { ClsServiceManager } from 'nestjs-cls';
-import { Authorization } from 'src/core/validators/authorization.validator';
 import { ModelResolver } from 'src/core/resolver/model.resolver';
 import { Database } from 'src/core/config/database';
 import { UpdateProjectServiceDto } from './dto/project-service.dto';
@@ -32,6 +29,9 @@ import { Key } from './schemas/key.schema';
 import { Webhook } from './schemas/webhook.schema';
 import { randomBytes } from 'crypto';
 import { Auth } from 'src/core/helper/auth.helper';
+import { CreateKeyDto, UpdateKeyDto } from './dto/keys.dto';
+import { JwtService } from '@nestjs/jwt';
+import { CreateJwtDto } from './dto/create-jwt.dto';
 
 @Injectable()
 export class ProjectService {
@@ -41,6 +41,7 @@ export class ProjectService {
     @InjectModel(Platform.name, 'server') private readonly platformModel: Model<Platform>,
     @InjectModel(Key.name, 'server') private readonly keyModel: Model<Key>,
     @InjectModel(Webhook.name, 'server') private readonly webhookModel: Model<Webhook>,
+    private readonly jwtService: JwtService
   ) { }
 
   private readonly logger = new Logger(ProjectService.name);
@@ -265,6 +266,95 @@ export class ProjectService {
   }
 
   /**
+   * Create a key for a project.
+   */
+  async createKey(id: string, input: CreateKeyDto) {
+    let project = await this.findOne(id, Database.PERMISSION_UPDATE);
+    if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
+
+    let key = new this.keyModel({
+      id: ID.unique(),
+      permissions: [
+        Permission.Read(Role.Any()),
+        Permission.Update(Role.Any()),
+        Permission.Delete(Role.Any())
+      ],
+      projectInternalId: project._id,
+      projectId: project.id,
+      name: input.name,
+      scopes: input.scopes,
+      expire: input.expire,
+      sdks: [],
+      accessedAt: null,
+      secret: API_KEY_STANDARD + '_' + randomBytes(128).toString('hex')
+    })
+    await key.save()
+
+    project.keys.push(key)
+    await project.save()
+
+    return key;
+  }
+
+  /**
+   * Get a Key.
+   */
+  async getKey(id: string, keyId: string) {
+    let project = await this.findOne(id, Database.PERMISSION_READ);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
+
+    let key = await this.keyModel.findOne({ projectInternalId: project._id, id: keyId })
+    if (!key) throw new Exception(Exception.KEY_NOT_FOUND)
+    return key
+  }
+
+  /**
+   * Update a Key.
+   */
+  async updateKey(id: string, keyId: string, input: UpdateKeyDto) {
+    let project = await this.findOne(id, Database.PERMISSION_UPDATE);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
+
+    let key = await this.keyModel.findOne({ projectInternalId: project._id, id: keyId })
+    if (!key) throw new Exception(Exception.KEY_NOT_FOUND)
+
+    key.name = input.name;
+    key.scopes = input.scopes;
+    key.expire = input.expire as any;
+
+    await key.save()
+    return key;
+  }
+
+  /**
+   * Delete a Key.
+   */
+  async deleteKey(id: string, keyId: string) {
+    let project = await this.findOne(id, Database.PERMISSION_UPDATE);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
+
+    let key = await this.keyModel.findOne({ projectInternalId: project._id, id: keyId })
+    if (!key) throw new Exception(Exception.KEY_NOT_FOUND)
+
+    await key.deleteOne()
+
+    return {}
+  }
+
+  /**
+   * Create A JWT token.
+   */
+  async createJwt(id, input: CreateJwtDto) {
+    let project = await this.findOne(id, Database.PERMISSION_READ);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
+
+    let jwt = await this.jwtService.signAsync({ projectId: project.id, scopes: input.scopes }, { expiresIn: input.duration })
+    return {
+      jwt: API_KEY_DYNAMIC + '_' + jwt
+    }
+  }
+
+  /**
    * Get webhooks of a project.
    */
   async getWebhooks(id: string) {
@@ -359,6 +449,21 @@ export class ProjectService {
     await webhook.save()
 
     return webhook;
+  }
+
+  /**
+   * Delete a Webhook.
+   */
+  async deleteWebhook(id: string, webhookId: string) {
+    let project = await this.findOne(id, Database.PERMISSION_UPDATE);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
+
+    let webhook = await this.webhookModel.findOne({ projectInternalId: project._id, id: webhookId })
+    if (!webhook) throw new Exception(Exception.WEBHOOK_NOT_FOUND)
+
+    await webhook.deleteOne()
+
+    return {}
   }
 
   /**

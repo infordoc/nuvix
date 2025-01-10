@@ -9,11 +9,17 @@ import { Key, KeySchema } from './schemas/key.schema';
 import { Webhook, WebhookSchema } from './schemas/webhook.schema';
 import { JwtAuthGuard } from 'src/console-account/jwt-auth.guard';
 import { GlobalMongooseModule } from 'src/core/resolver/mongoose.resolver';
+import { JwtModule } from '@nestjs/jwt';
+import { JWT_SECRET } from 'src/Utils/constants';
 
 @Module({
   controllers: [ProjectController],
   providers: [ProjectService, JwtAuthGuard],
   imports: [
+    JwtModule.register({
+      secret: JWT_SECRET,
+      signOptions: { expiresIn: '15m' },
+    }),
     GlobalMongooseModule.forFeature([
       { name: Project.name, schema: ProjectSchema },
       { name: Organization.name, schema: OrganizationSchema },
