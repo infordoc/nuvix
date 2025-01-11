@@ -1,4 +1,4 @@
-import { FactoryProvider, Injectable, Scope } from '@nestjs/common';
+import { FactoryProvider, Injectable, Logger, Scope } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { DatabaseError } from 'pg-protocol';
 import { DataSource, QueryRunner } from 'typeorm';
@@ -30,26 +30,41 @@ import { FunctionEntity } from './entities/functions/function.entity';
 import { BuildsEntity } from './entities/functions/builds.entity';
 import { DeploymentEntity } from './entities/functions/deployment.entity';
 import { ExecutionsEntity } from './entities/functions/executions.entity';
-import { InjectModel, MongooseModule } from '@nestjs/mongoose';
-import { Project, ProjectSchema } from 'src/projects/schemas/project.schema';
+
+// Services
+import { getModelToken } from '@nestjs/mongoose';
+import { Project } from 'src/projects/schemas/project.schema';
 import { Model } from 'mongoose';
+import { ClsService, ClsServiceManager } from 'nestjs-cls';
 
 
 export const connectionFactory: FactoryProvider = {
   provide: 'CONNECTION',
   scope: Scope.REQUEST,
+  durable: true,
   useFactory: async (
     request: Request,
+    projectModel: Model<Project>,
+    cls: ClsService,
   ) => {
+    const logger = cls.get('logger') as Logger;
+    const projectId = cls.get('projectId');
+    logger.log(`Project ID: ${projectId}`);
+    if (!projectId) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
-    const projectId = request.headers['x-project-id'];
-    const tenantId = 'project_' + projectId;
+    const project = await projectModel.findOne({ id: projectId });
+    logger.log(`Project: ${project.name}`);
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
-    if (projectId) {
+    const tenantId = project.database;
+
+    if (tenantId) {
       try {
         const connection = await new DbService().getTenantConnection(tenantId);
+        logger.log(`Connection: ${connection}`);
         return connection;
       } catch (error) {
+        logger.error(error);
         if (error instanceof DatabaseError) {
           throw new Exception(Exception.GENERAL_SERVER_ERROR, error.message, error.code);
         }
@@ -58,7 +73,7 @@ export const connectionFactory: FactoryProvider = {
 
     return null;
   },
-  inject: [REQUEST],
+  inject: [REQUEST, getModelToken(Project.name, 'server'), ClsService],
 };
 
 const defaultConnectionOptions = {
@@ -71,17 +86,19 @@ const defaultConnectionOptions = {
 }
 
 export class DbService {
-  private readonly connections: Map<string, DataSource> = new Map();
+  private connections = new Map<string, DataSource>();
+  private logger = ClsServiceManager.getClsService().get('logger') as Logger;
 
   // Return or create a new connection for each tenant
   async getTenantConnection(tenantId: string): Promise<DataSource> {
     if (this.connections.has(tenantId)) {
+      console.log('Connection exists');
       return this.connections.get(tenantId);
     }
 
     const connection = new DataSource({
       ...defaultConnectionOptions as any,
-      database: tenantId,  // Tenant-specific database
+      database: tenantId,
       entities: [
         UserEntity,
         SessionEntity,
@@ -109,12 +126,15 @@ export class DbService {
       ],  // Dynamically load tenant entities
       migrations: [InitialMigration],  // Dynamically load tenant migrations
       migrationsRun: false,  // Don't auto-run tenant migrations
-      migrationsTableName: 'tenant_migration',  // Custom tenant migration table
+      migrationsTableName: 'tenant_migration',
       synchronize: false,  // Don't auto-sync tenant DBs
+      cache: {
+        duration: 1000,
+      },
       extra: {
         max: 10,  // Pool size, for instance
       },
-    });  // Return or create a new connection for each tenant
+    });
 
     await connection.initialize();
     this.connections.set(tenantId, connection);

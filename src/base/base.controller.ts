@@ -14,4 +14,13 @@ export class BaseController {
       version: '1.0.0',
     });
   }
+
+  @All('vcs/installations')
+  @Public()
+  vcsInstallations(@Res() res: Response): Response {
+    return res.status(200).json({
+      total: 0,
+      installations: [],
+    });
+  }
 }

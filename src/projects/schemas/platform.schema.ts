@@ -14,7 +14,7 @@ export type PlatformDocument = HydratedDocument<Platform>;
   minimize: false
 })
 export class Platform extends BaseSchema {
-  @Prop({ required: true, type: mongoose.Types.ObjectId, index: true, unique: true })
+  @Prop({ required: true, type: mongoose.Types.ObjectId, index: true })
   projectInternalId: mongoose.Types.ObjectId;
 
   @Prop({ required: false, type: String })

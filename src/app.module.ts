@@ -1,4 +1,4 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+import { Logger, Module, OnModuleInit } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -19,8 +19,9 @@ import { UsersModule } from './users/users.module';
 import { AccountModule } from './account/account.module';
 import { TeamsModule } from './teams/teams.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { ClsModule, ClsService, ClsServiceManager } from 'nestjs-cls';
+import { ClsModule } from 'nestjs-cls';
 import { Authorization } from './core/validators/authorization.validator';
+import { Request } from 'express';
 
 config();
 
@@ -50,15 +51,20 @@ let mongo_url_params = "?retryWrites=true&w=majority&appName=Nuvix"
       global: true,
       middleware: {
         mount: true,
-        setup(cls, req, res) {
+        setup(cls, req: Request, res) {
           cls.set('req', req);
           cls.set('res', res);
           cls.set('authorization', new Authorization());
+          cls.set('logger', new Logger('NUVIX'))
+
+          const projectId = req.headers['x-nuvix-project'] || req.query.project;
+          if (projectId) cls.set('projectId', projectId);
         },
       },
     }),
     MongooseModule.forRoot(`${process.env.MONGO_URL}/server${mongo_url_params}`, {
       connectionName: 'server',
+      noDelay: true,
     }),
     // GraphQLModule.forRoot<ApolloDriverConfig>({
     //   path: '/graphql',

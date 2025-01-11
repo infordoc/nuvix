@@ -1,10 +1,11 @@
-import { Exclude, Expose } from "class-transformer";
+import { Exclude, Expose, Type } from "class-transformer";
 import { Document } from "mongoose";
 import BaseModel, { BaseListModel } from "src/core/models/base.model";
 import { AuthProviderModel } from "./authprovider.model";
 import { PlatformModel } from "./platform.model";
 import { WebhookModel } from "./webhook.model";
 import { KeyModel } from "./key.model";
+import { dataToObject } from "src/core/helper/model.helper";
 
 @Exclude()
 export class ProjectModel extends BaseModel {
@@ -103,6 +104,7 @@ export class ProjectModel extends BaseModel {
   /**
    * List of Platforms.
    */
+  @Type(() => PlatformModel)
   @Expose() platforms: PlatformModel[] = [];
   /**
    * List of Webhooks.
@@ -234,12 +236,6 @@ export class ProjectModel extends BaseModel {
   @Expose() region: string;
 
   constructor(partial: Partial<ProjectModel> | Document | any) {
-    // if (Array.isArray(partial.services)) {
-    //   partial.services = partial.services.reduce((acc, service) => {
-    //     acc[service.key] = service.status;
-    //     return acc;
-    //   }, {});
-    // }
     super(partial, {
       flattenObj: true,
       covertOption: {
@@ -285,6 +281,23 @@ export class ProjectModel extends BaseModel {
         }
       }
     });
+    Object.entries(dataToObject(partial)).forEach(([key, value]: [string, any]) => {
+      if (key === 'authMockNumbers') {
+        this.authMockNumbers = value.map((mockNumber: any) => new MockNumberModel(mockNumber));
+      }
+      if (key === 'oAuthProviders') {
+        this.oAuthProviders = value.map((authProvider: any) => new AuthProviderModel(authProvider));
+      }
+      if (key === 'platforms') {
+        this.platforms = value.map((platform: any) => new PlatformModel(platform));
+      }
+      if (key === 'webhooks') {
+        this.webhooks = value.map((webhook: any) => new WebhookModel(webhook));
+      }
+      if (key === 'keys') {
+        this.keys = value.map((key: any) => new KeyModel(key));
+      }
+    });
   }
 }
 
@@ -298,6 +311,10 @@ class MockNumberModel {
    * Mock OTP for the number. 
    */
   @Expose() otp: string;
+
+  constructor(partial: Partial<MockNumberModel>) {
+    Object.assign(this, partial);
+  }
 }
 
 export class ProjectListModel extends BaseListModel {

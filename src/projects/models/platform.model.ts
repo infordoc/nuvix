@@ -15,23 +15,23 @@ export class PlatformModel extends BaseModel {
   /**
    * Platform Key. iOS bundle ID or Android package name.  Empty string for other platforms.
    */
-  @Expose() key: string;
+  @Expose() key: string = "";
   /**
    * App store or Google Play store ID.
    */
-  @Expose() store: string;
+  @Expose() store: string = "";
   /**
    * Web app hostname. Empty string for other platforms.
    */
-  @Expose() hostname: string;
+  @Expose() hostname: string = "";
   /**
    * HTTP basic authentication username.
    */
-  @Expose() httpUser: string;
+  @Expose() httpUser: string = "";
   /**
    * HTTP basic authentication password.
    */
-  @Expose() httpPass: string;
+  @Expose() httpPass: string = "";
 
   constructor(data: Partial<PlatformModel | any> = {}) {
     super(data);
