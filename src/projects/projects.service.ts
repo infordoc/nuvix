@@ -245,12 +245,15 @@ export class ProjectService {
    * Get platforms of a project.
    */
   async getPlatforms(id: string) {
-    let project = await this.projectModel.findOne({ id: id }).select(['platforms']).populate('platforms');
+    let project = await this.projectModel.findOne({ id: id });
+
     project = new ModelResolver(project).getDocument(Database.PERMISSION_READ);
     if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
+
+    let platforms = await this.platformModel.find({ projectInternalId: project._id })
     return {
-      total: project?.platforms?.length || 0,
-      platforms: project.platforms || []
+      total: platforms?.length || 0,
+      platforms: platforms || []
     }
   }
 

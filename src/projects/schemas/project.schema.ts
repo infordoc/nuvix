@@ -137,13 +137,13 @@ export class Project extends BaseSchema {
   @Prop({ required: false, type: [ProjectOAuthProvider], default: [] })
   oAuthProviders: ProjectOAuthProvider[];
 
-  @Prop({ required: false, type: mongoose.Types.ObjectId, index: true, ref: 'Platform' })
+  @Prop({ required: false, type: [{ type: mongoose.Types.ObjectId, ref: 'Platform' }], index: true })
   platforms: Platform[];
 
-  @Prop({ required: false, type: mongoose.Types.ObjectId, ref: 'Webhook' })
+  @Prop({ required: false, type: [{ type: mongoose.Types.ObjectId, ref: 'Webhook' }], index: true })
   webhooks: Webhook[];
 
-  @Prop({ required: false, type: mongoose.Types.ObjectId, index: true, ref: 'Key' })
+  @Prop({ required: false, type: [{ type: mongoose.Types.ObjectId, ref: 'Key' }], index: true })
   keys: Key[];
 
   @Prop({ required: false, type: String, maxlength: 16384 })
