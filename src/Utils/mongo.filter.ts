@@ -256,7 +256,7 @@ export class QueryBuilder {
     this.query = { ...this.query, search: { $regex: search, $options: 'i' } };
   }
 
-  async execute(auth = false) {
+  async execute(auth = true) {
     const cursorQuery = this.options.cursorAfter ? { _id: { $gt: this.options.cursorAfter } } : {};
     const finalQuery = { ...this.query, ...cursorQuery };
 

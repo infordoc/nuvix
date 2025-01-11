@@ -14,15 +14,16 @@ import Challenges, { ChallengesSchema } from './schemas/challenge.schema';
 import { PaymentMethod, PaymentMethodSchema } from './schemas/payment.schema';
 import Token, { TokenSchema } from './schemas/token.schema';
 import { OrganizationsController } from './organizations.controller';
+import { GlobalMongooseModule } from 'src/core/resolver/mongoose.resolver';
 
 @Module({
-  controllers: [UserController, OrganizationsController],
+  controllers: [OrganizationsController, UserController],
   providers: [UserService, {
     provide: APP_GUARD,
     useClass: JwtAuthGuard
   }],
   imports: [
-    MongooseModule.forFeature([
+    GlobalMongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Organization.name, schema: OrganizationSchema },
       { name: Target.name, schema: TargetSchema },

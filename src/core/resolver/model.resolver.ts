@@ -46,8 +46,10 @@ export class ModelResolver<T extends BaseDocument> {
   }
 
   public getDocument(action: string = Database.PERMISSION_READ): T | undefined {
-    if (!this.document && action !== Database.PERMISSION_READ) {
-      throw new Exception(Exception.GENERAL_NOT_FOUND, "Document not found.");
+    if (!this.document) {
+      if (action !== Database.PERMISSION_READ) {
+        throw new Exception(Exception.GENERAL_NOT_FOUND, "Document not found.");
+      } else return null;
     }
 
     const authorized = this.isAuthorized(action);

@@ -35,7 +35,10 @@ export class OrganizationsController {
   ) { }
 
   @Get()
-  async findOrganizations(@Query('queries') queries?: string[], @Query('search') search?: string): Promise<OrganizationListModel> {
+  async findOrganizations(
+    @Query('queries') queries?: string[],
+    @Query('search') search?: string
+  ): Promise<OrganizationListModel> {
     const data = await this.userService.findOrganizations(queries, search);
     return new OrganizationListModel(data)
   }
@@ -106,7 +109,7 @@ export class OrganizationsController {
   }
 
   @Get(':id/roles')
-  async findOrganizationRoles(@Param('id') id: string): Promise<RolesModel> {
+  findOrganizationRoles(@Param('id') id: string): RolesModel {
     // const roles = await this.userService.findOrganizationRoles(id, req.user.id);
     return new RolesModel({
       "scopes": [
