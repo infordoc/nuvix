@@ -72,6 +72,13 @@ export class UsersController {
     return new UserModel(await this.usersService.createWithScryptMod(createUserDto));
   }
 
+  @Get(':id')
+  async findOne(
+    @Param('id') id: string
+  ): Promise<UserModel> {
+    return new UserModel(await this.usersService.findOne(id));
+  }
+
   @Post(':id/targets')
   async addTarget(
     @Param('id') id: string,

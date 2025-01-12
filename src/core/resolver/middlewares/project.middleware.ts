@@ -18,12 +18,15 @@ export class ProjectMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction) {
 
-    const projectId = req.headers['x-nuvix-project'] || req.query?.project
-      ? Array.isArray(req.query.project)
-        ? req.query.project[0]
-        : req.query.project
-      : null;
+    const projectId = req.headers['x-nuvix-project']
+      ? req.headers['x-nuvix-project']
+      : req.query?.project
+        ? Array.isArray(req.query.project)
+          ? req.query.project[0]
+          : req.query.project
+        : null;
 
+    console.log('projectId', projectId, req.headers)
     if (!projectId) throw new Exception(Exception.PROJECT_NOT_FOUND)
 
     const project = await this.projectModel.findOne({ id: projectId })

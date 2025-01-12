@@ -45,6 +45,13 @@ export class UsersService {
   }
 
   /**
+   * Find a user by id
+   */
+  async findOne(id: string) {
+    return await this.userRepo.findOneBy({ $id: id });
+  }
+
+  /**
    * Create a new user
    */
   create(createUserDto: CreateUserDto) {

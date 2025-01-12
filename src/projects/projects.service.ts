@@ -425,7 +425,7 @@ export class ProjectService {
   /**
    * Create A JWT token.
    */
-  async createJwt(id, input: CreateJwtDto) {
+  async createJwt(id: string, input: CreateJwtDto) {
     let project = await this.findOne(id, Database.PERMISSION_READ);
     if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND, "Project not found.");
 
