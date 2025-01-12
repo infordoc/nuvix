@@ -43,4 +43,8 @@ export class MembershipEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 256, nullable: true })
   secret: string;
 
+  userName: string;
+  teamName: string;
+  userEmail: string;
+
 }

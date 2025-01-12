@@ -109,6 +109,13 @@ export class UsersController {
     return await this.usersService.findOne(id);
   }
 
+  @Get(':id/prefs')
+  async getPrefs(
+    @Param('id') id: string
+  ) {
+    return await this.usersService.getPrefs(id);
+  }
+
   @Post(':id/targets')
   @ResponseType({ type: Response.MODEL_TARGET })
   async addTarget(
@@ -117,4 +124,65 @@ export class UsersController {
   ): Promise<any> {
     return await this.usersService.createTarget(id, createTargetDto);
   }
+
+  @Get(':id/targets')
+  @ResponseType({ type: Response.MODEL_TARGET, list: true })
+  async getTargets(
+    @Param('id') id: string
+  ): Promise<any> {
+    return await this.usersService.getTargets(id);
+  }
+
+  @Get(':id/sessions')
+  @ResponseType({ type: Response.MODEL_SESSION, list: true })
+  async getSessions(
+    @Param('id') id: string
+  ): Promise<any> {
+    return await this.usersService.getSessions(id);
+  }
+
+  @Get(':id/memberships')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
+  async getMemberships(
+    @Param('id') id: string
+  ): Promise<any> {
+    return await this.usersService.getMemberships(id);
+  }
+
+  @Get(':id/logs')
+  @ResponseType({ type: Response.MODEL_LOG, list: true })
+  async getLogs(
+    @Param('id') id: string
+  ): Promise<any> {
+    return {
+      logs: [],
+      total: 0
+    }
+  }
+
+  @Get(':id/targets/:targetId')
+  @ResponseType({ type: Response.MODEL_TARGET })
+  async getTarget(
+    @Param('id') id: string,
+    @Param('targetId') targetId: string
+  ): Promise<any> {
+    return await this.usersService.getTarget(id, targetId);
+  }
+
+  @Get(':id/mfa/factors')
+  @ResponseType({ type: Response.MODEL_MFA_FACTORS })
+  /**
+   * @todo ....
+   */
+  async getMfaFactors(
+    @Param('id') id: string,
+  ) {
+    return {
+      totp: false,
+      email: true,
+      phone: true,
+      recoveryCode: false
+    }
+  }
+
 }

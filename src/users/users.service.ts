@@ -16,6 +16,9 @@ import { Auth } from 'src/core/helper/auth.helper';
 import { CreateTargetDto } from './dto/target.dto';
 import { EmailValidator } from 'src/core/validators/email.validator';
 import { PhoneValidator } from 'src/core/validators/phone.validator';
+import { SessionEntity } from 'src/core/entities/users/session.entity';
+import { MembershipEntity } from 'src/core/entities/users/membership.entity';
+import { QueryBuilder } from 'src/core/helper/query.helper';
 
 @Injectable()
 export class UsersService {
@@ -23,6 +26,8 @@ export class UsersService {
   private userRepo: Repository<UserEntity>;
   private readonly identityRepo: Repository<IdentityEntity>;
   private readonly targetRepo: Repository<TargetEntity>;
+  private readonly sessionRepo: Repository<SessionEntity>;
+  private readonly memberRepo: Repository<MembershipEntity>;
 
   constructor(
     @Inject('CONNECTION') private readonly dataSource: DataSource,
@@ -31,17 +36,22 @@ export class UsersService {
     this.userRepo = this.dataSource.getRepository(UserEntity);
     this.identityRepo = this.dataSource.getRepository(IdentityEntity);
     this.targetRepo = this.dataSource.getRepository(TargetEntity);
+    this.sessionRepo = this.dataSource.getRepository(SessionEntity);
+
   }
 
   /**
    * Find all users
    */
   async findAll(queries: string[], search: string) {
-    const users = await this.userRepo.findAndCount({ relations: ['targets'] });
-    console.log(users)
+    const query = new QueryBuilder(this.userRepo, ['name']);
+
+    query.parseQueryStrings(queries);
+
+    const { results, totalCount } = await query.execute();
     return {
-      users: users[0],
-      total: users[1],
+      users: results,
+      total: totalCount,
     }
   }
 
@@ -54,6 +64,19 @@ export class UsersService {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
     return user;
+  }
+
+  /**
+   * Get user preferences
+   */
+  async getPrefs(id: string) {
+    let user = await this.userRepo.findOneBy({ $id: id });
+
+    if (!user) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    return user.prefs;
   }
 
   /**
@@ -251,6 +274,62 @@ export class UsersService {
 
     await this.targetRepo.save(target);
     return target;
+  }
+
+  /**
+   * Get all targets
+   */
+  async getTargets(userId: string) {
+    const user = await this.userRepo.findOne({ where: { $id: userId }, relations: ['targets'] });
+    if (!user) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    return { total: user.targets.length, targets: user.targets };
+  }
+
+  /**
+   * Get A target
+   */
+  async getTarget(userId: string, targetId: string) {
+    const target = await this.targetRepo.findOne({ where: { $id: targetId, userId } });
+    if (!target) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    return target;
+  }
+
+  /**
+   * Get all sessions
+   */
+  async getSessions(userId: string) {
+    const user = await this.userRepo.findOne({ where: { $id: userId }, relations: ['sessions'] });
+    if (!user) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    return { total: user.sessions.length, sessions: user.sessions };
+  }
+
+  /**
+   * Get all memberships
+   */
+  async getMemberships(userId: string) {
+    const user = await this.userRepo.findOne({ where: { $id: userId } });
+    if (!user) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    let memberships = await this.memberRepo.find({ where: { user }, relations: ['team'] });
+
+    for (let i = 0; i < memberships.length; i++) {
+      memberships[i].userEmail = user.email;
+      memberships[i].userName = user.name;
+      memberships[i].teamName = memberships[i].team.name;
+    }
+
+    return { total: memberships.length, memberships };
   }
 
   /**

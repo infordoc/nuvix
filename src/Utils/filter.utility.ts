@@ -1,14 +1,14 @@
 import { BaseArgs, BaseFilter } from 'src/base/objects/base.object';
 import { Brackets, NotBrackets, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
 
-class QueryBuilderError extends Error {
+export class QueryBuilderError extends Error {
   constructor(public statusCode: number, public message: string) {
     super(message);
     this.name = 'QueryBuilderError';
   }
 }
 
-function validateValue(operator: string, value: any): void {
+export function validateValue(operator: string, value: any): void {
   if (['lt', 'lte', 'gt', 'gte'].includes(operator) && typeof value !== 'number') {
     throw new QueryBuilderError(400, `Invalid value for operator '${operator}'. Expected a number.`);
   }
