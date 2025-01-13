@@ -46,5 +46,5 @@ export class MembershipEntity extends BaseEntity {
   userName: string;
   teamName: string;
   userEmail: string;
-
+  mfa: boolean;
 }

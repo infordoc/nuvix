@@ -163,7 +163,7 @@ export class UsersController {
     return await this.usersService.updateStatus(id, status);
   }
 
-  @Put(':id/lables')
+  @Put(':id/labels')
   @ResponseType({ type: Response.MODEL_USER })
   async updateLabels(
     @Param('id') id: string,
@@ -391,8 +391,6 @@ export class UsersController {
   ) {
     return await this.usersService.deleteTarget(id, targetId);
   }
-
-  @Delete(':id/tokens/:tokenId')
 
   @Delete(':id')
   async remove(

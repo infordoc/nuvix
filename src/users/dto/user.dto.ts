@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -12,7 +13,7 @@ import {
 
 export class CreateUserDto {
   @IsNotEmpty()
-  @Matches(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$/, {
+  @Matches(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$|^unique\(\)$/, {
     message: 'User ID must be 1-36 characters long, can contain a-z, A-Z, 0-9, period, hyphen, and underscore, and cannot start with a special character.',
   })
   userId: string;
@@ -140,7 +141,7 @@ export class UpdateUserPhoneDto {
 
 export class UpdateUserPrefsDto {
   @IsOptional()
-  @IsString({ each: true })
+  @IsObject()
   prefs?: { [key: string]: any };
 }
 

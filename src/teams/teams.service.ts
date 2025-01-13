@@ -1,15 +1,16 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 
 import { TeamEntity } from 'src/core/entities/users/team.entity';
 import { MembershipEntity } from 'src/core/entities/users/membership.entity';
 import { UserEntity } from 'src/core/entities/users/user.entity';
-import { CreateTeamDto, UpdateTeamDto } from './dto/team.dto';
+import { CreateTeamDto, UpdateTeamDto, UpdateTeamPrefsDto } from './dto/team.dto';
 import { ID } from 'src/core/helper/ID.helper';
 import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
 import { Exception } from 'src/core/extend/exception';
+import { TOTP } from 'src/core/validators/MFA.validator';
 
 @Injectable()
 export class TeamsService {
@@ -156,13 +157,13 @@ export class TeamsService {
   /**
    * Set team preferences
    */
-  async setPrefs(id: string, input: any) {
+  async setPrefs(id: string, input: UpdateTeamPrefsDto) {
     const team = await this.teamRepo.findOneBy({ $id: id });
     if (!team) {
       throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    team.prefs = input
+    team.prefs = input.prefs
     await this.teamRepo.save(team)
 
     return team.prefs
@@ -245,5 +246,83 @@ export class TeamsService {
     return membership;
   }
 
+  /**
+   * Get all members of the team
+   */
+  async getMembers(id: string) {
+    const team = await this.teamRepo.findOneBy({ $id: id });
+    if (!team) {
+      throw new Exception(Exception.TEAM_NOT_FOUND)
+    }
+
+    const memberships = await this.membershipsRepo.findAndCount(
+      {
+        where:
+          { teamId: team.$id, userId: Not(null) }
+      }
+    );
+
+    for (const membership of memberships[0]) {
+      const user = await this.userRepo.findOne({ where: { $id: membership.userId }, relations: { authenticators: true } });
+
+      let mfa = user.mfa || false;
+      if (mfa) {
+        const totp = TOTP.getAuthenticatorFromUser(user);
+        const totpEnabled = totp && totp.verified;
+        const emailEnabled = user.email && user.emailVerification;
+        const phoneEnabled = user.phone && user.phoneVerification;
+
+        if (!totpEnabled && !emailEnabled && !phoneEnabled) {
+          mfa = false;
+        }
+      }
+
+      membership.mfa = mfa;
+      membership.teamName = team.name;
+      membership.userName = user.name;
+      membership.userEmail = user.email;
+    }
+
+    return {
+      total: memberships[1],
+      memberships: memberships[0]
+    }
+  }
+
+  /**
+   * Get A member of the team
+   */
+  async getMember(teamId: string, memberId: string) {
+    const team = await this.teamRepo.findOneBy({ $id: teamId });
+    if (!team) {
+      throw new Exception(Exception.TEAM_NOT_FOUND)
+    }
+
+    const membership = await this.membershipsRepo.findOneBy({ teamId: team.$id, $id: memberId });
+    if (!membership) {
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
+    }
+
+    const user = await this.userRepo.findOne({ where: { $id: membership.userId, }, relations: { authenticators: true } });
+
+    let mfa = user.mfa || false;
+    if (mfa) {
+      const totp = TOTP.getAuthenticatorFromUser(user);
+      const totpEnabled = totp && totp.verified;
+      const emailEnabled = user.email && user.emailVerification;
+      const phoneEnabled = user.phone && user.phoneVerification;
+
+      if (!totpEnabled && !emailEnabled && !phoneEnabled) {
+        mfa = false;
+      }
+    }
+
+    membership.mfa = mfa;
+    membership.teamName = team.name;
+    membership.userName = user.name;
+    membership.userEmail = user.email;
+
+    return membership;
+  }
 
 }

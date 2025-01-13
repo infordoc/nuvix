@@ -8,7 +8,7 @@ import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
 import { PersonalDataValidator } from 'src/core/validators/personal-data.validator';
 import { ProjectDocument } from 'src/projects/schemas/project.schema';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, Not, QueryFailedError, Repository } from 'typeorm';
 import { CreateUserDto, CreateUserWithScryptDto, CreateUserWithScryptModifedDto, CreateUserWithShaDto, UpdateUserEmailVerificationDto, UpdateUserLabelDto, UpdateUserNameDto, UpdateUserPasswordDto, UpdateUserPoneVerificationDto, UpdateUserStatusDto } from './dto/user.dto';
 import { ClsService } from 'nestjs-cls';
 import { PROJECT } from 'src/Utils/constants';
@@ -602,9 +602,15 @@ export class UsersService {
    */
   async getTargets(userId: string) {
     const user = await this.userRepo.findOne({ where: { $id: userId }, relations: ['targets'] });
+    console.log(user, user.targets)
     if (!user) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
+
+
+    let targets = await this.targetRepo.find()
+
+    console.log(targets)
 
     return { total: user.targets.length, targets: user.targets };
   }
@@ -708,7 +714,7 @@ export class UsersService {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    let memberships = await this.memberRepo.find({ where: { user }, relations: ['team'] });
+    let memberships = await this.memberRepo.find({ where: { user: { id: user.id } }, relations: ['team'] });
 
     for (let i = 0; i < memberships.length; i++) {
       memberships[i].userEmail = user.email;
@@ -812,7 +818,7 @@ export class UsersService {
       throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
     }
 
-    await this.authenticatorRepo.softDelete(authenticator.$id); // $SoftDelete
+    await this.authenticatorRepo.remove(authenticator.$id);
 
     return {};
   }
@@ -831,7 +837,7 @@ export class UsersService {
    * Get all identities
    */
   async getIdentities(queries: string[], search: string) {
-    const query = new QueryBuilder(this.identityRepo, ['providerEmail']);
+    const query = new QueryBuilder(this.identityRepo, ['providerEmail', 'userId']);
 
     query.parseQueryStrings(queries);
 
@@ -1102,6 +1108,7 @@ export class UsersService {
       if (email) {
         try {
           const target = this.targetRepo.create({
+            $id: ID.unique(),
             $permissions: [
               Permission.Read(Role.User(createdUser.$id)),
               Permission.Update(Role.User(createdUser.$id)),
@@ -1115,21 +1122,24 @@ export class UsersService {
 
           await this.targetRepo.save(target);
         } catch (error) {
-          const existingTarget = await this.targetRepo.findOne({
-            where: {
-              identifier: email
+          if (error instanceof QueryFailedError) {
+            const existingTarget = await this.targetRepo.findOne({
+              where: {
+                identifier: email
+              }
+            });
+            if (existingTarget) {
+              existingTarget.user = createdUser;
+              await this.targetRepo.save(existingTarget);
             }
-          });
-          if (existingTarget) {
-            existingTarget.user = createdUser;
-            await this.targetRepo.save(existingTarget);
-          }
+          } else throw error
         }
       }
 
       if (phone) {
         try {
           const target = this.targetRepo.create({
+            $id: ID.unique(),
             $permissions: [
               Permission.Read(Role.User(createdUser.$id)),
               Permission.Update(Role.User(createdUser.$id)),
@@ -1142,17 +1152,18 @@ export class UsersService {
           });
 
           await this.targetRepo.save(target);
-          createdUser.targets.push(target);
         } catch (error) {
-          const existingTarget = await this.targetRepo.findOne({
-            where: {
-              identifier: phone
+          if (error instanceof QueryFailedError) {
+            const existingTarget = await this.targetRepo.findOne({
+              where: {
+                identifier: phone
+              }
+            });
+            if (existingTarget) {
+              existingTarget.user = createdUser;
+              await this.targetRepo.save(existingTarget);
             }
-          });
-          if (existingTarget) {
-            existingTarget.user = createdUser;
-            await this.targetRepo.save(existingTarget);
-          }
+          } else throw error
         }
       }
 
@@ -1160,7 +1171,10 @@ export class UsersService {
       return createdUser;
 
     } catch (error) {
-      throw new Exception(Exception.USER_ALREADY_EXISTS)
+      this.logger.error(error)
+      if (error instanceof QueryFailedError) {
+        throw new Exception(Exception.USER_ALREADY_EXISTS)
+      } else throw error;
     }
   }
 

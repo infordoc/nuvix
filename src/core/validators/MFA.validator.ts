@@ -58,7 +58,7 @@ class TOTP extends MfaType {
     super(totp);
   }
 
-  public static getAuthenticatorFromUser(user: UserEntity): any | null {
+  public static getAuthenticatorFromUser(user: UserEntity) {
     const authenticators = user.authenticators || [];
     for (const authenticator of authenticators) {
       if (authenticator.type === MfaType.TOTP) {

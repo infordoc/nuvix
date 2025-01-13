@@ -86,7 +86,7 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => MembershipEntity, membership => membership.user, { cascade: true, onDelete: 'CASCADE' })
   memberships: Relation<MembershipEntity[]>;
 
-  @OneToMany(() => TargetEntity, target => target.user, { cascade: true, onDelete: 'CASCADE', eager: true })
+  @OneToMany(() => TargetEntity, target => target.user, { cascade: true, onDelete: 'CASCADE' })
   targets: Relation<TargetEntity[]>;
 
   @OneToMany(() => IdentityEntity, identity => identity.user, { cascade: true, onDelete: 'CASCADE' })

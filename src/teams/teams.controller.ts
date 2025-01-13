@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Post, Put, Query, UseInterceptors } from
 import { TeamsService } from './teams.service';
 import { ResolverInterceptor, ResponseType } from 'src/core/resolver/response.resolver';
 import { Response } from 'src/core/helper/response.helper';
-import { CreateTeamDto, UpdateTeamDto } from './dto/team.dto';
+import { CreateTeamDto, UpdateTeamDto, UpdateTeamPrefsDto } from './dto/team.dto';
 import { User } from 'src/core/resolver/user.resolver';
 import { UserEntity } from 'src/core/entities/users/user.entity';
 import { CreateMembershipDto } from './dto/membership.dto';
@@ -64,7 +64,7 @@ export class TeamsController {
   @Put(':id/prefs')
   async setPrefs(
     @Query('id') id: string,
-    @Body() input: any
+    @Body() input: UpdateTeamPrefsDto
   ) {
     return await this.teamsService.setPrefs(id, input);
   }
@@ -76,6 +76,23 @@ export class TeamsController {
     @Body() input: CreateMembershipDto
   ) {
     return await this.teamsService.addMember(id, input);
+  }
+
+  @Get(':id/memberships')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
+  async getMembers(
+    @Query('id') id: string
+  ) {
+    return await this.teamsService.getMembers(id);
+  }
+
+  @Get(':id/memberships/:memberId')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async getMember(
+    @Query('id') id: string,
+    @Query('memberId') memberId: string
+  ) {
+    return await this.teamsService.getMember(id, memberId);
   }
 
 }
