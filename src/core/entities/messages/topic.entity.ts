@@ -20,7 +20,7 @@ export class TopicEntity extends BaseEntity {
     @Column({ type: 'int', default: 0, nullable: true })
     pushTotal: number;
 
-    @ManyToMany(() => TargetEntity, target => target.topics, { eager: true })
+    @ManyToMany(() => TargetEntity, target => target.topics, { eager: true, cascade: true })
     targets: TargetEntity[];
 
 }

@@ -4,7 +4,7 @@ import Permission from "../helper/permission.helper";
 
 export default abstract class BaseEntity {
   @PrimaryGeneratedColumn()
-  id: string;
+  id: number;
 
   @Index('id_index', { synchronize: false })
   @PrimaryColumn({ unique: true, name: '_id' })

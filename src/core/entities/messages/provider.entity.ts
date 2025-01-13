@@ -1,5 +1,6 @@
-import { Entity, Column, Index } from "typeorm";
+import { Entity, Column, Index, OneToMany } from "typeorm";
 import BaseEntity from "../base.entity";
+import { TargetEntity } from "./target.entity";
 
 @Entity({ name: 'providers', schema: 'messages' })
 export class ProviderEntity extends BaseEntity {
@@ -24,4 +25,6 @@ export class ProviderEntity extends BaseEntity {
     @Column({ type: 'varchar', length: 16384, nullable: true, default: '' })
     options: string;
 
+    @OneToMany(() => TargetEntity, target => target.provider, { cascade: true })
+    targets: TargetEntity[];
 }

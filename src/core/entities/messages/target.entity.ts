@@ -2,6 +2,7 @@ import BaseEntity from "../base.entity";
 import { Entity, Column, ManyToOne, Relation, ManyToMany, Unique } from "typeorm";
 import { UserEntity } from "../users/user.entity";
 import { TopicEntity } from "./topic.entity";
+import { ProviderEntity } from "./provider.entity";
 
 
 @Entity({ name: 'targets', schema: 'messages' })
@@ -25,8 +26,8 @@ export class TargetEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: true })
   providerId: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  providerInternalId: string;
+  @ManyToOne(() => ProviderEntity, provider => provider.targets)
+  provider: Relation<ProviderEntity>;
 
   @Column({ type: 'varchar', length: 255, nullable: false })
   identifier: string;

@@ -45,7 +45,7 @@ export class UserEntity extends BaseEntity {
   hash: string;
 
   @Column({ type: 'json', nullable: true })
-  hashOptions: { [key: string]: string };
+  hashOptions: { [key: string]: any };
 
   @Column({ type: 'timestamp', nullable: true })
   passwordUpdate: Date;

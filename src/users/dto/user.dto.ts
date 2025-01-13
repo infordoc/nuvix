@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsNotEmpty,
   IsOptional,
@@ -82,4 +83,69 @@ export class CreateUserWithScryptModifedDto extends CreateUserDto {
   @IsString()
   @Length(1, 128)
   passwordSignerKey?: string;
+}
+
+export class UpdateUserStatusDto {
+  @IsNotEmpty()
+  @IsBoolean()
+  status: boolean;
+}
+
+export class UpdateUserLabelDto {
+  @IsOptional()
+  @IsString({ each: true })
+  @Matches(/^[a-zA-Z0-9]{1,36}$/, {
+    each: true,
+    message: 'Each label must be 1-36 alphanumeric characters long.',
+  })
+  labels?: string[];
+}
+
+export class UpdateUserPoneVerificationDto {
+  @IsNotEmpty()
+  @IsBoolean()
+  phoneVerification: boolean;
+}
+
+export class UpdateUserEmailVerificationDto {
+  @IsNotEmpty()
+  @IsBoolean()
+  emailVerification: boolean;
+}
+
+export class UpdateUserNameDto {
+  @IsNotEmpty()
+  @IsString()
+  @Length(1, 128)
+  name: string;
+}
+
+export class UpdateUserPasswordDto {
+  @IsNotEmpty()
+  @Length(8)
+  password: string;
+}
+
+export class UpdateUserEmailDto {
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+}
+
+export class UpdateUserPhoneDto {
+  @IsOptional()
+  @IsPhoneNumber(null)
+  phone?: string;
+}
+
+export class UpdateUserPrefsDto {
+  @IsOptional()
+  @IsString({ each: true })
+  prefs?: { [key: string]: any };
+}
+
+export class UpdateMfaStatusDto {
+  @IsNotEmpty()
+  @IsBoolean()
+  mfa: boolean;
 }

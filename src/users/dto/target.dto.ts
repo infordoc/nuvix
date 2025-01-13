@@ -1,3 +1,4 @@
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
 import { Database } from 'src/core/config/database';
 
@@ -27,3 +28,6 @@ export class CreateTargetDto {
   @Length(1, 128)
   name: string;
 }
+
+
+export class UpdateTargetDto extends PartialType(OmitType(CreateTargetDto, ['targetId', 'providerType'])) { }

@@ -82,4 +82,6 @@ export class SessionEntity extends BaseEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   mfaUpdatedAt: Date;
+
+  countryName: string;
 }
