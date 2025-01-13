@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class InitialMigration implements MigrationInterface {
-    name = 'Migration1736677070068'
+    name = 'Migration1736773857002'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS auth`);
@@ -49,7 +49,11 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`CREATE UNIQUE INDEX "IDX_85f35eea70810a5e1fd14fbce0" ON "auth"."memberships" ("teamId", "team_$id", "userId", "user_$id") `);
         await queryRunner.query(`CREATE TABLE "messages"."topics" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "name" character varying(128) NOT NULL, "subscribe" character varying(128) array, "emailTotal" integer DEFAULT '0', "smsTotal" integer DEFAULT '0', "pushTotal" integer DEFAULT '0', CONSTRAINT "PK_87cfe6c6495cf2bbd6934b1753c" PRIMARY KEY ("id", "_id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_1304b1c61016e63f60cd147ce6" ON "messages"."topics" ("name") `);
-        await queryRunner.query(`CREATE TABLE "messages"."targets" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "userId" integer NOT NULL, "sessionId" character varying(255), "session" character varying(255), "providerType" character varying(255) NOT NULL, "providerId" character varying(255), "providerInternalId" character varying(255), "identifier" character varying(255) NOT NULL, "name" character varying(255), "expired" boolean DEFAULT false, "user_$id" character varying, CONSTRAINT "identifire_type" UNIQUE ("identifier", "providerType"), CONSTRAINT "PK_76dc0ae2b96d65e9a5fcc7d9478" PRIMARY KEY ("id", "_id"))`);
+        await queryRunner.query(`CREATE TABLE "messages"."providers" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "name" character varying(128) NOT NULL, "provider" character varying(128) NOT NULL, "type" character varying(128) NOT NULL, "enabled" boolean NOT NULL DEFAULT true, "credentials" character varying(16384) NOT NULL, "options" character varying(16384) DEFAULT '', CONSTRAINT "PK_574e4f4b3712a1cea5043dc8be0" PRIMARY KEY ("id", "_id"))`);
+        await queryRunner.query(`CREATE INDEX "IDX_d735474e539e674ba3702eddc4" ON "messages"."providers" ("name") `);
+        await queryRunner.query(`CREATE INDEX "IDX_e6e65bb1ecd94653de7b16bb80" ON "messages"."providers" ("provider") `);
+        await queryRunner.query(`CREATE INDEX "IDX_06250375d112fc6ec96ca3ee7c" ON "messages"."providers" ("type") `);
+        await queryRunner.query(`CREATE TABLE "messages"."targets" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "userId" integer NOT NULL, "sessionId" character varying(255), "session" character varying(255), "providerType" character varying(255) NOT NULL, "providerId" integer, "identifier" character varying(255) NOT NULL, "name" character varying(255), "expired" boolean DEFAULT false, "user_$id" character varying, "provider_$id" character varying, CONSTRAINT "identifire_type" UNIQUE ("identifier", "providerType"), CONSTRAINT "PK_76dc0ae2b96d65e9a5fcc7d9478" PRIMARY KEY ("id", "_id"))`);
         await queryRunner.query(`CREATE TABLE "auth"."identities" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "userId" integer NOT NULL, "provider" character varying(128) NOT NULL, "providerUid" character varying(2048) NOT NULL, "providerEmail" character varying(320) NOT NULL, "providerAccessToken" character varying(16384) NOT NULL, "providerAccessTokenExpiry" TIMESTAMP WITH TIME ZONE, "providerRefreshToken" character varying(16384) NOT NULL, "secrets" character varying(16384) NOT NULL, "user_$id" character varying, CONSTRAINT "PK_ee46c3d2faf3158ce3593ad1869" PRIMARY KEY ("id", "_id"))`);
         await queryRunner.query(`CREATE INDEX "_key_providerAccessTokenExpiry" ON "auth"."identities" ("providerAccessTokenExpiry") `);
         await queryRunner.query(`CREATE INDEX "_key_providerEmail" ON "auth"."identities" ("providerEmail") `);
@@ -86,10 +90,6 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "IDX_3b5f276933ed75028216a4a843" ON "messages"."subscribers" ("userInternalId") `);
         await queryRunner.query(`CREATE INDEX "IDX_d966300036db0e1ac00fa51c32" ON "messages"."subscribers" ("topicId") `);
         await queryRunner.query(`CREATE INDEX "IDX_fd461838f998443c5441989db5" ON "messages"."subscribers" ("topicInternalId") `);
-        await queryRunner.query(`CREATE TABLE "messages"."providers" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "name" character varying(128) NOT NULL, "provider" character varying(128) NOT NULL, "type" character varying(128) NOT NULL, "enabled" boolean NOT NULL DEFAULT true, "credentials" character varying(16384) NOT NULL, "options" character varying(16384) DEFAULT '', CONSTRAINT "PK_574e4f4b3712a1cea5043dc8be0" PRIMARY KEY ("id", "_id"))`);
-        await queryRunner.query(`CREATE INDEX "IDX_d735474e539e674ba3702eddc4" ON "messages"."providers" ("name") `);
-        await queryRunner.query(`CREATE INDEX "IDX_e6e65bb1ecd94653de7b16bb80" ON "messages"."providers" ("provider") `);
-        await queryRunner.query(`CREATE INDEX "IDX_06250375d112fc6ec96ca3ee7c" ON "messages"."providers" ("type") `);
         await queryRunner.query(`CREATE TABLE "messages"."messages" ("id" SERIAL NOT NULL, "_id" character varying NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, "permissions" character varying(255) array NOT NULL DEFAULT '{}', "search" character varying(16384), "providerType" character varying(128) NOT NULL, "status" character varying(128) NOT NULL DEFAULT 'processing', "data" text NOT NULL, "topics" character varying(21845) array DEFAULT '{}', "users" character varying(21845) array DEFAULT '{}', "targets" character varying(21845) array DEFAULT '{}', "scheduledAt" TIMESTAMP, "scheduleInternalId" character varying(128), "scheduleId" character varying(128), "deliveredAt" TIMESTAMP, "deliveryErrors" text array, "deliveredTotal" integer DEFAULT '0', CONSTRAINT "PK_cddda92ef796c14ea4918672212" PRIMARY KEY ("id", "_id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_35000359daf153b15b27ee21e2" ON "messages"."messages" ("providerType") `);
         await queryRunner.query(`CREATE INDEX "idx_schedule_id" ON "messages"."messages" ("scheduleId") `);
@@ -134,6 +134,7 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`ALTER TABLE "auth"."memberships" ADD CONSTRAINT "FK_cb4caa97cf5305699e35ae76e19" FOREIGN KEY ("userId", "user_$id") REFERENCES "auth"."users"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "auth"."memberships" ADD CONSTRAINT "FK_8627d403970d84365ed1100820c" FOREIGN KEY ("teamId", "team_$id") REFERENCES "auth"."teams"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "messages"."targets" ADD CONSTRAINT "FK_613736577e5dc1bd20e523634a8" FOREIGN KEY ("userId", "user_$id") REFERENCES "auth"."users"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
+        await queryRunner.query(`ALTER TABLE "messages"."targets" ADD CONSTRAINT "FK_1d9a482bf846aebb0fe61971803" FOREIGN KEY ("providerId", "provider_$id") REFERENCES "messages"."providers"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "auth"."identities" ADD CONSTRAINT "FK_2812288d57a5e3385851851d08d" FOREIGN KEY ("userId", "user_$id") REFERENCES "auth"."users"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "storage"."files" ADD CONSTRAINT "FK_208a033c1c2b40c48e20c95ce3b" FOREIGN KEY ("bucketId", "bucket_$id") REFERENCES "storage"."buckets"("id","_id") ON DELETE NO ACTION ON UPDATE NO ACTION`);
     }
@@ -141,6 +142,7 @@ export class InitialMigration implements MigrationInterface {
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`ALTER TABLE "storage"."files" DROP CONSTRAINT "FK_208a033c1c2b40c48e20c95ce3b"`);
         await queryRunner.query(`ALTER TABLE "auth"."identities" DROP CONSTRAINT "FK_2812288d57a5e3385851851d08d"`);
+        await queryRunner.query(`ALTER TABLE "messages"."targets" DROP CONSTRAINT "FK_1d9a482bf846aebb0fe61971803"`);
         await queryRunner.query(`ALTER TABLE "messages"."targets" DROP CONSTRAINT "FK_613736577e5dc1bd20e523634a8"`);
         await queryRunner.query(`ALTER TABLE "auth"."memberships" DROP CONSTRAINT "FK_8627d403970d84365ed1100820c"`);
         await queryRunner.query(`ALTER TABLE "auth"."memberships" DROP CONSTRAINT "FK_cb4caa97cf5305699e35ae76e19"`);
@@ -185,10 +187,6 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "messages"."idx_schedule_id"`);
         await queryRunner.query(`DROP INDEX "messages"."IDX_35000359daf153b15b27ee21e2"`);
         await queryRunner.query(`DROP TABLE "messages"."messages"`);
-        await queryRunner.query(`DROP INDEX "messages"."IDX_06250375d112fc6ec96ca3ee7c"`);
-        await queryRunner.query(`DROP INDEX "messages"."IDX_e6e65bb1ecd94653de7b16bb80"`);
-        await queryRunner.query(`DROP INDEX "messages"."IDX_d735474e539e674ba3702eddc4"`);
-        await queryRunner.query(`DROP TABLE "messages"."providers"`);
         await queryRunner.query(`DROP INDEX "messages"."IDX_fd461838f998443c5441989db5"`);
         await queryRunner.query(`DROP INDEX "messages"."IDX_d966300036db0e1ac00fa51c32"`);
         await queryRunner.query(`DROP INDEX "messages"."IDX_3b5f276933ed75028216a4a843"`);
@@ -226,6 +224,10 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "auth"."_key_providerAccessTokenExpiry"`);
         await queryRunner.query(`DROP TABLE "auth"."identities"`);
         await queryRunner.query(`DROP TABLE "messages"."targets"`);
+        await queryRunner.query(`DROP INDEX "messages"."IDX_06250375d112fc6ec96ca3ee7c"`);
+        await queryRunner.query(`DROP INDEX "messages"."IDX_e6e65bb1ecd94653de7b16bb80"`);
+        await queryRunner.query(`DROP INDEX "messages"."IDX_d735474e539e674ba3702eddc4"`);
+        await queryRunner.query(`DROP TABLE "messages"."providers"`);
         await queryRunner.query(`DROP INDEX "messages"."IDX_1304b1c61016e63f60cd147ce6"`);
         await queryRunner.query(`DROP TABLE "messages"."topics"`);
         await queryRunner.query(`DROP INDEX "auth"."IDX_85f35eea70810a5e1fd14fbce0"`);
@@ -266,5 +268,6 @@ export class InitialMigration implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "meta"."_fulltext_search"`);
         await queryRunner.query(`DROP TABLE "meta"."variables"`);
     }
+
 }
 

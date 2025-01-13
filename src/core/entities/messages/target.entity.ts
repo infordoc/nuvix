@@ -23,7 +23,7 @@ export class TargetEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 255, nullable: false })
   providerType: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   providerId: string;
 
   @ManyToOne(() => ProviderEntity, provider => provider.targets)

@@ -1,17 +1,17 @@
-import { OTP } from 'otplib';
+import { totp } from 'otplib';
 import { Auth } from '../helper/auth.helper';
 import { UserEntity } from '../entities/users/user.entity';
 
 
 abstract class MfaType {
-  protected instance: OTP;
+  protected instance: typeof totp;
 
   public static readonly TOTP = 'totp';
   public static readonly EMAIL = 'email';
   public static readonly PHONE = 'phone';
   public static readonly RECOVERY_CODE = 'recoveryCode';
 
-  constructor(instance: OTP) {
+  constructor(instance: typeof totp) {
     this.instance = instance;
   }
 
@@ -21,7 +21,7 @@ abstract class MfaType {
   }
 
   public getLabel(): string | null {
-    return this.instance.options.label || null;
+    return this.instance.options.algorithm || null;
   }
 
   public setIssuer(issuer: string): this {
@@ -30,11 +30,11 @@ abstract class MfaType {
   }
 
   public getIssuer(): string | null {
-    return this.instance.options.issuer || null;
+    return (this.instance.options.issuer as string) || null;
   }
 
   public getSecret(): string {
-    return this.instance.options.secret;
+    return this.instance.options.secret as string;
   }
 
   public getProvisioningUri(): string {
@@ -54,9 +54,8 @@ abstract class MfaType {
 
 
 class TOTP extends MfaType {
-  constructor(secret?: string) {
-    const instance = OTP.create({ secret });
-    super(instance);
+  constructor() {
+    super(totp);
   }
 
   public static getAuthenticatorFromUser(user: UserEntity): any | null {

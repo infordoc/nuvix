@@ -9,6 +9,8 @@ export const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 export const APP_VERSION_STABLE = '1.0.0';
 export const APP_LIMIT_USER_SESSIONS_DEFAULT = 10;
 
+export const APP_LIMIT_ARRAY_PARAMS_SIZE = 10;
+
 export const API_KEY_STANDARD = 'standard';
 export const API_KEY_DYNAMIC = 'dynamic';
 
