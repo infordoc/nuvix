@@ -1,3 +1,4 @@
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { IsString, Length, Matches, IsArray, ArrayMaxSize, ArrayMinSize } from 'class-validator';
 import { APP_LIMIT_ARRAY_PARAMS_SIZE } from 'src/Utils/constants';
 
@@ -19,3 +20,5 @@ export class CreateTeamDto {
   @Length(1, 32, { each: true, message: 'Each role must be between 1 and 32 characters long.' })
   roles: string[];
 }
+
+export class UpdateTeamDto extends PartialType(OmitType(CreateTeamDto, ['teamId', 'roles'])) { }

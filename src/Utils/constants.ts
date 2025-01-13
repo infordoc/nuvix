@@ -15,3 +15,4 @@ export const API_KEY_STANDARD = 'standard';
 export const API_KEY_DYNAMIC = 'dynamic';
 
 export const PROJECT = Symbol('PROJECT');
+export const PROJECT_USER = Symbol('PROJECT_USER');

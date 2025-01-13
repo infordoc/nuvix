@@ -207,7 +207,7 @@ import { AttributeBooleanModel, AttributeDatetimeModel, AttributeEmailModel, Att
  */
 export class Response {
 
-  public static MODEL_NONE = 'none';
+  public static MODEL_NONE = class { };
   public static MODEL_ANY = 'any';
   public static MODEL_LOG = LogModel;
   public static MODEL_ERROR = 'error';
