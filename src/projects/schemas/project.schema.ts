@@ -31,7 +31,7 @@ type ProjectTemplate = {}
 
 export class AuthConfig {
   limit: number;
-  maxSessions: number;
+  sessionsLimit: number;
   passwordHistory: number;
   passwordDictionary: boolean;
   duration: number;

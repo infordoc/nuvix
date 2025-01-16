@@ -136,7 +136,9 @@ export class TeamsService {
    * Find a team by id
    */
   async findOne(id: string) {
-    const team = await this.teamRepo.findOneBy({ $id: id });
+    this.logger.debug(id)
+    const team = await this.teamRepo.findOne({ where: { $id: id } });
+    this.logger.debug(team)
     if (!team) {
       throw new Exception(Exception.TEAM_NOT_FOUND)
     }
@@ -210,6 +212,7 @@ export class TeamsService {
         phone: input.phone,
         name: input.email,
         prefs: {},
+        labels: [],
         search: [input.email, input.phone].join(' '),
       });
       await this.userRepo.save(invitee)
@@ -240,6 +243,8 @@ export class TeamsService {
 
     await this.membershipsRepo.save(membership);
 
+    team.total += 1;
+    await this.teamRepo.save(team);
     // Send invitation email or SMS
     // ...
 
@@ -257,8 +262,7 @@ export class TeamsService {
 
     const memberships = await this.membershipsRepo.findAndCount(
       {
-        where:
-          { team: { $id: team.$id }, userId: Not(null) }
+        where: { teamId: team.$id }
       }
     );
 
@@ -323,6 +327,28 @@ export class TeamsService {
     membership.userEmail = user.email;
 
     return membership;
+  }
+
+  /**
+   * Delete member of the team
+   */
+  async deleteMember(teamId: string, memberId: string) {
+    const team = await this.teamRepo.findOneBy({ $id: teamId });
+    if (!team) {
+      throw new Exception(Exception.TEAM_NOT_FOUND)
+    }
+
+    const membership = await this.membershipsRepo.findOneBy({ teamId: team.$id, $id: memberId });
+    if (!membership) {
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
+    }
+
+    await this.membershipsRepo.remove(membership)
+
+    team.total -= 1;
+    await this.teamRepo.save(team);
+
+    return null
   }
 
 }

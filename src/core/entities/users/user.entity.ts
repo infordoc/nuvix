@@ -32,7 +32,7 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', nullable: true })
   status: boolean;
 
-  @Column({ type: 'varchar', length: 128, array: true, nullable: true })
+  @Column({ type: 'varchar', length: 128, array: true, default: [] })
   labels: string[];
 
   @Column({ type: 'varchar', length: 16384, array: true, nullable: true })

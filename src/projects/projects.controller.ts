@@ -292,7 +292,7 @@ export class ProjectsController {
     @Param('id') id: string,
     @Body() input: AuthLimitDto
   ): Promise<ProjectModel> {
-    return new ProjectModel(await this.projectService.updateSessionLimit(id, input.limit));
+    return new ProjectModel(await this.projectService.updateAuthLimit(id, input.limit));
   }
 
   @Patch(':id/auth/duration')
@@ -349,7 +349,7 @@ export class ProjectsController {
     @Param('method') method: string,
     @Body() input: AuthMethodStatusDto
   ): Promise<ProjectModel> {
-    if (Object.values(authMethods).map((m) => m.key).indexOf(method) === -1) throw new Exception(Exception.INVALID_PARAMS, 'Invalid auth method');
+    if (Object.keys(authMethods).map((m) => m).indexOf(method) === -1) throw new Exception(Exception.INVALID_PARAMS, 'Invalid auth method');
     return new ProjectModel(await this.projectService.updateAuthMethod(id, method, input.status));
   }
 

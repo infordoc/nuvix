@@ -27,7 +27,7 @@ export default abstract class BaseEntity {
     default: [],
     name: 'permissions',
     transformer: {
-      to: (value: Permission[] | string[]) => value.map(v => v.toString()),
+      to: (value: Permission[] | string[]) => value?.map(v => v.toString()) || [],
       from: (value: string[]) => value
     }
   })

@@ -11,7 +11,7 @@ export interface AuthMethod {
 
 export const defaultAuthConfig: AuthConfig = {
   limit: 0,
-  maxSessions: APP_LIMIT_USER_SESSIONS_DEFAULT,
+  sessionsLimit: APP_LIMIT_USER_SESSIONS_DEFAULT,
   passwordHistory: 0,
   passwordDictionary: false,
   duration: 31536000,

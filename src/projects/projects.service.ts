@@ -662,13 +662,13 @@ export class ProjectService {
   }
 
   /**
-   * Update session limit of a project.
+   * Update users limit of a project.
    */
-  async updateSessionLimit(id: string, limit: number) {
+  async updateAuthLimit(id: string, limit: number) {
     let project = await this.findOne(id, Database.PERMISSION_UPDATE);
     if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
 
-    project.auths.limit = limit;
+    project.auths.sessionsLimit = limit;
 
     project.markModified('auths');
     await project.save();
@@ -762,7 +762,7 @@ export class ProjectService {
     let project = await this.findOne(id, Database.PERMISSION_UPDATE);
     if (!project) throw new Exception(Exception.DOCUMENT_NOT_FOUND, "Project not found.");
 
-    project.auths.maxSessions = limit;
+    project.auths.sessionsLimit = limit;
 
     project.markModified('auths');
     await project.save();
