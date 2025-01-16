@@ -3,9 +3,6 @@ import Permission from "../helper/permission.helper";
 
 
 export default abstract class BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
-
   @Index('id_index', { synchronize: false })
   @PrimaryColumn({ unique: true, name: '_id' })
   $id: string;
@@ -45,10 +42,14 @@ export default abstract class BaseEntity {
   }
 
   getInternalId() {
-    return this.id;
+    return this.$id;
   }
 
   getId() {
     return this.$id;
   }
+
+  // id() {
+  //   return this.$id;
+  // }
 }

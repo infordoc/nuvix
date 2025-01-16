@@ -90,7 +90,7 @@ export class TeamsService {
         joined: new Date(),
         confirm: true,
         secret: '',
-        search: [membershipId, user.id].join(' '),
+        search: [membershipId, user.$id].join(' '),
       });
 
       await this.membershipsRepo.save(membership)
@@ -258,7 +258,7 @@ export class TeamsService {
     const memberships = await this.membershipsRepo.findAndCount(
       {
         where:
-          { teamId: team.$id, userId: Not(null) }
+          { team: { $id: team.$id }, userId: Not(null) }
       }
     );
 

@@ -225,7 +225,7 @@ export class QueryBuilder<T> {
     const condition = operator === 'and' ? 'AND' : 'OR';
     this.queryBuilder.andWhere(`(${combinedQueries.join(` ${condition} `)})`, queries.reduce((params, q) => {
       const { values } = q;
-      return { ...params, values: [...(params.values || []), ...values] };
+      return { ...params, values: [...((params as any).values || []), ...values] };
     }, {}));
   }
 
@@ -233,7 +233,7 @@ export class QueryBuilder<T> {
     this.queryBuilder.andWhere(`search LIKE :search`, { search: `%${search}%` });
   }
 
-  async execute(auth = true) {
+  async execute() {
     const [results, totalCount] = await this.queryBuilder
       .skip(this.options.skip)
       .take(this.options.limit)

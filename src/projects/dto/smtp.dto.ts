@@ -5,35 +5,43 @@ export class UpdateSmtpDto {
   @IsBoolean()
   enabled: boolean;
 
+  @IsOptional()
   @IsString()
   @Length(0, 255)
   @IsNotEmpty()
   senderName: string;
 
+  @IsOptional()
   @IsEmail()
   @IsNotEmpty()
   senderEmail: string;
 
+  @IsOptional()
   @IsEmail()
   @IsNotEmpty()
   replyTo: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   host: string;
 
+  @IsOptional()
   @IsInt()
   @IsNotEmpty()
   port: number;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   username: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
   password: string;
 
+  @IsOptional()
   @IsIn(['tls', 'ssl'])
   @IsNotEmpty()
   secure: 'tls' | 'ssl';

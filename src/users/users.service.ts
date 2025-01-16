@@ -818,7 +818,7 @@ export class UsersService {
       throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
     }
 
-    await this.authenticatorRepo.remove(authenticator.$id);
+    await this.authenticatorRepo.remove(authenticator);
 
     return {};
   }
