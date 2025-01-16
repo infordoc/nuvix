@@ -1,11 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseInterceptors } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { ResolverInterceptor, ResponseType } from 'src/core/resolver/response.resolver';
 import { Response } from 'src/core/helper/response.helper';
 import { CreateTeamDto, UpdateTeamDto, UpdateTeamPrefsDto } from './dto/team.dto';
 import { User } from 'src/core/resolver/user.resolver';
 import { UserEntity } from 'src/core/entities/users/user.entity';
-import { CreateMembershipDto } from './dto/membership.dto';
+import { CreateMembershipDto, UpdateMembershipDto, UpdateMembershipStatusDto } from './dto/membership.dto';
 
 @Controller({ version: ['1'], path: 'teams' })
 @UseInterceptors(ResolverInterceptor)
@@ -69,6 +69,17 @@ export class TeamsController {
     return await this.teamsService.setPrefs(id, input);
   }
 
+  @Get(':id/logs')
+  @ResponseType({ type: Response.MODEL_LOG, list: true })
+  async teamLogs(
+    @Param('id') id: string,
+  ) {
+    return {
+      total: 0,
+      logs: []
+    }
+  }
+
   @Post(':id/memberships')
   @ResponseType({ type: Response.MODEL_MEMBERSHIP })
   async addMember(
@@ -93,6 +104,26 @@ export class TeamsController {
     @Param('memberId') memberId: string
   ) {
     return await this.teamsService.getMember(id, memberId);
+  }
+
+  @Patch(':id/memberships/:memberId')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async updateMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() input: UpdateMembershipDto
+  ) {
+    return await this.teamsService.updateMember(id, memberId, input);
+  }
+
+  @Patch(':id/memberships/:memberId/status')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async updateMemberStatus(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() input: UpdateMembershipStatusDto
+  ) {
+    return await this.teamsService.updateMemberStatus(id, memberId, input);
   }
 
   @Delete(':id/memberships/:memberId')

@@ -11,6 +11,7 @@ import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
 import { Exception } from 'src/core/extend/exception';
 import { TOTP } from 'src/core/validators/MFA.validator';
+import { UpdateMembershipDto, UpdateMembershipStatusDto } from './dto/membership.dto';
 
 @Injectable()
 export class TeamsService {
@@ -327,6 +328,44 @@ export class TeamsService {
     membership.userEmail = user.email;
 
     return membership;
+  }
+
+  /**
+   * Update member of the team
+   */
+  async updateMember(teamId: string, memberId: string, input: UpdateMembershipDto) {
+    const team = await this.teamRepo.findOneBy({ $id: teamId });
+    if (!team) {
+      throw new Exception(Exception.TEAM_NOT_FOUND)
+    }
+
+    const membership = await this.membershipsRepo.findOne({
+      where: { teamId: team.$id, $id: memberId },
+      relations: { user: true }
+    });
+    if (!membership) {
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
+    }
+
+    if (input.roles) {
+      membership.roles = input.roles;
+    }
+
+    await this.membershipsRepo.save(membership);
+
+    membership.teamName = team.name
+    membership.userName = membership.user.name
+    membership.userEmail = membership.user.email
+
+    return membership;
+  }
+
+  /**
+   * Update Membership Status
+   */
+  async updateMemberStatus(teamId: string, memberId: string, input: UpdateMembershipStatusDto) {
+    /**@todo ---- */
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   /**

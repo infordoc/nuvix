@@ -33,3 +33,22 @@ export class CreateMembershipDto {
   @IsNotEmpty()
   name: string;
 }
+
+
+export class UpdateMembershipDto {
+  @IsArray()
+  @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
+  @IsString({ each: true })
+  roles: string[];
+}
+
+
+export class UpdateMembershipStatusDto {
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @IsNotEmpty()
+  @MaxLength(256)
+  secret: string;
+}
