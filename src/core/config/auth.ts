@@ -1,4 +1,3 @@
-import { AuthConfig } from "src/projects/schemas/project.schema";
 import { APP_LIMIT_USER_SESSIONS_DEFAULT } from "src/Utils/constants";
 
 export interface AuthMethod {
@@ -9,7 +8,7 @@ export interface AuthMethod {
   enabled: boolean;
 }
 
-export const defaultAuthConfig: AuthConfig = {
+export const defaultAuthConfig = {
   limit: 0,
   sessionsLimit: APP_LIMIT_USER_SESSIONS_DEFAULT,
   passwordHistory: 0,

@@ -1,6 +1,6 @@
 import { totp } from 'otplib';
 import { Auth } from '../helper/auth.helper';
-import { UserEntity } from '../entities/users/user.entity';
+import { Document } from '@nuvix/database';
 
 
 abstract class MfaType {
@@ -58,10 +58,10 @@ class TOTP extends MfaType {
     super(totp);
   }
 
-  public static getAuthenticatorFromUser(user: UserEntity) {
-    const authenticators = user.authenticators || [];
+  public static getAuthenticatorFromUser(user: Document): Document {
+    const authenticators = user.getAttribute("authenticators", []);
     for (const authenticator of authenticators) {
-      if (authenticator.type === MfaType.TOTP) {
+      if (authenticator.getAttribute("type") === MfaType.TOTP) {
         return authenticator;
       }
     }

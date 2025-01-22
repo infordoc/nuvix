@@ -1,12 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Plan } from './schemas/plan.schema';
-import { Model } from 'mongoose';
 
 @Injectable()
 export class ConsoleService {
   constructor(
-    @InjectModel(Plan.name, 'server') private readonly planModel: Model<Plan>,
   ) { }
 
   async createPlan() {

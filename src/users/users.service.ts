@@ -1,14 +1,10 @@
 import { Inject, Injectable, Logger, Scope } from '@nestjs/common';
-import { TargetEntity } from 'src/core/entities/messages/target.entity';
-import { IdentityEntity } from 'src/core/entities/users/identity.entity';
-import { UserEntity } from 'src/core/entities/users/user.entity';
 import { Exception } from 'src/core/extend/exception';
 import { ID } from 'src/core/helper/ID.helper';
 import Permission from 'src/core/helper/permission.helper';
 import Role from 'src/core/helper/role.helper';
 import { PersonalDataValidator } from 'src/core/validators/personal-data.validator';
 import { ProjectDocument } from 'src/projects/schemas/project.schema';
-import { DataSource, Not, QueryFailedError, Repository } from 'typeorm';
 import { CreateUserDto, CreateUserWithScryptDto, CreateUserWithScryptModifedDto, CreateUserWithShaDto, UpdateUserEmailVerificationDto, UpdateUserLabelDto, UpdateUserNameDto, UpdateUserPasswordDto, UpdateUserPoneVerificationDto, UpdateUserStatusDto } from './dto/user.dto';
 import { ClsService } from 'nestjs-cls';
 import { PROJECT } from 'src/Utils/constants';
@@ -16,20 +12,14 @@ import { Auth } from 'src/core/helper/auth.helper';
 import { CreateTargetDto, UpdateTargetDto } from './dto/target.dto';
 import { EmailValidator } from 'src/core/validators/email.validator';
 import { PhoneValidator } from 'src/core/validators/phone.validator';
-import { SessionEntity } from 'src/core/entities/users/session.entity';
-import { MembershipEntity } from 'src/core/entities/users/membership.entity';
 import { QueryBuilder } from 'src/core/helper/query.helper';
 import { PasswordHistoryValidator } from 'src/core/validators/password-history.validator';
-import { ProviderEntity } from 'src/core/entities/messages/provider.entity';
 import { MfaType, TOTP } from 'src/core/validators/MFA.validator';
-import { AuthenticatorEntity } from 'src/core/entities/users/authenticator.entity';
 import { Detector } from 'src/core/helper/detector.helper';
 import { Request } from 'express';
 import { CreateTokenDto } from './dto/token.dto';
-import { TokenEntity } from 'src/core/entities/users/token.entity';
 import { CreateJwtDto } from './dto/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
-import { StatsEntity } from 'src/core/entities/meta/stats.entity';
 
 @Injectable()
 export class UsersService {

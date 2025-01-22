@@ -1,5 +1,3 @@
-import { Repository } from "typeorm";
-import { buildQuery } from "./filter.utility";
 import { PageInfo } from "src/base/objects/base.object";
 
 

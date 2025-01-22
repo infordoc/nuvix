@@ -1,14 +1,9 @@
 import * as crypto from 'crypto';
-import Role from "./role.helper";
-import Roles from "../validators/roles.validator";
-import { TokenEntity } from "../entities/users/token.entity";
-import { SessionEntity } from "../entities/users/session.entity";
-import { UserEntity } from "../entities/users/user.entity";
-import { ClsServiceManager } from "nestjs-cls";
-import { Authorization } from "../validators/authorization.validator";
 import { createHash, randomBytes, createHmac, scryptSync } from 'crypto';
 import { Exception } from "../extend/exception";
 import { ENCRYPTION_KEY } from 'src/Utils/constants';
+import { Authorization, Document, Roles } from '@nuvix/database';
+import Role from '@nuvix/database/dist/security/Role';
 
 const algorithm = 'aes-256-cbc';
 const key = ENCRYPTION_KEY ? Buffer.from(ENCRYPTION_KEY, 'hex') : undefined;
@@ -230,15 +225,15 @@ export class Auth {
     return value;
   }
 
-  public static tokenVerify(tokens: TokenEntity[], type: number | null, secret: string): TokenEntity | false {
+  public static tokenVerify(tokens: Document[], type: number | null, secret: string): Document | false {
     for (const token of tokens) {
       if (
-        token.secret !== undefined &&
-        token.expire !== undefined &&
-        token.type !== undefined &&
-        (type === null || token.type === type) &&
-        token.secret === this.hash(secret) &&
-        new Date(token.expire) >= new Date()
+        token.getAttribute("secret") !== null &&
+        token.getAttribute("expire") !== null &&
+        token.getAttribute("type") !== null &&
+        (type === null || token.getAttribute("type") === type) &&
+        token.getAttribute("secret") === this.hash(secret) &&
+        new Date(token.getAttribute("expire")) >= new Date()
       ) {
         return token;
       }
@@ -247,15 +242,16 @@ export class Auth {
     return false;
   }
 
-  public static sessionVerify(sessions: SessionEntity[], secret: string): string | false {
+  public static sessionVerify(sessions: Document[], secret: string): string | false {
     for (const session of sessions) {
       if (
-        session.secret !== undefined &&
-        session.provider !== undefined &&
-        session.secret === this.hash(secret) &&
-        new Date(session.expire) >= new Date()
+        session.getAttribute("secret") !== null &&
+        session.getAttribute("expire") !== null &&
+        session.getAttribute("provider") !== null &&
+        session.getAttribute("secret") === this.hash(secret) &&
+        new Date(session.getAttribute("expire")) >= new Date()
       ) {
-        return session.$id;
+        return session.getId();
       }
     }
 
@@ -272,56 +268,55 @@ export class Auth {
     return roles.includes(Auth.USER_ROLE_APPS);
   }
 
-  public static getRoles(user: UserEntity): string[] {
-    const authorization = ClsServiceManager.getClsService().get('authorization') as Authorization;
+  public static getRoles(user: Document): string[] {
     const roles: string[] = [];
 
-    if (!this.isPrivilegedUser(authorization.getRoles()) && !this.isAppUser(authorization.getRoles())) {
-      if (user.$id) {
-        roles.push(Role.User(user.$id).toString());
-        roles.push(Role.Users().toString());
+    if (!this.isPrivilegedUser(Authorization.getRoles()) && !this.isAppUser(Authorization.getRoles())) {
+      if (user.getId()) {
+        roles.push(Role.user(user.getId()).toString());
+        roles.push(Role.users().toString());
 
-        const emailVerified = user.emailVerification;
-        const phoneVerified = user.phoneVerification;
+        const emailVerified = user.getAttribute("emailVerification");
+        const phoneVerified = user.getAttribute("phoneVerification");
 
         if (emailVerified || phoneVerified) {
-          roles.push(Role.User(user.$id, Roles.DIMENSION_VERIFIED).toString());
-          roles.push(Role.Users(Roles.DIMENSION_VERIFIED).toString());
+          roles.push(Role.user(user.getId(), Roles.DIMENSION_VERIFIED).toString());
+          roles.push(Role.users(Roles.DIMENSION_VERIFIED).toString());
         } else {
-          roles.push(Role.User(user.$id, Roles.DIMENSION_UNVERIFIED).toString());
-          roles.push(Role.Users(Roles.DIMENSION_UNVERIFIED).toString());
+          roles.push(Role.user(user.getId(), Roles.DIMENSION_UNVERIFIED).toString());
+          roles.push(Role.users(Roles.DIMENSION_UNVERIFIED).toString());
         }
       } else {
-        return [Role.Guests().toString()];
+        return [Role.guests().toString()];
       }
     }
 
-    for (const node of (user.memberships || [])) {
-      if (!node.confirm) {
+    for (const node of (user.getAttribute("memberships") || [])) {
+      if (!node.getAttribute("confirm")) {
         continue;
       }
 
-      if (node.$id && node.teamId) {
-        roles.push(Role.Team(node.teamId).toString());
-        roles.push(Role.Member(node.$id).toString());
+      if (node.getAttribute("$id") && node.getAttribute("teamId")) {
+        roles.push(Role.team(node.getAttribute("teamId")).toString());
+        roles.push(Role.member(node.getId()).toString());
 
-        if (node.roles) {
-          for (const nodeRole of node.roles) {
-            roles.push(Role.Team(node.teamId, nodeRole).toString());
+        if (node.getAttribute("roles")) {
+          for (const nodeRole of node.getAttribute("roles")) {
+            roles.push(Role.team(node.getAttribute("teamId"), nodeRole).toString());
           }
         }
       }
     }
 
-    for (const label of (user.labels || [])) {
+    for (const label of (user.getAttribute("labels") || [])) {
       roles.push(`label:${label}`);
     }
 
     return roles;
   }
 
-  public static isAnonymousUser(user: UserEntity): boolean {
-    return user.email === null && user.phone === null;
+  public static isAnonymousUser(user: Document): boolean {
+    return user.getAttribute("email") === null && user.getAttribute("phone") === null;
   }
 
   private static getBcrypt(): any {
