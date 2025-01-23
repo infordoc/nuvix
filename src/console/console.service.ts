@@ -7,7 +7,7 @@ import { DB_FOR_CONSOLE } from 'src/Utils/constants';
 export class ConsoleService {
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
-  ) {}
+  ) { }
 
   async createPlan() {
     let plans = [
@@ -228,15 +228,17 @@ export class ConsoleService {
 
   async applyONE() {
     try {
-      Object.entries(collections.console).map(async ([key, value]) => {
+      for (const [key, value] of Object.entries(collections.console)) {
         console.log(key, value.attributes.length, value.indexes.length);
 
-        return await this.dbForConsole.createCollection(
+        let c = await this.dbForConsole.createCollection(
           value.$id,
           value.attributes.map((a: any) => new Document(a)),
-          // value.indexes.map((i: any) => new Document(i))
+          value.indexes.map((i: any) => new Document(i))
         );
-      });
+
+        console.log(c, 'Collection created');
+      }
     } catch (e) {
       console.error(e);
     }

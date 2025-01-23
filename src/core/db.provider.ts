@@ -28,9 +28,20 @@ export const consoleDatabase: FactoryProvider = {
       maxVarCharLimit: 499,
     });
 
+    // adapter.setDatabase("test1")
+
     await adapter.init();
 
+    // await adapter.create("test1")
+
+
     let connection = new Database(adapter);
+
+    // try {
+    //   await connection.create("test1")
+    // } catch (e) {
+    //   console.log(e)
+    // }
 
     await connection.ping();
 
@@ -52,4 +63,4 @@ const defaultConnectionOptions = {
   ssl: true,
 };
 
-export class DbService {}
+export class DbService { }
