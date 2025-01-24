@@ -120,8 +120,8 @@ export class ConsoleController {
     return res.json({}).status(200);
   }
 
-  @Get('one')
-  async getONE() {
-    return await this.consoleService.applyONE();
+  @Get('init')
+  async init() {
+    return await this.consoleService.initConsole();
   }
 }

@@ -1,4 +1,4 @@
-import { FactoryProvider, Injectable, Logger, Scope } from '@nestjs/common';
+import { FactoryProvider, Global, Injectable, Logger, Module, Scope } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { Exception } from './extend/exception';
 import { Request } from 'express';
@@ -6,61 +6,59 @@ import { Request } from 'express';
 // Services
 import { ClsService, ClsServiceManager } from 'nestjs-cls';
 import { DB_FOR_CONSOLE, PROJECT } from 'src/Utils/constants';
-import { Database, MariaDB } from '@nuvix/database';
+import {
+  Authorization,
+  Database,
+  DuplicateException,
+  MariaDB,
+  Role,
+} from '@nuvix/database';
+import { filters } from './resolver/db.resolver';
 
-export const consoleDatabase: FactoryProvider = {
-  provide: DB_FOR_CONSOLE,
-  // scope: Scope.REQUEST,
-  durable: true,
-  useFactory: async (cls: ClsService) => {
-    // const logger = cls.get('logger') as Logger;
-    // const project = cls.get(PROJECT) as Project;
-    // const tenantId = project.database;
+@Global()
+@Module({
+  providers: [
+    {
+      provide: DB_FOR_CONSOLE,
+      useFactory: async (cls: ClsService) => {
+        let adapter = new MariaDB({
+          connection: {
+            host: process.env.DATABASE_HOST || 'localhost',
+            user: process.env.DATABASE_USER,
+            password: process.env.DATABASE_PASSWORD,
+            port: 3306,
+          },
+          maxVarCharLimit: 5000,
+        });
 
-    let adapter = new MariaDB({
-      connection: {
-        host: process.env.DATABASE_HOST || 'localhost',
-        user: process.env.DATABASE_USER,
-        password: process.env.DATABASE_PASSWORD,
-        database: 'college1_test99',
-        port: 3306,
+        await adapter.init();
+
+        Authorization.setRole(Role.user('john-doe').toString());
+
+        Object.keys(filters).forEach((key) => {
+          Database.addFilter(key, {
+            encode: filters[key].serialize,
+            decode: filters[key].deserialize,
+          });
+        });
+
+        let connection = new Database(adapter);
+
+        adapter.setDatabase('test1');
+        try {
+          await connection.create('test1');
+        } catch (e) {
+          if (e instanceof DuplicateException) {
+          } else throw e;
+        }
+
+        await connection.ping();
+
+        return connection;
       },
-      maxVarCharLimit: 499,
-    });
-
-    // adapter.setDatabase("test1")
-
-    await adapter.init();
-
-    // await adapter.create("test1")
-
-
-    let connection = new Database(adapter);
-
-    // try {
-    //   await connection.create("test1")
-    // } catch (e) {
-    //   console.log(e)
-    // }
-
-    await connection.ping();
-
-    // if (tenantId) {
-    //   // WILL USE Database class FOR MULTITENANCY
-    // }
-
-    return connection;
-  },
-  inject: [ClsService],
-};
-
-const defaultConnectionOptions = {
-  type: 'postgres',
-  logging: true,
-  host: process.env.DB_HOST || 'localhost',
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: true,
-};
-
-export class DbService { }
+      inject: [ClsService],
+    },
+  ],
+  exports: [DB_FOR_CONSOLE],
+})
+export class DbModule { }

@@ -24,7 +24,7 @@ export class BaseController {
     });
   }
 
-  @All('local/codes')
+  @All('locale/codes')
   @Public()
   localCodes() {
     return {

@@ -22,7 +22,6 @@ import {
   UpdateTeamPrefsDto,
 } from './dto/team.dto';
 import { User } from 'src/core/resolver/user.resolver';
-import { UserEntity } from 'src/core/entities/users/user.entity';
 import {
   CreateMembershipDto,
   UpdateMembershipDto,
@@ -42,7 +41,7 @@ export class TeamsController {
 
   @Post()
   @ResponseType({ type: Response.MODEL_TEAM })
-  async create(@User() user: UserEntity | null, @Body() input: CreateTeamDto) {
+  async create(@User() user: any, @Body() input: CreateTeamDto) {
     return await this.teamsService.create(user, input);
   }
 

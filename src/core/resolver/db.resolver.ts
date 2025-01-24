@@ -7,7 +7,7 @@ import {
 import crypto from 'crypto';
 import { EmailValidator } from '../validators/email.validator';
 
-const filters = {
+export const filters = {
   casting: {
     serialize: (value: any) => {
       return JSON.stringify({ value: value }, (key, value) => {
@@ -185,6 +185,7 @@ const filters = {
       return;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
+      console.log(document, document.getInternalId());
       return await Authorization.skip(async () => {
         return await database.find('authenticators', [
           Query.equal('userInternalId', [document.getInternalId()]),
@@ -422,10 +423,3 @@ const formats = {
 // Object.keys(formats).forEach(key => {
 //   Structure.addFormat(key, formats[key].create, formats[key].type);
 // });
-
-Object.keys(filters).forEach((key) => {
-  Database.addFilter(key, {
-    encode: filters[key].serialize,
-    decode: filters[key].deserialize,
-  });
-});

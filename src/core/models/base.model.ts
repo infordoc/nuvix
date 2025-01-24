@@ -1,7 +1,5 @@
+import { Permission } from '@nuvix/database';
 import { Exclude, Expose } from 'class-transformer';
-import mongoose, { Document } from 'mongoose';
-import { dataToObject, DataToObjectOptions } from '../helper/model.helper';
-import Permission from '../helper/permission.helper';
 
 @Exclude()
 export default abstract class BaseModel {
@@ -20,13 +18,11 @@ export default abstract class BaseModel {
 
   @Expose() $permissions: string[] | Permission[];
 
-  @Exclude() _id: mongoose.Types.ObjectId | any;
+  @Exclude() _id: any;
   @Exclude() id: string;
 
-  constructor(doc?: any, options?: DataToObjectOptions) {
-    if (doc) {
-      Object.assign(this, dataToObject(doc, options));
-    }
+  constructor(doc?: any) {
+    Object.assign(this, doc);
   }
 }
 
@@ -34,5 +30,5 @@ export default abstract class BaseModel {
 export abstract class BaseListModel {
   @Expose() total: number;
 
-  constructor() {}
+  constructor() { }
 }

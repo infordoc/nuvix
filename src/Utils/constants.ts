@@ -11,7 +11,7 @@ export const APP_LIMIT_USER_SESSIONS_DEFAULT = 10;
 export const APP_LIMIT_ARRAY_PARAMS_SIZE = 10;
 export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
 export const APP_LIMIT_SUBQUERY = 100;
-export const APP_OPENSSL_KEY = (v?: string) => 'v1'; // _APP_OPENSSL_KEY_V1
+export const APP_OPENSSL_KEY = (v?: string) => 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
 export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 100;
 
@@ -19,5 +19,9 @@ export const API_KEY_STANDARD = 'standard';
 export const API_KEY_DYNAMIC = 'dynamic';
 
 export const PROJECT = Symbol('PROJECT');
-export const PROJECT_USER = Symbol('PROJECT_USER');
+export const USER = Symbol('USER');
 export const DB_FOR_CONSOLE = Symbol('DBFORCONSOLE');
+
+export const CONSOLE_CONFIG: any = {
+  auths: {},
+};

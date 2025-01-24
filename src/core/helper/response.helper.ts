@@ -371,4 +371,8 @@ export class Response {
   public static MODEL_HEALTH_TIME = HealthTimeModel;
   public static MODEL_HEALTH_ANTIVIRUS = HealthAntivirusModel;
   public static MODEL_HEALTH_CERTIFICATE = HealthCertificateModel;
+
+  public empty() {
+    return Response.MODEL_NONE;
+  }
 }

@@ -1,4 +1,9 @@
-import { Logger, Module, OnModuleInit } from '@nestjs/common';
+import {
+  Logger,
+  MiddlewareConsumer,
+  Module,
+  OnModuleInit,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
@@ -15,9 +20,12 @@ import { UsersModule } from './users/users.module';
 import { AccountModule } from './account/account.module';
 import { TeamsModule } from './teams/teams.module';
 import { RealtimeModule } from './realtime/realtime.module';
-import { ClsModule } from 'nestjs-cls';
+import { ClsModule, ClsService } from 'nestjs-cls';
 import { Request } from 'express';
 import { FunctionsModule } from './functions/functions.module';
+import { AuthMiddleware } from './core/resolver/middlewares/auth.middleware';
+import { DB_FOR_CONSOLE } from './Utils/constants';
+import { DbModule } from './core/db.provider';
 config();
 
 @Module({
@@ -50,20 +58,23 @@ config();
     //     ],
     //   },
     // }),
+    DbModule,
     BaseModule,
-    // UserModule,
-    // ConsoleAccountModule,
-    // DatabaseModule,
-    // ProjectModule,
     ConsoleModule,
-    AvatarsModule,
+    // ProjectModule,
     // UsersModule,
-    // AccountModule,
     // TeamsModule,
-    // RealtimeModule,
-    // FunctionsModule,
+    AccountModule,
+    DatabaseModule,
+    AvatarsModule,
+    RealtimeModule,
+    FunctionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthMiddleware).forRoutes("*");
+  }
+}

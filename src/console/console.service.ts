@@ -1,13 +1,15 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { Database, Document, Query } from '@nuvix/database';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Database, Document, Permission, Query, Role } from '@nuvix/database';
 import collections from 'src/core/collections';
 import { DB_FOR_CONSOLE } from 'src/Utils/constants';
 
 @Injectable()
 export class ConsoleService {
+  private readonly logger = new Logger('CONSOLE');
+
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
-  ) { }
+  ) {}
 
   async createPlan() {
     let plans = [
@@ -226,22 +228,136 @@ export class ConsoleService {
     return await this.dbForConsole.findOne('plans', [Query.equal('$id', [id])]);
   }
 
-  async applyONE() {
+  async initConsole() {
     try {
-      for (const [key, value] of Object.entries(collections.console)) {
-        console.log(key, value.attributes.length, value.indexes.length);
+      const consoleCollections = collections.console;
+      for (const [key, collection] of Object.entries(consoleCollections)) {
+        if ((collection as any).$collection !== Database.METADATA) {
+          continue;
+        }
+        if (!(await this.dbForConsole.getCollection(key)).isEmpty()) {
+          continue;
+        }
 
-        let c = await this.dbForConsole.createCollection(
-          value.$id,
-          value.attributes.map((a: any) => new Document(a)),
-          value.indexes.map((i: any) => new Document(i))
+        this.logger.log(`[Setup] - Creating collection: ${collection.$id}...`);
+
+        const attributes = collection.attributes.map(
+          (attribute: any) =>
+            new Document({
+              $id: attribute.$id,
+              type: attribute.type,
+              size: attribute.size,
+              required: attribute.required,
+              signed: attribute.signed,
+              array: attribute.array,
+              filters: attribute.filters,
+              default: attribute.default ?? null,
+              format: attribute.format ?? '',
+            }),
         );
 
-        console.log(c, 'Collection created');
+        const indexes = collection.indexes.map(
+          (index: any) =>
+            new Document({
+              $id: index.$id,
+              type: index.type,
+              attributes: index.attributes,
+              lengths: index.lengths,
+              orders: index.orders,
+            }),
+        );
+
+        await this.dbForConsole.createCollection(key, attributes, indexes);
       }
-    } catch (e) {
-      console.error(e);
+
+      const defaultBucket = await this.dbForConsole.getDocument(
+        'buckets',
+        'default',
+      );
+      if (
+        defaultBucket.isEmpty() &&
+        !(await this.dbForConsole.exists(
+          this.dbForConsole.getDatabase(),
+          'bucket_1',
+        ))
+      ) {
+        this.logger.log('[Setup] - Creating default bucket...');
+
+        await this.dbForConsole.createDocument(
+          'buckets',
+          new Document({
+            $id: 'default',
+            $collection: 'buckets',
+            name: 'Default',
+            maximumFileSize: 10 * 1024 * 1024, // 10MB
+            allowedFileExtensions: [],
+            enabled: true,
+            compression: 'gzip',
+            encryption: true,
+            antivirus: true,
+            fileSecurity: true,
+            $permissions: [
+              Permission.read(Role.any()),
+              Permission.create(Role.any()),
+              Permission.update(Role.any()),
+              Permission.delete(Role.any()),
+            ],
+            search: 'buckets Default',
+          }),
+        );
+
+        const bucket = await this.dbForConsole.getDocument(
+          'buckets',
+          'default',
+        );
+
+        this.logger.log(
+          '[Setup] - Creating files collection for default bucket...',
+        );
+
+        const files = collections.buckets.files ?? [];
+        if (!files) {
+          throw new Error('Files collection is not configured.');
+        }
+
+        const fileAttributes = (files as any).attributes.map(
+          (attribute: any) =>
+            new Document({
+              $id: attribute.$id,
+              type: attribute.type,
+              size: attribute.size,
+              required: attribute.required,
+              signed: attribute.signed,
+              array: attribute.array,
+              filters: attribute.filters,
+              default: attribute.default ?? null,
+              format: attribute.format ?? '',
+            }),
+        );
+
+        const fileIndexes = (files as any).indexes.map(
+          (index: any) =>
+            new Document({
+              $id: index.$id,
+              type: index.type,
+              attributes: index.attributes,
+              lengths: index.lengths,
+              orders: index.orders,
+            }),
+        );
+
+        await this.dbForConsole.createCollection(
+          `bucket_${bucket.getInternalId()}`,
+          fileAttributes,
+          fileIndexes,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `[Setup] - Error while setting up console: ${error.message}`,
+      );
     }
-    return 'HU HA';
+
+    return true;
   }
 }
