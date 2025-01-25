@@ -1,7 +1,7 @@
 import { IsInt, Min, Max } from 'class-validator';
 import { Auth } from 'src/core/helper/auth.helper';
 
-export class CreateTokenDto {
+export class CreateTokenDTO {
   @IsInt()
   @Min(4)
   @Max(128)

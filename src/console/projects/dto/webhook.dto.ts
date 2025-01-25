@@ -10,7 +10,7 @@ import {
 import { Type } from 'class-transformer';
 import { OmitType, PartialType } from '@nestjs/mapped-types';
 
-export class CreateWebhookDto {
+export class CreateWebhookDTO {
   @IsString()
   @MaxLength(128)
   name: string;
@@ -41,4 +41,4 @@ export class CreateWebhookDto {
   httpPass: string;
 }
 
-export class UpdateWebhookDto extends PartialType(CreateWebhookDto) {}
+export class UpdateWebhookDTO extends PartialType(CreateWebhookDTO) {}

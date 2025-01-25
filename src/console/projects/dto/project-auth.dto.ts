@@ -9,55 +9,55 @@ import {
 } from 'class-validator';
 import { IsInt, Min, Max } from 'class-validator';
 
-export class AuthSessionAlertsDto {
+export class AuthSessionAlertsDTO {
   @IsBoolean()
   alerts: boolean;
 }
 
-export class AuthLimitDto {
+export class AuthLimitDTO {
   @IsInt()
   @Min(0)
   @Max(100) /**@todo update to env variable */
   limit: number;
 }
 
-export class AuthDurationDto {
+export class AuthDurationDTO {
   @IsInt()
   @Min(0)
   @Max(31536000)
   duration: number;
 }
 
-export class AuthMethodStatusDto {
+export class AuthMethodStatusDTO {
   @IsBoolean()
   status: boolean;
 }
 
-export class AuthPasswordHistoryDto {
+export class AuthPasswordHistoryDTO {
   @IsInt()
   @Min(0)
   @Max(20) /**@todo update to env variable */
   limit: number;
 }
 
-export class AuthPasswordDictionaryDto {
+export class AuthPasswordDictionaryDTO {
   @IsBoolean()
   enabled: boolean;
 }
 
-export class AuthPersonalDataDto {
+export class AuthPersonalDataDTO {
   @IsBoolean()
   enabled: boolean;
 }
 
-export class AuthMaxSessionsDto {
+export class AuthMaxSessionsDTO {
   @IsInt()
   @Min(0)
   @Max(50) /**@todo update to env variable */
   limit: number;
 }
 
-export class AuthMockNumbersDto {
+export class AuthMockNumbersDTO {
   @IsArray()
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })

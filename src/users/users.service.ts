@@ -1,78 +1,92 @@
-import { Inject, Injectable, Logger, Scope } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Exception } from 'src/core/extend/exception';
 import { ID } from 'src/core/helper/ID.helper';
-import Permission from 'src/core/helper/permission.helper';
-import Role from 'src/core/helper/role.helper';
 import { PersonalDataValidator } from 'src/core/validators/personal-data.validator';
-import { ProjectDocument } from 'src/projects/schemas/project.schema';
 import {
-  CreateUserDto,
-  CreateUserWithScryptDto,
-  CreateUserWithScryptModifedDto,
-  CreateUserWithShaDto,
-  UpdateUserEmailVerificationDto,
-  UpdateUserLabelDto,
-  UpdateUserNameDto,
-  UpdateUserPasswordDto,
-  UpdateUserPoneVerificationDto,
-  UpdateUserStatusDto,
+  CreateUserDTO,
+  CreateUserWithScryptDTO,
+  CreateUserWithScryptModifedDTO,
+  CreateUserWithShaDTO,
+  UpdateUserEmailVerificationDTO,
+  UpdateUserLabelDTO,
+  UpdateUserNameDTO,
+  UpdateUserPasswordDTO,
+  UpdateUserPoneVerificationDTO,
+  UpdateUserStatusDTO,
 } from './dto/user.dto';
 import { ClsService } from 'nestjs-cls';
-import { PROJECT } from 'src/Utils/constants';
+import {
+  APP_LIMIT_COUNT,
+  DB_FOR_PROJECT,
+  GEO_DB,
+  PROJECT,
+} from 'src/Utils/constants';
 import { Auth } from 'src/core/helper/auth.helper';
-import { CreateTargetDto, UpdateTargetDto } from './dto/target.dto';
+import { CreateTargetDTO, UpdateTargetDTO } from './dto/target.dto';
 import { EmailValidator } from 'src/core/validators/email.validator';
 import { PhoneValidator } from 'src/core/validators/phone.validator';
-import { QueryBuilder } from 'src/core/helper/query.helper';
 import { PasswordHistoryValidator } from 'src/core/validators/password-history.validator';
 import { MfaType, TOTP } from 'src/core/validators/MFA.validator';
 import { Detector } from 'src/core/helper/detector.helper';
 import { Request } from 'express';
-import { CreateTokenDto } from './dto/token.dto';
-import { CreateJwtDto } from './dto/jwt.dto';
+import { CreateTokenDTO } from './dto/token.dto';
+import { CreateJwtDTO } from './dto/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
+import {
+  Database,
+  Document,
+  DuplicateException,
+  Permission,
+  Query,
+  Role,
+} from '@nuvix/database';
+import { CountryResponse, Reader } from 'maxmind';
 
 @Injectable()
 export class UsersService {
   private logger: Logger = new Logger(UsersService.name);
-  private userRepo: Repository<UserEntity>;
-  private readonly identityRepo: Repository<IdentityEntity>;
-  private readonly targetRepo: Repository<TargetEntity>;
-  private readonly sessionRepo: Repository<SessionEntity>;
-  private readonly memberRepo: Repository<MembershipEntity>;
-  private readonly providerRepo: Repository<ProviderEntity>;
-  private readonly authenticatorRepo: Repository<AuthenticatorEntity>;
-  private readonly tokenRepo: Repository<TokenEntity>;
-  private readonly statsRepo: Repository<StatsEntity>;
 
   constructor(
-    @Inject('CONNECTION') private readonly dataSource: DataSource,
+    @Inject(DB_FOR_PROJECT) private readonly db: Database,
+    @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
     private readonly cls: ClsService,
     private readonly jwtService: JwtService,
-  ) {
-    this.userRepo = this.dataSource.getRepository(UserEntity);
-    this.identityRepo = this.dataSource.getRepository(IdentityEntity);
-    this.targetRepo = this.dataSource.getRepository(TargetEntity);
-    this.sessionRepo = this.dataSource.getRepository(SessionEntity);
-    this.memberRepo = this.dataSource.getRepository(MembershipEntity);
-    this.providerRepo = this.dataSource.getRepository(ProviderEntity);
-    this.authenticatorRepo = this.dataSource.getRepository(AuthenticatorEntity);
-    this.tokenRepo = this.dataSource.getRepository(TokenEntity);
-    this.statsRepo = this.dataSource.getRepository(StatsEntity);
-  }
+  ) {}
 
   /**
    * Find all users
    */
-  async findAll(queries: string[], search: string) {
-    const query = new QueryBuilder(this.userRepo, ['name']);
+  async findAll(queries: Query[] = [], search?: string) {
+    if (search) {
+      queries.push(Query.search('search', search));
+    }
 
-    query.parseQueryStrings(queries);
+    // Find cursor query if it exists
+    const cursor = queries.find((query) =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
 
-    const { results, totalCount } = await query.execute();
+    if (cursor) {
+      const userId = cursor.getValue();
+      const cursorDocument = await this.db.getDocument('users', userId);
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `User '${userId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    const filterQueries = Query.groupByType(queries)['filters'];
+
     return {
-      users: results,
-      total: totalCount,
+      users: await this.db.find('users', queries),
+      total: await this.db.count('users', filterQueries, APP_LIMIT_COUNT),
     };
   }
 
@@ -80,13 +94,12 @@ export class UsersService {
    * Find a user by id
    */
   async findOne(id: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: id },
-      relations: ['targets'],
-    });
-    if (!user) {
+    const user = await this.db.getDocument('users', id);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
+
     return user;
   }
 
@@ -94,92 +107,101 @@ export class UsersService {
    * Get user preferences
    */
   async getPrefs(id: string) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    return user.prefs;
+    return user.getAttribute('prefs', {});
   }
 
   /**
    * Update user preferences
    */
   async updatePrefs(id: string, prefs: any) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.prefs = prefs;
-    await this.userRepo.save(user);
-    return user.prefs;
+    const updatedUser = await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user.setAttribute('prefs', prefs),
+    );
+
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', updatedUser.getId());
+
+    return updatedUser.getAttribute('prefs');
   }
 
   /**
    * Update user status
    */
-  async updateStatus(id: string, input: UpdateUserStatusDto) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+  async updateStatus(id: string, input: UpdateUserStatusDTO) {
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.status = input.status;
-    await this.userRepo.save(user);
-    return user;
+    return await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user.setAttribute('status', input.status),
+    );
   }
 
   /**
    * Update user labels
    */
-  async updateLabels(id: string, input: UpdateUserLabelDto) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+  async updateLabels(id: string, input: UpdateUserLabelDTO) {
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.labels = Array.from(new Set(input.labels));
-    await this.userRepo.save(user);
-    return user;
+    user.setAttribute('labels', Array.from(new Set(input.labels)));
+
+    return await this.db.updateDocument('users', user.getId(), user);
   }
 
   /**
    * Update user name
    */
-  async updateName(id: string, input: UpdateUserNameDto) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+  async updateName(id: string, input: UpdateUserNameDTO) {
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.name = input.name;
-    await this.userRepo.save(user);
-    return user;
+    user.setAttribute('name', input.name);
+
+    return await this.db.updateDocument('users', user.getId(), user);
   }
 
   /**
    * Update user password
    */
-  async updatePassword(id: string, input: UpdateUserPasswordDto) {
-    const Project = this.cls.get<ProjectDocument>(PROJECT);
-    let user = await this.userRepo.findOneBy({ $id: id });
+  async updatePassword(id: string, input: UpdateUserPasswordDTO) {
+    const project = this.cls.get<Document>(PROJECT);
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (Project.auths?.personalDataCheck) {
+    if (project.getAttribute('auths', {})['personalDataCheck'] ?? false) {
       const personalDataValidator = new PersonalDataValidator(
-        user.$id,
-        user.email,
-        user.name,
-        user.phone,
+        id,
+        user.getAttribute('email'),
+        user.getAttribute('name'),
+        user.getAttribute('phone'),
       );
       if (!personalDataValidator.isValid(input.password)) {
         throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
@@ -187,183 +209,218 @@ export class UsersService {
     }
 
     if (input.password.length === 0) {
-      user.password = '';
-      user.passwordUpdate = new Date();
-      user = await this.userRepo.save(user);
-      return user;
+      const updatedUser = await this.db.updateDocument(
+        'users',
+        user.getId(),
+        user
+          .setAttribute('password', '')
+          .setAttribute('passwordUpdate', new Date()),
+      );
+
+      // TODO: Implement queue for events
+      // queueForEvents.setParam('userId', updatedUser.getId());
+
+      return updatedUser;
     }
 
-    const hasPassword = await Auth.passwordHash(
+    // TODO: Implement hooks
+    // hooks.trigger('passwordValidator', [this.db, project, input.password, user, true]);
+
+    const newPassword = await Auth.passwordHash(
       input.password,
       Auth.DEFAULT_ALGO,
       Auth.DEFAULT_ALGO_OPTIONS,
     );
-    const passwordHistory = Project.auths?.passwordHistory ?? 0;
-    if (passwordHistory > 0) {
+
+    const historyLimit =
+      project.getAttribute('auths', {})['passwordHistory'] ?? 0;
+    let history = user.getAttribute('passwordHistory', []);
+
+    if (historyLimit > 0) {
       const validator = new PasswordHistoryValidator(
-        user.passwordHistory,
-        user.hash,
-        user.hashOptions,
+        history,
+        user.getAttribute('hash'),
+        user.getAttribute('hashOptions'),
       );
-      if (!validator.isValid(hasPassword)) {
+      if (!validator.isValid(input.password)) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
       }
 
-      user.passwordHistory.push(hasPassword);
-      user.passwordHistory = user.passwordHistory.slice(-passwordHistory);
+      history = [...history, newPassword].slice(-historyLimit);
     }
 
-    user.password = hasPassword;
-    user.passwordUpdate = new Date();
-    user.hash = Auth.DEFAULT_ALGO;
-    user.hashOptions = Auth.DEFAULT_ALGO_OPTIONS;
+    const updatedUser = await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user
+        .setAttribute('password', newPassword)
+        .setAttribute('passwordHistory', history)
+        .setAttribute('passwordUpdate', new Date())
+        .setAttribute('hash', Auth.DEFAULT_ALGO)
+        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS),
+    );
 
-    await this.userRepo.save(user);
-    return user;
+    return updatedUser;
   }
 
   /**
    * Update user email
    */
   async updateEmail(id: string, email: string) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     email = email.toLowerCase();
 
     if (email.length !== 0) {
-      const identityWithMatchingEmail = await this.identityRepo.findOne({
-        where: {
-          providerEmail: email,
-          userId: Not(id),
-        },
-      });
-      if (identityWithMatchingEmail) {
+      // Check if email exists in identities
+      const identityWithMatchingEmail = await this.db.findOne('identities', [
+        Query.equal('providerEmail', [email]),
+        Query.notEqual('userInternalId', user.getInternalId()),
+      ]);
+      if (!identityWithMatchingEmail.isEmpty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
 
-      const target = await this.targetRepo.findOne({
-        where: {
-          identifier: email,
-        },
-      });
+      const target = await this.db.findOne('targets', [
+        Query.equal('identifier', [email]),
+      ]);
 
-      if (target) {
+      if (!target.isEmpty()) {
         throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
       }
     }
 
-    const oldEmail = user.email;
+    const oldEmail = user.getAttribute('email');
 
-    user.email = email;
-    user.emailVerification = false;
+    user.setAttribute('email', email).setAttribute('emailVerification', false);
 
     try {
-      await this.userRepo.save(user);
+      const updatedUser = await this.db.updateDocument(
+        'users',
+        user.getId(),
+        user,
+      );
+      const oldTarget = updatedUser.find('identifier', oldEmail, 'targets');
 
-      const oldTarget = await this.targetRepo.findOne({
-        where: {
-          identifier: oldEmail,
-        },
-      });
-
-      if (oldTarget) {
+      if (!oldTarget.isEmpty()) {
         if (email.length !== 0) {
-          oldTarget.identifier = email;
-          await this.targetRepo.save(oldTarget);
+          await this.db.updateDocument(
+            'targets',
+            oldTarget.getId(),
+            oldTarget.setAttribute('identifier', email),
+          );
         } else {
-          await this.targetRepo.remove(oldTarget);
+          await this.db.deleteDocument('targets', oldTarget.getId());
         }
       } else {
         if (email.length !== 0) {
-          const newTarget = this.targetRepo.create({
-            $permissions: [
-              Permission.Read(Role.User(user.$id)),
-              Permission.Update(Role.User(user.$id)),
-              Permission.Delete(Role.User(user.$id)),
-            ],
-            userId: user.$id,
-            user: user,
-            providerType: 'email',
-            identifier: email,
-          });
-          await this.targetRepo.save(newTarget);
+          const target = await this.db.createDocument(
+            'targets',
+            new Document({
+              $permissions: [
+                Permission.read(Role.user(user.getId())),
+                Permission.update(Role.user(user.getId())),
+                Permission.delete(Role.user(user.getId())),
+              ],
+              userId: user.getId(),
+              userInternalId: user.getInternalId(),
+              providerType: 'email',
+              identifier: email,
+            }),
+          );
+          updatedUser.setAttribute('targets', [
+            ...updatedUser.getAttribute('targets', []),
+            target,
+          ]);
         }
       }
-    } catch (error) {
-      throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
-    }
 
-    return user;
+      await this.db.purgeCachedDocument('users', user.getId());
+      return updatedUser;
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
+      }
+      throw error;
+    }
   }
 
   /**
    * Update user phone
    */
   async updatePhone(id: string, phone: string) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const oldPhone = user.phone;
+    const oldPhone = user.getAttribute('phone');
 
-    user.phone = phone;
-    user.phoneVerification = false;
+    user.setAttribute('phone', phone).setAttribute('phoneVerification', false);
 
     if (phone.length !== 0) {
-      const target = await this.targetRepo.findOne({
-        where: {
-          identifier: phone,
-        },
-      });
+      const target = await this.db.findOne('targets', [
+        Query.equal('identifier', [phone]),
+      ]);
 
-      if (target) {
+      if (!target.isEmpty()) {
         throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
       }
     }
 
     try {
-      await this.userRepo.save(user);
+      const updatedUser = await this.db.updateDocument(
+        'users',
+        user.getId(),
+        user,
+      );
+      const oldTarget = updatedUser.find('identifier', oldPhone, 'targets');
 
-      const oldTarget = await this.targetRepo.findOne({
-        where: {
-          identifier: oldPhone,
-        },
-      });
-
-      if (oldTarget) {
+      if (!oldTarget.isEmpty()) {
         if (phone.length !== 0) {
-          oldTarget.identifier = phone;
-          await this.targetRepo.save(oldTarget);
+          await this.db.updateDocument(
+            'targets',
+            oldTarget.getId(),
+            oldTarget.setAttribute('identifier', phone),
+          );
         } else {
-          await this.targetRepo.remove(oldTarget);
+          await this.db.deleteDocument('targets', oldTarget.getId());
         }
       } else {
         if (phone.length !== 0) {
-          const newTarget = this.targetRepo.create({
-            $permissions: [
-              Permission.Read(Role.User(user.$id)),
-              Permission.Update(Role.User(user.$id)),
-              Permission.Delete(Role.User(user.$id)),
-            ],
-            userId: user.$id,
-            user: user,
-            providerType: 'sms',
-            identifier: phone,
-          });
-          await this.targetRepo.save(newTarget);
+          const target = await this.db.createDocument(
+            'targets',
+            new Document({
+              $permissions: [
+                Permission.read(Role.user(user.getId())),
+                Permission.update(Role.user(user.getId())),
+                Permission.delete(Role.user(user.getId())),
+              ],
+              userId: user.getId(),
+              userInternalId: user.getInternalId(),
+              providerType: 'sms',
+              identifier: phone,
+            }),
+          );
+          updatedUser.setAttribute('targets', [
+            ...updatedUser.getAttribute('targets', []),
+            target,
+          ]);
         }
       }
+      await this.db.purgeCachedDocument('users', user.getId());
+      return updatedUser;
     } catch (error) {
-      throw new Exception(Exception.USER_PHONE_ALREADY_EXISTS);
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.USER_PHONE_ALREADY_EXISTS);
+      }
+      throw error;
     }
-
-    return user;
   }
 
   /**
@@ -371,18 +428,21 @@ export class UsersService {
    */
   async updateEmailVerification(
     id: string,
-    input: UpdateUserEmailVerificationDto,
+    input: UpdateUserEmailVerificationDTO,
   ) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.emailVerification = input.emailVerification;
-    await this.userRepo.save(user);
+    const updatedUser = await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user.setAttribute('emailVerification', input.emailVerification),
+    );
 
-    return user;
+    return updatedUser;
   }
 
   /**
@@ -390,186 +450,197 @@ export class UsersService {
    */
   async updatePhoneVerification(
     id: string,
-    input: UpdateUserPoneVerificationDto,
+    input: UpdateUserPoneVerificationDTO,
   ) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.phoneVerification = input.phoneVerification;
-    await this.userRepo.save(user);
-    return user;
+    const updatedUser = await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user.setAttribute('phoneVerification', input.phoneVerification),
+    );
+
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return updatedUser;
   }
 
   /**
    * Update Mfa Status
    */
   async updateMfaStatus(id: string, mfa: boolean) {
-    const user = await this.userRepo.findOneBy({ $id: id });
+    const user = await this.db.getDocument('users', id);
 
-    if (!user) {
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.mfa = mfa;
-    await this.userRepo.save(user);
-    return user;
+    user.setAttribute('mfa', mfa);
+
+    const updatedUser = await this.db.updateDocument(
+      'users',
+      user.getId(),
+      user,
+    );
+
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', updatedUser.getId());
+
+    return updatedUser;
   }
 
   /**
    * Create a new user
    */
-  create(createUserDto: CreateUserDto) {
+  create(createUserDTO: CreateUserDTO) {
     return this.createUser(
       'plaintext',
       {},
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with argon2
    */
-  createWithArgon2(createUserDto: CreateUserDto) {
+  createWithArgon2(createUserDTO: CreateUserDTO) {
     return this.createUser(
       'argon2',
       {},
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with bcrypt
    */
-  createWithBcrypt(createUserDto: CreateUserDto) {
+  createWithBcrypt(createUserDTO: CreateUserDTO) {
     return this.createUser(
       'bcrypt',
       {},
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with md5
    */
-  createWithMd5(createUserDto: CreateUserDto) {
+  createWithMd5(createUserDTO: CreateUserDTO) {
     return this.createUser(
       'md5',
       {},
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with sha
    */
-  createWithSha(createUserDto: CreateUserWithShaDto) {
+  createWithSha(createUserDTO: CreateUserWithShaDTO) {
     let hashOptions = {};
-    if (createUserDto.passwordVersion) {
-      hashOptions = { version: createUserDto.passwordVersion };
+    if (createUserDTO.passwordVersion) {
+      hashOptions = { version: createUserDTO.passwordVersion };
     }
     return this.createUser(
       'sha',
       hashOptions,
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with phpass
    */
-  createWithPhpass(createUserDto: CreateUserDto) {
+  createWithPhpass(createUserDTO: CreateUserDTO) {
     return this.createUser(
       'phpass',
       {},
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with scrypt
    */
-  createWithScrypt(createUserDto: CreateUserWithScryptDto) {
+  createWithScrypt(createUserDTO: CreateUserWithScryptDTO) {
     const hashOptions = {
-      salt: createUserDto.passwordSalt,
-      costCpu: createUserDto.passwordCpu,
-      costMemory: createUserDto.passwordMemory,
-      costParallel: createUserDto.passwordParallel,
-      length: createUserDto.passwordLength,
+      salt: createUserDTO.passwordSalt,
+      costCpu: createUserDTO.passwordCpu,
+      costMemory: createUserDTO.passwordMemory,
+      costParallel: createUserDTO.passwordParallel,
+      length: createUserDTO.passwordLength,
     };
     return this.createUser(
       'scrypt',
       hashOptions,
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
   }
 
   /**
    * Create a new user with scryptMod
    */
-  createWithScryptMod(createUserDto: CreateUserWithScryptModifedDto) {
+  createWithScryptMod(createUserDTO: CreateUserWithScryptModifedDTO) {
     const hashOptions = {
-      salt: createUserDto.passwordSalt,
-      saltSeparator: createUserDto.passwordSaltSeparator,
-      signerKey: createUserDto.passwordSignerKey,
+      salt: createUserDTO.passwordSalt,
+      saltSeparator: createUserDTO.passwordSaltSeparator,
+      signerKey: createUserDTO.passwordSignerKey,
     };
     return this.createUser(
       'scryptMod',
       hashOptions,
-      createUserDto.userId,
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.phone,
-      createUserDto.name,
+      createUserDTO.userId,
+      createUserDTO.email,
+      createUserDTO.password,
+      createUserDTO.phone,
+      createUserDTO.name,
     );
-  }
-
-  // TEMP MIGRATIONS
-  async tempUndoMigrations() {
-    return await this.dataSource.undoLastMigration();
-  }
-
-  // TEMP MIGRATIONS
-  async tempDoMigrations() {
-    return this.dataSource.runMigrations();
   }
 
   /**
    * Create a new target
    */
-  async createTarget(userId: string, input: CreateTargetDto) {
+  async createTarget(userId: string, input: CreateTargetDTO) {
     const targetId =
-      input.targetId === 'unique()' ? ID.unique() : ID.custom(input.targetId);
+      input.targetId === 'unique()' ? ID.unique() : input.targetId;
+
+    let provider: Document;
+    if (input.providerId) {
+      provider = await this.db.getDocument('providers', input.providerId);
+    }
 
     switch (input.providerType) {
       case 'email':
@@ -588,67 +659,112 @@ export class UsersService {
         throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
     }
 
-    const user = await this.userRepo.findOneBy({ $id: userId });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const existingTarget = await this.targetRepo.findOneBy({ $id: targetId });
-    if (existingTarget) {
+    const existingTarget = await this.db.getDocument('targets', targetId);
+
+    if (!existingTarget.isEmpty()) {
       throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
     }
 
-    const target = this.targetRepo.create({
-      $id: targetId,
-      $permissions: [
-        Permission.Read(Role.User(userId)),
-        Permission.Update(Role.User(userId)),
-        Permission.Delete(Role.User(userId)),
-      ],
-      userId: user.$id,
-      user: user,
-      providerType: input.providerType,
-      identifier: input.identifier,
-      name: input.name,
-    });
+    try {
+      const target = await this.db.createDocument(
+        'targets',
+        new Document({
+          $id: targetId,
+          $permissions: [
+            Permission.read(Role.user(user.getId())),
+            Permission.update(Role.user(user.getId())),
+            Permission.delete(Role.user(user.getId())),
+          ],
+          providerId: provider ? provider.getId() : null,
+          providerInternalId: provider ? provider.getInternalId() : null,
+          providerType: input.providerType,
+          userId: userId,
+          userInternalId: user.getInternalId(),
+          identifier: input.identifier,
+          name: input.name || null,
+        }),
+      );
 
-    await this.targetRepo.save(target);
-    return target;
+      await this.db.purgeCachedDocument('users', user.getId());
+
+      return target;
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+      }
+      throw error;
+    }
   }
 
   /**
-   * Get all targets
+   * Get all targets for a user
    */
-  async getTargets(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: ['targets'],
-    });
-    console.log(user, user.targets);
-    if (!user) {
+  async getTargets(userId: string, queries: Query[] = []) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const targets = await this.targetRepo.find();
+    queries.push(Query.equal('userId', [userId]));
 
-    console.log(targets);
+    // Find cursor query if it exists
+    const cursor = queries.find((query) =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
 
-    return { total: user.targets.length, targets: user.targets };
+    if (cursor) {
+      const targetId = cursor.getValue();
+      const cursorDocument = await this.db.getDocument('targets', targetId);
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Target '${targetId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    return {
+      targets: await this.db.find('targets', queries),
+      total: await this.db.count('targets', queries, APP_LIMIT_COUNT),
+    };
   }
 
   /**
    * Update a target
    */
-  async updateTarget(userId: string, targetId: string, input: UpdateTargetDto) {
-    const target = await this.targetRepo.findOne({
-      where: { $id: targetId, userId },
-    });
-    if (!target) {
+  async updateTarget(userId: string, targetId: string, input: UpdateTargetDTO) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const target = await this.db.getDocument('targets', targetId);
+
+    if (target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    if (user.getId() !== target.getAttribute('userId')) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
     if (input.identifier) {
-      switch (target.providerType) {
+      const providerType = target.getAttribute('providerType');
+
+      switch (providerType) {
         case 'email':
           if (!new EmailValidator().isValid(input.identifier)) {
             throw new Exception(Exception.GENERAL_INVALID_EMAIL);
@@ -665,42 +781,57 @@ export class UsersService {
           throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
       }
 
-      target.identifier = input.identifier;
+      target.setAttribute('identifier', input.identifier);
     }
 
     if (input.providerId) {
-      const provider = await this.providerRepo.findOne({
-        where: { $id: input.providerId },
-      });
+      const provider = await this.db.getDocument('providers', input.providerId);
 
-      if (!provider) {
+      if (provider.isEmpty()) {
         throw new Exception(Exception.PROVIDER_NOT_FOUND);
       }
 
-      if (provider.type !== target.providerType) {
+      if (
+        provider.getAttribute('type') !== target.getAttribute('providerType')
+      ) {
         throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
       }
 
-      target.providerId = provider.$id;
-      target.provider = provider;
+      target.setAttribute('providerId', provider.getId());
+      target.setAttribute('providerInternalId', provider.getInternalId());
     }
 
     if (input.name) {
-      target.name = input.name;
+      target.setAttribute('name', input.name);
     }
 
-    await this.targetRepo.save(target);
-    return target;
+    const updatedTarget = await this.db.updateDocument(
+      'targets',
+      target.getId(),
+      target,
+    );
+    await this.db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', user.getId());
+    // queueForEvents.setParam('targetId', target.getId());
+
+    return updatedTarget;
   }
 
   /**
    * Get A target
    */
   async getTarget(userId: string, targetId: string) {
-    const target = await this.targetRepo.findOne({
-      where: { $id: targetId, userId },
-    });
-    if (!target) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const target = await this.db.getDocument('targets', targetId);
+
+    if (target.isEmpty() || target.getAttribute('userId') !== userId) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
@@ -711,14 +842,35 @@ export class UsersService {
    * Delete a target
    */
   async deleteTarget(userId: string, targetId: string) {
-    const target = await this.targetRepo.findOne({
-      where: { $id: targetId, userId },
-    });
-    if (!target) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const target = await this.db.getDocument('targets', targetId);
+
+    if (target.isEmpty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
-    await this.targetRepo.remove(target);
+    if (user.getId() !== target.getAttribute('userId')) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    await this.db.deleteDocument('targets', target.getId());
+    await this.db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Implement queue for deletes
+    // queueForDeletes
+    //   .setType(DELETE_TYPE_TARGET)
+    //   .setDocument(target);
+
+    // TODO: Implement queue for events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('targetId', target.getId());
+
     return {};
   }
 
@@ -726,140 +878,178 @@ export class UsersService {
    * Get all sessions
    */
   async getSessions(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: ['sessions'],
-    });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    return { total: user.sessions.length, sessions: user.sessions };
+    const sessions = user.getAttribute('sessions', []);
+
+    for (const session of sessions) {
+      const countryCode = session.getAttribute('countryCode', '');
+      // TODO: Implement proper locale/translation service
+      const countryName = countryCode ? countryCode.toLowerCase() : 'unknown';
+
+      session.setAttribute('countryName', countryName);
+      session.setAttribute('current', false);
+    }
+
+    return {
+      sessions: sessions,
+      total: sessions.length,
+    };
   }
 
   /**
    * Get all memberships
    */
   async getMemberships(userId: string) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
+    const memberships = user.getAttribute('memberships', []);
 
-    const memberships = await this.memberRepo.find({
-      where: { user: { id: user.id } },
-      relations: ['team'],
-    });
+    for (const membership of memberships) {
+      const team = await this.db.getDocument(
+        'teams',
+        membership.getAttribute('teamId'),
+      );
 
-    for (let i = 0; i < memberships.length; i++) {
-      memberships[i].userEmail = user.email;
-      memberships[i].userName = user.name;
-      memberships[i].teamName = memberships[i].team.name;
+      membership
+        .setAttribute('teamName', team.getAttribute('name'))
+        .setAttribute('userName', user.getAttribute('name'))
+        .setAttribute('userEmail', user.getAttribute('email'));
     }
 
-    return { total: memberships.length, memberships };
+    return {
+      memberships: memberships,
+      total: memberships.length,
+    };
   }
 
   /**
    * Get Mfa factors
    */
   async getMfaFactors(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: ['authenticators'],
-    });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const totp = await TOTP.getAuthenticatorFromUser(user);
+    const totp = TOTP.getAuthenticatorFromUser(user);
 
-    return {
-      [MfaType.TOTP]: totp !== null && totp.verified,
-      [MfaType.EMAIL]: user.email && user.emailVerification,
-      [MfaType.PHONE]: user.phone && user.phoneVerification,
-    };
+    return new Document({
+      [MfaType.TOTP]: totp !== null && totp.getAttribute('verified', false),
+      [MfaType.EMAIL]:
+        user.getAttribute('email', false) &&
+        user.getAttribute('emailVerification', false),
+      [MfaType.PHONE]:
+        user.getAttribute('phone', false) &&
+        user.getAttribute('phoneVerification', false),
+    });
   }
 
   /**
    * Get Mfa Recovery Codes
    */
   async getMfaRecoveryCodes(userId: string) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (!user.mfaRecoveryCodes || user.mfaRecoveryCodes.length === 0) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+
+    if (!mfaRecoveryCodes.length) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
     }
 
-    return {
-      recoveryCodes: user.mfaRecoveryCodes,
-    };
+    return new Document({
+      recoveryCodes: mfaRecoveryCodes,
+    });
   }
 
   /**
    * Generate Mfa Recovery Codes
    */
   async generateMfaRecoveryCodes(userId: string) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (user.mfaRecoveryCodes && user.mfaRecoveryCodes.length > 0) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+
+    if (mfaRecoveryCodes.length > 0) {
       throw new Exception(Exception.USER_RECOVERY_CODES_ALREADY_EXISTS);
     }
 
-    user.mfaRecoveryCodes = MfaType.generateBackupCodes();
-    await this.userRepo.save(user);
+    const newRecoveryCodes = MfaType.generateBackupCodes();
+    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    await this.db.updateDocument('users', user.getId(), user);
 
-    return {
-      recoveryCodes: user.mfaRecoveryCodes,
-    };
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return new Document({
+      recoveryCodes: newRecoveryCodes,
+    });
   }
 
   /**
    * Regenerate Mfa Recovery Codes
    */
   async regenerateMfaRecoveryCodes(userId: string) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (!user.mfaRecoveryCodes || user.mfaRecoveryCodes.length === 0) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    if (!mfaRecoveryCodes.length) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
     }
 
-    user.mfaRecoveryCodes = MfaType.generateBackupCodes();
-    await this.userRepo.save(user);
+    const newRecoveryCodes = MfaType.generateBackupCodes();
+    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    await this.db.updateDocument('users', user.getId(), user);
 
-    return {
-      recoveryCodes: user.mfaRecoveryCodes,
-    };
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return new Document({
+      recoveryCodes: newRecoveryCodes,
+    });
   }
 
   /**
    * Delete Mfa Authenticator
    */
   async deleteMfaAuthenticator(userId: string, type: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: { authenticators: true },
-    });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const authenticator = TOTP.getAuthenticatorFromUser(user);
 
-    if (!authenticator) {
+    if (authenticator === null) {
       throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
     }
 
-    await this.authenticatorRepo.remove(authenticator);
+    await this.db.deleteDocument('authenticators', authenticator.getId());
+    await this.db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Implement queue for events
+    // queueForEvents.setParam('userId', user.getId());
 
     return {};
   }
@@ -867,28 +1057,103 @@ export class UsersService {
   /**
    * Get all logs
    */
-  async getLogs(userId: string) {
+  async getLogs(userId: string, queries: Query[]) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    // Parse and group queries
+    const grouped = Query.groupByType(queries);
+    const limit = grouped['limit'] ?? APP_LIMIT_COUNT;
+    const offset = grouped['offset'] ?? 0;
+
+    // Get logs from audit service
+    // const audit = new Audit(this.db);
+    const logs = []; //await audit.getLogsByUser(user.getInternalId(), limit, offset);
+    const output = [];
+
+    for (const log of logs) {
+      const userAgent = log.userAgent || 'UNKNOWN';
+      const detector = new Detector(userAgent);
+      detector.skipBotDetection();
+
+      const os = detector.getOS();
+      const client = detector.getClient();
+      const device = detector.getDevice();
+
+      output.push(
+        new Document({
+          event: log.event,
+          userId: ID.custom(log.data.userId),
+          userEmail: log.data.userEmail || null,
+          userName: log.data.userName || null,
+          ip: log.ip,
+          time: log.time,
+          osCode: os.osCode,
+          osName: os.osName,
+          osVersion: os.osVersion,
+          clientType: client.clientType,
+          clientCode: client.clientCode,
+          clientName: client.clientName,
+          clientVersion: client.clientVersion,
+          clientEngine: client.clientEngine,
+          clientEngineVersion: client.clientEngineVersion,
+          deviceName: device.deviceName,
+          deviceBrand: device.deviceBrand,
+          deviceModel: device.deviceModel,
+          countryCode: '--', // TODO: Implement geodb lookup
+          countryName: 'Unknown', // TODO: Implement locale translations
+        }),
+      );
+    }
+
     return {
-      logs: [],
-      total: 0,
+      total: 0, // await audit.countLogsByUser(user.getInternalId()),
+      logs: output,
     };
   }
 
   /**
    * Get all identities
    */
-  async getIdentities(queries: string[], search: string) {
-    const query = new QueryBuilder(this.identityRepo, [
-      'providerEmail',
-      'userId',
-    ]);
+  async getIdentities(queries: Query[] = [], search?: string) {
+    // Handle search param if provided
+    if (search) {
+      queries.push(Query.search('search', search));
+    }
 
-    query.parseQueryStrings(queries);
+    // Find cursor query if it exists
+    const cursor = queries.find((query) =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
 
-    const { results, totalCount } = await query.execute();
+    if (cursor) {
+      const identityId = cursor.getValue();
+      const cursorDocument = await this.db.getDocument(
+        'identities',
+        identityId,
+      );
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `User '${identityId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    // Get filter queries
+    const filterQueries = Query.groupByType(queries)['filters'];
+
     return {
-      identities: results,
-      total: totalCount,
+      identities: await this.db.find('identities', queries),
+      total: await this.db.count('identities', filterQueries, APP_LIMIT_COUNT),
     };
   }
 
@@ -896,14 +1161,19 @@ export class UsersService {
    * Delete an identity
    */
   async deleteIdentity(identityId: string) {
-    const identity = await this.identityRepo.findOne({
-      where: { $id: identityId },
-    });
-    if (!identity) {
+    const identity = await this.db.getDocument('identities', identityId);
+
+    if (identity.isEmpty()) {
       throw new Exception(Exception.USER_IDENTITY_NOT_FOUND);
     }
 
-    await this.identityRepo.remove(identity);
+    await this.db.deleteDocument('identities', identityId);
+
+    // TODO: Implement queue for events
+    // queueForEvents
+    //   .setParam('userId', identity.getAttribute('userId'))
+    //   .setParam('identityId', identity.getId())
+    //   .setPayload(identity); // TODO: Implement proper response formatter
 
     return {};
   }
@@ -911,64 +1181,79 @@ export class UsersService {
   /**
    * Create a new Token
    */
-  async createToken(
-    userId: string,
-    input: CreateTokenDto,
-    context: { ip: string; ua: string },
-  ) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+  async createToken(userId: string, input: CreateTokenDTO, req: Request) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const secret = Auth.tokenGenerator(input.length);
     const expire = new Date(Date.now() + input.expire * 1000);
 
-    const token = this.tokenRepo.create({
+    const token = new Document({
       $id: ID.unique(),
-      userId: user.$id,
-      user: user,
+      $permissions: [
+        Permission.read(Role.user(userId)),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId)),
+      ],
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
       type: Auth.TOKEN_TYPE_GENERIC,
       secret: Auth.hash(secret),
       expire: expire,
-      userAgent: context.ua,
-      ip: context.ip,
+      userAgent: req.get('user-agent') || 'UNKNOWN',
+      ip: req.ip,
     });
 
-    await this.tokenRepo.save(token);
+    const createdToken = await this.db.createDocument('tokens', token);
+    await this.db.purgeCachedDocument('users', user.getId());
 
-    token.secret = secret;
+    createdToken.setAttribute('secret', secret);
 
-    return token;
+    // TODO: Implement queue for events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('tokenId', createdToken.getId())
+    //   .setPayload(createdToken); // TODO: Implement proper response formatter
+
+    return createdToken;
   }
 
   /**
    * Create Jwt
    */
-  async createJwt(userId: string, input: CreateJwtDto) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: { sessions: true },
-    });
-    if (!user) {
+  async createJwt(userId: string, input: CreateJwtDTO) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    let session: SessionEntity | undefined;
+    const sessions = user.getAttribute('sessions', []);
+    let session = new Document();
 
     if (input.sessionId === 'recent') {
-      session = user.sessions.length > 0 ? user.sessions.at(-1) : undefined;
+      // Get most recent
+      session =
+        sessions.length > 0 ? sessions[sessions.length - 1] : new Document();
     } else {
-      for (const sess of user.sessions) {
-        if (input.sessionId === sess.$id) {
-          session = sess;
+      // Find by ID
+      for (const loopSession of sessions) {
+        if (loopSession.getId() === input.sessionId) {
+          session = loopSession;
+          break;
         }
       }
     }
 
     return {
       jwt: this.jwtService.sign(
-        { userId: user.$id, sessionId: session ? session.$id : '' },
+        {
+          userId: user.getId(),
+          sessionId: session.isEmpty() ? '' : session.getId(),
+        },
         { expiresIn: input.duration },
       ),
     };
@@ -978,60 +1263,83 @@ export class UsersService {
    * Create User Session
    */
   async createSession(userId: string, req: Request) {
-    const project = this.cls.get<ProjectDocument>(PROJECT);
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const project = this.cls.get<Document>(PROJECT);
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
-    const detector = new Detector(req.headers['user-agent']);
+    const detector = new Detector(req.get('user-agent') || 'UNKNOWN');
+    const record = this.geoDb.get(req.ip);
 
-    const duration = project.auths.duration ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
+    const duration =
+      project.getAttribute('auths', {})['duration'] ??
+      Auth.TOKEN_EXPIRATION_LOGIN_LONG;
     const expire = new Date(Date.now() + duration * 1000);
 
-    const session = this.sessionRepo.create({
+    const session = new Document({
       $id: ID.unique(),
       $permissions: [
-        Permission.Read(Role.User(userId)),
-        Permission.Update(Role.User(userId)),
-        Permission.Delete(Role.User(userId)),
+        Permission.read(Role.user(userId)),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId)),
       ],
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
       provider: Auth.SESSION_PROVIDER_SERVER,
       secret: Auth.hash(secret),
-      userAgent: req.headers['user-agent'],
+      userAgent: req.get('user-agent') || 'UNKNOWN',
       ip: req.ip,
-      userId: user.$id,
-      user: user,
-      countryCode: '--' /**@todo: Get Country using geodb */,
+      countryCode: record ? record.country.iso_code.toLowerCase() : '--',
       expire: expire,
       ...detector.getOS(),
       ...detector.getClient(),
       ...detector.getDevice(),
     });
 
-    await this.sessionRepo.save(session);
+    // TODO: Implement proper locale/translation service
+    const countryName = 'Unknown';
 
-    const countryName = '';
+    const createdSession = await this.db.createDocument('sessions', session);
+    createdSession
+      .setAttribute('secret', secret)
+      .setAttribute('countryName', countryName);
 
-    session.secret = secret;
-    session.countryName = countryName;
+    // TODO: Implement queue for events
+    // queueForEvents
+    //     .setParam('userId', user.getId())
+    //     .setParam('sessionId', createdSession.getId())
+    //     .setPayload(session); // TODO: Implement proper response formatter
 
-    return session;
+    return createdSession;
   }
 
   /**
    * Delete User Session
    */
   async deleteSession(userId: string, sessionId: string) {
-    const session = await this.sessionRepo.findOne({
-      where: { $id: sessionId, userId },
-    });
-    if (!session) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const session = await this.db.getDocument('sessions', sessionId);
+
+    if (session.isEmpty()) {
       throw new Exception(Exception.USER_SESSION_NOT_FOUND);
     }
 
-    await this.sessionRepo.remove(session);
+    await this.db.deleteDocument('sessions', session.getId());
+    await this.db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Implement queue for events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('sessionId', sessionId)
+    //   .setPayload(session); // TODO: Implement proper response formatter
 
     return {};
   }
@@ -1040,15 +1348,19 @@ export class UsersService {
    * Delete User Sessions
    */
   async deleteSessions(userId: string) {
-    const user = await this.userRepo.findOne({
-      where: { $id: userId },
-      relations: ['sessions'],
-    });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    await this.sessionRepo.remove(user.sessions);
+    const sessions = user.getAttribute('sessions', []);
+
+    for (const session of sessions) {
+      await this.db.deleteDocument('sessions', session.getId());
+    }
+
+    await this.db.purgeCachedDocument('users', user.getId());
 
     return {};
   }
@@ -1057,12 +1369,26 @@ export class UsersService {
    * Delete User
    */
   async remove(userId: string) {
-    const user = await this.userRepo.findOne({ where: { $id: userId } });
-    if (!user) {
+    const user = await this.db.getDocument('users', userId);
+
+    if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    await this.userRepo.remove(user);
+    // Clone user object to send to workers
+    const clone = user.clone();
+
+    await this.db.deleteDocument('users', userId);
+
+    // TODO: Implement queue for deletes
+    // queueForDeletes
+    //   .setType(DELETE_TYPE_DOCUMENT)
+    //   .setDocument(clone);
+
+    // TODO: Implement queue for events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setPayload(clone); // TODO: Implement proper response formatter
 
     return {};
   }
@@ -1085,24 +1411,22 @@ export class UsersService {
     password: string | null,
     phone: string | null,
     name: string,
-  ): Promise<UserEntity> {
-    const project: ProjectDocument = this.cls.get(PROJECT);
-
+  ): Promise<Document> {
+    const project = this.cls.get<Document>(PROJECT);
     const plaintextPassword = password;
     const hashOptionsObject =
       typeof hashOptions === 'string' ? JSON.parse(hashOptions) : hashOptions;
-    const passwordHistory = project.auths?.passwordHistory ?? 0;
+    const auths = project.getAttribute('auths', {});
+    const passwordHistory = auths?.passwordHistory ?? 0;
 
     if (email) {
       email = email.toLowerCase();
 
-      // Ensure this email is not already used in another identity
-      const identityWithMatchingEmail = await this.identityRepo.findOne({
-        where: {
-          providerEmail: email,
-        },
-      });
-      if (identityWithMatchingEmail) {
+      // Check if email exists in identities
+      const identityWithMatchingEmail = await this.db.findOne('identities', [
+        Query.equal('providerEmail', [email]),
+      ]);
+      if (!identityWithMatchingEmail.isEmpty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
     }
@@ -1110,7 +1434,7 @@ export class UsersService {
     try {
       userId = userId === 'unique()' ? ID.unique() : ID.custom(userId);
 
-      if (project.auths?.personalDataCheck ?? false) {
+      if (auths?.personalDataCheck ?? false) {
         const personalDataValidator = new PersonalDataValidator(
           userId,
           email,
@@ -1130,12 +1454,12 @@ export class UsersService {
           : password
         : null;
 
-      const user = this.userRepo.create({
+      const user = new Document({
         $id: userId,
         $permissions: [
-          Permission.Read(Role.Any()),
-          Permission.Update(Role.User(userId)),
-          Permission.Delete(Role.User(userId)),
+          Permission.read(Role.any()),
+          Permission.update(Role.user(userId)),
+          Permission.delete(Role.user(userId)),
         ],
         email,
         emailVerification: false,
@@ -1161,38 +1485,39 @@ export class UsersService {
         search: [userId, email, phone, name].filter(Boolean).join(' '),
       });
 
-      // if (hash === 'plaintext') {
-      //   await hooks.trigger('passwordValidator', [dbForProject, project, plaintextPassword, user, true]);
-      // }
-
-      const createdUser = await this.userRepo.save(user);
+      const createdUser = await this.db.createDocument('users', user);
 
       if (email) {
         try {
-          const target = this.targetRepo.create({
-            $id: ID.unique(),
-            $permissions: [
-              Permission.Read(Role.User(createdUser.$id)),
-              Permission.Update(Role.User(createdUser.$id)),
-              Permission.Delete(Role.User(createdUser.$id)),
-            ],
-            userId: createdUser.$id,
-            user: createdUser,
-            providerType: 'email',
-            identifier: email,
-          });
-
-          await this.targetRepo.save(target);
+          const target = await this.db.createDocument(
+            'targets',
+            new Document({
+              $permissions: [
+                Permission.read(Role.user(createdUser.getId())),
+                Permission.update(Role.user(createdUser.getId())),
+                Permission.delete(Role.user(createdUser.getId())),
+              ],
+              userId: createdUser.getId(),
+              userInternalId: createdUser.getInternalId(),
+              providerType: 'email',
+              identifier: email,
+            }),
+          );
+          createdUser.setAttribute('targets', [
+            ...createdUser.getAttribute('targets', []),
+            target,
+          ]);
         } catch (error) {
-          if (error instanceof QueryFailedError) {
-            const existingTarget = await this.targetRepo.findOne({
-              where: {
-                identifier: email,
-              },
-            });
+          if (error instanceof DuplicateException) {
+            const existingTarget = await this.db.findOne('targets', [
+              Query.equal('identifier', [email]),
+            ]);
             if (existingTarget) {
-              existingTarget.user = createdUser;
-              await this.targetRepo.save(existingTarget);
+              createdUser.setAttribute(
+                'targets',
+                existingTarget,
+                Document.SET_TYPE_APPEND,
+              );
             }
           } else throw error;
         }
@@ -1200,86 +1525,103 @@ export class UsersService {
 
       if (phone) {
         try {
-          const target = this.targetRepo.create({
-            $id: ID.unique(),
-            $permissions: [
-              Permission.Read(Role.User(createdUser.$id)),
-              Permission.Update(Role.User(createdUser.$id)),
-              Permission.Delete(Role.User(createdUser.$id)),
-            ],
-            userId: createdUser.$id,
-            user: createdUser,
-            providerType: 'sms',
-            identifier: phone,
-          });
-
-          await this.targetRepo.save(target);
+          const target = await this.db.createDocument(
+            'targets',
+            new Document({
+              $permissions: [
+                Permission.read(Role.user(createdUser.getId())),
+                Permission.update(Role.user(createdUser.getId())),
+                Permission.delete(Role.user(createdUser.getId())),
+              ],
+              userId: createdUser.getId(),
+              userInternalId: createdUser.getInternalId(),
+              providerType: 'sms',
+              identifier: phone,
+            }),
+          );
+          createdUser.setAttribute('targets', [
+            ...createdUser.getAttribute('targets', []),
+            target,
+          ]);
         } catch (error) {
-          if (error instanceof QueryFailedError) {
-            const existingTarget = await this.targetRepo.findOne({
-              where: {
-                identifier: phone,
-              },
-            });
+          if (error instanceof DuplicateException) {
+            const existingTarget = await this.db.findOne('targets', [
+              Query.equal('identifier', [phone]),
+            ]);
             if (existingTarget) {
-              existingTarget.user = createdUser;
-              await this.targetRepo.save(existingTarget);
+              createdUser.setAttribute(
+                'targets',
+                existingTarget,
+                Document.SET_TYPE_APPEND,
+              );
             }
           } else throw error;
         }
       }
 
-      // queueForEvents.setParam('userId', userId);
+      await this.db.purgeCachedDocument('users', createdUser.getId());
+
       return createdUser;
     } catch (error) {
-      this.logger.error(error);
-      if (error instanceof QueryFailedError) {
+      if (error instanceof DuplicateException) {
         throw new Exception(Exception.USER_ALREADY_EXISTS);
-      } else throw error;
+      }
+      throw error;
     }
   }
 
   /**
    * Get usage statistics
-   * @todo .....
    */
   async getUsage(range: string = '1d') {
     const periods = {
       '1d': { limit: 24, period: '1h', factor: 3600 },
       '7d': { limit: 7, period: '1d', factor: 86400 },
     };
+
     const stats = {};
-    const usage = {} as any;
+    const usage = {};
     const days = periods[range];
     const metrics = ['users', 'sessions'];
 
+    // Skip authorization check as per PHP version
     for (const metric of metrics) {
-      const totalResult = await this.statsRepo.findOne({
-        where: { metric, period: 'inf' },
-      });
-      stats[metric] = { total: totalResult?.value ?? 0, data: {} };
+      const result = await this.db.findOne('stats', [
+        Query.equal('metric', [metric]),
+        Query.equal('period', ['inf']),
+      ]);
 
-      const results = await this.statsRepo.find({
-        where: { metric, period: days.period },
-        order: { time: 'DESC' },
-        take: days.limit,
-      });
+      stats[metric] = { total: result?.getAttribute('value') ?? 0, data: {} };
 
+      const results = await this.db.find('stats', [
+        Query.equal('metric', [metric]),
+        Query.equal('period', [days.period]),
+        Query.limit(days.limit),
+        Query.orderDesc('time'),
+      ]);
+
+      stats[metric].data = {};
       for (const result of results) {
-        stats[metric].data[result.time] = { value: result.value };
+        stats[metric].data[result.getAttribute('time')] = {
+          value: result.getAttribute('value'),
+        };
       }
     }
 
     const format =
-      days.period === '1h' ? 'Y-m-d\TH:00:00.000P' : 'Y-m-d\T00:00:00.000P';
+      days.period === '1h' ? 'Y-m-d\\TH:00:00.000P' : 'Y-m-d\\T00:00:00.000P';
 
     for (const metric of metrics) {
-      usage[metric] = { total: stats[metric].total, data: [] };
-      let leap = Date.now() - days.limit * days.factor * 1000;
+      usage[metric] = {
+        total: stats[metric].total,
+        data: [],
+      };
 
-      while (leap < Date.now()) {
-        leap += days.factor * 1000;
-        const formatDate = new Date(leap).toISOString();
+      let leap = Math.floor(Date.now() / 1000) - days.limit * days.factor;
+
+      while (leap < Math.floor(Date.now() / 1000)) {
+        leap += days.factor;
+        const formatDate = new Date(leap * 1000).toISOString();
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,
@@ -1287,12 +1629,12 @@ export class UsersService {
       }
     }
 
-    return {
-      range,
-      usersTotal: usage?.users?.total,
-      sessionsTotal: usage?.sessions?.total,
-      users: usage?.users?.data,
-      sessions: usage?.sessions?.data,
-    };
+    return new Document({
+      range: range,
+      usersTotal: usage[metrics[0]].total,
+      sessionsTotal: usage[metrics[1]].total,
+      users: usage[metrics[0]].data,
+      sessions: usage[metrics[1]].data,
+    });
   }
 }

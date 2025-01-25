@@ -13,7 +13,6 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { config } from 'dotenv';
 import { BaseModule } from './base/base.module';
 import { DatabaseModule } from './database/database.module';
-import { ProjectModule } from './projects/project.module';
 import { ConsoleModule } from './console/console.module';
 import { AvatarsModule } from './avatars/avatars.module';
 import { UsersModule } from './users/users.module';
@@ -25,7 +24,7 @@ import { Request } from 'express';
 import { FunctionsModule } from './functions/functions.module';
 import { AuthMiddleware } from './core/resolver/middlewares/auth.middleware';
 import { DB_FOR_CONSOLE } from './Utils/constants';
-import { DbModule } from './core/db.provider';
+import { CoreModule } from './core/core.module';
 config();
 
 @Module({
@@ -58,10 +57,9 @@ config();
     //     ],
     //   },
     // }),
-    DbModule,
+    CoreModule,
     BaseModule,
     ConsoleModule,
-    ProjectModule,
     // UsersModule,
     // TeamsModule,
     AccountModule,

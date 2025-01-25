@@ -2,7 +2,7 @@ import { OmitType } from '@nestjs/mapped-types';
 import { IsBoolean, IsIn } from 'class-validator';
 import apis from 'src/core/config/apis';
 
-export class ProjectApiStatusDto {
+export class ProjectApiStatusDTO {
   @IsIn(Object.values(apis).map((api) => api.key))
   api: string;
 
@@ -10,6 +10,6 @@ export class ProjectApiStatusDto {
   status: boolean;
 }
 
-export class ProjectApiStatusAllDto extends OmitType(ProjectApiStatusDto, [
+export class ProjectApiStatusAllDTO extends OmitType(ProjectApiStatusDTO, [
   'api',
 ]) {}

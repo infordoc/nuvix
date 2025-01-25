@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
 
-export class CreateJwtDto {
+export class CreateJwtDTO {
   @IsString()
   @IsOptional()
   sessionId?: string = 'recent';

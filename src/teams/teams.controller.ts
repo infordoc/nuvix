@@ -17,16 +17,18 @@ import {
 } from 'src/core/resolver/response.resolver';
 import { Response } from 'src/core/helper/response.helper';
 import {
-  CreateTeamDto,
-  UpdateTeamDto,
-  UpdateTeamPrefsDto,
+  CreateTeamDTO,
+  UpdateTeamDTO,
+  UpdateTeamPrefsDTO,
 } from './dto/team.dto';
 import { User } from 'src/core/resolver/user.resolver';
 import {
-  CreateMembershipDto,
-  UpdateMembershipDto,
-  UpdateMembershipStatusDto,
+  CreateMembershipDTO,
+  UpdateMembershipDTO,
+  UpdateMembershipStatusDTO,
 } from './dto/membership.dto';
+import { ParseQueryPipe } from 'src/core/pipes/query.pipe';
+import { Query as Queries } from '@nuvix/database';
 
 @Controller({ version: ['1'], path: 'teams' })
 @UseInterceptors(ResolverInterceptor)
@@ -35,13 +37,16 @@ export class TeamsController {
 
   @Get()
   @ResponseType({ type: Response.MODEL_TEAM, list: true })
-  async findAll(@Query('query') query: string) {
-    return await this.teamsService.findAll();
+  async findAll(
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+    @Query('search') search?: string,
+  ) {
+    return await this.teamsService.findAll(queries, search);
   }
 
   @Post()
   @ResponseType({ type: Response.MODEL_TEAM })
-  async create(@User() user: any, @Body() input: CreateTeamDto) {
+  async create(@User() user: any, @Body() input: CreateTeamDTO) {
     return await this.teamsService.create(user, input);
   }
 
@@ -53,7 +58,7 @@ export class TeamsController {
 
   @Put(':id')
   @ResponseType({ type: Response.MODEL_TEAM })
-  async update(@Param('id') id: string, @Body() input: UpdateTeamDto) {
+  async update(@Param('id') id: string, @Body() input: UpdateTeamDTO) {
     return await this.teamsService.update(id, input);
   }
 
@@ -69,7 +74,7 @@ export class TeamsController {
   }
 
   @Put(':id/prefs')
-  async setPrefs(@Param('id') id: string, @Body() input: UpdateTeamPrefsDto) {
+  async setPrefs(@Param('id') id: string, @Body() input: UpdateTeamPrefsDTO) {
     return await this.teamsService.setPrefs(id, input);
   }
 
@@ -82,53 +87,53 @@ export class TeamsController {
     };
   }
 
-  @Post(':id/memberships')
-  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  async addMember(@Param('id') id: string, @Body() input: CreateMembershipDto) {
-    return await this.teamsService.addMember(id, input);
-  }
+  // @Post(':id/memberships')
+  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  // async addMember(@Param('id') id: string, @Body() input: CreateMembershipDTO) {
+  //   return await this.teamsService.addMember(id, input);
+  // }
 
-  @Get(':id/memberships')
-  @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
-  async getMembers(@Param('id') id: string) {
-    return await this.teamsService.getMembers(id);
-  }
+  // @Get(':id/memberships')
+  // @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
+  // async getMembers(@Param('id') id: string) {
+  //   return await this.teamsService.getMembers(id);
+  // }
 
-  @Get(':id/memberships/:memberId')
-  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  async getMember(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
-  ) {
-    return await this.teamsService.getMember(id, memberId);
-  }
+  // @Get(':id/memberships/:memberId')
+  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  // async getMember(
+  //   @Param('id') id: string,
+  //   @Param('memberId') memberId: string,
+  // ) {
+  //   return await this.teamsService.getMember(id, memberId);
+  // }
 
-  @Patch(':id/memberships/:memberId')
-  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  async updateMember(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
-    @Body() input: UpdateMembershipDto,
-  ) {
-    return await this.teamsService.updateMember(id, memberId, input);
-  }
+  // @Patch(':id/memberships/:memberId')
+  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  // async updateMember(
+  //   @Param('id') id: string,
+  //   @Param('memberId') memberId: string,
+  //   @Body() input: UpdateMembershipDTO,
+  // ) {
+  //   return await this.teamsService.updateMember(id, memberId, input);
+  // }
 
-  @Patch(':id/memberships/:memberId/status')
-  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  async updateMemberStatus(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
-    @Body() input: UpdateMembershipStatusDto,
-  ) {
-    return await this.teamsService.updateMemberStatus(id, memberId, input);
-  }
+  // @Patch(':id/memberships/:memberId/status')
+  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  // async updateMemberStatus(
+  //   @Param('id') id: string,
+  //   @Param('memberId') memberId: string,
+  //   @Body() input: UpdateMembershipStatusDTO,
+  // ) {
+  //   return await this.teamsService.updateMemberStatus(id, memberId, input);
+  // }
 
-  @Delete(':id/memberships/:memberId')
-  @ResponseType({ type: Response.MODEL_NONE })
-  async removeMember(
-    @Param('id') id: string,
-    @Param('memberId') memberId: string,
-  ) {
-    return await this.teamsService.deleteMember(id, memberId);
-  }
+  // @Delete(':id/memberships/:memberId')
+  // @ResponseType({ type: Response.MODEL_NONE })
+  // async removeMember(
+  //   @Param('id') id: string,
+  //   @Param('memberId') memberId: string,
+  // ) {
+  //   return await this.teamsService.deleteMember(id, memberId);
+  // }
 }

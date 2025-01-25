@@ -1,7 +1,7 @@
 import { IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
 import { oAuthProviders } from 'src/core/config/authProviders';
 
-export class oAuth2Dto {
+export class oAuth2DTO {
   @IsIn(Object.keys(oAuthProviders))
   provider: string;
 

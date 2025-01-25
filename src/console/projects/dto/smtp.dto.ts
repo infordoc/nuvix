@@ -9,7 +9,7 @@ import {
   Length,
 } from 'class-validator';
 
-export class UpdateSmtpDto {
+export class UpdateSmtpDTO {
   @IsBoolean()
   enabled: boolean;
 
@@ -55,7 +55,7 @@ export class UpdateSmtpDto {
   secure: 'tls' | 'ssl';
 }
 
-export class SmtpTestsDto {
+export class SmtpTestsDTO {
   @IsEmail({}, { each: true })
   @Length(0, 10, { each: true })
   emails: string[];

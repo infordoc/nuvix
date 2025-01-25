@@ -11,12 +11,11 @@ import {
 } from '@nuvix/database';
 import { Request, Response } from 'express';
 import { CountryResponse, Reader } from 'maxmind';
-import * as fs from 'fs';
 import { Exception } from 'src/core/extend/exception';
 import { Auth } from 'src/core/helper/auth.helper';
 import { Detector } from 'src/core/helper/detector.helper';
 import { PersonalDataValidator } from 'src/core/validators/personal-data.validator';
-import { CONSOLE_CONFIG, DB_FOR_CONSOLE } from 'src/Utils/constants';
+import { CONSOLE_CONFIG, DB_FOR_CONSOLE, GEO_DB } from 'src/Utils/constants';
 import { ResolverInterceptor } from 'src/core/resolver/response.resolver';
 import {
   UpdateEmailDTO,
@@ -27,26 +26,13 @@ import {
 @Injectable()
 @UseInterceptors(ResolverInterceptor)
 export class AccountService {
-  private readonly geodb: Reader<CountryResponse>;
   constructor(
     // private readonly queueForEvents: Event,
     // private readonly queueForMails: Mail,
     // private readonly locale: Locale,
-    // private readonly geodb: Reader<CountryResponse>,
+    @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
-  ) {
-    try {
-      const buffer = fs.readFileSync(
-        process.cwd() + '/assets/dbip/dbip-country-lite-2024-09.mmdb',
-      );
-      this.geodb = new Reader<CountryResponse>(buffer);
-    } catch (error) {
-      console.warn(
-        'GeoIP database not found, country detection will be disabled',
-      );
-      this.geodb = null;
-    }
-  }
+  ) {}
 
   /**
    * Create a new account

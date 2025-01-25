@@ -131,7 +131,6 @@ export class ResolverInterceptor implements NestInterceptor {
     const serializedResponse: PlainLiteralObject = {};
 
     for (const key in response) {
-      console.log(key);
       if (Array.isArray(response[key])) {
         serializedResponse[key] = response[key].map((item) =>
           this.transformToPlain(item, options),

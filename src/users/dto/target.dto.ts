@@ -1,8 +1,8 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { Database } from '@nuvix/database';
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
-import { Database } from 'src/core/config/database';
 
-export class CreateTargetDto {
+export class CreateTargetDTO {
   @IsString()
   @Matches(/^[a-zA-Z0-9][a-zA-Z0-9.-_]{0,35}$/, {
     message:
@@ -29,6 +29,6 @@ export class CreateTargetDto {
   name: string;
 }
 
-export class UpdateTargetDto extends PartialType(
-  OmitType(CreateTargetDto, ['targetId', 'providerType']),
+export class UpdateTargetDTO extends PartialType(
+  OmitType(CreateTargetDTO, ['targetId', 'providerType']),
 ) {}

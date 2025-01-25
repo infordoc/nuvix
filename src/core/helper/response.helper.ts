@@ -355,7 +355,7 @@ export class Response {
     MigrationFirebaseProjectModel;
 
   // Project
-  public static MODEL_PROJECT = 'project';
+  public static MODEL_PROJECT = class {}; //'project'
   public static MODEL_WEBHOOK = WebhookModel;
   public static MODEL_KEY = 'key';
   public static MODEL_MOCK_NUMBER = MockNumberModel;

@@ -16,13 +16,16 @@ export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-
 export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 100;
 
 export const APP_MAX_COUNT = 1000000;
+export const APP_LIMIT_COUNT = 100000000;
 
 export const API_KEY_STANDARD = 'standard';
 export const API_KEY_DYNAMIC = 'dynamic';
 
 export const PROJECT = Symbol('PROJECT');
 export const USER = Symbol('USER');
-export const DB_FOR_CONSOLE = Symbol('DBFORCONSOLE');
+export const DB_FOR_CONSOLE = Symbol('DbForConsole');
+export const DB_FOR_PROJECT = Symbol('DbForProject');
+export const GEO_DB = Symbol('GeoDb');
 
 export const CONSOLE_CONFIG: any = {
   auths: {},

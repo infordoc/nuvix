@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateProjectDto {
+export class CreateProjectDTO {
   @IsString()
   @IsNotEmpty()
   projectId: string;

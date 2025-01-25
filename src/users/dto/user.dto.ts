@@ -10,7 +10,7 @@ import {
   Matches,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateUserDTO {
   @IsNotEmpty()
   @Matches(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}$|^unique\(\)$/, {
     message:
@@ -36,7 +36,7 @@ export class CreateUserDto {
   name: string;
 }
 
-export class CreateUserWithShaDto extends CreateUserDto {
+export class CreateUserWithShaDTO extends CreateUserDTO {
   @IsOptional()
   @Matches(
     /^(sha1|sha224|sha256|sha384|sha512\/224|sha512\/256|sha512|sha3-224|sha3-256|sha3-384|sha3-512)$/,
@@ -48,7 +48,7 @@ export class CreateUserWithShaDto extends CreateUserDto {
   passwordVersion?: string;
 }
 
-export class CreateUserWithScryptDto extends CreateUserDto {
+export class CreateUserWithScryptDTO extends CreateUserDTO {
   @IsOptional()
   @IsString()
   @Length(1, 128)
@@ -71,7 +71,7 @@ export class CreateUserWithScryptDto extends CreateUserDto {
   passwordLength?: number;
 }
 
-export class CreateUserWithScryptModifedDto extends CreateUserDto {
+export class CreateUserWithScryptModifedDTO extends CreateUserDTO {
   @IsOptional()
   @IsString()
   @Length(1, 128)
@@ -88,13 +88,13 @@ export class CreateUserWithScryptModifedDto extends CreateUserDto {
   passwordSignerKey?: string;
 }
 
-export class UpdateUserStatusDto {
+export class UpdateUserStatusDTO {
   @IsNotEmpty()
   @IsBoolean()
   status: boolean;
 }
 
-export class UpdateUserLabelDto {
+export class UpdateUserLabelDTO {
   @IsOptional()
   @IsString({ each: true })
   @Matches(/^[a-zA-Z0-9]{1,36}$/, {
@@ -104,50 +104,50 @@ export class UpdateUserLabelDto {
   labels?: string[];
 }
 
-export class UpdateUserPoneVerificationDto {
+export class UpdateUserPoneVerificationDTO {
   @IsNotEmpty()
   @IsBoolean()
   phoneVerification: boolean;
 }
 
-export class UpdateUserEmailVerificationDto {
+export class UpdateUserEmailVerificationDTO {
   @IsNotEmpty()
   @IsBoolean()
   emailVerification: boolean;
 }
 
-export class UpdateUserNameDto {
+export class UpdateUserNameDTO {
   @IsNotEmpty()
   @IsString()
   @Length(1, 128)
   name: string;
 }
 
-export class UpdateUserPasswordDto {
+export class UpdateUserPasswordDTO {
   @IsNotEmpty()
   @Length(8)
   password: string;
 }
 
-export class UpdateUserEmailDto {
+export class UpdateUserEmailDTO {
   @IsOptional()
   @IsEmail()
   email?: string;
 }
 
-export class UpdateUserPhoneDto {
+export class UpdateUserPhoneDTO {
   @IsOptional()
   @IsPhoneNumber(null)
   phone?: string;
 }
 
-export class UpdateUserPrefsDto {
+export class UpdateUserPrefsDTO {
   @IsOptional()
   @IsObject()
   prefs?: { [key: string]: any };
 }
 
-export class UpdateMfaStatusDto {
+export class UpdateMfaStatusDTO {
   @IsNotEmpty()
   @IsBoolean()
   mfa: boolean;

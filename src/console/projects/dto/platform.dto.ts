@@ -7,7 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class CreatePlatformDto {
+export class CreatePlatformDTO {
   @IsString()
   @MinLength(1)
   @MaxLength(128)
@@ -36,6 +36,6 @@ export class CreatePlatformDto {
   hostname: string;
 }
 
-export class UpdatePlatformDto extends OmitType(CreatePlatformDto, [
+export class UpdatePlatformDTO extends OmitType(CreatePlatformDTO, [
   'type',
 ] as const) {}

@@ -5,7 +5,7 @@ import {
   Get,
 } from '@nestjs/common';
 
-@Controller({ version: ['1'], path: 'project' })
+@Controller({ version: ['1'], path: 'console/project' })
 @UseInterceptors(ClassSerializerInterceptor)
 export class ProjectController {
   constructor() {}

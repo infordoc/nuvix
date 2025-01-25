@@ -11,7 +11,7 @@ import {
 } from 'class-validator';
 import { APP_LIMIT_ARRAY_PARAMS_SIZE } from 'src/Utils/constants';
 
-export class CreateTeamDto {
+export class CreateTeamDTO {
   @IsString()
   @Matches(/^[a-zA-Z0-9][a-zA-Z0-9.-_]{0,35}$/, {
     message:
@@ -38,11 +38,11 @@ export class CreateTeamDto {
   roles: string[];
 }
 
-export class UpdateTeamDto extends PartialType(
-  OmitType(CreateTeamDto, ['teamId', 'roles']),
+export class UpdateTeamDTO extends PartialType(
+  OmitType(CreateTeamDTO, ['teamId', 'roles']),
 ) {}
 
-export class UpdateTeamPrefsDto {
+export class UpdateTeamPrefsDTO {
   @IsObject()
   prefs?: { [key: string]: any };
 }

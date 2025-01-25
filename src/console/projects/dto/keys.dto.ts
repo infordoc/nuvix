@@ -9,7 +9,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class CreateKeyDto {
+export class CreateKeyDTO {
   @IsString()
   @MaxLength(128)
   @MinLength(1)
@@ -24,4 +24,4 @@ export class CreateKeyDto {
   expire: string;
 }
 
-export class UpdateKeyDto extends PartialType(CreateKeyDto) {}
+export class UpdateKeyDTO extends PartialType(CreateKeyDTO) {}

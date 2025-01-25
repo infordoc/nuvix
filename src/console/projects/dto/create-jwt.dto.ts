@@ -1,6 +1,6 @@
 import { IsArray, IsInt, Max, Min } from 'class-validator';
 
-export class CreateJwtDto {
+export class CreateJwtDTO {
   @IsArray()
   scopes: string[];
 
