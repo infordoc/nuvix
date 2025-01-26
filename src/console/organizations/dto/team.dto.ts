@@ -10,9 +10,16 @@ export class CreateOrgDTO {
   @IsNotEmpty()
   name: string;
 
+  @IsNotEmpty()
+  billingPlan: string;
+
   @IsOptional()
   @IsString()
-  plan: string;
+  paymentMethodId?: string;
+
+  @IsOptional()
+  @IsString()
+  billingAddressId?: string;
 }
 
 export class UpdateOrgDTO extends PartialType(CreateOrgDTO) {}

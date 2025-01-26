@@ -95,7 +95,12 @@ export class ResolverInterceptor implements NestInterceptor {
     }
 
     return Array.isArray(response)
-      ? response.map((item) => this.transformToPlain(item, options))
+      ? response.map((item) => {
+          if (item instanceof Document) {
+            item = item.getArrayCopy();
+          }
+          return this.transformToPlain(item, options);
+        })
       : this.transformToPlain(response, options);
   }
 
@@ -113,10 +118,16 @@ export class ResolverInterceptor implements NestInterceptor {
 
       for (const key of keys) {
         if (Array.isArray(response[key])) {
-          serializedResponse[key] = response[key].map((item) =>
-            this.transformToPlain(item, options),
-          );
+          serializedResponse[key] = response[key].map((item) => {
+            if (item instanceof Document) {
+              item = item.getArrayCopy();
+            }
+            return this.transformToPlain(item, options);
+          });
         } else if (isObject(response[key])) {
+          if (response[key] instanceof Document) {
+            response[key] = response[key].getArrayCopy();
+          }
           serializedResponse[key] = this.transformToPlain(
             response[key],
             options,
@@ -133,9 +144,12 @@ export class ResolverInterceptor implements NestInterceptor {
 
     for (const key in response) {
       if (Array.isArray(response[key])) {
-        serializedResponse[key] = response[key].map((item) =>
-          this.transformToPlain(item, options),
-        );
+        serializedResponse[key] = response[key].map((item) => {
+          if (item instanceof Document) {
+            item = item.getArrayCopy();
+          }
+          return this.transformToPlain(item, options);
+        });
       } else {
         serializedResponse[key] = response[key];
       }

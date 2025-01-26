@@ -18,7 +18,7 @@ export const filters = {
     },
     deserialize: (value: any) => {
       if (value === null) {
-        return;
+        return null;
       }
 
       return JSON.parse(value).value;
@@ -69,7 +69,7 @@ export const filters = {
   },
   subQueryAttributes: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       const attributes = await database.find('attributes', [
@@ -95,7 +95,7 @@ export const filters = {
   },
   subQueryIndexes: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('indexes', [
@@ -109,7 +109,7 @@ export const filters = {
   },
   subQueryPlatforms: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('platforms', [
@@ -121,7 +121,7 @@ export const filters = {
 
   subQueryKeys: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('keys', [
@@ -132,7 +132,7 @@ export const filters = {
   },
   subQueryWebhooks: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('webhooks', [
@@ -143,7 +143,7 @@ export const filters = {
   },
   subQuerySessions: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -156,7 +156,7 @@ export const filters = {
   },
   subQueryTokens: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -169,7 +169,7 @@ export const filters = {
   },
   subQueryChallenges: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -182,7 +182,7 @@ export const filters = {
   },
   subQueryAuthenticators: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -195,7 +195,7 @@ export const filters = {
   },
   subQueryMemberships: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -208,7 +208,7 @@ export const filters = {
   },
   subQueryVariables: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('variables', [
@@ -238,7 +238,7 @@ export const filters = {
     },
     deserialize: (value: any) => {
       if (value === null) {
-        return;
+        return null;
       }
       value = JSON.parse(value);
       let key: string;
@@ -261,7 +261,7 @@ export const filters = {
 
   subQueryProjectVariables: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await database.find('variables', [
@@ -291,7 +291,7 @@ export const filters = {
   },
   subQueryTargets: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       return await Authorization.skip(async () => {
@@ -304,7 +304,7 @@ export const filters = {
   },
   subQueryTopicTargets: {
     serialize: (value: any) => {
-      return;
+      return null;
     },
     deserialize: async (value: any, document: Document, database: Database) => {
       const targetIds = await Authorization.skip(async () => {

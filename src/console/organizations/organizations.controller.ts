@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -21,6 +22,7 @@ import { Query as Queries } from '@nuvix/database';
 import { User } from 'src/core/resolver/user.resolver';
 import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './dto/team.dto';
 import { AuthGuard } from 'src/core/resolver/guards/auth.guard';
+import { CreateMembershipDTO, UpdateMembershipDTO } from './dto/membership.dto';
 
 @Controller({ version: ['1'], path: 'console/organizations' })
 @UseGuards(AuthGuard)
@@ -38,19 +40,19 @@ export class OrganizationsController {
   }
 
   @Post()
-  @ResponseType({ type: Response.MODEL_ORGANIZATION })
+  @ResponseType(Response.MODEL_ORGANIZATION)
   async create(@User() user: any, @Body() input: CreateOrgDTO) {
     return await this.organizationsService.create(user, input);
   }
 
   @Get(':id')
-  @ResponseType({ type: Response.MODEL_ORGANIZATION })
+  @ResponseType(Response.MODEL_ORGANIZATION)
   async findOne(@Param('id') id: string) {
     return await this.organizationsService.findOne(id);
   }
 
   @Put(':id')
-  @ResponseType({ type: Response.MODEL_ORGANIZATION })
+  @ResponseType(Response.MODEL_ORGANIZATION)
   async update(@Param('id') id: string, @Body() input: UpdateOrgDTO) {
     return await this.organizationsService.update(id, input);
   }
@@ -62,11 +64,13 @@ export class OrganizationsController {
   }
 
   @Get(':id/prefs')
+  @ResponseType(Response.MODEL_PREFERENCES)
   async getPrefs(@Param('id') id: string) {
     return await this.organizationsService.getPrefs(id);
   }
 
   @Put(':id/prefs')
+  @ResponseType(Response.MODEL_PREFERENCES)
   async setPrefs(@Param('id') id: string, @Body() input: UpdateTeamPrefsDTO) {
     return await this.organizationsService.setPrefs(id, input);
   }
@@ -86,6 +90,57 @@ export class OrganizationsController {
       total: 0, // aggs.length,
       aggregations: {}, // aggs
     };
+  }
+
+  @Get(':id/memberships')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
+  async getMemberships(
+    @Param('id') id: string,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+    @Query('search') search?: string,
+  ) {
+    return await this.organizationsService.getMembers(id, queries, search);
+  }
+
+  @Post(':id/memberships')
+  @ResponseType(Response.MODEL_MEMBERSHIP)
+  async addMembership(
+    @Param('id') id: string,
+    @Body() input: CreateMembershipDTO,
+  ) {
+    return await this.organizationsService.addMember(id, input);
+  }
+
+  @Get(':id/memberships/:membershipId')
+  @ResponseType(Response.MODEL_MEMBERSHIP)
+  async getMembership(
+    @Param('id') id: string,
+    @Param('membershipId') membershipId: string,
+  ) {
+    return await this.organizationsService.getMember(id, membershipId);
+  }
+
+  @Patch(':id/memberships/:membershipId')
+  @ResponseType(Response.MODEL_MEMBERSHIP)
+  async updateMembership(
+    @Param('id') id: string,
+    @Param('membershipId') membershipId: string,
+    @Body() input: UpdateMembershipDTO,
+  ) {
+    return await this.organizationsService.updateMember(
+      id,
+      membershipId,
+      input,
+    );
+  }
+
+  @Delete(':id/memberships/:membershipId')
+  @ResponseType(Response.MODEL_NONE)
+  async removeMembership(
+    @Param('id') id: string,
+    @Param('membershipId') membershipId: string,
+  ) {
+    return await this.organizationsService.deleteMember(id, membershipId);
   }
 
   @Get(':id/roles')
@@ -176,87 +231,9 @@ export class OrganizationsController {
   }
 
   @Get(':id/plan')
+  @ResponseType(Response.MODEL_BILLING_PLAN)
   async getPlan(@Param('id') id: string) {
-    return {
-      $id: 'tier-2',
-      name: 'Scale',
-      order: 20,
-      price: 599,
-      trial: 0,
-      bandwidth: 300,
-      storage: 150,
-      members: 0,
-      webhooks: 0,
-      platforms: 0,
-      users: 200000,
-      teams: 0,
-      databases: 0,
-      buckets: 0,
-      fileSize: 5000,
-      functions: 0,
-      executions: 3500000,
-      realtime: 750,
-      logs: 672,
-      addons: {
-        bandwidth: {
-          unit: 'GB',
-          price: 40,
-          currency: 'USD',
-          value: 100,
-          multiplier: 1000000000,
-          invoiceDesc:
-            'Calculated for all bandwidth used across your organization.',
-        },
-        storage: {
-          unit: 'GB',
-          price: 3,
-          currency: 'USD',
-          value: 100,
-          multiplier: 1000000000,
-          invoiceDesc:
-            'Calculated for all storage operations across your organization (including storage files, database data, function code, and static website hosting)',
-        },
-        member: {
-          unit: '',
-          price: 0,
-          currency: 'USD',
-          value: 0,
-          invoiceDesc: 'Per additional member',
-        },
-        users: {
-          unit: '',
-          price: 0,
-          currency: 'USD',
-          value: 1000,
-          invoiceDesc: 'Per 1,000 additional users',
-        },
-        executions: {
-          unit: '',
-          price: 2,
-          currency: 'USD',
-          value: 1000000,
-          invoiceDesc: 'Every 1 million additional executions',
-        },
-        realtime: {
-          unit: '',
-          price: 5,
-          currency: 'USD',
-          value: 1000,
-          invoiceDesc: 'Every 1000 concurrent connection',
-        },
-      },
-      customSmtp: true,
-      emailBranding: false,
-      requiresPaymentMethod: true,
-      requiresBillingAddress: false,
-      isAvailable: true,
-      selfService: true,
-      premiumSupport: true,
-      budgeting: true,
-      supportsMockNumbers: true,
-      backupsEnabled: true,
-      backupPolicies: 9223372036854775807,
-    };
+    return await this.organizationsService.billingPlan(id);
   }
 
   @Get(':id/usage')

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Authorization,
   AuthorizationException,
@@ -23,6 +23,8 @@ import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './dto/team.dto';
 
 @Injectable()
 export class OrganizationsService {
+  private readonly logger = new Logger();
+
   constructor(@Inject(DB_FOR_CONSOLE) private readonly db: Database) {}
 
   /**
@@ -82,6 +84,9 @@ export class OrganizationsService {
             Permission.delete(Role.team(teamId, 'owner')),
           ],
           name: input.name,
+          billingPlan: input.billingPlan,
+          paymentMethodId: input.paymentMethodId || null,
+          billingAddressId: input.billingAddressId || null,
           total: 1,
           prefs: {},
           search: [teamId, input.name].join(' '),
@@ -605,5 +610,27 @@ export class OrganizationsService {
     }
 
     return null;
+  }
+
+  /**
+   * Get Organization Plan
+   */
+  async billingPlan(id: string) {
+    const team = await this.db.getDocument('teams', id);
+
+    if (team.isEmpty()) {
+      throw new Exception(Exception.TEAM_NOT_FOUND);
+    }
+
+    const plan = await this.db.getDocument(
+      'plans',
+      team.getAttribute('billingPlan') || 'tier-2',
+    );
+
+    if (!plan) {
+      throw new Exception(Exception.GENERAL_NOT_FOUND, 'Plan not found');
+    }
+
+    return plan;
   }
 }

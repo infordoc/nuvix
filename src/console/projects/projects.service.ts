@@ -100,7 +100,7 @@ export class ProjectService {
         }
       });
 
-      const project = new Document({
+      let project = new Document({
         id: projectId,
         $permissions: [
           Permission.read(Role.team(ID.custom(createProjectDTO.teamId))),
@@ -141,6 +141,8 @@ export class ProjectService {
         version: APP_VERSION_STABLE,
         database: 'undefiend', // Will be updated after database creation
       });
+
+      project = await this.db.createDocument('projects', project);
 
       const dbForProject = this.dbForProject;
 

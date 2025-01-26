@@ -114,7 +114,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     req[USER] = user;
 
-    let roles = Auth.getRoles(user);
+    const roles = Auth.getRoles(user);
 
     for (const role of roles) {
       Authorization.setRole(role);

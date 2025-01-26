@@ -31,6 +31,7 @@ import {
 } from './DTO/account.dto';
 import { CreateEmailSessionDTO } from './DTO/session.dto';
 import { AuthGuard, Public } from 'src/core/resolver/guards/auth.guard';
+import { ParseQueryPipe } from 'src/core/pipes/query.pipe';
 
 @Controller({ version: ['1'], path: 'console/account' })
 @UseGuards(AuthGuard)
@@ -173,5 +174,20 @@ export class AccountController {
   @ResponseType(Response.MODEL_MFA_FACTORS)
   async getMfaFactors(@User() user: Document) {
     return await this.accountService.getMfaFactors(user);
+  }
+
+  @Get('identities')
+  @ResponseType({ type: Response.MODEL_IDENTITY, list: true })
+  async getIdentities(
+    @User() user: Document,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+  ) {
+    return await this.accountService.getIdentities(user, queries);
+  }
+
+  @Get('identities/:id')
+  @ResponseType(Response.MODEL_IDENTITY)
+  async getIdentity(@Param('id') id: string) {
+    return await this.accountService.getIdentity(id);
   }
 }

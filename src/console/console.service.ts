@@ -12,7 +12,7 @@ export class ConsoleService {
   ) {}
 
   async createPlan() {
-    let plans = [
+    const plans = [
       {
         $id: 'tier-0',
         name: 'Free',
