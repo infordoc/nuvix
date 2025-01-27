@@ -286,7 +286,7 @@ export class TeamsService {
         Query.equal('email', [input.email]),
       ]);
       if (
-        invitee &&
+        !invitee.isEmpty() &&
         input.phone &&
         invitee.getAttribute('phone') !== input.phone
       ) {
@@ -301,7 +301,7 @@ export class TeamsService {
         Query.equal('phone', [input.phone]),
       ]);
       if (
-        invitee &&
+        !invitee.isEmpty() &&
         input.email &&
         invitee.getAttribute('email') !== input.email
       ) {
@@ -313,7 +313,7 @@ export class TeamsService {
       }
     }
 
-    if (!invitee) {
+    if (invitee.isEmpty()) {
       const userId = ID.unique();
       invitee = await this.db.createDocument(
         'users',

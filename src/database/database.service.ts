@@ -8,6 +8,9 @@ import {
   LimitException,
   Permission,
   Query,
+  RangeValidator,
+  Structure,
+  TruncateException,
 } from '@nuvix/database';
 import { APP_LIMIT_COUNT, DB_FOR_PROJECT, GEO_DB } from 'src/Utils/constants';
 import { CreateDatabaseDTO, UpdateDatabaseDTO } from './DTO/database.dto';
@@ -16,6 +19,7 @@ import { Exception } from 'src/core/extend/exception';
 import { Detector } from 'src/core/helper/detector.helper';
 import { CountryResponse, Reader } from 'maxmind';
 import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto';
+import { Auth } from 'src/core/helper/auth.helper';
 
 @Injectable()
 export class DatabaseService {
@@ -562,5 +566,673 @@ export class DatabaseService {
     );
 
     return null;
+  }
+
+  /**
+   * Get attributes for a collection.
+   */
+  async getAttributes(
+    databaseId: string,
+    collectionId: string,
+    queries: Query[],
+  ) {
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    if (database.isEmpty()) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await this.db.getDocument(
+      `database_${database.getInternalId()}`,
+      collectionId,
+    );
+
+    if (collection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const cursor = queries.find((query) =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
+
+    if (cursor) {
+      const attributeId = cursor.getValue();
+      const cursorDocument = await this.db.find('attributes', [
+        Query.equal('collectionInternalId', [collection.getInternalId()]),
+        Query.equal('databaseInternalId', [database.getInternalId()]),
+        Query.equal('key', [attributeId]),
+        Query.limit(1),
+      ]);
+
+      if (cursorDocument.length === 0 || cursorDocument[0].isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Attribute '${attributeId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument[0]);
+    }
+
+    queries.push(
+      Query.equal('collectionInternalId', [collection.getInternalId()]),
+      Query.equal('databaseInternalId', [database.getInternalId()]),
+    );
+
+    const filterQueries = Query.groupByType(queries).filters;
+
+    const attributes = await this.db.find('attributes', queries);
+    const total = await this.db.count(
+      'attributes',
+      filterQueries,
+      APP_LIMIT_COUNT,
+    );
+
+    return {
+      attributes,
+      total,
+    };
+  }
+
+  async getDocuments(
+    databaseId: string,
+    collectionId: string,
+    queries: Query[],
+  ) {
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
+    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
+
+    if (
+      database.isEmpty() ||
+      (!database.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await Authorization.skip(
+      async () =>
+        await this.db.getDocument(
+          `database_${database.getInternalId()}`,
+          collectionId,
+        ),
+    );
+
+    if (
+      collection.isEmpty() ||
+      (!collection.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const cursor = queries.find((query) =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
+
+    if (cursor) {
+      const documentId = cursor.getValue();
+      const cursorDocument = await Authorization.skip(
+        async () =>
+          await this.db.getDocument(
+            `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
+            documentId,
+          ),
+      );
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Document '${documentId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    const documents = await this.db.find(
+      `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
+      queries,
+    );
+    const total = await this.db.count(
+      `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
+      queries,
+      APP_LIMIT_COUNT,
+    );
+
+    // Add $collectionId and $databaseId for all documents
+    const processDocument = async (
+      collection: Document,
+      document: Document,
+    ): Promise<boolean> => {
+      if (document.isEmpty()) {
+        return false;
+      }
+
+      document.removeAttribute('$collection');
+      document.setAttribute('$databaseId', database.getId());
+      document.setAttribute('$collectionId', collection.getId());
+
+      const relationships = collection
+        .getAttribute('attributes', [])
+        .filter(
+          (attribute: any) =>
+            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+        );
+
+      for (const relationship of relationships) {
+        const related = document.getAttribute(relationship.getAttribute('key'));
+
+        if (!related) {
+          continue;
+        }
+
+        const relations = Array.isArray(related) ? related : [related];
+        const relatedCollectionId =
+          relationship.getAttribute('relatedCollection');
+        const relatedCollection = await Authorization.skip(
+          async () =>
+            await this.db.getDocument(
+              `database_${database.getInternalId()}`,
+              relatedCollectionId,
+            ),
+        );
+
+        for (let i = 0; i < relations.length; i++) {
+          if (relations[i] instanceof Document) {
+            if (!processDocument(relatedCollection, relations[i])) {
+              relations.splice(i, 1);
+              i--;
+            }
+          }
+        }
+
+        document.setAttribute(
+          relationship.getAttribute('key'),
+          Array.isArray(related) ? relations : relations[0] || null,
+        );
+      }
+
+      return true;
+    };
+
+    for (const document of documents) {
+      await processDocument(collection, document);
+    }
+
+    const select = queries.some(
+      (query) => query.getMethod() === Query.TYPE_SELECT,
+    );
+
+    // Check if the SELECT query includes $databaseId and $collectionId
+    const hasDatabaseId =
+      select &&
+      queries.some(
+        (query) =>
+          query.getMethod() === Query.TYPE_SELECT &&
+          query.getValues().includes('$databaseId'),
+      );
+    const hasCollectionId =
+      select &&
+      queries.some(
+        (query) =>
+          query.getMethod() === Query.TYPE_SELECT &&
+          query.getValues().includes('$collectionId'),
+      );
+
+    if (select) {
+      for (const document of documents) {
+        if (!hasDatabaseId) {
+          document.removeAttribute('$databaseId');
+        }
+        if (!hasCollectionId) {
+          document.removeAttribute('$collectionId');
+        }
+      }
+    }
+
+    return {
+      total,
+      documents,
+    };
+  }
+
+  /**
+   * Create a new attribute.
+   */
+  async createAttribute(
+    databaseId: string,
+    collectionId: string,
+    attribute: Document,
+  ) {
+    const key = attribute.getAttribute('key');
+    const type = attribute.getAttribute('type', '');
+    const size = attribute.getAttribute('size', 0);
+    const required = attribute.getAttribute('required', true);
+    const signed = attribute.getAttribute('signed', true);
+    const array = attribute.getAttribute('array', false);
+    const format = attribute.getAttribute('format', '');
+    const formatOptions = attribute.getAttribute('formatOptions', []);
+    const filters = attribute.getAttribute('filters', []);
+    const defaultValue = attribute.getAttribute('default');
+    const options = attribute.getAttribute('options', []);
+
+    const db = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    if (db.isEmpty()) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await this.db.getDocument(
+      `database_${db.getInternalId()}`,
+      collectionId,
+    );
+
+    if (collection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    if (format && !Structure.hasFormat(format, type)) {
+      throw new Exception(
+        Exception.ATTRIBUTE_FORMAT_UNSUPPORTED,
+        `Format ${format} not available for ${type} attributes.`,
+      );
+    }
+
+    if (required && defaultValue !== undefined) {
+      throw new Exception(
+        Exception.ATTRIBUTE_DEFAULT_UNSUPPORTED,
+        'Cannot set default value for required attribute',
+      );
+    }
+
+    if (array && defaultValue !== undefined) {
+      throw new Exception(
+        Exception.ATTRIBUTE_DEFAULT_UNSUPPORTED,
+        'Cannot set default value for array attributes',
+      );
+    }
+
+    let relatedCollection: Document;
+    if (type === Database.VAR_RELATIONSHIP) {
+      options['side'] = Database.RELATION_SIDE_PARENT;
+      relatedCollection = await this.db.getDocument(
+        `database_${db.getInternalId()}`,
+        options['relatedCollection'] ?? '',
+      );
+      if (relatedCollection.isEmpty()) {
+        throw new Exception(
+          Exception.COLLECTION_NOT_FOUND,
+          'The related collection was not found.',
+        );
+      }
+    }
+
+    try {
+      const newAttribute = new Document({
+        $id: ID.custom(
+          `${db.getInternalId()}_${collection.getInternalId()}_${key}`,
+        ),
+        key,
+        databaseInternalId: db.getInternalId(),
+        databaseId: db.getId(),
+        collectionInternalId: collection.getInternalId(),
+        collectionId,
+        type,
+        status: 'processing',
+        size,
+        required,
+        signed,
+        default: defaultValue,
+        array,
+        format,
+        formatOptions,
+        filters,
+        options,
+      });
+
+      this.db.checkAttribute(collection, newAttribute);
+      attribute = await this.db.createDocument('attributes', newAttribute);
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.ATTRIBUTE_ALREADY_EXISTS);
+      }
+      if (error instanceof LimitException) {
+        throw new Exception(
+          Exception.ATTRIBUTE_LIMIT_EXCEEDED,
+          'Attribute limit exceeded',
+        );
+      }
+      throw error;
+    }
+
+    this.db.purgeCachedDocument(`database_${db.getInternalId()}`, collectionId);
+    this.db.purgeCachedCollection(
+      `database_${db.getInternalId()}_collection_${collection.getInternalId()}`,
+    );
+
+    if (type === Database.VAR_RELATIONSHIP && options['twoWay']) {
+      const twoWayKey = options['twoWayKey'];
+      options['relatedCollection'] = collection.getId();
+      options['twoWayKey'] = key;
+      options['side'] = Database.RELATION_SIDE_CHILD;
+
+      try {
+        const twoWayAttribute = new Document({
+          $id: ID.custom(
+            `${db.getInternalId()}_${relatedCollection.getInternalId()}_${twoWayKey}`,
+          ),
+          key: twoWayKey,
+          databaseInternalId: db.getInternalId(),
+          databaseId: db.getId(),
+          collectionInternalId: relatedCollection.getInternalId(),
+          collectionId: relatedCollection.getId(),
+          type,
+          status: 'processing',
+          size,
+          required,
+          signed,
+          default: defaultValue,
+          array,
+          format,
+          formatOptions,
+          filters,
+          options,
+        });
+
+        this.db.checkAttribute(relatedCollection, twoWayAttribute);
+        await this.db.createDocument('attributes', twoWayAttribute);
+      } catch (error) {
+        await this.db.deleteDocument('attributes', attribute.getId());
+        if (error instanceof DuplicateException) {
+          throw new Exception(Exception.ATTRIBUTE_ALREADY_EXISTS);
+        }
+        if (error instanceof LimitException) {
+          throw new Exception(
+            Exception.ATTRIBUTE_LIMIT_EXCEEDED,
+            'Attribute limit exceeded',
+          );
+        }
+        throw error;
+      }
+
+      this.db.purgeCachedDocument(
+        `database_${db.getInternalId()}`,
+        relatedCollection.getId(),
+      );
+      this.db.purgeCachedCollection(
+        `database_${db.getInternalId()}_collection_${relatedCollection.getInternalId()}`,
+      );
+    }
+
+    return attribute;
+  }
+
+  /**
+   * Update an attribute.
+   */
+  async updateAttribute(
+    databaseId: string,
+    collectionId: string,
+    key: string,
+    type: string,
+    size?: number,
+    filter?: string,
+    defaultValue?: string | boolean | number,
+    required?: boolean,
+    min?: number,
+    max?: number,
+    elements?: string[],
+    options: any = {},
+    newKey?: string,
+  ) {
+    const db = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    if (db.isEmpty()) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await this.db.getDocument(
+      `database_${db.getInternalId()}`,
+      collectionId,
+    );
+
+    if (collection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    let attribute = await this.db.getDocument(
+      'attributes',
+      `${db.getInternalId()}_${collection.getInternalId()}_${key}`,
+    );
+
+    if (attribute.isEmpty()) {
+      throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
+    }
+
+    if (attribute.getAttribute('status') !== 'available') {
+      throw new Exception(Exception.ATTRIBUTE_NOT_AVAILABLE);
+    }
+
+    if (attribute.getAttribute('type') !== type) {
+      throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
+    }
+
+    if (
+      attribute.getAttribute('type') === 'string' &&
+      attribute.getAttribute('filter') !== filter
+    ) {
+      throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
+    }
+
+    if (required && defaultValue !== undefined) {
+      throw new Exception(
+        Exception.ATTRIBUTE_DEFAULT_UNSUPPORTED,
+        'Cannot set default value for required attribute',
+      );
+    }
+
+    if (attribute.getAttribute('array', false) && defaultValue !== undefined) {
+      throw new Exception(
+        Exception.ATTRIBUTE_DEFAULT_UNSUPPORTED,
+        'Cannot set default value for array attributes',
+      );
+    }
+
+    const collectionIdWithPrefix = `database_${db.getInternalId()}_collection_${collection.getInternalId()}`;
+
+    attribute
+      .setAttribute('default', defaultValue)
+      .setAttribute('required', required);
+
+    if (size !== undefined) {
+      attribute.setAttribute('size', size);
+    }
+
+    const formatOptions = attribute.getAttribute('formatOptions');
+
+    switch (attribute.getAttribute('format')) {
+      case 'intRange':
+      case 'floatRange':
+        if (min !== undefined && max !== undefined) {
+          if (min > max) {
+            throw new Exception(
+              Exception.ATTRIBUTE_VALUE_INVALID,
+              'Minimum value must be lesser than maximum value',
+            );
+          }
+
+          const validator =
+            attribute.getAttribute('format') === 'intRange'
+              ? new RangeValidator(min, max, 'integer')
+              : new RangeValidator(min, max, 'float');
+
+          if (defaultValue !== undefined && !validator.isValid(defaultValue)) {
+            throw new Exception(
+              Exception.ATTRIBUTE_VALUE_INVALID,
+              validator.getDescription(),
+            );
+          }
+
+          options = { min, max };
+          attribute.setAttribute('formatOptions', options);
+        }
+        break;
+      case 'enum':
+        if (!elements || elements.length === 0) {
+          throw new Exception(
+            Exception.ATTRIBUTE_VALUE_INVALID,
+            'Enum elements must not be empty',
+          );
+        }
+
+        for (const element of elements) {
+          if (element.length === 0) {
+            throw new Exception(
+              Exception.ATTRIBUTE_VALUE_INVALID,
+              'Each enum element must not be empty',
+            );
+          }
+        }
+
+        if (
+          defaultValue !== undefined &&
+          !elements.includes(defaultValue as any)
+        ) {
+          throw new Exception(
+            Exception.ATTRIBUTE_VALUE_INVALID,
+            'Default value not found in elements',
+          );
+        }
+
+        options = { elements };
+        attribute.setAttribute('formatOptions', options);
+        break;
+    }
+
+    if (type === Database.VAR_RELATIONSHIP) {
+      const primaryDocumentOptions = {
+        ...attribute.getAttribute('options', {}),
+        ...options,
+      };
+      attribute.setAttribute('options', primaryDocumentOptions);
+
+      await this.db.updateRelationship(
+        collectionIdWithPrefix,
+        key,
+        newKey,
+        primaryDocumentOptions['onDelete'],
+      );
+
+      if (primaryDocumentOptions['twoWay']) {
+        const relatedCollection = await this.db.getDocument(
+          `database_${db.getInternalId()}`,
+          primaryDocumentOptions['relatedCollection'],
+        );
+
+        const relatedAttribute = await this.db.getDocument(
+          'attributes',
+          `${db.getInternalId()}_${relatedCollection.getInternalId()}_${primaryDocumentOptions['twoWayKey']}`,
+        );
+
+        if (newKey && newKey !== key) {
+          options['twoWayKey'] = newKey;
+        }
+
+        const relatedOptions = {
+          ...relatedAttribute.getAttribute('options'),
+          ...options,
+        };
+        relatedAttribute.setAttribute('options', relatedOptions);
+        await this.db.updateDocument(
+          'attributes',
+          `${db.getInternalId()}_${relatedCollection.getInternalId()}_${primaryDocumentOptions['twoWayKey']}`,
+          relatedAttribute,
+        );
+
+        this.db.purgeCachedDocument(
+          `database_${db.getInternalId()}`,
+          relatedCollection.getId(),
+        );
+      }
+    } else {
+      try {
+        await this.db.updateAttribute(
+          collectionIdWithPrefix,
+          key,
+          undefined, // type
+          size,
+          required,
+          defaultValue,
+          undefined,
+          undefined,
+          undefined,
+          options,
+          undefined,
+          newKey,
+        );
+      } catch (error) {
+        if (error instanceof TruncateException) {
+          throw new Exception(Exception.ATTRIBUTE_INVALID_RESIZE);
+        }
+        throw error;
+      }
+    }
+
+    if (newKey && key !== newKey) {
+      const original = attribute.clone();
+
+      await this.db.deleteDocument('attributes', attribute.getId());
+
+      attribute
+        .setAttribute(
+          '$id',
+          `${db.getInternalId()}_${collection.getInternalId()}_${newKey}`,
+        )
+        .setAttribute('key', newKey);
+
+      try {
+        attribute = await this.db.createDocument('attributes', attribute);
+      } catch (error) {
+        attribute = await this.db.createDocument('attributes', original);
+      }
+    } else {
+      attribute = await this.db.updateDocument(
+        'attributes',
+        `${db.getInternalId()}_${collection.getInternalId()}_${key}`,
+        attribute,
+      );
+    }
+
+    this.db.purgeCachedDocument(
+      `database_${db.getInternalId()}`,
+      collection.getId(),
+    );
+
+    // Assuming you have a queue for events
+    // queueForEvents
+    //   .setContext('collection', collection)
+    //   .setContext('database', db)
+    //   .setParam('databaseId', databaseId)
+    //   .setParam('collectionId', collection.getId())
+    //   .setParam('attributeId', attribute.getId());
+
+    return attribute;
   }
 }

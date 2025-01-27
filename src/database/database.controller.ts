@@ -50,7 +50,7 @@ export class DatabaseController {
     return await this.databaseService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @ResponseType(Response.MODEL_DATABASE)
   async update(
     @Param('id') id: string,
@@ -138,5 +138,25 @@ export class DatabaseController {
     @Param('collectionId') collectionId: string,
   ) {
     return await this.databaseService.removeCollection(id, collectionId);
+  }
+
+  @Get(':id/collections/:collectionId/documents')
+  @ResponseType({ type: Response.MODEL_DOCUMENT, list: true })
+  async findDocuments(
+    @Param('id') id: string,
+    @Param('collectionId') collectionId: string,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+  ) {
+    return await this.databaseService.getDocuments(id, collectionId, queries);
+  }
+
+  @Get(':id/collections/:collectionId/attributes')
+  @ResponseType({ type: Response.MODEL_ATTRIBUTE, list: true })
+  async findAttributes(
+    @Param('id') id: string,
+    @Param('collectionId') collectionId: string,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+  ) {
+    return await this.databaseService.getAttributes(id, collectionId, queries);
   }
 }
