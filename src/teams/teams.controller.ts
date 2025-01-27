@@ -31,12 +31,13 @@ import {
 import { ParseQueryPipe } from 'src/core/pipes/query.pipe';
 import { Query as Queries } from '@nuvix/database';
 import { ProjectGuard } from 'src/core/resolver/guards/project.guard';
+import { Mode } from 'src/core/resolver/model.resolver';
 
 @Controller({ version: ['1'], path: 'teams' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResolverInterceptor)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) { }
+  constructor(private readonly teamsService: TeamsService) {}
 
   @Get()
   @ResponseType({ type: Response.MODEL_TEAM, list: true })
@@ -49,8 +50,12 @@ export class TeamsController {
 
   @Post()
   @ResponseType({ type: Response.MODEL_TEAM })
-  async create(@User() user: any, @Body() input: CreateTeamDTO) {
-    return await this.teamsService.create(user, input);
+  async create(
+    @User() user: any,
+    @Body() input: CreateTeamDTO,
+    @Mode() mode: string,
+  ) {
+    return await this.teamsService.create(user, input, mode);
   }
 
   @Get(':id')
@@ -90,53 +95,57 @@ export class TeamsController {
     };
   }
 
-  // @Post(':id/memberships')
-  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  // async addMember(@Param('id') id: string, @Body() input: CreateMembershipDTO) {
-  //   return await this.teamsService.addMember(id, input);
-  // }
+  @Post(':id/memberships')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async addMember(@Param('id') id: string, @Body() input: CreateMembershipDTO) {
+    return await this.teamsService.addMember(id, input);
+  }
 
-  // @Get(':id/memberships')
-  // @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
-  // async getMembers(@Param('id') id: string) {
-  //   return await this.teamsService.getMembers(id);
-  // }
+  @Get(':id/memberships')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP, list: true })
+  async getMembers(
+    @Param('id') id: string,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+    @Query('search') search?: string,
+  ) {
+    return await this.teamsService.getMembers(id, queries, search);
+  }
 
-  // @Get(':id/memberships/:memberId')
-  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  // async getMember(
-  //   @Param('id') id: string,
-  //   @Param('memberId') memberId: string,
-  // ) {
-  //   return await this.teamsService.getMember(id, memberId);
-  // }
+  @Get(':id/memberships/:memberId')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async getMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return await this.teamsService.getMember(id, memberId);
+  }
 
-  // @Patch(':id/memberships/:memberId')
-  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  // async updateMember(
-  //   @Param('id') id: string,
-  //   @Param('memberId') memberId: string,
-  //   @Body() input: UpdateMembershipDTO,
-  // ) {
-  //   return await this.teamsService.updateMember(id, memberId, input);
-  // }
+  @Patch(':id/memberships/:memberId')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async updateMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() input: UpdateMembershipDTO,
+  ) {
+    return await this.teamsService.updateMember(id, memberId, input);
+  }
 
-  // @Patch(':id/memberships/:memberId/status')
-  // @ResponseType({ type: Response.MODEL_MEMBERSHIP })
-  // async updateMemberStatus(
-  //   @Param('id') id: string,
-  //   @Param('memberId') memberId: string,
-  //   @Body() input: UpdateMembershipStatusDTO,
-  // ) {
-  //   return await this.teamsService.updateMemberStatus(id, memberId, input);
-  // }
+  @Patch(':id/memberships/:memberId/status')
+  @ResponseType({ type: Response.MODEL_MEMBERSHIP })
+  async updateMemberStatus(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Body() input: UpdateMembershipStatusDTO,
+  ) {
+    return await this.teamsService.updateMemberStatus(id, memberId, input);
+  }
 
-  // @Delete(':id/memberships/:memberId')
-  // @ResponseType({ type: Response.MODEL_NONE })
-  // async removeMember(
-  //   @Param('id') id: string,
-  //   @Param('memberId') memberId: string,
-  // ) {
-  //   return await this.teamsService.deleteMember(id, memberId);
-  // }
+  @Delete(':id/memberships/:memberId')
+  @ResponseType({ type: Response.MODEL_NONE })
+  async removeMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return await this.teamsService.deleteMember(id, memberId);
+  }
 }

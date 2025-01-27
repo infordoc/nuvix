@@ -86,7 +86,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     if (mode === 'admin') {
       // if (user.find('teamInternalId', projectId, 'memberships')) {
-      //   Authorization.setDefaultStatus(false);
+      Authorization.setDefaultStatus(false);
       // } else {
       //   user = new Document();
       // }

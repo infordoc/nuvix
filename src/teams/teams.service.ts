@@ -33,7 +33,7 @@ export class TeamsService {
   constructor(
     @Inject(DB_FOR_PROJECT) private readonly db: Database,
     private readonly cls: ClsService,
-  ) { }
+  ) {}
 
   /**
    * Find all teams
@@ -77,7 +77,7 @@ export class TeamsService {
   /**
    * Create a new team
    */
-  async create(user: Document | null, input: CreateTeamDTO) {
+  async create(user: Document | null, input: CreateTeamDTO, mode: string) {
     const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
     const isAppUser = Auth.isAppUser(Authorization.getRoles());
 
@@ -106,7 +106,7 @@ export class TeamsService {
         throw error;
       });
 
-    if (!isPrivilegedUser && !isAppUser && user) {
+    if (!isPrivilegedUser && !isAppUser && user && mode !== 'admin') {
       // Don't add user on server mode
       if (!input.roles.includes('owner')) {
         input.roles.push('owner');

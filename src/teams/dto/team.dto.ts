@@ -27,7 +27,6 @@ export class CreateTeamDTO {
 
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1, { message: 'At least one role must be specified.' })
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE, {
     message: `A maximum of ${APP_LIMIT_ARRAY_PARAMS_SIZE} roles are allowed.`,
   })
