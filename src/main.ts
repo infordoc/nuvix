@@ -20,11 +20,12 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       enableDebugMessages: true,
+      stopAtFirstError: false,
+      exceptionFactory: (errors) =>
+        new Exception('VALIDATION_FAILED', errors.toString(), 400),
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true,
         exposeDefaultValues: true,
-        exposeUnsetFields: false,
       },
     }),
   );
@@ -58,7 +59,8 @@ async function bootstrap() {
       'x-sdk-name',
       'x-sdk-platform',
       'x-sdk-version',
-      'x-nuvix-project',
+      'x-fallback-cookies',
+      'x-nuvix-session',
       ...(process.env.CORS_HEADERS ?? '').split(','),
     ],
     exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
