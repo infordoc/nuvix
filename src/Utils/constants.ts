@@ -13,6 +13,9 @@ export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
 export const APP_LIMIT_SUBQUERY = 100;
 export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
+export const APP_REDIS_URL = process.env.APP_REDIS_URL;
+export const APP_REDIS_PORT = parseInt(process.env.APP_REDIS_PORT ?? '6379', 10);
+
 export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 100;
 
 export const APP_MAX_COUNT = 1000000;

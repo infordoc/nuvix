@@ -1,10 +1,6 @@
 import { Logger, MiddlewareConsumer, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-// import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-// import { GraphQLModule } from '@nestjs/graphql';
-// import { DirectiveLocation, GraphQLDirective } from 'graphql';
-// import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 import { config } from 'dotenv';
 import { BaseModule } from './base/base.module';
 import { DatabaseModule } from './database/database.module';
@@ -20,6 +16,9 @@ import { FunctionsModule } from './functions/functions.module';
 import { AuthMiddleware } from './core/resolver/middlewares/auth.middleware';
 import { CoreModule } from './core/core.module';
 import { ProjectMiddleware } from './core/resolver/middlewares/project.middleware';
+import { BullModule } from '@nestjs/bullmq';
+import { APP_REDIS_PORT, APP_REDIS_URL } from './Utils/constants';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 config();
 
 @Module({
@@ -35,23 +34,19 @@ config();
         },
       },
     }),
-    // GraphQLModule.forRoot<ApolloDriverConfig>({
-    //   path: '/graphql',
-    //   driver: ApolloDriver,
-    //   autoSchemaFile: 'schema.gql',
-    //   logger: customLogger,
-    //   installSubscriptionHandlers: true,
-    //   playground: false,
-    //   plugins: [ApolloServerPluginLandingPageLocalDefault()],
-    //   buildSchemaOptions: {
-    //     directives: [
-    //       new GraphQLDirective({
-    //         name: 'upper',
-    //         locations: [DirectiveLocation.FIELD_DEFINITION],
-    //       }),
-    //     ],
-    //   },
-    // }),
+    BullModule.forRoot({
+      connection: {
+        path: APP_REDIS_URL,
+        port: APP_REDIS_PORT,
+      },
+      defaultJobOptions: {
+        removeOnComplete: true,
+        removeOnFail: true,
+      },
+    }),
+    EventEmitterModule.forRoot({
+      global: true,
+    }),
     CoreModule,
     BaseModule,
     ConsoleModule,
