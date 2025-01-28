@@ -4,10 +4,7 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class AppService {
-
-  constructor(
-    // @InjectQueue('test') private testQueue: Queue
-  ) { }
+  constructor() {} // @InjectQueue('test') private testQueue: Queue
 
   async getHello(): Promise<string> {
     return 'Hello World!';

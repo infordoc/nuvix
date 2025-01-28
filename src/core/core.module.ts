@@ -4,8 +4,8 @@ import * as fs from 'fs';
 // Services
 import { ClsService } from 'nestjs-cls';
 import { DB_FOR_CONSOLE, DB_FOR_PROJECT, GEO_DB } from 'src/Utils/constants';
-import { Database, MariaDB } from '@nuvix/database';
-import { filters } from './resolver/db.resolver';
+import { Database, MariaDB, Structure } from '@nuvix/database';
+import { filters, formats } from './resolver/db.resolver';
 import { CountryResponse, Reader } from 'maxmind';
 
 Object.keys(filters).forEach((key) => {
@@ -13,6 +13,10 @@ Object.keys(filters).forEach((key) => {
     encode: filters[key].serialize,
     decode: filters[key].deserialize,
   });
+});
+
+Object.keys(formats).forEach((key) => {
+  Structure.addFormat(key, formats[key].create, formats[key].type);
 });
 
 @Global()

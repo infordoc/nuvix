@@ -33,6 +33,12 @@ export class AttributeModel extends BaseModel {
    */
   @Expose() array: boolean = false;
 
+  @Expose() format: string;
+  @Expose() default: any | null;
+  @Expose() elements: string[];
+  @Expose() min: number | null;
+  @Expose() max: number | null;
+
   constructor(partial: Partial<AttributeModel>) {
     super();
     Object.assign(this, partial);

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   Authorization,
+  AuthorizationException,
   Database,
   Document,
   DuplicateException,
@@ -8,11 +9,24 @@ import {
   LimitException,
   Permission,
   Query,
+  QueryException,
   RangeValidator,
   Structure,
+  StructureException,
+  TextValidator,
   TruncateException,
 } from '@nuvix/database';
-import { APP_LIMIT_COUNT, DB_FOR_PROJECT, GEO_DB } from 'src/Utils/constants';
+import {
+  APP_DATABASE_ATTRIBUTE_EMAIL,
+  APP_DATABASE_ATTRIBUTE_ENUM,
+  APP_DATABASE_ATTRIBUTE_FLOAT_RANGE,
+  APP_DATABASE_ATTRIBUTE_INT_RANGE,
+  APP_DATABASE_ATTRIBUTE_IP,
+  APP_DATABASE_ATTRIBUTE_URL,
+  APP_LIMIT_COUNT,
+  DB_FOR_PROJECT,
+  GEO_DB,
+} from 'src/Utils/constants';
 import { CreateDatabaseDTO, UpdateDatabaseDTO } from './DTO/database.dto';
 import collections from 'src/core/collections';
 import { Exception } from 'src/core/extend/exception';
@@ -20,6 +34,20 @@ import { Detector } from 'src/core/helper/detector.helper';
 import { CountryResponse, Reader } from 'maxmind';
 import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto';
 import { Auth } from 'src/core/helper/auth.helper';
+import {
+  CreateBooleanAttributeDTO,
+  CreateDatetimeAttributeDTO,
+  CreateEmailAttributeDTO,
+  CreateEnumAttributeDTO,
+  CreateFloatAttributeDTO,
+  CreateIntegerAttributeDTO,
+  CreateIpAttributeDTO,
+  CreateRelationAttributeDTO,
+  CreateStringAttributeDTO,
+  UpdateEmailAttributeDTO,
+  UpdateStringAttributeDTO,
+} from './DTO/attributes.dto';
+import { CreateDocumentDTO } from './DTO/document.dto';
 
 @Injectable()
 export class DatabaseService {
@@ -367,7 +395,7 @@ export class DatabaseService {
     const total = await this.db.count(
       `database_${database.getInternalId()}`,
       filterQueries,
-      APP_LIMIT_COUNT,
+      APP_LIMIT_COUNT,value
     );
 
     return {
@@ -810,6 +838,504 @@ export class DatabaseService {
   }
 
   /**
+   * Create string attribute.
+   */
+  async createStringAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateStringAttributeDTO,
+  ) {
+    const {
+      key,
+      size,
+      required,
+      default: defaultValue,
+      array,
+      encrypt,
+    } = input;
+
+    const validator = new TextValidator(size, 0);
+    if ((defaultValue ?? null) !== null && !validator.isValid(defaultValue)) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        validator.getDescription(),
+      );
+    }
+
+    const filters = [];
+    if (encrypt) {
+      filters.push('encrypt');
+    }
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_STRING,
+      size,
+      required,
+      default: defaultValue,
+      array,
+      filters,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create email attribute.
+   */
+  async createEmailAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateEmailAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array } = input;
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_STRING,
+      size: 254,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_EMAIL,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create enum attribute.
+   */
+  async createEnumAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateEnumAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array, elements } = input;
+
+    if (defaultValue !== null && !elements.includes(defaultValue)) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        'Default value not found in elements',
+      );
+    }
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_STRING,
+      size: Database.LENGTH_KEY,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_ENUM,
+      formatOptions: { elements },
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create IP attribute.
+   */
+  async createIPAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateIpAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array } = input;
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_STRING,
+      size: 39,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_IP,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create URL attribute.
+   */
+  async createURLAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateStringAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array } = input;
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_STRING,
+      size: 2000,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_URL,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create integer attribute.
+   */
+  async createIntegerAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateIntegerAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array, min, max } = input;
+
+    const minValue = min ?? Number.MIN_SAFE_INTEGER;
+    const maxValue = max ?? Number.MAX_SAFE_INTEGER;
+
+    if (minValue > maxValue) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        'Minimum value must be lesser than maximum value',
+      );
+    }
+
+    const validator = new RangeValidator(minValue, maxValue, 'integer');
+
+    if (defaultValue !== null && !validator.isValid(defaultValue)) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        validator.getDescription(),
+      );
+    }
+
+    const size = maxValue > 2147483647 ? 8 : 4; // Automatically create BigInt depending on max value
+
+    let attribute = new Document({
+      key,
+      type: Database.VAR_INTEGER,
+      size,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_INT_RANGE,
+      formatOptions: {
+        min: minValue,
+        max: maxValue,
+      },
+    });
+
+    attribute = await this.createAttribute(databaseId, collectionId, attribute);
+
+    const formatOptions = attribute.getAttribute('formatOptions', []);
+
+    if (formatOptions) {
+      attribute.setAttribute('min', parseInt(formatOptions.min));
+      attribute.setAttribute('max', parseInt(formatOptions.max));
+    }
+
+    return attribute;
+  }
+
+  /**
+   * Create a float attribute.
+   */
+  async createFloatAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateFloatAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array, min, max } = input;
+
+    const minValue = min ?? -Number.MAX_VALUE;
+    const maxValue = max ?? Number.MAX_VALUE;
+
+    if (minValue > maxValue) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        'Minimum value must be lesser than maximum value',
+      );
+    }
+
+    const validator = new RangeValidator(minValue, maxValue, 'float');
+
+    if (defaultValue !== null && !validator.isValid(defaultValue)) {
+      throw new Exception(
+        Exception.ATTRIBUTE_VALUE_INVALID,
+        validator.getDescription(),
+      );
+    }
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_FLOAT,
+      size: 0,
+      required,
+      default: defaultValue,
+      array,
+      format: APP_DATABASE_ATTRIBUTE_FLOAT_RANGE,
+      formatOptions: {
+        min: minValue,
+        max: maxValue,
+      },
+    });
+
+    const createdAttribute = await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+    );
+
+    const formatOptions = createdAttribute.getAttribute('formatOptions', []);
+
+    if (formatOptions) {
+      createdAttribute.setAttribute('min', parseFloat(formatOptions.min));
+      createdAttribute.setAttribute('max', parseFloat(formatOptions.max));
+    }
+
+    return createdAttribute;
+  }
+
+  /**
+   * Create a boolean attribute.
+   */
+  async createBooleanAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateBooleanAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array } = input;
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_BOOLEAN,
+      size: 0,
+      required,
+      default: defaultValue,
+      array,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create a date attribute.
+   */
+  async createDateAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateDatetimeAttributeDTO,
+  ) {
+    const { key, required, default: defaultValue, array } = input;
+
+    const filters = ['datetime'];
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_DATETIME,
+      size: 0,
+      required,
+      default: defaultValue,
+      array,
+      filters,
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Create a relationship attribute.
+   */
+  async createRelationshipAttribute(
+    databaseId: string,
+    collectionId: string,
+    input: CreateRelationAttributeDTO,
+  ) {
+    const { key, type, twoWay, twoWayKey, onDelete, relatedCollectionId } =
+      input;
+
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    if (database.isEmpty()) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await this.db.getDocument(
+      `database_${database.getInternalId()}`,
+      collectionId,
+    );
+
+    if (collection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const relatedCollectionDocument = await this.db.getDocument(
+      `database_${database.getInternalId()}`,
+      relatedCollectionId,
+    );
+
+    if (relatedCollectionDocument.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const relatedCollection = await this.db.getCollection(
+      `database_${database.getInternalId()}_collection_${relatedCollectionDocument.getInternalId()}`,
+    );
+
+    if (relatedCollection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const attributes = collection.getAttribute('attributes', []);
+    for (const attribute of attributes) {
+      if (attribute.getAttribute('type') !== Database.VAR_RELATIONSHIP) {
+        continue;
+      }
+
+      if (attribute.getId().toLowerCase() === key.toLowerCase()) {
+        throw new Exception(Exception.ATTRIBUTE_ALREADY_EXISTS);
+      }
+
+      if (
+        attribute.getAttribute('options')['twoWayKey'].toLowerCase() ===
+          twoWayKey.toLowerCase() &&
+        attribute.getAttribute('options')['relatedCollection'] ===
+          relatedCollection.getId()
+      ) {
+        throw new Exception(
+          Exception.ATTRIBUTE_ALREADY_EXISTS,
+          'Attribute with the requested key already exists. Attribute keys must be unique, try again with a different key.',
+        );
+      }
+
+      if (
+        type === Database.RELATION_MANY_TO_MANY &&
+        attribute.getAttribute('options')['relationType'] ===
+          Database.RELATION_MANY_TO_MANY &&
+        attribute.getAttribute('options')['relatedCollection'] ===
+          relatedCollection.getId()
+      ) {
+        throw new Exception(
+          Exception.ATTRIBUTE_ALREADY_EXISTS,
+          'Creating more than one "manyToMany" relationship on the same collection is currently not permitted.',
+        );
+      }
+    }
+
+    const attribute = new Document({
+      key,
+      type: Database.VAR_RELATIONSHIP,
+      size: 0,
+      required: false,
+      default: null,
+      array: false,
+      filters: [],
+      options: {
+        relatedCollection: relatedCollectionId,
+        relationType: type,
+        twoWay: twoWay,
+        twoWayKey: twoWayKey,
+        onDelete: onDelete,
+      },
+    });
+
+    return await this.createAttribute(databaseId, collectionId, attribute);
+  }
+
+  /**
+   * Get an attribute.
+   */
+  async getAttribute(databaseId: string, collectionId: string, key: string) {
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    if (database.isEmpty()) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await this.db.getDocument(
+      `database_${database.getInternalId()}`,
+      collectionId,
+    );
+
+    if (collection.isEmpty()) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const attribute = await this.db.getDocument(
+      'attributes',
+      `${database.getInternalId()}_${collection.getInternalId()}_${key}`,
+    );
+
+    if (attribute.isEmpty()) {
+      throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
+    }
+
+    const options = attribute.getAttribute('options', []);
+
+    for (const [key, option] of Object.entries(options)) {
+      attribute.setAttribute(key, option);
+    }
+
+    return attribute;
+  }
+
+  /**
+   * Update an string attribute.
+   */
+  async updateStringAttribute(
+    databaseId: string,
+    collectionId: string,
+    key: string,
+    input: UpdateStringAttributeDTO,
+  ) {
+    const { size, required, default: defaultValue, newKey } = input;
+
+    const attribute = await this.updateAttribute({
+      databaseId,
+      collectionId,
+      key,
+      type: Database.VAR_STRING,
+      size,
+      defaultValue,
+      required,
+      options: {},
+      newKey,
+    });
+
+    return attribute;
+  }
+
+  /**
+   * Update email attribute.
+   */
+  async updateEmailAttribute(
+    databaseId: string,
+    collectionId: string,
+    key: string,
+    input: UpdateEmailAttributeDTO,
+  ) {
+    const { required, default: defaultValue, newKey } = input;
+
+    const attribute = await this.updateAttribute({
+      databaseId,
+      collectionId,
+      key,
+      type: Database.VAR_STRING,
+      filter: APP_DATABASE_ATTRIBUTE_EMAIL,
+      defaultValue,
+      required,
+      options: {},
+      newKey,
+    });
+
+    return attribute;
+  }
+
+  /**
    * Create a new attribute.
    */
   async createAttribute(
@@ -985,21 +1511,37 @@ export class DatabaseService {
   /**
    * Update an attribute.
    */
-  async updateAttribute(
-    databaseId: string,
-    collectionId: string,
-    key: string,
-    type: string,
-    size?: number,
-    filter?: string,
-    defaultValue?: string | boolean | number,
-    required?: boolean,
-    min?: number,
-    max?: number,
-    elements?: string[],
-    options: any = {},
-    newKey?: string,
-  ) {
+  async updateAttribute(input: {
+    databaseId: string;
+    collectionId: string;
+    key: string;
+    type: string;
+    size?: number;
+    filter?: string;
+    defaultValue?: string | boolean | number;
+    required?: boolean;
+    min?: number;
+    max?: number;
+    elements?: string[];
+    options: any;
+    newKey?: string;
+  }) {
+    let {
+      databaseId,
+      collectionId,
+      key,
+      type,
+      size,
+      filter,
+      defaultValue,
+      required,
+      min,
+      max,
+      elements,
+      options = {},
+      newKey,
+    } = input;
+
     const db = await Authorization.skip(
       async () => await this.db.getDocument('databases', databaseId),
     );
@@ -1173,20 +1715,15 @@ export class DatabaseService {
       }
     } else {
       try {
-        await this.db.updateAttribute(
-          collectionIdWithPrefix,
-          key,
-          undefined, // type
+        await this.db.updateAttribute({
+          collection: collectionIdWithPrefix,
+          id: key,
           size,
           required,
           defaultValue,
-          undefined,
-          undefined,
-          undefined,
-          options,
-          undefined,
+          formatOptions: options,
           newKey,
-        );
+        });
       } catch (error) {
         if (error instanceof TruncateException) {
           throw new Exception(Exception.ATTRIBUTE_INVALID_RESIZE);
@@ -1234,5 +1771,338 @@ export class DatabaseService {
     //   .setParam('attributeId', attribute.getId());
 
     return attribute;
+  }
+
+  /**
+   * Create a Document.
+   */
+  async createDocument(
+    databaseId: string,
+    collectionId: string,
+    input: CreateDocumentDTO,
+    mode: string,
+  ) {
+    const { documentId, permissions } = input;
+
+    const data =
+      typeof input.data === 'string' ? JSON.parse(input.data) : input.data;
+
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
+    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
+
+    if (
+      database.isEmpty() ||
+      (!database.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await Authorization.skip(
+      async () =>
+        await this.db.getDocument(
+          `database_${database.getInternalId()}`,
+          collectionId,
+        ),
+    );
+
+    if (
+      collection.isEmpty() ||
+      (!collection.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    const allowedPermissions = [
+      Database.PERMISSION_READ,
+      Database.PERMISSION_UPDATE,
+      Database.PERMISSION_DELETE,
+    ];
+
+    const aggregatedPermissions = Permission.aggregate(
+      permissions,
+      allowedPermissions,
+    );
+
+    if (!aggregatedPermissions) {
+      throw new Exception(Exception.USER_UNAUTHORIZED);
+    }
+
+    data['$collection'] = collection.getId();
+    data['$id'] = documentId === 'unique()' ? ID.unique() : documentId;
+    data['$permissions'] = aggregatedPermissions;
+
+    const document = new Document(data);
+
+    const checkPermissions = async (
+      collection: Document,
+      document: Document,
+      permission: string,
+    ) => {
+      const documentSecurity = collection.getAttribute(
+        'documentSecurity',
+        false,
+      );
+      const validator = new Authorization(permission);
+
+      const valid = validator.isValid(
+        collection.getPermissionsByType(permission),
+      );
+      if (
+        (permission === Database.PERMISSION_UPDATE && !documentSecurity) ||
+        !valid
+      ) {
+        throw new Exception(Exception.USER_UNAUTHORIZED);
+      }
+
+      if (permission === Database.PERMISSION_UPDATE) {
+        const validUpdate = validator.isValid(document.getUpdate());
+        if (documentSecurity && !validUpdate) {
+          throw new Exception(Exception.USER_UNAUTHORIZED);
+        }
+      }
+
+      const relationships = collection
+        .getAttribute('attributes', [])
+        .filter(
+          (attribute: any) =>
+            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+        );
+
+      for (const relationship of relationships) {
+        const related = document.getAttribute(relationship.getAttribute('key'));
+
+        if (!related) {
+          continue;
+        }
+
+        const relations = Array.isArray(related) ? related : [related];
+        const relatedCollectionId =
+          relationship.getAttribute('relatedCollection');
+        const relatedCollection = await Authorization.skip(
+          async () =>
+            await this.db.getDocument(
+              `database_${database.getInternalId()}`,
+              relatedCollectionId,
+            ),
+        );
+
+        for (let i = 0; i < relations.length; i++) {
+          if (relations[i] instanceof Document) {
+            const current = await Authorization.skip(
+              async () =>
+                await this.db.getDocument(
+                  `database_${database.getInternalId()}_collection_${relatedCollection.getInternalId()}`,
+                  relations[i].getId(),
+                ),
+            );
+
+            if (current.isEmpty()) {
+              relations[i].setAttribute('$id', ID.unique());
+            } else {
+              relations[i].removeAttribute('$collectionId');
+              relations[i].removeAttribute('$databaseId');
+              relations[i].setAttribute(
+                '$collection',
+                relatedCollection.getId(),
+              );
+            }
+
+            await checkPermissions(
+              relatedCollection,
+              relations[i],
+              Database.PERMISSION_CREATE,
+            );
+          }
+        }
+
+        document.setAttribute(
+          relationship.getAttribute('key'),
+          Array.isArray(related) ? relations : relations[0] || null,
+        );
+      }
+    };
+
+    await checkPermissions(collection, document, Database.PERMISSION_CREATE);
+
+    try {
+      const createdDocument = await this.db.createDocument(
+        `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
+        document,
+      );
+
+      const processDocument = async (
+        collection: Document,
+        document: Document,
+      ): Promise<void> => {
+        document.setAttribute('$databaseId', database.getId());
+        document.setAttribute('$collectionId', collection.getId());
+
+        const relationships = collection
+          .getAttribute('attributes', [])
+          .filter(
+            (attribute: any) =>
+              attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+          );
+
+        for (const relationship of relationships) {
+          const related = document.getAttribute(
+            relationship.getAttribute('key'),
+          );
+
+          if (!related) {
+            continue;
+          }
+
+          const relations = Array.isArray(related) ? related : [related];
+          const relatedCollectionId =
+            relationship.getAttribute('relatedCollection');
+          const relatedCollection = await Authorization.skip(
+            async () =>
+              await this.db.getDocument(
+                `database_${database.getInternalId()}`,
+                relatedCollectionId,
+              ),
+          );
+
+          for (const relation of relations) {
+            if (relation instanceof Document) {
+              await processDocument(relatedCollection, relation);
+            }
+          }
+        }
+      };
+
+      await processDocument(collection, createdDocument);
+
+      return createdDocument;
+    } catch (error) {
+      if (error instanceof StructureException) {
+        throw new Exception(
+          Exception.DOCUMENT_INVALID_STRUCTURE,
+          error.message,
+        );
+      }
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.DOCUMENT_ALREADY_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get a document.
+   */
+  async getDocument(
+    databaseId: string,
+    collectionId: string,
+    documentId: string,
+    queries: Query[],
+  ) {
+    const database = await Authorization.skip(
+      async () => await this.db.getDocument('databases', databaseId),
+    );
+
+    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
+    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
+
+    if (
+      database.isEmpty() ||
+      (!database.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.DATABASE_NOT_FOUND);
+    }
+
+    const collection = await Authorization.skip(
+      async () =>
+        await this.db.getDocument(
+          `database_${database.getInternalId()}`,
+          collectionId,
+        ),
+    );
+
+    if (
+      collection.isEmpty() ||
+      (!collection.getAttribute('enabled', false) &&
+        !isAPIKey &&
+        !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+    }
+
+    try {
+      const document = await this.db.getDocument(
+        `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
+        documentId,
+        queries,
+      );
+
+      if (document.isEmpty()) {
+        throw new Exception(Exception.DOCUMENT_NOT_FOUND);
+      }
+
+      const processDocument = async (
+        collection: Document,
+        document: Document,
+      ): Promise<void> => {
+        document.setAttribute('$databaseId', database.getId());
+        document.setAttribute('$collectionId', collection.getId());
+
+        const relationships = collection
+          .getAttribute('attributes', [])
+          .filter(
+            (attribute: any) =>
+              attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+          );
+
+        for (const relationship of relationships) {
+          const related = document.getAttribute(
+            relationship.getAttribute('key'),
+          );
+
+          if (!related) {
+            continue;
+          }
+
+          const relations = Array.isArray(related) ? related : [related];
+          const relatedCollectionId =
+            relationship.getAttribute('relatedCollection');
+          const relatedCollection = await Authorization.skip(
+            async () =>
+              await this.db.getDocument(
+                `database_${database.getInternalId()}`,
+                relatedCollectionId,
+              ),
+          );
+
+          for (const relation of relations) {
+            if (relation instanceof Document) {
+              await processDocument(relatedCollection, relation);
+            }
+          }
+        }
+      };
+
+      await processDocument(collection, document);
+
+      return document;
+    } catch (error) {
+      if (error instanceof AuthorizationException) {
+        throw new Exception(Exception.USER_UNAUTHORIZED);
+      }
+      if (error instanceof QueryException) {
+        throw new Exception(Exception.GENERAL_QUERY_INVALID, error.message);
+      }
+      throw error;
+    }
   }
 }

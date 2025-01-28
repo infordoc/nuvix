@@ -14,7 +14,10 @@ export const APP_LIMIT_SUBQUERY = 100;
 export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
 export const APP_REDIS_URL = process.env.APP_REDIS_URL;
-export const APP_REDIS_PORT = parseInt(process.env.APP_REDIS_PORT ?? '6379', 10);
+export const APP_REDIS_PORT = parseInt(
+  process.env.APP_REDIS_PORT ?? '6379',
+  10,
+);
 
 export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 100;
 
@@ -34,3 +37,12 @@ export const IS_PUBLIC_KEY = Symbol('isPublic');
 export const CONSOLE_CONFIG: any = {
   auths: {},
 };
+
+// DATABASES
+export const APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH = 1024;
+export const APP_DATABASE_ATTRIBUTE_EMAIL = 'email';
+export const APP_DATABASE_ATTRIBUTE_ENUM = 'enum';
+export const APP_DATABASE_ATTRIBUTE_IP = 'ip';
+export const APP_DATABASE_ATTRIBUTE_URL = 'url';
+export const APP_DATABASE_ATTRIBUTE_INT_RANGE = 'integer';
+export const APP_DATABASE_ATTRIBUTE_FLOAT_RANGE = 'float';

@@ -1,5 +1,19 @@
-import { Authorization, Database, Document, Query } from '@nuvix/database';
 import {
+  Authorization,
+  Database,
+  DatetimeValidator,
+  Document,
+  Query,
+  RangeValidator,
+  TextValidator,
+} from '@nuvix/database';
+import {
+  APP_DATABASE_ATTRIBUTE_EMAIL,
+  APP_DATABASE_ATTRIBUTE_ENUM,
+  APP_DATABASE_ATTRIBUTE_FLOAT_RANGE,
+  APP_DATABASE_ATTRIBUTE_INT_RANGE,
+  APP_DATABASE_ATTRIBUTE_IP,
+  APP_DATABASE_ATTRIBUTE_URL,
   APP_LIMIT_SUBQUERY,
   APP_LIMIT_SUBSCRIBERS_SUBQUERY,
   APP_OPENSSL_KEY_1,
@@ -17,11 +31,11 @@ export const filters = {
       });
     },
     deserialize: (value: any) => {
-      if (value === null) {
+      if (value == null || value === undefined) {
         return null;
       }
-
-      return JSON.parse(value).value;
+      
+      return JSON.parse(value)?.value;
     },
   },
   enum: {
@@ -383,48 +397,45 @@ export const filters = {
   },
 };
 
-const formats = {
-  APP_DATABASE_ATTRIBUTE_EMAIL: {
+export const formats = {
+  [APP_DATABASE_ATTRIBUTE_EMAIL]: {
     create: () => new EmailValidator(),
     type: Database.VAR_STRING,
   },
-  // APP_DATABASE_ATTRIBUTE_DATETIME: {
-  //   create: () => new DatetimeValidator(),
-  //   type: Database.VAR_DATETIME
-  // },
-  // APP_DATABASE_ATTRIBUTE_ENUM: {
-  //   create: (attribute: any) => {
-  //     const elements = attribute.formatOptions.elements;
-  //     return new WhiteList(elements, true);
-  //   },
-  //   type: Database.VAR_STRING
-  // },
-  // APP_DATABASE_ATTRIBUTE_IP: {
-  //   create: () => new IP(),
-  //   type: Database.VAR_STRING
-  // },
-  // APP_DATABASE_ATTRIBUTE_URL: {
-  //   create: () => new URL(),
-  //   type: Database.VAR_STRING
-  // },
-  // APP_DATABASE_ATTRIBUTE_INT_RANGE: {
-  //   create: (attribute: any) => {
-  //     const min = attribute.formatOptions.min ?? -Infinity;
-  //     const max = attribute.formatOptions.max ?? Infinity;
-  //     return new Range(min, max, Range.TYPE_INTEGER);
-  //   },
-  //   type: Database.VAR_INTEGER
-  // },
-  // APP_DATABASE_ATTRIBUTE_FLOAT_RANGE: {
-  //   create: (attribute: any) => {
-  //     const min = attribute.formatOptions.min ?? -Infinity;
-  //     const max = attribute.formatOptions.max ?? Infinity;
-  //     return new Range(min, max, Range.TYPE_FLOAT);
-  //   },
-  //   type: Database.VAR_FLOAT
-  // }
+  'datetime': { // [APP_DATABASE_ATTRIBUTE_DATETIME]
+    create: () => new DatetimeValidator(),
+    type: Database.VAR_DATETIME
+  },
+  [APP_DATABASE_ATTRIBUTE_ENUM]: {
+    create: (attribute: any) => {
+      const elements = attribute.formatOptions.elements;
+      return new TextValidator(300);
+      // return new WhiteList(elements, true);
+    },
+    type: Database.VAR_STRING,
+  },
+  [APP_DATABASE_ATTRIBUTE_IP]: {
+    create: () => new TextValidator(99),
+    type: Database.VAR_STRING
+  },
+  [APP_DATABASE_ATTRIBUTE_URL]: {
+    create: () => new TextValidator(1000),
+    type: Database.VAR_STRING
+  },
+  [APP_DATABASE_ATTRIBUTE_INT_RANGE]: {
+    create: (attribute: any) => {
+      const min = attribute.formatOptions.min ?? -Infinity;
+      const max = attribute.formatOptions.max ?? Infinity;
+      return new RangeValidator(min, max, `RangeValidator.TYPE_INTEGER`);
+    },
+    type: Database.VAR_INTEGER,
+  },
+  [APP_DATABASE_ATTRIBUTE_FLOAT_RANGE]: {
+    create: (attribute: any) => {
+      const min = attribute.formatOptions.min ?? -Infinity;
+      const max = attribute.formatOptions.max ?? Infinity;
+      return new RangeValidator(min, max, `Range.TYPE_FLOAT`);
+    },
+    type: Database.VAR_FLOAT,
+  },
 };
-
-// Object.keys(formats).forEach(key => {
-//   Structure.addFormat(key, formats[key].create, formats[key].type);
-// });

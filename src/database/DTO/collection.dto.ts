@@ -7,7 +7,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import { IsUID } from 'src/core/validators/Id.validator';
+import { IsUID } from 'src/core/validators/input.validator';
 
 export class CreateCollectionDTO {
   @IsUID()
