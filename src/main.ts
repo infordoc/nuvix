@@ -14,10 +14,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     abortOnError: false,
     logger: new ConsoleLogger({
-      json: true,
-      colors: true,
+      json: process.env.NODE_ENV === 'production',
+      colors: process.env.NODE_ENV !== 'production',
       prefix: 'Nuvix',
-    })
+    }),
   });
 
   app.enableVersioning();
@@ -26,8 +26,6 @@ async function bootstrap() {
     new ValidationPipe({
       enableDebugMessages: true,
       stopAtFirstError: false,
-      exceptionFactory: (errors) =>
-        new Exception('VALIDATION_FAILED', errors.toString(), 400),
       transform: true,
       transformOptions: {
         exposeDefaultValues: true,

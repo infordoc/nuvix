@@ -69,7 +69,7 @@ export class DatabaseService {
     @Inject(DB_FOR_CONSOLE) private readonly dbConsole: Database,
     @Inject(DB_FOR_PROJECT) private readonly db: Database,
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
-  ) { }
+  ) {}
 
   /**
    * Create a new database.
@@ -764,6 +764,8 @@ export class DatabaseService {
       APP_LIMIT_COUNT,
     );
 
+    this.logger.debug(documents);
+
     // Add $collectionId and $databaseId for all documents
     const processDocument = async (
       collection: Document,
@@ -787,7 +789,7 @@ export class DatabaseService {
       for (const relationship of relationships) {
         const related = document.getAttribute(relationship.getAttribute('key'));
 
-        if (!related) {
+        if (related.isEmpty()) {
           continue;
         }
 
@@ -1224,9 +1226,9 @@ export class DatabaseService {
 
       if (
         attribute.getAttribute('options')?.['twoWayKey']?.toLowerCase() ===
-        twoWayKey.toLowerCase() &&
+          twoWayKey.toLowerCase() &&
         attribute.getAttribute('options')?.['relatedCollection'] ===
-        relatedCollection.getId()
+          relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -1237,9 +1239,9 @@ export class DatabaseService {
       if (
         type === Database.RELATION_MANY_TO_MANY &&
         attribute.getAttribute('options')['relationType'] ===
-        Database.RELATION_MANY_TO_MANY &&
+          Database.RELATION_MANY_TO_MANY &&
         attribute.getAttribute('options')['relatedCollection'] ===
-        relatedCollection.getId()
+          relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -1889,7 +1891,7 @@ export class DatabaseService {
 
           const validator =
             attribute.getAttribute('format') ===
-              APP_DATABASE_ATTRIBUTE_INT_RANGE
+            APP_DATABASE_ATTRIBUTE_INT_RANGE
               ? new RangeValidator(min, max, 'integer')
               : new RangeValidator(min, max, 'float');
 
@@ -2757,6 +2759,8 @@ export class DatabaseService {
         throw new Exception(Exception.DOCUMENT_NOT_FOUND);
       }
 
+      console.debug(document);
+
       const processDocument = async (
         collection: Document,
         document: Document,
@@ -2776,7 +2780,7 @@ export class DatabaseService {
             relationship.getAttribute('key'),
           );
 
-          if (!related) {
+          if (related.isEmpty()) {
             continue;
           }
 

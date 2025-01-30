@@ -2,7 +2,7 @@ import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Exception } from '../extend/exception';
 
-@Catch(Exception, Error) // , Error
+@Catch(Exception, Error)
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
@@ -14,7 +14,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     this.logger.error(
       `${request.method} ${request.url}`,
-      exception,
+      exception.stack ?? exception.message,
       HttpExceptionFilter.name,
     );
 

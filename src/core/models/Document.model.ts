@@ -40,8 +40,6 @@ export class DocumentModel extends BaseModel {
    */
   @Expose() runtime: string = '';
 
-  constructor(partial: Partial<DocumentModel>) {
-    super();
-    Object.assign(this, partial);
-  }
+  @Exclude() $internalId: any;
+  @Exclude() $tenant: any;
 }
