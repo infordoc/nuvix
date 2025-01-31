@@ -626,7 +626,7 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Param('documentId') documentId: string,
-    @Query('queries') queries: Queries[],
+    @Query('queries', ParseQueryPipe) queries: Queries[],
   ) {
     return await this.databaseService.getDocument(
       id,

@@ -47,7 +47,7 @@ export class ResolverInterceptor implements NestInterceptor {
     @Inject(REFLECTOR) protected readonly reflector: any,
     @Optional()
     protected readonly defaultOptions: ClassSerializerInterceptorOptions = {
-      excludePrefixes: ['$internalId', '$tenant', '$collection'],
+      excludePrefixes: ['$internalId', '$tenant'],
     },
   ) {
     classTransformer =

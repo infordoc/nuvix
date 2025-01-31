@@ -20,6 +20,7 @@ export default abstract class BaseModel {
 
   @Exclude() _id: any;
   @Exclude() id: string;
+  @Exclude() $collection: any;
 
   constructor(doc?: any) {
     Object.assign(this, doc);

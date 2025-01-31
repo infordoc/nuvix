@@ -42,4 +42,5 @@ export class DocumentModel extends BaseModel {
 
   @Exclude() $internalId: any;
   @Exclude() $tenant: any;
+  @Exclude() $collection: any;
 }

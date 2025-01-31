@@ -764,8 +764,6 @@ export class DatabaseService {
       APP_LIMIT_COUNT,
     );
 
-    this.logger.debug(documents);
-
     // Add $collectionId and $databaseId for all documents
     const processDocument = async (
       collection: Document,
@@ -775,7 +773,6 @@ export class DatabaseService {
         return false;
       }
 
-      document.removeAttribute('$collection');
       document.setAttribute('$databaseId', database.getId());
       document.setAttribute('$collectionId', collection.getId());
 
@@ -787,9 +784,12 @@ export class DatabaseService {
         );
 
       for (const relationship of relationships) {
-        const related = document.getAttribute(relationship.getAttribute('key'));
+        const related = document.getAttribute(
+          relationship.getAttribute('key'),
+          null,
+        );
 
-        if (related.isEmpty()) {
+        if (related === null || related?.isEmpty()) {
           continue;
         }
 
@@ -819,6 +819,7 @@ export class DatabaseService {
         );
       }
 
+      document.removeAttribute('$collection');
       return true;
     };
 
@@ -2647,49 +2648,7 @@ export class DatabaseService {
         document,
       );
 
-      const processDocument = async (
-        collection: Document,
-        document: Document,
-      ): Promise<void> => {
-        document.setAttribute('$databaseId', database.getId());
-        document.setAttribute('$collectionId', collection.getId());
-
-        const relationships = collection
-          .getAttribute('attributes', [])
-          .filter(
-            (attribute: any) =>
-              attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
-          );
-
-        for (const relationship of relationships) {
-          const related = document.getAttribute(
-            relationship.getAttribute('key'),
-          );
-
-          if (!related) {
-            continue;
-          }
-
-          const relations = Array.isArray(related) ? related : [related];
-          const relatedCollectionId =
-            relationship.getAttribute('relatedCollection');
-          const relatedCollection = await Authorization.skip(
-            async () =>
-              await this.db.getDocument(
-                `database_${database.getInternalId()}`,
-                relatedCollectionId,
-              ),
-          );
-
-          for (const relation of relations) {
-            if (relation instanceof Document) {
-              await processDocument(relatedCollection, relation);
-            }
-          }
-        }
-      };
-
-      await processDocument(collection, createdDocument);
+      await this.processDocument(database, collection, createdDocument);
 
       return createdDocument;
     } catch (error) {
@@ -2759,51 +2718,7 @@ export class DatabaseService {
         throw new Exception(Exception.DOCUMENT_NOT_FOUND);
       }
 
-      console.debug(document);
-
-      const processDocument = async (
-        collection: Document,
-        document: Document,
-      ): Promise<void> => {
-        document.setAttribute('$databaseId', database.getId());
-        document.setAttribute('$collectionId', collection.getId());
-
-        const relationships = collection
-          .getAttribute('attributes', [])
-          .filter(
-            (attribute: any) =>
-              attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
-          );
-
-        for (const relationship of relationships) {
-          const related = document.getAttribute(
-            relationship.getAttribute('key'),
-          );
-
-          if (related.isEmpty()) {
-            continue;
-          }
-
-          const relations = Array.isArray(related) ? related : [related];
-          const relatedCollectionId =
-            relationship.getAttribute('relatedCollection');
-          const relatedCollection = await Authorization.skip(
-            async () =>
-              await this.db.getDocument(
-                `database_${database.getInternalId()}`,
-                relatedCollectionId,
-              ),
-          );
-
-          for (const relation of relations) {
-            if (relation instanceof Document) {
-              await processDocument(relatedCollection, relation);
-            }
-          }
-        }
-      };
-
-      await processDocument(collection, document);
+      await this.processDocument(database, collection, document);
 
       return document;
     } catch (error) {
@@ -2816,6 +2731,51 @@ export class DatabaseService {
       throw error;
     }
   }
+
+  private processDocument = async (
+    database: Document,
+    collection: Document,
+    document: Document,
+  ): Promise<void> => {
+    document.setAttribute('$databaseId', database.getId());
+    document.setAttribute('$collectionId', collection.getId());
+
+    const relationships = collection
+      .getAttribute('attributes', [])
+      .filter(
+        (attribute: any) =>
+          attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+      );
+
+    for (const relationship of relationships) {
+      const related = document.getAttribute(
+        relationship.getAttribute('key'),
+        null,
+      );
+
+      if (related === null || related?.isEmpty()) {
+        continue;
+      }
+
+      const relations = Array.isArray(related) ? related : [related];
+      const relatedCollectionId =
+        relationship.getAttribute('relatedCollection');
+      const relatedCollection = await Authorization.skip(
+        async () =>
+          await this.db.getDocument(
+            `database_${database.getInternalId()}`,
+            relatedCollectionId,
+          ),
+      );
+
+      for (const relation of relations) {
+        if (relation instanceof Document) {
+          await this.processDocument(database, relatedCollection, relation);
+        }
+      }
+    }
+    document.removeAttribute('$collection');
+  };
 
   /**
    * Get document logs.
@@ -2972,6 +2932,7 @@ export class DatabaseService {
 
     data['$id'] = documentId;
     data['$permissions'] = aggregatedPermissions;
+    data['$updatedAt'] = new Date();
 
     const newDocument = new Document(data);
 
@@ -3047,49 +3008,7 @@ export class DatabaseService {
         newDocument,
       );
 
-      const processDocument = async (
-        collection: Document,
-        document: Document,
-      ): Promise<void> => {
-        document.setAttribute('$databaseId', database.getId());
-        document.setAttribute('$collectionId', collection.getId());
-
-        const relationships = collection
-          .getAttribute('attributes', [])
-          .filter(
-            (attribute: any) =>
-              attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
-          );
-
-        for (const relationship of relationships) {
-          const related = document.getAttribute(
-            relationship.getAttribute('key'),
-          );
-
-          if (!related) {
-            continue;
-          }
-
-          const relations = Array.isArray(related) ? related : [related];
-          const relatedCollectionId =
-            relationship.getAttribute('relatedCollection');
-          const relatedCollection = await Authorization.skip(
-            async () =>
-              await this.db.getDocument(
-                `database_${database.getInternalId()}`,
-                relatedCollectionId,
-              ),
-          );
-
-          for (const relation of relations) {
-            if (relation instanceof Document) {
-              await processDocument(relatedCollection, relation);
-            }
-          }
-        }
-      };
-
-      await processDocument(collection, updatedDocument);
+      await this.processDocument(database, collection, updatedDocument);
 
       return updatedDocument;
     } catch (error) {
@@ -3171,47 +3090,7 @@ export class DatabaseService {
       );
     });
 
-    const processDocument = async (
-      collection: Document,
-      document: Document,
-    ): Promise<void> => {
-      document.setAttribute('$databaseId', database.getId());
-      document.setAttribute('$collectionId', collection.getId());
-
-      const relationships = collection
-        .getAttribute('attributes', [])
-        .filter(
-          (attribute: any) =>
-            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
-        );
-
-      for (const relationship of relationships) {
-        const related = document.getAttribute(relationship.getAttribute('key'));
-
-        if (!related) {
-          continue;
-        }
-
-        const relations = Array.isArray(related) ? related : [related];
-        const relatedCollectionId =
-          relationship.getAttribute('relatedCollection');
-        const relatedCollection = await Authorization.skip(
-          async () =>
-            await this.db.getDocument(
-              `database_${database.getInternalId()}`,
-              relatedCollectionId,
-            ),
-        );
-
-        for (const relation of relations) {
-          if (relation instanceof Document) {
-            await processDocument(relatedCollection, relation);
-          }
-        }
-      }
-    };
-
-    await processDocument(collection, document);
+    await this.processDocument(database, collection, document);
 
     // const relationships = collection
     //   .getAttribute('attributes', [])

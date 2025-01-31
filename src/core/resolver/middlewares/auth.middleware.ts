@@ -38,7 +38,7 @@ export class AuthMiddleware implements NestMiddleware {
           '',
       );
     } catch (error) {
-      this.logger.error('Failed to decode session', error);
+      // this.logger.error('Failed to decode session', error);
       session = {};
     }
 
@@ -57,7 +57,7 @@ export class AuthMiddleware implements NestMiddleware {
         );
         session = Auth.decodeSession(fallback[Auth.cookieName] || '');
       } catch (error) {
-        this.logger.error('Failed to parse fallback cookies', error);
+        // this.logger.error('Failed to parse fallback cookies', error);
       }
     } else {
       res.setHeader('X-Debug-Fallback', 'false');
