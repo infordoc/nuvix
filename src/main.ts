@@ -20,6 +20,8 @@ async function bootstrap() {
     }),
   });
 
+  app.set('query parser', 'extended');
+
   app.enableVersioning();
 
   app.useGlobalPipes(

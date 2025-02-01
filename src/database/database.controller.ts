@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   Query,
   Put,
+  Req,
 } from '@nestjs/common';
 import {
   ResolverInterceptor,
@@ -50,6 +51,7 @@ import {
 } from './DTO/attributes.dto';
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
 import { CreateIndexDTO } from './DTO/indexes.dto';
+import { Request } from 'express';
 
 @Controller({ version: ['1'], path: 'databases' })
 @UseGuards(ProjectGuard)
@@ -95,8 +97,8 @@ export class DatabaseController {
 
   @Delete(':id')
   @ResponseType(Response.MODEL_NONE)
-  async remove(@Param('id') id: string) {
-    return await this.databaseService.remove(id);
+  async remove(@Param('id') id: string, @Project() project: Document) {
+    return await this.databaseService.remove(id, project);
   }
 
   @Get(':id/usage')
@@ -228,11 +230,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateStringAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createStringAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -242,11 +246,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateEmailAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createEmailAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -256,11 +262,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateEnumAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createEnumAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -270,11 +278,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateIpAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createIPAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -284,11 +294,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateURLAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createURLAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -298,11 +310,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateIntegerAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createIntegerAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -312,11 +326,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateFloatAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createFloatAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -326,11 +342,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateBooleanAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createBooleanAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -340,11 +358,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateDatetimeAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createDateAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 
@@ -354,11 +374,13 @@ export class DatabaseController {
     @Param('id') id: string,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDto: CreateRelationAttributeDTO,
+    @Project() project: Document,
   ) {
     return await this.databaseService.createRelationshipAttribute(
       id,
       collectionId,
       createAttributeDto,
+      project,
     );
   }
 

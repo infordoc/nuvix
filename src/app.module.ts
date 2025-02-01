@@ -17,7 +17,15 @@ import { AuthMiddleware } from './core/resolver/middlewares/auth.middleware';
 import { CoreModule } from './core/core.module';
 import { ProjectMiddleware } from './core/resolver/middlewares/project.middleware';
 import { BullModule } from '@nestjs/bullmq';
-import { APP_REDIS_PORT, APP_REDIS_URL } from './Utils/constants';
+import {
+  APP_REDIS_DB,
+  APP_REDIS_HOST,
+  APP_REDIS_PASSWORD,
+  APP_REDIS_PATH,
+  APP_REDIS_PORT,
+  APP_REDIS_SECURE,
+  APP_REDIS_USER,
+} from './Utils/constants';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 config();
 
@@ -36,14 +44,19 @@ config();
     }),
     BullModule.forRoot({
       connection: {
-        path: APP_REDIS_URL,
+        path: APP_REDIS_PATH,
         port: APP_REDIS_PORT,
-        skipVersionCheck: true,
+        host: APP_REDIS_HOST,
+        username: APP_REDIS_USER,
+        password: APP_REDIS_PASSWORD,
+        db: APP_REDIS_DB,
+        tls: APP_REDIS_SECURE ? {} : undefined,
       },
       defaultJobOptions: {
         removeOnComplete: true,
         removeOnFail: true,
       },
+      prefix: 'nuvix',
     }),
     EventEmitterModule.forRoot({
       global: true,

@@ -304,7 +304,11 @@ export class UsersService {
         user.getId(),
         user,
       );
-      const oldTarget = updatedUser.find('identifier', oldEmail, 'targets');
+      const oldTarget = updatedUser.find<any>(
+        'identifier',
+        oldEmail,
+        'targets',
+      );
 
       if (!oldTarget.isEmpty()) {
         if (email.length !== 0) {
@@ -379,7 +383,11 @@ export class UsersService {
         user.getId(),
         user,
       );
-      const oldTarget = updatedUser.find('identifier', oldPhone, 'targets');
+      const oldTarget = updatedUser.find<any>(
+        'identifier',
+        oldPhone,
+        'targets',
+      );
 
       if (!oldTarget.isEmpty()) {
         if (phone.length !== 0) {

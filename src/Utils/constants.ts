@@ -10,11 +10,16 @@ export const APP_VERSION_STABLE = '1.0.0';
 export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
 export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
-export const APP_REDIS_URL = process.env.APP_REDIS_URL;
+export const APP_REDIS_PATH = process.env.APP_REDIS_PATH;
 export const APP_REDIS_PORT = parseInt(
   process.env.APP_REDIS_PORT ?? '6379',
   10,
 );
+export const APP_REDIS_HOST = process.env.APP_REDIS_HOST;
+export const APP_REDIS_USER = process.env.APP_REDIS_USER;
+export const APP_REDIS_PASSWORD = process.env.APP_REDIS_PASSWORD;
+export const APP_REDIS_DB = parseInt(process.env.APP_REDIS_DB ?? '0', 10);
+export const APP_REDIS_SECURE = process.env.APP_REDIS_SECURE === 'true';
 
 export const PROJECT = Symbol('project');
 export const USER = Symbol('user');

@@ -25,17 +25,27 @@ import {
   APP_DATABASE_ATTRIBUTE_IP,
   APP_DATABASE_ATTRIBUTE_URL,
   APP_LIMIT_COUNT,
+  DATABASE_TYPE_CREATE_ATTRIBUTE,
+  DATABASE_TYPE_CREATE_INDEX,
+  DATABASE_TYPE_DELETE_ATTRIBUTE,
+  DATABASE_TYPE_DELETE_COLLECTION,
+  DATABASE_TYPE_DELETE_DATABASE,
+  DATABASE_TYPE_DELETE_INDEX,
   DB_FOR_CONSOLE,
   DB_FOR_PROJECT,
   GEO_DB,
 } from 'src/Utils/constants';
-import { CreateDatabaseDTO, UpdateDatabaseDTO } from './DTO/database.dto';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { Auth } from 'src/core/helper/auth.helper';
+import { CountryResponse, Reader } from 'maxmind';
 import collections from 'src/core/collections';
 import { Exception } from 'src/core/extend/exception';
 import { Detector } from 'src/core/helper/detector.helper';
-import { CountryResponse, Reader } from 'maxmind';
+
+// DTOs
+import { CreateDatabaseDTO, UpdateDatabaseDTO } from './DTO/database.dto';
 import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto';
-import { Auth } from 'src/core/helper/auth.helper';
 import {
   CreateBooleanAttributeDTO,
   CreateDatetimeAttributeDTO,
@@ -58,8 +68,8 @@ import {
   UpdateURLAttributeDTO,
 } from './DTO/attributes.dto';
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
-import { DatabaseQueue } from 'src/core/resolver/queues/database.queue';
 import { CreateIndexDTO } from './DTO/indexes.dto';
+
 
 @Injectable()
 export class DatabaseService {
@@ -69,6 +79,7 @@ export class DatabaseService {
     @Inject(DB_FOR_CONSOLE) private readonly dbConsole: Database,
     @Inject(DB_FOR_PROJECT) private readonly db: Database,
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
+    @InjectQueue('database') private readonly databaseQueue: Queue,
   ) {}
 
   /**
@@ -220,7 +231,7 @@ export class DatabaseService {
     return updatedDatabase;
   }
 
-  async remove(id: string) {
+  async remove(id: string, project: Document) {
     const database = await this.db.getDocument('databases', id);
 
     if (database.isEmpty()) {
@@ -237,7 +248,10 @@ export class DatabaseService {
     this.db.purgeCachedDocument('databases', database.getId());
     this.db.purgeCachedCollection(`databases_${database.getInternalId()}`);
 
-    // TODO: Remove all documents from thRemove all documents from the collectione collection
+    await this.databaseQueue.add(DATABASE_TYPE_DELETE_DATABASE, {
+      database: database.toObj(),
+      project: project.toObj(),
+    });
 
     return null;
   }
@@ -606,12 +620,11 @@ export class DatabaseService {
       );
     }
 
-    await DatabaseQueue.deleteCollection(
-      database,
-      collection,
-      project,
-      this.db,
-    );
+    await this.databaseQueue.add(DATABASE_TYPE_DELETE_COLLECTION, {
+      database: database.toObj(),
+      collection: collection.toObj(),
+      project: project.toObj(),
+    });
 
     await this.db.purgeCachedCollection(
       `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
@@ -754,13 +767,15 @@ export class DatabaseService {
       cursor.setValue(cursorDocument);
     }
 
+    const filterQueries = Query.groupByType(queries).filters;
+
     const documents = await this.db.find(
       `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
       queries,
     );
     const total = await this.db.count(
       `database_${database.getInternalId()}_collection_${collection.getInternalId()}`,
-      queries,
+      filterQueries,
       APP_LIMIT_COUNT,
     );
 
@@ -789,7 +804,11 @@ export class DatabaseService {
           null,
         );
 
-        if (related === null || related?.isEmpty()) {
+        if (
+          related === null ||
+          (Array.isArray(related) && related.length === 0) ||
+          (related instanceof Document && related.isEmpty())
+        ) {
           continue;
         }
 
@@ -871,6 +890,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateStringAttributeDTO,
+    project: Document,
   ) {
     const {
       key,
@@ -904,7 +924,12 @@ export class DatabaseService {
       filters,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -914,6 +939,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateEmailAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
@@ -927,7 +953,12 @@ export class DatabaseService {
       format: APP_DATABASE_ATTRIBUTE_EMAIL,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -937,6 +968,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateEnumAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array, elements } = input;
 
@@ -958,7 +990,12 @@ export class DatabaseService {
       formatOptions: { elements },
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -968,6 +1005,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateIpAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
@@ -981,7 +1019,12 @@ export class DatabaseService {
       format: APP_DATABASE_ATTRIBUTE_IP,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -991,6 +1034,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateStringAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
@@ -1004,7 +1048,12 @@ export class DatabaseService {
       format: APP_DATABASE_ATTRIBUTE_URL,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -1014,6 +1063,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateIntegerAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -1052,7 +1102,12 @@ export class DatabaseService {
       },
     });
 
-    attribute = await this.createAttribute(databaseId, collectionId, attribute);
+    attribute = await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
 
     const formatOptions = attribute.getAttribute('formatOptions', {});
 
@@ -1071,6 +1126,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateFloatAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -1111,6 +1167,7 @@ export class DatabaseService {
       databaseId,
       collectionId,
       attribute,
+      project,
     );
 
     const formatOptions = createdAttribute.getAttribute('formatOptions', {});
@@ -1130,6 +1187,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateBooleanAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
@@ -1142,7 +1200,12 @@ export class DatabaseService {
       array,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -1152,6 +1215,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateDatetimeAttributeDTO,
+    project: Document,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
@@ -1167,7 +1231,12 @@ export class DatabaseService {
       filters,
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -1177,6 +1246,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     input: CreateRelationAttributeDTO,
+    project: Document,
   ) {
     const { key, type, twoWay, twoWayKey, onDelete, relatedCollectionId } =
       input;
@@ -1239,9 +1309,9 @@ export class DatabaseService {
 
       if (
         type === Database.RELATION_MANY_TO_MANY &&
-        attribute.getAttribute('options')['relationType'] ===
+        attribute.getAttribute('options')?.['relationType'] ===
           Database.RELATION_MANY_TO_MANY &&
-        attribute.getAttribute('options')['relatedCollection'] ===
+        attribute.getAttribute('options')?.['relatedCollection'] ===
           relatedCollection.getId()
       ) {
         throw new Exception(
@@ -1268,7 +1338,12 @@ export class DatabaseService {
       },
     });
 
-    return await this.createAttribute(databaseId, collectionId, attribute);
+    return await this.createAttribute(
+      databaseId,
+      collectionId,
+      attribute,
+      project,
+    );
   }
 
   /**
@@ -1599,6 +1674,7 @@ export class DatabaseService {
     databaseId: string,
     collectionId: string,
     attribute: Document,
+    project: Document,
   ) {
     const key = attribute.getAttribute('key');
     const type = attribute.getAttribute('type', '');
@@ -1762,14 +1838,12 @@ export class DatabaseService {
       );
     }
 
-    await DatabaseQueue.createAttribute(
-      db,
-      collection,
-      attribute,
-      new Document(),
-      this.dbConsole,
-      this.db,
-    );
+    await this.databaseQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
+      database: db.toObj(),
+      collection: collection.toObj(),
+      attribute: attribute.toObj(),
+      project: project.toObj(),
+    });
 
     return attribute;
   }
@@ -1844,7 +1918,8 @@ export class DatabaseService {
 
     if (
       attribute.getAttribute('type') === 'string' &&
-      attribute.getAttribute('filter') !== filter
+      filter &&
+      attribute.getAttribute('filters') !== filter
     ) {
       throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
     }
@@ -1990,6 +2065,7 @@ export class DatabaseService {
           collection: collectionIdWithPrefix,
           id: key,
           size,
+          type,
           required,
           defaultValue,
           formatOptions: options,
@@ -2033,7 +2109,6 @@ export class DatabaseService {
       collection.getId(),
     );
 
-    // Assuming you have a queue for events
     // queueForEvents
     //   .setContext('collection', collection)
     //   .setContext('database', db)
@@ -2132,14 +2207,12 @@ export class DatabaseService {
       }
     }
 
-    await DatabaseQueue.deleteAttribute(
-      db,
-      collection,
-      attribute,
-      project,
-      this.dbConsole,
-      this.db,
-    );
+    await this.databaseQueue.add(DATABASE_TYPE_DELETE_ATTRIBUTE, {
+      database: db.toObj(),
+      collection: collection.toObj(),
+      attribute: attribute.toObj(),
+      project: project.toObj(),
+    });
 
     return null;
   }
@@ -2312,14 +2385,12 @@ export class DatabaseService {
       collectionId,
     );
 
-    await DatabaseQueue.createIndex(
-      db,
-      collection,
-      index,
-      project,
-      this.dbConsole,
-      this.db,
-    );
+    await this.databaseQueue.add(DATABASE_TYPE_CREATE_INDEX, {
+      database: db,
+      collection: collection.toObj(),
+      index: index.toObj(),
+      project: project.toObj(),
+    });
 
     return index;
   }
@@ -2471,14 +2542,12 @@ export class DatabaseService {
       collectionId,
     );
 
-    await DatabaseQueue.deleteIndex(
-      db,
-      collection,
-      index,
-      project,
-      this.dbConsole,
-      this.db,
-    );
+    await this.databaseQueue.add(DATABASE_TYPE_DELETE_INDEX, {
+      database: db,
+      collection: collection.toObj(),
+      index: index.toObj(),
+      project: project.toObj(),
+    });
 
     return null;
   }
@@ -2753,7 +2822,11 @@ export class DatabaseService {
         null,
       );
 
-      if (related === null || related?.isEmpty()) {
+      if (
+        related === null ||
+        (Array.isArray(related) && related.length === 0) ||
+        (related instanceof Document && related.isEmpty())
+      ) {
         continue;
       }
 
