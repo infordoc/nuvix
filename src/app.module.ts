@@ -27,6 +27,7 @@ import {
   APP_REDIS_USER,
 } from './Utils/constants';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { StorageModule } from './storage/storage.module';
 config();
 
 @Module({
@@ -71,6 +72,7 @@ config();
     AvatarsModule,
     RealtimeModule,
     FunctionsModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
