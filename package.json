@@ -37,7 +37,7 @@
     "argon2": "^0.41.1",
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
-    "bcryptjs": "^2.4.3",
+    "canvas": "^3.1.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
@@ -49,6 +49,7 @@
     "pg": "^8.13.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.33.5",
     "ua-parser-js": "^2.0.0"
   },
   "devDependencies": {
@@ -102,6 +103,8 @@
     "@swc/core",
     "argon2",
     "bcrypt",
-    "msgpackr-extract"
+    "canvas",
+    "msgpackr-extract",
+    "sharp"
   ]
 }

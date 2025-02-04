@@ -1,27 +1,95 @@
 import { Injectable } from '@nestjs/common';
+import { Response } from 'express';
+import { createCanvas } from 'canvas';
+import sharp from 'sharp';
+import crypto from 'crypto';
+
+
 
 @Injectable()
 export class AvatarsService {
-  createSvg(
+
+  async generateAvatar(
     name: string,
     width: number,
     height: number,
     background: string,
-  ): string {
-    const initials = this.getInitials(name);
-    return `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <rect width="100%" height="100%" fill="${background}" />
-      <text x="50%" y="50%" alignment-baseline="central" text-anchor="middle"
-        font-size="${width / 2}" dy=".35em" fill="white">${initials}</text>
-    </svg>`;
+    circle: boolean | string,
+    res: Response
+  ) {
+    try {
+      width = Number(width);
+      height = Number(height);
+      circle = circle === true || circle === 'true'; // Handle boolean query
+      background = `#${background.replace(/[^0-9a-fA-F]/g, '')}`; // Sanitize background color
+      
+      const cacheKey = this.generateCacheKey(name, width, height, background, circle);
+      const cachedImage = this.getCachedImage(cacheKey);
+      if (cachedImage) {
+        res.set('Content-Type', 'image/png');
+        return res.send(cachedImage);
+      }
+
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+
+      // Draw Background (circle or rectangle)
+      if (circle) {
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, Math.min(width, height) / 2, 0, Math.PI * 2);
+        ctx.fillStyle = background;
+        ctx.fill();
+      } else {
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      // Draw Text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${Math.min(width, height) / 2.5}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this.getInitials(name), width / 2, height / 2);
+
+      // Convert Canvas to PNG Buffer
+      const buffer = canvas.toBuffer('image/png');
+
+      // Process Image with Sharp (for better output)
+      let processedImage = await sharp(buffer)
+        .resize(width, height)
+        .png()
+        .toBuffer();
+
+      // Store in cache
+      this.cacheImage(cacheKey, processedImage);
+
+      // Send Image Response
+      res.set('Content-Type', 'image/png');
+      res.send(processedImage);
+    } catch (error) {
+      console.error('Error generating avatar:', error);
+      res.status(500).send('Error generating avatar');
+    }
   }
 
-  getInitials(name: string): string {
-    const initials = name
-      .split(' ')
-      .map((word) => word[0]?.toUpperCase())
-      .join('');
-    return initials.substring(0, 2);
+  private getInitials(name: string): string {
+    const words = name.split(' ').filter(Boolean);
+    return words.length > 1
+      ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
+      : words[0].substring(0, 2).toUpperCase();
+  }
+
+  private generateCacheKey(name: string, width: number, height: number, background: string, circle: boolean): string {
+    return crypto.createHash('md5').update(`${name}-${width}-${height}-${background}-${circle}`).digest('hex');
+  }
+
+  private cache: Record<string, Buffer> = {};
+
+  private getCachedImage(key: string): Buffer | null {
+    return this.cache[key] || null;
+  }
+
+  private cacheImage(key: string, image: Buffer): void {
+    this.cache[key] = image;
   }
 }
