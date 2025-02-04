@@ -2206,7 +2206,7 @@ const commonCollections = {
         $id: ID.custom('secret'),
         type: Database.VAR_STRING,
         format: '',
-        size: 256,
+        size: 1026,
         signed: true,
         required: false,
         default: null,

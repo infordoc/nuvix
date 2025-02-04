@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Response } from 'express';
 import { createCanvas } from 'canvas';
 import sharp from 'sharp';
@@ -8,21 +8,16 @@ import crypto from 'crypto';
 
 @Injectable()
 export class AvatarsService {
+  private readonly logger = new Logger(AvatarsService.name);
 
   async generateAvatar(
-    name: string,
-    width: number,
-    height: number,
-    background: string,
-    circle: boolean | string,
-    res: Response
-  ) {
+    { name, width = 100, height = 100, background, circle, res }: { name: string; width: number | string; height: number | string; background: string; circle: boolean | string; res: Response; }) {
     try {
       width = Number(width);
       height = Number(height);
       circle = circle === true || circle === 'true'; // Handle boolean query
       background = `#${background.replace(/[^0-9a-fA-F]/g, '')}`; // Sanitize background color
-      
+
       const cacheKey = this.generateCacheKey(name, width, height, background, circle);
       const cachedImage = this.getCachedImage(cacheKey);
       if (cachedImage) {
