@@ -31,6 +31,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { StorageModule } from './storage/storage.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailQueue } from './core/resolver/queues/mail.queue';
+import { ApiMiddleware } from './core/resolver/middlewares/api.middleware';
 config();
 
 @Module({
@@ -88,9 +89,11 @@ config();
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
+      .apply(ProjectMiddleware)
+      .forRoutes('*')
       .apply(AuthMiddleware)
       .forRoutes('*')
-      .apply(ProjectMiddleware)
+      .apply(ApiMiddleware)
       .forRoutes('*');
   }
 }

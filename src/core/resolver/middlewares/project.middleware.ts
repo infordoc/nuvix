@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NestMiddleware } from '@nestjs/common';
-import { Database, Document } from '@nuvix/database';
+import { Authorization, Database, Document } from '@nuvix/database';
 import { NextFunction, Request, Response } from 'express';
 import { ClsService } from 'nestjs-cls';
 import { DB_FOR_CONSOLE, DB_FOR_PROJECT, PROJECT } from 'src/Utils/constants';
@@ -11,7 +11,7 @@ export class ProjectMiddleware implements NestMiddleware {
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(DB_FOR_PROJECT) private readonly projectDb: Database,
     private readonly store: ClsService,
-  ) {}
+  ) { }
 
   async use(req: Request, res: Response, next: NextFunction) {
     const projectHeader = req.headers['x-nuvix-project'];
@@ -25,7 +25,7 @@ export class ProjectMiddleware implements NestMiddleware {
     const projectId = [...new Set(projectIds)][0];
 
     if (projectId === 'console') {
-      req[PROJECT] = new Document();
+      req[PROJECT] = new Document({ $id: 'console' });
       next();
       return null;
     }

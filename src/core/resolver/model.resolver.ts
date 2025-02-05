@@ -8,7 +8,7 @@ export const Mode = createParamDecorator<Document>(
     let modes = request.headers['x-nuvix-mode'] || request.query['mode'];
 
     if (!modes) {
-      return null;
+      return 'default';
     }
 
     if (Array.isArray(modes)) {

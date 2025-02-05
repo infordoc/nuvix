@@ -38,6 +38,8 @@ export const DB_FOR_PROJECT = Symbol('dbForProject');
 export const GEO_DB = Symbol('geoDb');
 export const IS_PUBLIC_KEY = Symbol('isPublic');
 export const LOCALE = Symbol('locale');
+export const API_KEY = Symbol('apiKey');
+export const SCOPES = Symbol('scopes');
 
 export const CONSOLE_CONFIG: any = {
   auths: {},
