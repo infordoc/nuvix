@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { AccountService } from './account.service';
 import { ProjectGuard } from 'src/core/resolver/guards/project.guard';
 import { Document } from '@nuvix/database';
@@ -12,7 +20,7 @@ import { User } from 'src/core/resolver/project-user.resolver';
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(ProjectGuard)
 export class AccountController {
-  constructor(private readonly accountService: AccountService) { }
+  constructor(private readonly accountService: AccountService) {}
 
   @Public()
   @Post()
@@ -28,7 +36,7 @@ export class AccountController {
       input.password,
       input.name,
       user,
-      project
+      project,
     );
   }
 
@@ -49,5 +57,4 @@ export class AccountController {
   async updatePrefs(@User() user: Document, @Body() input: UpdatePrefsDTO) {
     return await this.accountService.updatePrefs(user, input.prefs);
   }
-
 }

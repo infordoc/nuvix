@@ -30,6 +30,7 @@ import {
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { StorageModule } from './storage/storage.module';
 import { JwtModule } from '@nestjs/jwt';
+import { MailQueue } from './core/resolver/queues/mail.queue';
 config();
 
 @Module({
@@ -61,6 +62,7 @@ config();
       },
       prefix: 'nuvix',
     }),
+    BullModule.registerQueue({ name: 'mails' }),
     EventEmitterModule.forRoot({
       global: true,
     }),
@@ -81,7 +83,7 @@ config();
     StorageModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, MailQueue],
 })
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {

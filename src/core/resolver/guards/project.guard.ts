@@ -13,7 +13,7 @@ export class ProjectGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private readonly store: ClsService,
-  ) { }
+  ) {}
 
   canActivate(context: ExecutionContext) {
     // const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [

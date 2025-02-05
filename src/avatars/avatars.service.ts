@@ -4,21 +4,38 @@ import { createCanvas } from 'canvas';
 import sharp from 'sharp';
 import crypto from 'crypto';
 
-
-
 @Injectable()
 export class AvatarsService {
   private readonly logger = new Logger(AvatarsService.name);
 
-  async generateAvatar(
-    { name, width = 100, height = 100, background, circle, res }: { name: string; width: number | string; height: number | string; background: string; circle: boolean | string; res: Response; }) {
+  async generateAvatar({
+    name,
+    width = 100,
+    height = 100,
+    background,
+    circle,
+    res,
+  }: {
+    name: string;
+    width: number | string;
+    height: number | string;
+    background: string;
+    circle: boolean | string;
+    res: Response;
+  }) {
     try {
       width = Number(width);
       height = Number(height);
       circle = circle === true || circle === 'true'; // Handle boolean query
       background = `#${background.replace(/[^0-9a-fA-F]/g, '')}`; // Sanitize background color
 
-      const cacheKey = this.generateCacheKey(name, width, height, background, circle);
+      const cacheKey = this.generateCacheKey(
+        name,
+        width,
+        height,
+        background,
+        circle,
+      );
       const cachedImage = this.getCachedImage(cacheKey);
       if (cachedImage) {
         res.set('Content-Type', 'image/png');
@@ -31,7 +48,13 @@ export class AvatarsService {
       // Draw Background (circle or rectangle)
       if (circle) {
         ctx.beginPath();
-        ctx.arc(width / 2, height / 2, Math.min(width, height) / 2, 0, Math.PI * 2);
+        ctx.arc(
+          width / 2,
+          height / 2,
+          Math.min(width, height) / 2,
+          0,
+          Math.PI * 2,
+        );
         ctx.fillStyle = background;
         ctx.fill();
       } else {
@@ -74,8 +97,17 @@ export class AvatarsService {
       : words[0].substring(0, 2).toUpperCase();
   }
 
-  private generateCacheKey(name: string, width: number, height: number, background: string, circle: boolean): string {
-    return crypto.createHash('md5').update(`${name}-${width}-${height}-${background}-${circle}`).digest('hex');
+  private generateCacheKey(
+    name: string,
+    width: number,
+    height: number,
+    background: string,
+    circle: boolean,
+  ): string {
+    return crypto
+      .createHash('md5')
+      .update(`${name}-${width}-${height}-${background}-${circle}`)
+      .digest('hex');
   }
 
   private cache: Record<string, Buffer> = {};

@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 
 @Injectable()
 export class AppService {
-  constructor() { }
+  constructor() {}
 
   async getHello(): Promise<string> {
     return 'Hello World!';

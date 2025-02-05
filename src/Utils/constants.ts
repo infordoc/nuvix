@@ -21,6 +21,16 @@ export const APP_REDIS_PASSWORD = process.env.APP_REDIS_PASSWORD;
 export const APP_REDIS_DB = parseInt(process.env.APP_REDIS_DB ?? '0', 10);
 export const APP_REDIS_SECURE = process.env.APP_REDIS_SECURE === 'true';
 
+// Email Config
+export const APP_SMTP_HOST = process.env.APP_SMTP_HOST;
+export const APP_SMTP_PORT = parseInt(process.env.APP_SMTP_PORT ?? '587', 10);
+export const APP_SMTP_SECURE = process.env.APP_SMTP_SECURE === 'true';
+export const APP_SMTP_USER = process.env.APP_SMTP_USER;
+export const APP_SMTP_PASSWORD = process.env.APP_SMTP_PASSWORD;
+export const APP_SMTP_EMAIL_FROM = process.env.APP_SMTP_EMAIL_FROM;
+export const APP_SMTP_SENDER = process.env.APP_SMTP_SENDER;
+export const APP_SMTP_REPLY_TO = process.env.APP_SMTP_REPLY_TO;
+
 export const PROJECT = Symbol('project');
 export const USER = Symbol('user');
 export const DB_FOR_CONSOLE = Symbol('dbForConsole');
@@ -238,7 +248,6 @@ export const METRIC_NETWORK_INBOUND = 'network.inbound';
 export const METRIC_NETWORK_OUTBOUND = 'network.outbound';
 
 export const APP_STORAGE_LIMIT = 100 * 1024 * 1024; // 100MB
-
 
 // Events
 export const EVENT_DELIMITER = '.';

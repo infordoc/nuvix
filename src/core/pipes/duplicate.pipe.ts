@@ -6,9 +6,8 @@ interface Options {
   split?: string;
 }
 
-export class ParseDuplicatePipe
-  implements PipeTransform<string, any> {
-  private readonly options: Options
+export class ParseDuplicatePipe implements PipeTransform<string, any> {
+  private readonly options: Options;
   private readonly logger = new Logger(ParseDuplicatePipe.name);
   constructor(options: Options = {}) {
     this.options = options;
@@ -30,7 +29,9 @@ export class ParseDuplicatePipe
 
     if (this.options?.split && typeof value === 'string') {
       const splitValues = value.split(this.options?.split);
-      return this.options?.returnFirst ? splitValues[0] : splitValues[splitValues.length - 1];
+      return this.options?.returnFirst
+        ? splitValues[0]
+        : splitValues[splitValues.length - 1];
     }
 
     return value;

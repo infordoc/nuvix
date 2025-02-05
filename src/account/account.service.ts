@@ -15,30 +15,33 @@ import { Auth } from 'src/core/helper/auth.helper';
 import { LocaleTranslator } from 'src/core/helper/locale.helper';
 import { Response } from 'src/core/helper/response.helper';
 import { PersonalDataValidator } from 'src/core/validators/personal-data.validator';
-import { DB_FOR_PROJECT, EVENT_USER_CREATE, EVENT_USER_DELETE } from 'src/Utils/constants';
+import {
+  DB_FOR_PROJECT,
+  EVENT_USER_CREATE,
+  EVENT_USER_DELETE,
+} from 'src/Utils/constants';
 
 @Injectable()
 export class AccountService {
-
   constructor(
     @Inject(DB_FOR_PROJECT) private readonly db: Database,
-    private eventEmitter: EventEmitter2
-  ) { }
+    private eventEmitter: EventEmitter2,
+  ) {}
 
   /**
-  * Create a new account
-  */
+   * Create a new account
+   */
   async createAccount(
     userId: string,
     email: string,
     password: string,
     name: string,
     user: Document,
-    project: Document
+    project: Document,
   ): Promise<Document> {
     email = email.toLowerCase();
 
-    const auths = project.getAttribute('auths', {})
+    const auths = project.getAttribute('auths', {});
 
     const limit = auths.limit ?? 0;
 
@@ -169,7 +172,9 @@ export class AccountService {
     Authorization.setRole(Role.user(user.getId()).toString());
     Authorization.setRole(Role.users().toString());
 
-    await this.eventEmitter.emitAsync(EVENT_USER_CREATE, { userId: user.getId() })
+    await this.eventEmitter.emitAsync(EVENT_USER_CREATE, {
+      userId: user.getId(),
+    });
 
     return user;
   }
@@ -195,9 +200,9 @@ export class AccountService {
       userId: user.getId(),
       payload: {
         data: user,
-        type: Response.MODEL_USER
-      }
-    })
+        type: Response.MODEL_USER,
+      },
+    });
 
     await this.db.purgeCachedDocument('users', user.getId());
 
@@ -205,8 +210,8 @@ export class AccountService {
   }
 
   /**
-  * Get User's Sessions
-  */
+   * Get User's Sessions
+   */
   async getSessions(user: Document, locale: LocaleTranslator) {
     const roles = Authorization.getRoles();
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
@@ -216,7 +221,10 @@ export class AccountService {
     const current = Auth.sessionVerify(sessions, Auth.secret);
 
     const updatedSessions = sessions.map((session: Document) => {
-      const countryName = locale.getText(session.getAttribute('countryCode', ''), locale.getText('locale.country.unknown'));
+      const countryName = locale.getText(
+        session.getAttribute('countryCode', ''),
+        locale.getText('locale.country.unknown'),
+      );
 
       session.setAttribute('countryName', countryName);
       session.setAttribute('current', current === session.getId());
@@ -233,7 +241,4 @@ export class AccountService {
       total: updatedSessions.length,
     };
   }
-
-
-
 }

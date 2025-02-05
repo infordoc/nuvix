@@ -5,9 +5,7 @@ import { ParseDuplicatePipe } from 'src/core/pipes/duplicate.pipe';
 
 @Controller({ version: ['1'], path: 'avatars' })
 export class AvatarsController {
-  constructor(
-    private readonly avatarsService: AvatarsService,
-  ) { }
+  constructor(private readonly avatarsService: AvatarsService) {}
 
   @Get('initials')
   async generateAvatar(
@@ -18,8 +16,13 @@ export class AvatarsController {
     @Query('circle', ParseDuplicatePipe) circle: boolean = false,
     @Res() res: Response,
   ) {
-    return this.avatarsService.generateAvatar(
-      { name, width, height, background, circle, res },
-    );
+    return this.avatarsService.generateAvatar({
+      name,
+      width,
+      height,
+      background,
+      circle,
+      res,
+    });
   }
 }
