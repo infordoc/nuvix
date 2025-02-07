@@ -6,9 +6,11 @@ export const Project = createParamDecorator<Document>(
   (data: unknown, ctx: ExecutionContext) => {
     const request: Request = ctx.switchToHttp().getRequest();
 
-    if (!request[PROJECT]) {
+    const project = request[PROJECT] as Document;
+
+    if (project.isEmpty() || project.getId() === 'console') {
       return new Document();
     }
-    return request[PROJECT];
+    return project;
   },
 );

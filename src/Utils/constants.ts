@@ -31,15 +31,16 @@ export const APP_SMTP_EMAIL_FROM = process.env.APP_SMTP_EMAIL_FROM;
 export const APP_SMTP_SENDER = process.env.APP_SMTP_SENDER;
 export const APP_SMTP_REPLY_TO = process.env.APP_SMTP_REPLY_TO;
 
-export const PROJECT = Symbol('project');
-export const USER = Symbol('user');
-export const DB_FOR_CONSOLE = Symbol('dbForConsole');
-export const DB_FOR_PROJECT = Symbol('dbForProject');
-export const GEO_DB = Symbol('geoDb');
-export const IS_PUBLIC_KEY = Symbol('isPublic');
-export const LOCALE = Symbol('locale');
-export const API_KEY = Symbol('apiKey');
-export const SCOPES = Symbol('scopes');
+export const PROJECT = 'project';
+export const USER = 'user';
+export const SESSION = 'session';
+export const DB_FOR_CONSOLE = 'dbForConsole';
+export const DB_FOR_PROJECT = 'dbForProject';
+export const GEO_DB = 'geoDb';
+export const IS_PUBLIC_KEY = 'isPublic';
+export const LOCALE = 'locale';
+export const API_KEY = 'apiKey';
+export const SCOPES = 'scopes';
 
 export const CONSOLE_CONFIG: any = {
   auths: {},
@@ -100,6 +101,7 @@ export const APP_FUNCTION_MEMORY_DEFAULT = 512;
 
 // Debug
 export const APP_DEBUG_COLORS = process.env.APP_DEBUG_COLORS === 'true';
+export const APP_DEBUG_FORMAT = process.env.APP_DEBUG_FORMAT === 'json';
 
 // Database Reconnect
 export const DATABASE_RECONNECT_SLEEP = 2;

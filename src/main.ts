@@ -11,7 +11,7 @@ import { config } from 'dotenv';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
 import { NextFunction, Request, Response } from 'express';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
-import { APP_DEBUG_COLORS } from './Utils/constants';
+import { APP_DEBUG_COLORS, APP_DEBUG_FORMAT } from './Utils/constants';
 const cookieParser = require('cookie-parser');
 
 config();
@@ -20,7 +20,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     abortOnError: false,
     logger: new ConsoleLogger({
-      json: process.env.NODE_ENV === 'production',
+      json: APP_DEBUG_FORMAT,
       colors: APP_DEBUG_COLORS,
       prefix: 'Nuvix',
     }),

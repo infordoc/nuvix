@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Scope,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -34,11 +35,11 @@ import { ProjectGuard } from 'src/core/resolver/guards/project.guard';
 import { Mode } from 'src/core/resolver/mode.resolver';
 import { ApiInterceptor } from 'src/core/resolver/api.resolver';
 
-@Controller({ version: ['1'], path: 'teams' })
+@Controller({ version: ['1'], path: 'teams', scope: Scope.REQUEST })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResolverInterceptor, ApiInterceptor)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(private readonly teamsService: TeamsService) { }
 
   @Get()
   @ResponseType({ type: Response.MODEL_TEAM, list: true })

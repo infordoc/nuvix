@@ -117,7 +117,7 @@ export class Auth {
   }
 
   public static hash(string: string): string {
-    return require('crypto').createHash('sha256').update(string).digest('hex');
+    return crypto.createHash('sha256').update(string).digest('hex');
   }
 
   /**
@@ -221,7 +221,7 @@ export class Auth {
   }
 
   public static passwordGenerator(length: number = 20): string {
-    return require('crypto')
+    return crypto
       .randomBytes(length)
       .toString('hex')
       .slice(0, length);
@@ -233,7 +233,7 @@ export class Auth {
     }
 
     const bytesLength = Math.ceil(length / 2);
-    const token = require('crypto').randomBytes(bytesLength).toString('hex');
+    const token = crypto.randomBytes(bytesLength).toString('hex');
 
     return token.slice(0, length);
   }

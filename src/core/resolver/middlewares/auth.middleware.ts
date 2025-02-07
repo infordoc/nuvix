@@ -80,7 +80,7 @@ export class AuthMiddleware implements NestMiddleware {
 
     let user: Document;
     if (mode !== APP_MODE_ADMIN) {
-      if (project.isEmpty() || project.getId() === 'console') {
+      if (project.isEmpty()) {
         user = new Document();
       } else {
         if (project.getId() === 'console') {

@@ -87,9 +87,13 @@ config();
   providers: [AppService, MailQueue],
 })
 export class AppModule {
-  configure(consumer: MiddlewareConsumer) {
+  async configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectMiddleware, AuthMiddleware, ApiMiddleware)
+      .apply(ProjectMiddleware)
+      .forRoutes('*')
+      .apply(AuthMiddleware)
+      .forRoutes('*')
+      .apply(ApiMiddleware)
       .forRoutes('*');
   }
 }

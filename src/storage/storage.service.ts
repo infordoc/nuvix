@@ -25,6 +25,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { JwtService } from '@nestjs/jwt';
 import usageConfig from 'src/core/config/usage';
+import sharp from 'sharp';
 
 @Injectable()
 export class StorageService {
@@ -34,7 +35,7 @@ export class StorageService {
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
     @Inject(DB_FOR_PROJECT) private readonly db: Database,
     private readonly jwtSerice: JwtService,
-  ) {}
+  ) { }
 
   /**
    * Get buckets.
@@ -274,12 +275,12 @@ export class StorageService {
       const cursorDocument =
         fileSecurity && !valid
           ? await this.db.getDocument(
-              'bucket_' + bucket.getInternalId(),
-              fileId,
-            )
+            'bucket_' + bucket.getInternalId(),
+            fileId,
+          )
           : await Authorization.skip(() =>
-              this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-            );
+            this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+          );
 
       if (cursorDocument.isEmpty()) {
         throw new Exception(
@@ -297,23 +298,23 @@ export class StorageService {
       fileSecurity && !valid
         ? await this.db.find('bucket_' + bucket.getInternalId(), queries)
         : await Authorization.skip(() =>
-            this.db.find('bucket_' + bucket.getInternalId(), queries),
-          );
+          this.db.find('bucket_' + bucket.getInternalId(), queries),
+        );
 
     const total =
       fileSecurity && !valid
         ? await this.db.count(
+          'bucket_' + bucket.getInternalId(),
+          filterQueries,
+          APP_LIMIT_COUNT,
+        )
+        : await Authorization.skip(() =>
+          this.db.count(
             'bucket_' + bucket.getInternalId(),
             filterQueries,
             APP_LIMIT_COUNT,
-          )
-        : await Authorization.skip(() =>
-            this.db.count(
-              'bucket_' + bucket.getInternalId(),
-              filterQueries,
-              APP_LIMIT_COUNT,
-            ),
-          );
+          ),
+        );
 
     return {
       files,
@@ -364,8 +365,8 @@ export class StorageService {
     if (!permissions || permissions.length === 0) {
       permissions = user.getId()
         ? allowedPermissions.map((permission) =>
-            new Permission(permission, 'user', user.getId()).toString(),
-          )
+          new Permission(permission, 'user', user.getId()).toString(),
+        )
         : [];
     }
 
@@ -639,8 +640,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await this.db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -653,8 +654,111 @@ export class StorageService {
    * Preview a file.
    * @todo
    */
-  async previewFile(bucketId: string, fileId: string) {
-    return {};
+  async previewFile(bucketId: string, fileId: string, params: PreviewParams) {
+    const {
+      width,
+      height,
+      gravity,
+      quality,
+      borderWidth,
+      borderColor,
+      borderRadius,
+      opacity,
+      rotation,
+      background,
+      output,
+    } = params;
+
+    const bucket = await Authorization.skip(async () =>
+      await this.db.getDocument('buckets', bucketId),
+    );
+
+    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
+    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
+
+    if (
+      bucket.isEmpty() ||
+      (!bucket.getAttribute('enabled') && !isAPIKey && !isPrivilegedUser)
+    ) {
+      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
+    }
+
+    const fileSecurity = bucket.getAttribute('fileSecurity', false);
+    const validator = new Authorization(Database.PERMISSION_READ);
+    const valid = validator.isValid(bucket.getRead());
+    if (!fileSecurity && !valid) {
+      throw new Exception(Exception.USER_UNAUTHORIZED);
+    }
+
+    const file =
+      fileSecurity && !valid
+        ? await this.db.getDocument('bucket_' + bucket.getInternalId(), fileId)
+        : await Authorization.skip(async () =>
+         await this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
+
+    if (file.isEmpty()) {
+      throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
+    }
+
+    const path = file.getAttribute('path', '');
+
+    if (!fs.existsSync(path)) {
+      throw new Exception(
+        Exception.STORAGE_FILE_NOT_FOUND,
+        'File not found in ' + path,
+      );
+    }
+
+    const mimeType = file.getAttribute('mimeType');
+    const fileName = file.getAttribute('name', '');
+    const size = file.getAttribute('sizeOriginal', 0);
+
+    let image = sharp(path);
+
+    if (width || height) {
+      image = image.resize(width, height, { fit: sharp.fit.cover, position: gravity });
+    }
+
+    if (borderWidth) {
+      image = image.extend({
+        top: borderWidth,
+        bottom: borderWidth,
+        left: borderWidth,
+        right: borderWidth,
+        background: borderColor,
+      });
+    }
+
+    if (borderRadius) {
+      image = image.composite([{
+        input: Buffer.from(
+          `<svg><rect x="0" y="0" width="${width}" height="${height}" rx="${borderRadius}" ry="${borderRadius}"/></svg>`
+        ),
+        blend: 'dest-in'
+      }]);
+    }
+
+    if (opacity !== undefined) {
+      image = image.composite([{ input: Buffer.from(`<svg><rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, ${opacity})"/></svg>`), blend: 'dest-in' }]);
+    }
+
+    if (rotation) {
+      image = image.rotate(rotation);
+    }
+
+    if (background) {
+      image = image.flatten({ background });
+    }
+
+    const outputFormat = output || mimeType.split('/')[1];
+    const buffer = await image.toFormat(outputFormat, { quality }).toBuffer();
+
+    return new StreamableFile(buffer, {
+      type: `image/${outputFormat}`,
+      disposition: `inline; filename="${fileName}"`,
+      length: buffer.length,
+    });
   }
 
   /**
@@ -691,8 +795,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await this.db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -785,8 +889,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await this.db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          this.db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -1069,16 +1173,16 @@ export class StorageService {
       const deleted =
         fileSecurity && !valid
           ? await this.db.deleteDocument(
-              'bucket_' + bucket.getInternalId(),
-              fileId,
-            )
+            'bucket_' + bucket.getInternalId(),
+            fileId,
+          )
           : await Authorization.skip(
-              async () =>
-                await this.db.deleteDocument(
-                  'bucket_' + bucket.getInternalId(),
-                  fileId,
-                ),
-            );
+            async () =>
+              await this.db.deleteDocument(
+                'bucket_' + bucket.getInternalId(),
+                fileId,
+              ),
+          );
 
       if (!deleted) {
         throw new Exception(
@@ -1246,4 +1350,19 @@ function calculateFileHash(filePath: string): Promise<string> {
     stream.on('end', () => resolve(hash.digest('hex')));
     stream.on('error', (err) => reject(err));
   });
+}
+
+
+interface PreviewParams {
+  width?: number;
+  height?: number;
+  gravity?: string;
+  quality?: number;
+  borderWidth?: number;
+  borderColor?: string;
+  borderRadius?: number;
+  opacity?: number;
+  rotation?: number;
+  background?: string;
+  output?: string;
 }

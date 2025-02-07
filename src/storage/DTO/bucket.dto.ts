@@ -44,7 +44,7 @@ export class CreateBucketDTO {
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
   @IsString({ each: true })
   @IsOptional()
-  allowedFileExtensions: string[];
+  allowedFileExtensions: string[] = [];
 
   @IsIn(['none', 'gzip', 'zstd'])
   @IsOptional()

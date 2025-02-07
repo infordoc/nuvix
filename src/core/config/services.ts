@@ -14,7 +14,7 @@ interface Service {
   globalAttributes?: string[]; // Optional property for global attributes
 }
 
-export const services: Record<string, Service> = {
+export const services = {
   account: {
     key: 'account',
     name: 'Account',
