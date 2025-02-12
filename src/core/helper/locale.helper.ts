@@ -18,7 +18,7 @@ export class LocaleTranslator {
   private loadTranslations(locale: string): { [key: string]: string } {
     const filePath = path.resolve(
       __dirname,
-      `../core/locale/translations/${locale}.json`,
+      `../../../assets/locale/translations/${locale}.json`,
     );
     if (fs.existsSync(filePath)) {
       const fileContent = fs.readFileSync(filePath, 'utf-8');

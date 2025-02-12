@@ -497,7 +497,7 @@ export class TeamsService {
             'email.invitation-' + locale.default
           ] ?? {};
         const templatePath =
-          __dirname + '/../core/config/locale/templates/email-inner-base.tpl';
+          __dirname + '/../../assets/locale/templates/email-inner-base.tpl';
         const templateSource = fs.readFileSync(templatePath, 'utf8');
         const template = Template.compile(templateSource);
 

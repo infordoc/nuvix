@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-const assetsPath = path.resolve(__dirname, 'logos');
+const assetsPath = path.resolve(__dirname, '../../../../assets/storage/logos');
 
 export const logos = {
   // Based on this list @see http://stackoverflow.com/a/4212908/2299554

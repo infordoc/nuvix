@@ -780,7 +780,7 @@ export class AccountService {
         'email.sessionAlert-' + locale.default
       ] ?? {};
     const templatePath =
-      __dirname + '/../core/config/locale/templates/email-session-alert.tpl';
+      __dirname + '/../../assets/locale/templates/email-session-alert.tpl';
     const templateSource = fs.readFileSync(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
