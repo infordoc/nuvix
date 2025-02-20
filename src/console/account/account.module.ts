@@ -7,8 +7,8 @@ import { WORKER_TYPE_MAILS } from 'src/Utils/constants';
 @Module({
   imports: [
     BullModule.registerQueue({
-      name: WORKER_TYPE_MAILS
-    })
+      name: WORKER_TYPE_MAILS,
+    }),
   ],
   controllers: [AccountController],
   providers: [AccountService],

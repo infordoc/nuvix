@@ -29,6 +29,7 @@ async function bootstrap() {
   });
 
   app.set('query parser', 'extended');
+  app.set('trust proxy', 'loopback');
 
   app.enableVersioning();
 
@@ -53,47 +54,8 @@ async function bootstrap() {
 
   app.useStaticAssets('public', { index: 'NOT FOUND' });
 
-  app.enableCors({
-    origin: [
-      ...(process.env.CORS_ORIGIN ?? '')
-        .split(',')
-        .map((origin) => origin.trim()),
-    ],
-    methods: 'GET,PUT,PATCH,POST,DELETE',
-    credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Content-Length',
-      'Authorization',
-      'X-Requested-With',
-      'X-HTTP-Method-Override',
-      'Accept',
-      'range',
-      'X-Nuvix-Project',
-      'X-Nuvix-Key',
-      'X-Nuvix-Locale',
-      'X-Nuvix-Mode',
-      'X-Nuvix-JWT',
-      'X-Nuvix-id',
-      'X-Nuvix-Response-Format',
-      'X-Nuvix-Timeout',
-      'x-sdk-language',
-      'x-sdk-name',
-      'x-sdk-platform',
-      'x-sdk-version',
-      'content-range',
-      'x-fallback-cookies',
-      'x-nuvix-session',
-      ...(process.env.CORS_HEADERS ?? '')
-        .split(',')
-        .map((header) => header.trim()),
-    ],
-    exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
-  });
-
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (Authorization['useStorage']) {
-      // Enable storage only if explicitly set
       storage.run(new Map(), () => {
         Authorization.setDefaultStatus(true); // Set per-request default status
         Authorization.cleanRoles(); // Reset roles per request

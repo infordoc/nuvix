@@ -102,7 +102,7 @@ export class MailQueue extends Queue {
         if (!job.data.bodyTemplate) {
           job.data.bodyTemplate = path.resolve(
             __dirname,
-            '/../../../../assets/locale/templates/email-base-styled.tpl',
+            '../../../../assets/locale/templates/email-base-styled.tpl',
           );
         }
 

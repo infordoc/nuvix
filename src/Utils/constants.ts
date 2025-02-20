@@ -45,8 +45,50 @@ export const LOCALE = 'locale';
 export const API_KEY = 'apiKey';
 export const SCOPES = 'scopes';
 
+const allowedHeaders = [
+  'Content-Type',
+  'Content-Length',
+  'Authorization',
+  'X-Requested-With',
+  'X-HTTP-Method-Override',
+  'Accept',
+  'range',
+  'X-Nuvix-Project',
+  'X-Nuvix-Key',
+  'X-Nuvix-Locale',
+  'X-Nuvix-Mode',
+  'X-Nuvix-JWT',
+  'X-Nuvix-id',
+  'X-Nuvix-Response-Format',
+  'X-Nuvix-Timeout',
+  'x-sdk-language',
+  'x-sdk-name',
+  'x-sdk-platform',
+  'x-sdk-version',
+  'content-range',
+  'x-fallback-cookies',
+  'x-nuvix-session',
+];
+
 export const CONSOLE_CONFIG: any = {
   auths: {},
+};
+export const SERVER_CONFIG: ServerConfig = {
+  host: process.env.APP_HOSTNAME ?? 'localhost',
+  methods: 'GET,PUT,PATCH,POST,DELETE',
+  allowedOrigins: (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim()),
+  allowedHeaders: [
+    ...allowedHeaders,
+    ...(process.env.CORS_HEADERS ?? '')
+      .split(',')
+      .map((header) => header.trim()),
+  ],
+  credentials: true,
+  exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
+  functionsDomain: process.env.APP_DOMAIN_FUNCTION,
+  routerProtection: (process.env.APP_ROUTER_PROTECTION ?? 'true') === 'true',
 };
 
 // APP

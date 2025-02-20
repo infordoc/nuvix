@@ -1,12 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import { createCanvas } from 'canvas';
+import { createCanvas, registerFont } from 'canvas';
 import sharp from 'sharp';
 import crypto from 'crypto';
+import path from 'path';
 
 @Injectable()
 export class AvatarsService {
   private readonly logger = new Logger(AvatarsService.name);
+
+  constructor() {
+    registerFont(
+      path.resolve(__dirname, '../../assets/fonts/Varela-Regular.ttf'),
+      { family: 'Varela' },
+    );
+  }
 
   async generateAvatar({
     name,
@@ -64,7 +72,7 @@ export class AvatarsService {
 
       // Draw Text
       ctx.fillStyle = '#ffffff';
-      ctx.font = `${Math.min(width, height) / 2.5}px Arial`;
+      ctx.font = `${Math.min(width, height) / 2}px Varela`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(this.getInitials(name), width / 2, height / 2);

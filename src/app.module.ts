@@ -32,6 +32,8 @@ import { StorageModule } from './storage/storage.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailQueue } from './core/resolver/queues/mail.queue';
 import { ApiMiddleware } from './core/resolver/middlewares/api.middleware';
+import { HostMiddleware } from './core/resolver/middlewares/host.middleware';
+import { CorsMiddleware } from './core/resolver/middlewares/cors.middleware';
 config();
 
 @Module({
@@ -88,9 +90,8 @@ config();
 })
 export class AppModule {
   async configure(consumer: MiddlewareConsumer) {
-
     consumer
-      .apply(ProjectMiddleware)
+      .apply(ProjectMiddleware, HostMiddleware, CorsMiddleware)
       .forRoutes('*')
       .apply(AuthMiddleware)
       .forRoutes('*')
