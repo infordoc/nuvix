@@ -298,7 +298,6 @@ export class Exception extends HttpException {
   }
 
   protected type: string = '';
-  protected errors: Record<string, any> = errorCodes;
   protected publish: boolean;
 
   constructor(
@@ -306,22 +305,21 @@ export class Exception extends HttpException {
     message: string | null = null,
     code: number | string | null = null,
     previous?: Error,
-    errors: Record<string, any> = errorCodes,
   ) {
-    const errorCode = code ?? errors[type]?.code;
+    const errorCode = code ?? errorCodes[type]?.code;
     const parsedCode =
       typeof errorCode === 'string' && !isNaN(Number(errorCode))
         ? parseInt(errorCode)
         : errorCode;
     const finalCode = parsedCode ?? 500;
 
-    super(message, finalCode);
+    super(message, finalCode as number);
 
     this.type = type;
     this.name = this.constructor.name;
 
-    super.message = message ?? this.errors[type]?.description;
-    this.publish = this.errors[type]?.publish ?? this.getStatus() >= 500;
+    super.message = message ?? errorCodes[type]?.description;
+    this.publish = errorCodes[type]?.publish ?? this.getStatus() >= 500;
 
     if (previous) {
       this.stack = previous.stack;

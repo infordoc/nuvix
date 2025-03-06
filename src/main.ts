@@ -52,7 +52,9 @@ async function bootstrap() {
     next();
   });
 
-  app.useStaticAssets('public');
+  app.useStaticAssets('public', {
+    prefix: '/public/',
+  });
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (Authorization['useStorage']) {

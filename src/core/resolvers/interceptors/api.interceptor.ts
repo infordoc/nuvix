@@ -10,23 +10,31 @@ import { Observable, tap } from 'rxjs';
 import {
   APP_MODE_ADMIN,
   APP_MODE_DEFAULT,
+  CACHE_DB,
+  DB_FOR_PROJECT,
   PROJECT,
   SCOPES,
   SESSION,
   USER,
 } from 'src/Utils/constants';
 import ParamsHelper from '../../helper/params.helper';
-import { Authorization, Document } from '@nuvix/database';
+import { Authorization, Database, Document } from '@nuvix/database';
 import { Reflector } from '@nestjs/core';
 import { LableKey, LableValue } from '../../decorators/lable.decorator';
 import { Auth } from '../../helper/auth.helper';
 import { Exception } from '../../extend/exception';
 import { roles } from '../../config/roles';
 import { TOTP } from '../../validators/MFA.validator';
+import { databaseListener, MetricsHelper } from 'src/core/helper';
+import { Redis } from 'ioredis';
 
 @Injectable()
 export class ApiInterceptor implements NestInterceptor {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    @Inject(DB_FOR_PROJECT) private readonly dbForProject: Database,
+    @Inject(CACHE_DB) private readonly cacheDb: Redis,
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
@@ -115,6 +123,32 @@ export class ApiInterceptor implements NestInterceptor {
     }
 
     request[USER] = user;
+    const queueForUsage = new MetricsHelper(this.cacheDb);
+    this.dbForProject
+      .on(
+        Database.EVENT_DOCUMENT_CREATE,
+        'calculate-usage',
+        async (event, document) =>
+          await databaseListener({
+            event,
+            document,
+            project,
+            queueForUsage,
+            dbForProject: this.dbForProject,
+          }),
+      )
+      .on(
+        Database.EVENT_DOCUMENT_DELETE,
+        'calculate-usage',
+        async (event, document) =>
+          await databaseListener({
+            event,
+            document,
+            project,
+            queueForUsage,
+            dbForProject: this.dbForProject,
+          }),
+      );
 
     return next.handle();
   }

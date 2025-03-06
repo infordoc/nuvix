@@ -43,16 +43,11 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     let session: any = {};
-    try {
-      const cookie =
-        req.cookies[Auth.cookieName] ||
-        req.cookies[`${Auth.cookieName}_legacy`] ||
-        '';
-      session = Auth.decodeSession(cookie);
-    } catch (error) {
-      this.logger.debug('Failed to decode session', error.message);
-      session = {};
-    }
+    const cookie =
+      req.cookies[Auth.cookieName] ||
+      req.cookies[`${Auth.cookieName}_legacy`] ||
+      null;
+    if (cookie) session = Auth.decodeSession(cookie);
 
     if (!session.id && !session.secret) {
       const sessionHeader = params.getFromHeaders('x-nuvix-session');
