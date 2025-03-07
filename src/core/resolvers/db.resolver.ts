@@ -5,7 +5,6 @@ import {
   Document,
   Query,
   RangeValidator,
-  TextValidator,
 } from '@nuvix/database';
 import {
   APP_DATABASE_ATTRIBUTE_DATETIME,
@@ -21,6 +20,9 @@ import {
 } from 'src/Utils/constants';
 import crypto from 'crypto';
 import { EmailValidator } from '../validators/email.validator';
+import { URLValidator } from '../validators/url.validator';
+import { IPValidator } from '../validators/ip.validator';
+import { WhiteList } from '../validators/whitelist.validator';
 
 export const filters = {
   casting: {
@@ -410,17 +412,16 @@ export const formats = {
   [APP_DATABASE_ATTRIBUTE_ENUM]: {
     create: (attribute: any) => {
       const elements = attribute.formatOptions.elements;
-      return new TextValidator(300);
-      // return new WhiteList(elements, true);
+      return new WhiteList(elements, true);
     },
     type: Database.VAR_STRING,
   },
   [APP_DATABASE_ATTRIBUTE_IP]: {
-    create: () => new TextValidator(99),
+    create: () => new IPValidator(),
     type: Database.VAR_STRING,
   },
   [APP_DATABASE_ATTRIBUTE_URL]: {
-    create: () => new TextValidator(1000),
+    create: () => new URLValidator(),
     type: Database.VAR_STRING,
   },
   [APP_DATABASE_ATTRIBUTE_INT_RANGE]: {

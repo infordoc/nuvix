@@ -21,6 +21,8 @@ import {
 import { Database, MariaDB, Structure } from '@nuvix/database';
 import { filters, formats } from './resolvers/db.resolver';
 import { CountryResponse, Reader } from 'maxmind';
+import { Cache, Redis } from '@nuvix/cache';
+import { Telemetry } from '@nuvix/telemetry';
 
 Object.keys(filters).forEach((key) => {
   Database.addFilter(key, {
@@ -37,8 +39,25 @@ Object.keys(formats).forEach((key) => {
 @Module({
   providers: [
     {
+      provide: CACHE_DB,
+      useFactory: async () => {
+        const connection = new IORedis({
+          connectionName: CACHE_DB,
+          path: APP_REDIS_PATH,
+          port: APP_REDIS_PORT,
+          host: APP_REDIS_HOST,
+          username: APP_REDIS_USER,
+          password: APP_REDIS_PASSWORD,
+          db: APP_REDIS_DB,
+          tls: APP_REDIS_SECURE ? {} : undefined,
+        });
+        return connection;
+      },
+      inject: [],
+    },
+    {
       provide: DB_FOR_CONSOLE,
-      useFactory: async (cls: ClsService) => {
+      useFactory: async (cls: ClsService, redis: IORedis) => {
         const adapter = new MariaDB({
           connection: {
             host: process.env.DATABASE_HOST || 'localhost',
@@ -51,19 +70,21 @@ Object.keys(formats).forEach((key) => {
         });
 
         await adapter.init();
-
-        const connection = new Database(adapter);
-
+        const redisCache = new Redis(redis);
+        const telemetry = new Telemetry();
+        const cache = new Cache(redisCache, );
+        const connection = new Database(adapter, cache);
         await connection.ping();
+
 
         return connection;
       },
-      inject: [ClsService],
+      inject: [ClsService, CACHE_DB],
     },
     {
       provide: DB_FOR_PROJECT,
       // scope: Scope.REQUEST,
-      useFactory: async (cls: ClsService) => {
+      useFactory: async (cls: ClsService, redis: IORedis) => {
         const adapter = new MariaDB({
           connection: {
             host: process.env.DATABASE_HOST || 'localhost',
@@ -76,8 +97,10 @@ Object.keys(formats).forEach((key) => {
         });
 
         await adapter.init();
-
-        const connection = new Database(adapter);
+        const redisCache = new Redis(redis);
+        const telemetry = new Telemetry();
+        const cache = new Cache(redisCache, );
+        const connection = new Database(adapter, cache);
 
         connection.setSharedTables(true);
 
@@ -108,24 +131,8 @@ Object.keys(formats).forEach((key) => {
       },
       inject: [ClsService],
     },
-    {
-      provide: CACHE_DB,
-      useFactory: async () => {
-        const connection = new IORedis({
-          connectionName: CACHE_DB,
-          path: APP_REDIS_PATH,
-          port: APP_REDIS_PORT,
-          host: APP_REDIS_HOST,
-          username: APP_REDIS_USER,
-          password: APP_REDIS_PASSWORD,
-          db: APP_REDIS_DB,
-          tls: APP_REDIS_SECURE ? {} : undefined,
-        });
-        return connection;
-      },
-      inject: [],
-    },
+
   ],
   exports: [DB_FOR_CONSOLE, DB_FOR_PROJECT, GEO_DB, CACHE_DB],
 })
-export class CoreModule {}
+export class CoreModule { }

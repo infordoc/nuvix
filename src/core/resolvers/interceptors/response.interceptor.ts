@@ -88,7 +88,7 @@ export class ResponseInterceptor implements NestInterceptor {
     }
 
     if (response instanceof Document) {
-      response = response.getArrayCopy();
+      response = response.toObject();
     }
 
     if (options.list) {
@@ -99,7 +99,7 @@ export class ResponseInterceptor implements NestInterceptor {
     return Array.isArray(response)
       ? response.map((item) => {
           if (item instanceof Document) {
-            item = item.getArrayCopy();
+            item = item.toObject();
           }
           return this.transformToPlain(item, options);
         })
@@ -122,13 +122,13 @@ export class ResponseInterceptor implements NestInterceptor {
         if (Array.isArray(response[key])) {
           serializedResponse[key] = response[key].map((item) => {
             if (item instanceof Document) {
-              item = item.getArrayCopy();
+              item = item.toObject();
             }
             return this.transformToPlain(item, options);
           });
         } else if (isObject(response[key])) {
           if (response[key] instanceof Document) {
-            response[key] = response[key].getArrayCopy();
+            response[key] = response[key].toObject();
           }
           serializedResponse[key] = this.transformToPlain(
             response[key],
@@ -148,7 +148,7 @@ export class ResponseInterceptor implements NestInterceptor {
       if (Array.isArray(response[key])) {
         serializedResponse[key] = response[key].map((item) => {
           if (item instanceof Document) {
-            item = item.getArrayCopy();
+            item = item.toObject();
           }
           return this.transformToPlain(item, options);
         });
