@@ -36,7 +36,7 @@ import { MailQueue } from './core/resolvers/queues/mail.queue';
 import { ApiMiddleware } from './core/resolvers/middlewares/api.middleware';
 import { HostMiddleware } from './core/resolvers/middlewares/host.middleware';
 import { CorsMiddleware } from './core/resolvers/middlewares/cors.middleware';
-import { BandwidthMiddleware } from './core/resolvers/middlewares/bandwidth.middleware';
+import { BandwidthMiddleware } from './core/resolvers/middlewares/project-usage.middleware';
 config();
 
 @Module({

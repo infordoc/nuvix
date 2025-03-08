@@ -6,7 +6,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 import {
   APP_MODE_ADMIN,
   APP_MODE_DEFAULT,
@@ -20,13 +20,12 @@ import {
 import ParamsHelper from '../../helper/params.helper';
 import { Authorization, Database, Document } from '@nuvix/database';
 import { Reflector } from '@nestjs/core';
-import { LableKey, LableValue } from '../../decorators/label.decorator';
 import { Auth } from '../../helper/auth.helper';
 import { Exception } from '../../extend/exception';
-import { roles } from '../../config/roles';
 import { TOTP } from '../../validators/MFA.validator';
-import { databaseListener, MetricsHelper } from 'src/core/helper';
 import { Redis } from 'ioredis';
+import { ProjectUsageService } from 'src/core/project-usage.service';
+import { Namespace, Scope } from 'src/core/decorators';
 
 @Injectable()
 export class ApiInterceptor implements NestInterceptor {
@@ -34,6 +33,7 @@ export class ApiInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
     @Inject(DB_FOR_PROJECT) private readonly dbForProject: Database,
     @Inject(CACHE_DB) private readonly cacheDb: Redis,
+    private readonly projectUsage: ProjectUsageService,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -46,14 +46,14 @@ export class ApiInterceptor implements NestInterceptor {
       params.getFromHeaders('x-nuvix-mode') ||
       params.getFromQuery('mode', APP_MODE_DEFAULT);
 
-    const scope = this.reflector.get<LableValue['scope']>(
-      'scope',
+    const scope = this.reflector.getAllAndOverride(Scope, [
       context.getHandler(),
-    );
-    const namespace = this.reflector.get<LableValue['namespace']>(
-      'namespace',
+      context.getClass(),
+    ]);
+    const namespace = this.reflector.getAllAndOverride(Namespace, [
       context.getHandler(),
-    );
+      context.getClass(),
+    ]);
 
     if (APP_MODE_ADMIN === mode) {
       if (
@@ -82,16 +82,21 @@ export class ApiInterceptor implements NestInterceptor {
       }
     }
 
-    if (scope && !scopes.includes(scope)) {
-      if (project.isEmpty()) {
-        // Check if permission is denied because project is missing
-        throw new Exception(Exception.PROJECT_NOT_FOUND);
-      }
+    if (scope) {
+      const requiredScopes = Array.isArray(scope) ? scope : [scope];
+      const missingScopes = requiredScopes.filter((s) => !scopes.includes(s));
 
-      throw new Exception(
-        Exception.GENERAL_UNAUTHORIZED_SCOPE,
-        `${user.getAttribute('email', 'User')} (role: #) missing scope (${scope})`,
-      );
+      if (missingScopes.length > 0) {
+        if (project.isEmpty()) {
+          // Check if permission is denied because project is missing
+          throw new Exception(Exception.PROJECT_NOT_FOUND);
+        }
+
+        throw new Exception(
+          Exception.GENERAL_UNAUTHORIZED_SCOPE,
+          `${user.getAttribute('email', 'User')} (role: #) missing scopes (${missingScopes.join(', ')})`,
+        );
+      }
     }
 
     if (user.getAttribute('status') === false) {
@@ -123,17 +128,15 @@ export class ApiInterceptor implements NestInterceptor {
     }
 
     request[USER] = user;
-    const queueForUsage = new MetricsHelper(this.cacheDb);
     this.dbForProject
       .on(
         Database.EVENT_DOCUMENT_CREATE,
         'calculate-usage',
         async (event, document) =>
-          await databaseListener({
+          await this.projectUsage.databaseListener({
             event,
             document,
             project,
-            queueForUsage,
             dbForProject: this.dbForProject,
           }),
       )
@@ -141,11 +144,10 @@ export class ApiInterceptor implements NestInterceptor {
         Database.EVENT_DOCUMENT_DELETE,
         'calculate-usage',
         async (event, document) =>
-          await databaseListener({
+          await this.projectUsage.databaseListener({
             event,
             document,
             project,
-            queueForUsage,
             dbForProject: this.dbForProject,
           }),
       );

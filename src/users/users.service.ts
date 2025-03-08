@@ -1085,7 +1085,7 @@ export class UsersService {
     for (const log of logs) {
       const userAgent = log.userAgent || 'UNKNOWN';
       const detector = new Detector(userAgent);
-      detector.skipBotDetection();
+      // detector.skipBotDetection();
 
       const os = detector.getOS();
       const client = detector.getClient();

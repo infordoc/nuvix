@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NestMiddleware } from '@nestjs/common';
+import { Injectable, Logger, NestMiddleware } from '@nestjs/common';
 import { Document } from '@nuvix/database';
 import { Request, Response, NextFunction } from 'express';
 import {
@@ -7,23 +7,19 @@ import {
   METRIC_NETWORK_OUTBOUND,
   METRIC_NETWORK_REQUESTS,
   PROJECT,
-  WORKER_TYPE_USAGE,
 } from 'src/Utils/constants';
-import { Redis } from 'ioredis';
-import { MetricsHelper } from 'src/core/helper/metrics.helper';
+import { ProjectUsageService } from 'src/core/project-usage.service';
 
 @Injectable()
-export class BandwidthMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(BandwidthMiddleware.name);
+export class ProjectUsageMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(ProjectUsageMiddleware.name);
 
-  constructor(@Inject(CACHE_DB) private readonly cacheDb: Redis) {}
+  constructor(private readonly projectUsage: ProjectUsageService) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
     const project: Document = req[PROJECT];
 
     if (project.getId() !== 'console') {
-      const startTime = process.hrtime();
-
       let responseSize = 0;
       const originalWrite = res.write;
       const originalEnd = res.end;
@@ -39,18 +35,21 @@ export class BandwidthMiddleware implements NestMiddleware {
       };
 
       res.on('finish', async () => {
+        if (res.statusCode >= 500) return; // Ignore failed requests (5xx)
         const fileSize = Array.isArray(req.files)
           ? req.files.reduce((acc, file) => acc + file.size, 0)
           : req.file?.size || 0;
-        const requestSize =
+
+        const inboundSize =
           parseInt(req.headers['content-length'] || '0', 10) + fileSize;
         const outboundSize = responseSize;
-        const queueForUsage = new MetricsHelper(this.cacheDb);
 
-        queueForUsage
-          .addMetric(METRIC_NETWORK_REQUESTS, 1)
-          .addMetric(METRIC_NETWORK_INBOUND, requestSize)
-          .addMetric(METRIC_NETWORK_OUTBOUND, outboundSize);
+        await this.projectUsage.addMetric(METRIC_NETWORK_REQUESTS, 1);
+        await this.projectUsage.addMetric(METRIC_NETWORK_INBOUND, inboundSize);
+        await this.projectUsage.addMetric(
+          METRIC_NETWORK_OUTBOUND,
+          outboundSize,
+        );
       });
     }
 
