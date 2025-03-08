@@ -643,7 +643,7 @@ export class AccountService {
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
     const isAppUser = Auth.isAppUser(roles);
 
-    user.setAttributes(profile.getArrayCopy());
+    user.setAttributes(profile.toObject());
 
     const auths = project.getAttribute('auths', {});
     const duration = auths.duration ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;

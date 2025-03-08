@@ -803,7 +803,7 @@ export class DatabaseQueue extends Queue {
     // );
     // await Realtime.send(
     //   'console',
-    //   attribute.getArrayCopy(),
+    //   attribute.toObject(),
     //   events,
     //   target.channels,
     //   target.roles,

@@ -8,13 +8,12 @@ import {
   Post,
   Put,
   Query,
-  Scope,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { ResponseInterceptor } from 'src/core/resolvers/interceptors/response.interceptor';
-import { Namespace, ResModel } from 'src/core/decorators';
+import { Namespace, ResModel, Scope } from 'src/core/decorators';
 
 import { Models } from 'src/core/helper/response.helper';
 import {
@@ -45,6 +44,7 @@ export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Get()
+  @Scope('teams.read')
   @ResModel({ type: Models.TEAM, list: true })
   async findAll(
     @Query('queries', ParseQueryPipe) queries: Queries[],

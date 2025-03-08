@@ -2265,7 +2265,7 @@ export class DatabaseService {
 
     const oldAttributes = collection
       .getAttribute('attributes')
-      .map((a: any) => a.getArrayCopy());
+      .map((a: any) => a.toObject());
 
     oldAttributes.push(
       {

@@ -14,6 +14,7 @@ import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { APP_DEBUG_COLORS, APP_DEBUG_FORMAT } from './Utils/constants';
 import { Authorization, Role, storage } from '@nuvix/database';
 import cookieParser from 'cookie-parser';
+import { ErrorFilter } from './core/filters/globle-error.filter';
 
 config();
 Authorization.enableStorage();
@@ -73,7 +74,7 @@ async function bootstrap() {
     }
   });
 
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new HttpExceptionFilter(), new ErrorFilter());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

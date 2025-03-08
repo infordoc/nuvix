@@ -24,6 +24,7 @@ import { filters, formats } from './resolvers/db.resolver';
 import { CountryResponse, Reader } from 'maxmind';
 import { Cache, Redis } from '@nuvix/cache';
 import { Telemetry } from '@nuvix/telemetry';
+import { ProjectUsageService } from './project-usage.service';
 
 Object.keys(filters).forEach((key) => {
   Database.addFilter(key, {
@@ -131,12 +132,20 @@ Object.keys(formats).forEach((key) => {
           logger.warn(
             'GeoIP database not found, country detection will be disabled',
           );
-          return {};
+          return {}; // TODO: return a dummy reader
         }
       },
       inject: [ClsService],
     },
+    ProjectUsageService,
   ],
-  exports: [DB_FOR_CONSOLE, DB_FOR_PROJECT, GEO_DB, CACHE_DB, CACHE],
+  exports: [
+    DB_FOR_CONSOLE,
+    DB_FOR_PROJECT,
+    GEO_DB,
+    CACHE_DB,
+    CACHE,
+    ProjectUsageService,
+  ],
 })
 export class CoreModule {}

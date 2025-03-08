@@ -537,7 +537,7 @@ export class AccountService {
       const detector = new Detector(log.userAgent);
 
       const logDocument = new Document({
-        ...log.getArrayCopy(),
+        ...log.toObject(),
         ...log.data,
         ...detector.getOS(),
         ...detector.getClient(),
@@ -896,7 +896,7 @@ export class AccountService {
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
     const isAppUser = Auth.isAppUser(roles);
 
-    user.setAttributes(profile.getArrayCopy());
+    user.setAttributes(profile.toObject());
 
     const duration =
       CONSOLE_CONFIG.auths.duration ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
@@ -1031,7 +1031,7 @@ export class AccountService {
       throw new Exception(Exception.USER_INVALID_TOKEN);
     }
 
-    user.setAttributes(userFromRequest.getArrayCopy());
+    user.setAttributes(userFromRequest.toObject());
 
     const duration =
       CONSOLE_CONFIG.auths.duration ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;

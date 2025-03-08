@@ -32,7 +32,6 @@ export class ProjectUsageService {
   constructor(@Inject(CACHE_DB) private readonly cacheDb: Redis) {}
 
   async addMetric(metric: string, value: number): Promise<this> {
-    this.logger.log(`Adding metric ${metric} with value ${value}`);
     await this.add(metric, value);
     return this;
   }
@@ -58,11 +57,14 @@ export class ProjectUsageService {
     project,
     dbForProject,
   }: DbListionerProps) {
+    this.logger.log(
+      `Database listener called with event ${event} for document ${document.getId()}`,
+    );
     let value = 1;
     if (event === Database.EVENT_DOCUMENT_DELETE) {
       value = -1;
     }
-
+    this.logger.debug(document);
     switch (true) {
       case document.getCollection() === 'teams':
         await this.addMetric(METRIC_TEAMS, value); // per project
