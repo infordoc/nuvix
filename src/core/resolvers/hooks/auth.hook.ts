@@ -1,7 +1,6 @@
-import { Injectable, NestMiddleware, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Authorization, Database, Document } from '@nuvix/database';
-import { Request, Response, NextFunction } from 'express';
 import { Exception } from 'src/core/extend/exception';
 import { Auth } from 'src/core/helper/auth.helper';
 import ParamsHelper from 'src/core/helper/params.helper';
@@ -13,17 +12,21 @@ import {
   PROJECT,
   USER,
 } from 'src/Utils/constants';
+import { BaseHook, Hooks } from './base.hook';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
-export class AuthMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(AuthMiddleware.name);
+export class AuthHook implements BaseHook {
+  private readonly logger = new Logger(AuthHook.name);
   constructor(
     @Inject(DB_FOR_CONSOLE) readonly db: Database,
     @Inject(DB_FOR_PROJECT) readonly projectDb: Database,
     private readonly jwtService: JwtService,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  hookName: Hooks = 'onRequest';
+
+  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
     const mode =
@@ -62,7 +65,7 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     if (!session.id && !session.secret) {
-      res.setHeader('X-Debug-Fallback', 'true');
+      reply.header('X-Debug-Fallback', 'true');
       try {
         const fallbackHeader = params.getFromHeaders('x-nuvix-fallback', '');
         if (fallbackHeader) {
@@ -73,7 +76,7 @@ export class AuthMiddleware implements NestMiddleware {
         this.logger.debug('Failed to parse fallback cookies', error.message);
       }
     } else {
-      res.setHeader('X-Debug-Fallback', 'false');
+      reply.header('X-Debug-Fallback', 'false');
     }
 
     Auth.unique = session.id || '';
@@ -142,7 +145,5 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     req[USER] = user;
-
-    next();
   }
 }

@@ -68,7 +68,7 @@ Object.keys(formats).forEach((key) => {
     },
     {
       provide: DB_FOR_CONSOLE,
-      useFactory: async ( cache: Cache) => {
+      useFactory: async (cache: Cache) => {
         const adapter = new MariaDB({
           connection: {
             host: process.env.DATABASE_HOST || 'localhost',
@@ -86,12 +86,12 @@ Object.keys(formats).forEach((key) => {
 
         return connection;
       },
-      inject: [ CACHE],
+      inject: [CACHE],
     },
     {
       provide: DB_FOR_PROJECT,
       // scope: Scope.REQUEST,
-      useFactory: async ( cache: Cache) => {
+      useFactory: async (cache: Cache) => {
         const adapter = new MariaDB({
           connection: {
             host: process.env.DATABASE_HOST || 'localhost',

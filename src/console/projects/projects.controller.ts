@@ -60,9 +60,7 @@ import { ResModel } from 'src/core/decorators';
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class ProjectsController {
-  constructor(
-    private readonly projectService: ProjectService,
-  ) {}
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   async create(

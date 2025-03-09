@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { config } from 'dotenv';
@@ -11,9 +11,7 @@ import { AccountModule } from './account/account.module';
 import { TeamsModule } from './teams/teams.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { FunctionsModule } from './functions/functions.module';
-import { AuthMiddleware } from './core/resolvers/middlewares/auth.middleware';
 import { CoreModule } from './core/core.module';
-import { ProjectMiddleware } from './core/resolvers/middlewares/project.middleware';
 import { BullModule } from '@nestjs/bullmq';
 import {
   APP_REDIS_DB,
@@ -31,11 +29,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { StorageModule } from './storage/storage.module';
 import { JwtModule } from '@nestjs/jwt';
 import { MailQueue } from './core/resolvers/queues/mail.queue';
-import { ApiMiddleware } from './core/resolvers/middlewares/api.middleware';
-import { HostMiddleware } from './core/resolvers/middlewares/host.middleware';
-import { CorsMiddleware } from './core/resolvers/middlewares/cors.middleware';
-import { ProjectUsageMiddleware } from './core/resolvers/middlewares/project-usage.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
+import { HookModule } from './core/resolvers/hooks/hook.module';
 config();
 
 @Module({
@@ -69,6 +64,7 @@ config();
       global: true,
     }),
     CoreModule,
+    HookModule,
     BaseModule,
     ConsoleModule,
     UsersModule,
@@ -83,16 +79,4 @@ config();
   controllers: [AppController],
   providers: [AppService, MailQueue],
 })
-export class AppModule {
-  async configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(ProjectMiddleware, HostMiddleware, CorsMiddleware)
-      .forRoutes('*')
-      .apply(AuthMiddleware)
-      .forRoutes('*')
-      .apply(ApiMiddleware)
-      .forRoutes('*')
-      .apply(ProjectUsageMiddleware)
-      .forRoutes('*');
-  }
-}
+export class AppModule {}

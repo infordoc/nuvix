@@ -1,23 +1,24 @@
-import { Injectable, NestMiddleware, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Authorization, Database, Document, Query } from '@nuvix/database';
-import { NextFunction, Request, Response } from 'express';
 import { Exception } from 'src/core/extend/exception';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { DB_FOR_CONSOLE, PROJECT, SERVER_CONFIG } from 'src/Utils/constants';
+import { BaseHook, Hooks } from './base.hook';
 
 @Injectable()
-export class HostMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(HostMiddleware.name);
+export class HostHook implements BaseHook {
+  private readonly logger = new Logger(HostHook.name);
+  hookName: Hooks = 'onRequest';
 
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
-    const host = req.host;
+  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    const host = req.headers.host?.split(':')[0] ?? SERVER_CONFIG.host;
     const project: Document = req[PROJECT];
 
     if (host === SERVER_CONFIG.host) {
-      next();
       return;
     }
 
@@ -58,7 +59,6 @@ export class HostMiddleware implements NestMiddleware {
         }
       }
 
-      next();
       return;
     }
 
@@ -70,9 +70,8 @@ export class HostMiddleware implements NestMiddleware {
       }
     }
 
-    const path = req.path ?? '/';
+    const path = req.url.split('?')[0] ?? '/';
     if (path.startsWith('/.well-known/acme-challenge')) {
-      next();
       return;
     }
 

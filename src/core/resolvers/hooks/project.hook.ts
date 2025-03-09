@@ -1,18 +1,21 @@
-import { Inject, Injectable, Logger, NestMiddleware } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Authorization, Database, Document } from '@nuvix/database';
-import { NextFunction, Request, Response } from 'express';
 import ParamsHelper from 'src/core/helper/params.helper';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { DB_FOR_CONSOLE, DB_FOR_PROJECT, PROJECT } from 'src/Utils/constants';
+import { BaseHook, Hooks } from './base.hook';
 
 @Injectable()
-export class ProjectMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(ProjectMiddleware.name);
+export class ProjectHook implements BaseHook {
+  private readonly logger = new Logger(ProjectHook.name);
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(DB_FOR_PROJECT) private readonly projectDb: Database,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  hookName: Hooks = 'onRequest';
+
+  async run(req: FastifyRequest, reply: FastifyReply) {
     const params = new ParamsHelper(req);
     const projectId =
       params.getFromHeaders('x-nuvix-project') ||
@@ -20,7 +23,6 @@ export class ProjectMiddleware implements NestMiddleware {
 
     if (projectId === 'console') {
       req[PROJECT] = new Document({ $id: 'console' });
-      next();
       return null;
     }
 
@@ -35,7 +37,6 @@ export class ProjectMiddleware implements NestMiddleware {
     }
 
     req[PROJECT] = project;
-
-    next();
+    return null;
   }
 }

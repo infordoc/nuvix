@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
-import { Request, Response } from 'express';
 import { Exception } from '../extend/exception';
+import { FastifyReply, FastifyRequest } from 'fastify';
 import { DatabaseError } from '@nuvix/database';
 
 @Catch(Exception, DatabaseError)
@@ -9,8 +9,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   catch(exception: Exception, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<FastifyReply>();
+    const request = ctx.getRequest<FastifyRequest>();
     let status =
       exception instanceof Exception
         ? exception.getStatus()
@@ -25,14 +25,18 @@ export class HttpExceptionFilter implements ExceptionFilter {
       HttpExceptionFilter.name,
     );
 
-    response.status(status).json({
-      code: status,
-      message: exception.message,
-      type:
-        exception instanceof Exception
-          ? exception.getType()
-          : 'general_server_error',
-      version: '1.0.0',
-    });
+    response.statusCode = status;
+    response.header('Content-Type', 'application/json');
+    response.raw.end(
+      JSON.stringify({
+        code: status,
+        message: exception.message,
+        type:
+          exception instanceof Exception
+            ? exception.getType()
+            : 'general_server_error',
+        version: '1.0.0',
+      }),
+    );
   }
 }

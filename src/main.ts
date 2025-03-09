@@ -10,7 +10,6 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { FastifyRequest, FastifyReply } from 'fastify';
 import cookieParser from '@fastify/cookie';
 import { config } from 'dotenv';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
@@ -27,9 +26,11 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter({
       trustProxy: true,
+      skipMiddie: true,
+      logger: true,
     }),
     {
-      // abortOnError: false,
+      abortOnError: false,
       logger: new ConsoleLogger({
         json: APP_DEBUG_FORMAT,
         colors: APP_DEBUG_COLORS,
@@ -51,33 +52,37 @@ async function bootstrap() {
     }),
   );
 
+  app.useBodyParser('application/json');
   app.register(cookieParser);
 
-  app.use((req: FastifyRequest, res: FastifyReply, next: () => void) => {
+  const fastify = app.getHttpAdapter().getInstance();
+  global['fastifyInstance'] = fastify;
+
+  fastify.addHook('onRequest', (req, res, done) => {
     res.header('X-Powered-By', 'Nuvix-Server');
     res.header('Server', 'Nuvix');
-    next();
+    done();
   });
 
   app.useStaticAssets({
-    root: 'public',
+    root: __dirname + '../public',
     prefix: '/public/',
   });
 
-  app.use((req: FastifyRequest, res: FastifyReply, next: () => void) => {
+  fastify.addHook('onRequest', (req, res, done) => {
     if (Authorization['useStorage']) {
       storage.run(new Map(), () => {
         Authorization.setDefaultStatus(true); // Set per-request default status
         Authorization.cleanRoles(); // Reset roles per request
         Authorization.setRole(Role.any().toString());
-        next();
+        done();
       });
     } else {
       // Fallback to default static behavior
       Authorization.setDefaultStatus(true);
       Authorization.cleanRoles();
       Authorization.setRole(Role.any().toString());
-      next();
+      done();
     }
   });
 

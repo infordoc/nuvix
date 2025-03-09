@@ -30,12 +30,12 @@ import {
 import { CreateTargetDTO, UpdateTargetDTO } from './dto/target.dto';
 import { Models } from 'src/core/helper/response.helper';
 import { ResponseInterceptor } from 'src/core/resolvers/interceptors/response.interceptor';
-import { Label, Namespace, ResModel, Scope } from 'src/core/decorators';
+import { Label, Namespace, Project, ResModel, Scope } from 'src/core/decorators';
 import { Request } from 'express';
 import { CreateTokenDTO } from './dto/token.dto';
 import { CreateJwtDTO } from './dto/jwt.dto';
 import { ParseQueryPipe } from 'src/core/pipes/query.pipe';
-import type { Query as Queries } from '@nuvix/database';
+import type { Document, Query as Queries } from '@nuvix/database';
 import { ProjectGuard } from 'src/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from 'src/core/resolvers/interceptors/api.interceptor';
 import { CACHE } from 'src/Utils/constants';
@@ -68,57 +68,57 @@ export class UsersController {
   @Label('res.type', 'JSON')
   @Label('res.status', 'CREATED')
   @ResModel({ type: Models.USER })
-  async create(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.create(createUserDTO);
+  async create(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.create(createUserDTO, project);
   }
 
   @Post('argon2')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithArgon2(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithArgon2(createUserDTO);
+  async createWithArgon2(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithArgon2(createUserDTO, project);
   }
 
   @Post('bcrypt')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithBcrypt(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithBcrypt(createUserDTO);
+  async createWithBcrypt(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithBcrypt(createUserDTO, project);
   }
 
   @Post('md5')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithMd5(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithMd5(createUserDTO);
+  async createWithMd5(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithMd5(createUserDTO, project);
   }
 
   @Post('sha')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithSha(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithSha(createUserDTO);
+  async createWithSha(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithSha(createUserDTO, project);
   }
 
   @Post('phpass')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithPhpass(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithPhpass(createUserDTO);
+  async createWithPhpass(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithPhpass(createUserDTO, project);
   }
 
   @Post('scrypt')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithScrypt(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithScrypt(createUserDTO);
+  async createWithScrypt(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithScrypt(createUserDTO, project);
   }
 
   @Post('scrypt-modified')
   @Scope('users.create')
   @ResModel({ type: Models.USER })
-  async createWithScryptModified(@Body() createUserDTO: CreateUserDTO) {
-    return await this.usersService.createWithScryptMod(createUserDTO);
+  async createWithScryptModified(@Body() createUserDTO: CreateUserDTO, @Project() project: Document) {
+    return await this.usersService.createWithScryptMod(createUserDTO, project);
   }
 
   @Get('usage')
@@ -199,8 +199,9 @@ export class UsersController {
   async updatePassword(
     @Param('id') id: string,
     @Body() input: UpdateUserPasswordDTO,
+    @Project() project: Document,
   ) {
-    return await this.usersService.updatePassword(id, input);
+    return await this.usersService.updatePassword(id, input, project);
   }
 
   @Patch(':id/email')
@@ -259,8 +260,8 @@ export class UsersController {
 
   @Post(':id/sessions')
   @ResModel({ type: Models.SESSION })
-  async createSession(@Param('id') id: string, @Req() req: any): Promise<any> {
-    return await this.usersService.createSession(id, req);
+  async createSession(@Param('id') id: string, @Req() req: any, @Project() project: Document): Promise<any> {
+    return await this.usersService.createSession(id,req, project);
   }
 
   @Delete(':id/sessions')

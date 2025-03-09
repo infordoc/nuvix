@@ -1,12 +1,12 @@
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 
 /**
  * Helper class to get params from headers or query
  */
 class ParamsHelper {
-  private req: Request;
+  private req: FastifyRequest;
 
-  constructor(req: Request) {
+  constructor(req: FastifyRequest) {
     this.req = req;
   }
 
@@ -20,7 +20,7 @@ class ParamsHelper {
     }
 
     // Check in query
-    value = this.req.query[param] as string | string[];
+    value = this.getQueryParams()[param];
     if (value) {
       return this.processValue(value);
     }
@@ -40,7 +40,7 @@ class ParamsHelper {
     param: string,
     defaultValue: any | null = null,
   ): string | undefined {
-    const value = this.req.query[param] as string | string[];
+    const value = this.getQueryParams()[param];
     return value ? this.processValue(value) : defaultValue;
   }
 
@@ -53,6 +53,25 @@ class ParamsHelper {
     } else {
       return value;
     }
+  }
+
+  private getQueryParams(): Record<string, string | string[]> {
+    // const url = new URL(this.req.url || '', `http://${this.req.headers.host || 'localhost'}${this.req.url}`);
+    // const params: Record<string, string | string[]> = {};
+
+    // url.searchParams.forEach((value, key) => {
+    //   if (params[key]) {
+    //     if (Array.isArray(params[key])) {
+    //       (params[key] as string[]).push(value);
+    //     } else {
+    //       params[key] = [params[key] as string, value];
+    //     }
+    //   } else {
+    //     params[key] = value;
+    //   }
+    // });
+
+    return this.req.query as any;
   }
 }
 

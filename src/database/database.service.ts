@@ -276,7 +276,7 @@ export class DatabaseService {
 
     const output = logs.map((log) => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
-      detector.skipBotDetection();
+      // detector.skipBotDetection();
 
       const os = detector.getOS();
       const client = detector.getClient();
@@ -493,7 +493,7 @@ export class DatabaseService {
 
     const output = logs.map((log) => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
-      detector.skipBotDetection();
+      // detector.skipBotDetection();
 
       const os = detector.getOS();
       const client = detector.getClient();
@@ -2895,7 +2895,7 @@ export class DatabaseService {
 
     const output = logs.map((log) => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
-      detector.skipBotDetection();
+      // detector.skipBotDetection();
 
       const os = detector.getOS();
       const client = detector.getClient();

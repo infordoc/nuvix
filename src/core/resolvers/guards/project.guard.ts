@@ -9,9 +9,7 @@ import { PROJECT } from 'src/Utils/constants';
  *  ProjectGuard, check if the project exists.
  */
 export class ProjectGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-  ) {}
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext) {
     // const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [

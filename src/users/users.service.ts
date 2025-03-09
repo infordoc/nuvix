@@ -40,6 +40,7 @@ import {
   Role,
 } from '@nuvix/database';
 import { CountryResponse, Reader } from 'maxmind';
+import { FastifyRequest } from 'fastify';
 
 @Injectable()
 export class UsersService {
@@ -186,7 +187,11 @@ export class UsersService {
   /**
    * Update user password
    */
-  async updatePassword(id: string, input: UpdateUserPasswordDTO, project: Document) {
+  async updatePassword(
+    id: string,
+    input: UpdateUserPasswordDTO,
+    project: Document,
+  ) {
     const user = await this.db.getDocument('users', id);
 
     if (user.isEmpty()) {
@@ -511,7 +516,7 @@ export class UsersService {
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project
+      project,
     );
   }
 
@@ -625,7 +630,10 @@ export class UsersService {
   /**
    * Create a new user with scryptMod
    */
-  createWithScryptMod(createUserDTO: CreateUserWithScryptModifedDTO, project: Document) {
+  createWithScryptMod(
+    createUserDTO: CreateUserWithScryptModifedDTO,
+    project: Document,
+  ) {
     const hashOptions = {
       salt: createUserDTO.passwordSalt,
       saltSeparator: createUserDTO.passwordSaltSeparator,
@@ -1275,7 +1283,7 @@ export class UsersService {
   /**
    * Create User Session
    */
-  async createSession(userId: string, req: Request, project: Document) {
+  async createSession(userId: string, req: FastifyRequest, project: Document) {
     const user = await this.db.getDocument('users', userId);
 
     if (user.isEmpty()) {
@@ -1283,7 +1291,7 @@ export class UsersService {
     }
 
     const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
-    const detector = new Detector(req.get('user-agent') || 'UNKNOWN');
+    const detector = new Detector(req.headers['user-agent'] || 'UNKNOWN');
     const record = this.geoDb.get(req.ip);
 
     const duration =
@@ -1302,9 +1310,9 @@ export class UsersService {
       userInternalId: user.getInternalId(),
       provider: Auth.SESSION_PROVIDER_SERVER,
       secret: Auth.hash(secret),
-      userAgent: req.get('user-agent') || 'UNKNOWN',
+      userAgent: req.headers['user-agent'] || 'UNKNOWN',
       ip: req.ip,
-      countryCode: record ? record.country.iso_code.toLowerCase() : '--',
+      countryCode: record ? record.country.iso_code.toLowerCase() : '',
       expire: expire,
       ...detector.getOS(),
       ...detector.getClient(),
