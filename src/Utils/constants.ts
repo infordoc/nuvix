@@ -77,7 +77,7 @@ export const CONSOLE_CONFIG: any = {
 };
 export const SERVER_CONFIG: ServerConfig = {
   host: process.env.APP_HOSTNAME ?? 'localhost',
-  methods: 'GET,PUT,PATCH,POST,DELETE',
+  methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
   allowedOrigins: (process.env.CORS_ORIGIN ?? '')
     .split(',')
     .map((origin) => origin.trim()),

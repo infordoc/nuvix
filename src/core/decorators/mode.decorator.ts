@@ -5,7 +5,9 @@ import { FastifyRequest } from 'fastify';
 
 export const Mode = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: FastifyRequest = ctx.switchToHttp().getRequest<FastifyRequest>();
+    const request: FastifyRequest = ctx
+      .switchToHttp()
+      .getRequest<FastifyRequest>();
 
     const params = new ParamsHelper(request);
 
