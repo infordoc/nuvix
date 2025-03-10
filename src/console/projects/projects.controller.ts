@@ -12,7 +12,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import authMethods from 'src/core/config/auth';
 import { Exception } from 'src/core/extend/exception';
 import { ProjectService } from './projects.service';
@@ -65,7 +65,7 @@ export class ProjectsController {
   @Post()
   async create(
     @Body() createProjectDTO: CreateProjectDTO,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
   ) {
     const project = await this.projectService.create(createProjectDTO);
     return project;

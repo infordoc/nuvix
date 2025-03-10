@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Response } from 'express';
 import { createCanvas, registerFont } from 'canvas';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import path from 'path';
+import { FastifyReply } from 'fastify';
 
 @Injectable()
 export class AvatarsService {
@@ -29,7 +29,7 @@ export class AvatarsService {
     height: number | string;
     background: string;
     circle: boolean | string;
-    res: Response;
+    res: FastifyReply;
   }) {
     try {
       width = Number(width);
@@ -46,7 +46,7 @@ export class AvatarsService {
       );
       const cachedImage = this.getCachedImage(cacheKey);
       if (cachedImage) {
-        res.set('Content-Type', 'image/png');
+        res.header('Content-Type', 'image/png');
         return res.send(cachedImage);
       }
 
@@ -90,7 +90,7 @@ export class AvatarsService {
       this.cacheImage(cacheKey, processedImage);
 
       // Send Image Response
-      res.set('Content-Type', 'image/png');
+      res.header('Content-Type', 'image/png');
       res.send(processedImage);
     } catch (error) {
       console.error('Error generating avatar:', error);

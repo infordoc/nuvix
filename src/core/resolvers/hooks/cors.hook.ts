@@ -41,8 +41,9 @@ export class CorsHook implements BaseHook {
       const isConsoleRequest =
         project.getId() === 'console' || hostname === SERVER_CONFIG.host;
 
-      const origin = this.determineOrigin(hostname, isConsoleRequest);
-      const options = { ...this.defaultOptions, origin };
+      const origin = req.headers.origin;
+      const validOrigin = this.determineOrigin(origin, isConsoleRequest);
+      const options = { ...this.defaultOptions, origin: validOrigin };
 
       this.addCorsHeaders(req, reply, origin, options);
       this.handleVaryHeaders(reply, options);
@@ -64,6 +65,7 @@ export class CorsHook implements BaseHook {
         ? hostname
         : 'null';
     // TODO: handle dyanmic core validation
+    return false; // Default fallback when not a console request
   }
 
   private addCorsHeaders(

@@ -27,7 +27,7 @@ import { PhoneValidator } from 'src/core/validators/phone.validator';
 import { PasswordHistoryValidator } from 'src/core/validators/password-history.validator';
 import { MfaType, TOTP } from 'src/core/validators/MFA.validator';
 import { Detector } from 'src/core/helper/detector.helper';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { CreateTokenDTO } from './dto/token.dto';
 import { CreateJwtDTO } from './dto/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -40,7 +40,6 @@ import {
   Role,
 } from '@nuvix/database';
 import { CountryResponse, Reader } from 'maxmind';
-import { FastifyRequest } from 'fastify';
 
 @Injectable()
 export class UsersService {
@@ -1202,7 +1201,11 @@ export class UsersService {
   /**
    * Create a new Token
    */
-  async createToken(userId: string, input: CreateTokenDTO, req: Request) {
+  async createToken(
+    userId: string,
+    input: CreateTokenDTO,
+    req: FastifyRequest,
+  ) {
     const user = await this.db.getDocument('users', userId);
 
     if (user.isEmpty()) {
@@ -1224,7 +1227,7 @@ export class UsersService {
       type: Auth.TOKEN_TYPE_GENERIC,
       secret: Auth.hash(secret),
       expire: expire,
-      userAgent: req.get('user-agent') || 'UNKNOWN',
+      userAgent: req.headers['user-agent'] || 'UNKNOWN',
       ip: req.ip,
     });
 

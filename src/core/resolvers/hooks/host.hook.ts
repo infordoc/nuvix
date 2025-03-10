@@ -15,7 +15,7 @@ export class HostHook implements BaseHook {
   ) {}
 
   async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-    const host = req.headers.host?.split(':')[0] ?? SERVER_CONFIG.host;
+    const host = req.hostname ?? SERVER_CONFIG.host;
     const project: Document = req[PROJECT];
 
     if (host === SERVER_CONFIG.host) {

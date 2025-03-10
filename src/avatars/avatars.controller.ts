@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Res } from '@nestjs/common';
 import { AvatarsService } from './avatars.service';
-import { Response } from 'express';
 import { ParseDuplicatePipe } from 'src/core/pipes/duplicate.pipe';
+import { FastifyReply } from 'fastify';
 
 @Controller({ version: ['1'], path: 'avatars' })
 export class AvatarsController {
@@ -14,7 +14,7 @@ export class AvatarsController {
     @Query('height', ParseDuplicatePipe) height: string = '100',
     @Query('background', ParseDuplicatePipe) background: string = 'f67520',
     @Query('circle', ParseDuplicatePipe) circle: boolean = false,
-    @Res() res: Response,
+    @Res() res: FastifyReply,
   ) {
     return this.avatarsService.generateAvatar({
       name,

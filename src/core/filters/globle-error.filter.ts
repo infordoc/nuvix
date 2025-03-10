@@ -5,7 +5,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Catch(BadRequestException)
 export class ErrorFilter implements ExceptionFilter {
@@ -13,8 +13,8 @@ export class ErrorFilter implements ExceptionFilter {
 
   catch(exception: Error, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const response = ctx.getResponse<FastifyReply>();
+    const request = ctx.getRequest<FastifyRequest>();
     let status: number, message: string, type: string;
 
     this.logger.error(
@@ -36,7 +36,7 @@ export class ErrorFilter implements ExceptionFilter {
         break;
     }
 
-    response.status(status).json({
+    response.status(status).send({
       code: status,
       message: message,
       type: type,

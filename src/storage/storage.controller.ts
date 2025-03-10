@@ -15,7 +15,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { ResponseInterceptor } from 'src/core/resolvers/interceptors/response.interceptor';
 import { StorageService } from './storage.service';
 import { Models } from 'src/core/helper/response.helper';
@@ -92,7 +92,7 @@ export class StorageController {
     @Body('fileId') fileId: string,
     @Body('permissions') permissions: string[] = [],
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
     @User('project') user: Document,
     @Mode() mode: string,
   ) {
@@ -116,7 +116,7 @@ export class StorageController {
   async previewFile(
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
     @Query('width', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     width?: string,
     @Query('height', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -163,7 +163,7 @@ export class StorageController {
   async downloadFile(
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.downloadFile(id, fileId, res, req);
@@ -173,7 +173,7 @@ export class StorageController {
   async viewFile(
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.viewFile(id, fileId, res, req);
@@ -184,7 +184,7 @@ export class StorageController {
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Query('jwt') jwt: string,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.getFileForPushNotification(

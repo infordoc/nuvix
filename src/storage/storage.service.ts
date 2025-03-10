@@ -20,7 +20,7 @@ import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import collections from 'src/core/collections';
 import { Auth } from 'src/core/helper/auth.helper';
 import { CreateFileDTO, UpdateFileDTO } from './DTO/file.dto';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { JwtService } from '@nestjs/jwt';
@@ -329,7 +329,7 @@ export class StorageService {
     bucketId: string,
     input: CreateFileDTO,
     file: Express.Multer.File | Express.Multer.File[],
-    request: Request,
+    request: FastifyRequest,
     user: Document,
     mode: string,
   ) {
@@ -783,8 +783,8 @@ export class StorageService {
   async downloadFile(
     bucketId: string,
     fileId: string,
-    response: Response,
-    request: Request,
+    response: FastifyReply,
+    request: FastifyRequest,
   ) {
     const bucket = await Authorization.skip(() =>
       this.db.getDocument('buckets', bucketId),
@@ -849,20 +849,20 @@ export class StorageService {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      response.setHeader('Accept-Ranges', 'bytes');
-      response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
-      response.setHeader('Content-Length', end - start + 1);
+      response.header('Accept-Ranges', 'bytes');
+      response.header('Content-Range', `bytes ${start}-${end}/${size}`);
+      response.header('Content-Length', end - start + 1);
       response.status(206);
     } else {
-      response.setHeader('Content-Length', size);
+      response.header('Content-Length', size);
     }
 
-    response.setHeader('Content-Type', mimeType);
-    response.setHeader(
+    response.header('Content-Type', mimeType);
+    response.header(
       'Content-Disposition',
       `attachment; filename="${fileName}"`,
     );
-    response.setHeader(
+    response.header(
       'Expires',
       new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toUTCString(),
     );
@@ -877,8 +877,8 @@ export class StorageService {
   async viewFile(
     bucketId: string,
     fileId: string,
-    response: Response,
-    request: Request,
+    response: FastifyReply,
+    request: FastifyRequest,
   ) {
     const bucket = await Authorization.skip(() =>
       this.db.getDocument('buckets', bucketId),
@@ -943,17 +943,17 @@ export class StorageService {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      response.setHeader('Accept-Ranges', 'bytes');
-      response.setHeader('Content-Range', `bytes ${start}-${end}/${size}`);
-      response.setHeader('Content-Length', end - start + 1);
+      response.header('Accept-Ranges', 'bytes');
+      response.header('Content-Range', `bytes ${start}-${end}/${size}`);
+      response.header('Content-Length', end - start + 1);
       response.status(206);
     } else {
-      response.setHeader('Content-Length', size);
+      response.header('Content-Length', size);
     }
 
-    response.setHeader('Content-Type', mimeType);
-    response.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-    response.setHeader(
+    response.header('Content-Type', mimeType);
+    response.header('Content-Disposition', `inline; filename="${fileName}"`);
+    response.header(
       'Expires',
       new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toUTCString(),
     );
@@ -969,8 +969,8 @@ export class StorageService {
     bucketId: string,
     fileId: string,
     jwt: string,
-    request: Request,
-    response: Response,
+    request: FastifyRequest,
+    response: FastifyReply,
   ) {
     const bucket = await Authorization.skip(() =>
       this.db.getDocument('buckets', bucketId),
@@ -1022,13 +1022,13 @@ export class StorageService {
     const fileName = file.getAttribute('name', '');
     const size = file.getAttribute('sizeOriginal', 0);
 
-    response.setHeader('Content-Type', mimeType);
-    response.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
-    response.setHeader(
+    response.header('Content-Type', mimeType);
+    response.header('Content-Disposition', `inline; filename="${fileName}"`);
+    response.header(
       'Expires',
       new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toUTCString(),
     );
-    response.setHeader('X-Peak', process.memoryUsage().heapUsed.toString());
+    response.header('X-Peak', process.memoryUsage().heapUsed.toString());
 
     const rangeHeader = request.headers['range'];
     if (rangeHeader) {
@@ -1044,16 +1044,16 @@ export class StorageService {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      response.setHeader('Accept-Ranges', 'bytes');
-      response.setHeader('Content-Range', `bytes ${start}-${finalEnd}/${size}`);
-      response.setHeader('Content-Length', finalEnd - start + 1);
+      response.header('Accept-Ranges', 'bytes');
+      response.header('Content-Range', `bytes ${start}-${finalEnd}/${size}`);
+      response.header('Content-Length', finalEnd - start + 1);
       response.status(206);
 
       const fileStream = fs.createReadStream(path, { start, end: finalEnd });
       return new StreamableFile(fileStream);
     }
 
-    response.setHeader('Content-Length', size);
+    response.header('Content-Length', size);
     const fileStream = fs.createReadStream(path);
     return new StreamableFile(fileStream);
   }

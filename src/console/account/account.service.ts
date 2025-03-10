@@ -9,7 +9,7 @@ import {
   Query,
   Role,
 } from '@nuvix/database';
-import { Request, Response } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { CountryResponse, Reader } from 'maxmind';
 import { Exception } from 'src/core/extend/exception';
 import { Auth } from 'src/core/helper/auth.helper';
@@ -59,7 +59,7 @@ export class AccountService {
     email: string,
     password: string,
     name: string,
-    request: Request,
+    request: FastifyRequest,
     user: Document,
   ): Promise<Document> {
     email = email.toLowerCase();
@@ -599,7 +599,11 @@ export class AccountService {
   /**
    * Delete user's session
    */
-  async deleteSessions(user: Document, request: Request, response: Response) {
+  async deleteSessions(
+    user: Document,
+    request: FastifyRequest,
+    response: FastifyReply,
+  ) {
     const protocol = request.protocol;
     const sessions = user.getAttribute('sessions', []);
 
@@ -607,7 +611,7 @@ export class AccountService {
       await this.db.deleteDocument('sessions', session.getId());
 
       if (!CONSOLE_CONFIG.domainVerification) {
-        response.setHeader('X-Fallback-Cookies', JSON.stringify([]));
+        response.header('X-Fallback-Cookies', JSON.stringify([]));
       }
 
       session.setAttribute('current', false);
@@ -698,8 +702,8 @@ export class AccountService {
   async deleteSession(
     user: Document,
     sessionId: string,
-    request: Request,
-    response: Response,
+    request: FastifyRequest,
+    response: FastifyReply,
   ) {
     const protocol = request.protocol;
     const sessions = user.getAttribute('sessions', []);
@@ -730,7 +734,7 @@ export class AccountService {
             httpOnly: true,
           });
 
-        response.setHeader('X-Fallback-Cookies', JSON.stringify([]));
+        response.header('X-Fallback-Cookies', JSON.stringify([]));
       }
 
       await this.db.purgeCachedDocument('users', user.getId());
@@ -865,8 +869,8 @@ export class AccountService {
   async createEmailSession(
     user: Document,
     input: CreateEmailSessionDTO,
-    request: Request,
-    response: Response,
+    request: FastifyRequest,
+    response: FastifyReply,
   ) {
     const email = input.email.toLowerCase();
     const protocol = request.protocol;
@@ -950,7 +954,7 @@ export class AccountService {
     );
 
     if (!CONSOLE_CONFIG.domainVerification) {
-      response.setHeader(
+      response.header(
         'X-Fallback-Cookies',
         JSON.stringify({
           [Auth.cookieName]: Auth.encodeSession(user.getId(), secret),
@@ -1002,8 +1006,8 @@ export class AccountService {
   async createSession(
     userId: string,
     secret: string,
-    request: Request,
-    response: Response,
+    request: FastifyRequest,
+    response: FastifyReply,
     user: Document,
     // locale: Locale,
     // queueForEvents: Event,
@@ -1062,7 +1066,7 @@ export class AccountService {
         verifiedToken.getAttribute('type'),
       ),
       secret: Auth.hash(sessionSecret),
-      userAgent: request.get('User-Agent') || 'UNKNOWN',
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
       ip: request.ip,
       factors: [factor],
       countryCode: record ? record.country.iso_code.toLowerCase() : '--',

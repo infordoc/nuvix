@@ -37,7 +37,7 @@ import {
   ResModel,
   Scope,
 } from 'src/core/decorators';
-import { Request } from 'express';
+import { FastifyRequest } from 'fastify';
 import { CreateTokenDTO } from './dto/token.dto';
 import { CreateJwtDTO } from './dto/jwt.dto';
 import { ParseQueryPipe } from 'src/core/pipes/query.pipe';
@@ -314,7 +314,7 @@ export class UsersController {
   async createToken(
     @Param('id') id: string,
     @Body() input: CreateTokenDTO,
-    @Req() req: Request,
+    @Req() req: FastifyRequest,
   ): Promise<any> {
     return await this.usersService.createToken(id, input, req);
   }

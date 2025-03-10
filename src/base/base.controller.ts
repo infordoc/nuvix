@@ -1,9 +1,9 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { All, Controller, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
 import { Public } from 'src/core/resolvers/guards/auth.guard';
 import { SEND_TYPE_EMAIL } from 'src/Utils/constants';
 import { Queue } from 'bullmq';
+import { FastifyReply } from 'fastify';
 
 @Controller({ version: ['1'] })
 export class BaseController {
@@ -11,8 +11,8 @@ export class BaseController {
 
   @All('health/version')
   @Public()
-  healthVersion(@Res() res: Response): Response {
-    return res.status(200).json({
+  healthVersion(@Res() res: FastifyReply): FastifyReply {
+    return res.status(200).send({
       status: 'UP',
       version: '1.0.0',
     });
@@ -20,8 +20,8 @@ export class BaseController {
 
   @All('vcs/installations')
   @Public()
-  vcsInstallations(@Res() res: Response): Response {
-    return res.status(200).json({
+  vcsInstallations(@Res() res: FastifyReply): FastifyReply {
+    return res.status(200).send({
       total: 0,
       installations: [],
     });
