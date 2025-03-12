@@ -1,39 +1,21 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { FastifyInstance } from 'fastify';
-import { Hook, Hooks } from './base.hook';
-import { ProjectHook } from './project.hook';
-import { AuthHook } from './auth.hook';
-import { CorsHook } from './cors.hook';
-import { HostHook } from './host.hook';
-import { ApiHook } from './api.hook';
-import { ProjectUsageHook } from './project-usage.hook';
+import { AsyncHook, Hook, Hooks, SyncHook } from './base.hook';
 import { HttpAdapterHost } from '@nestjs/core';
+import { HOOKS } from 'src/Utils/constants';
 
 @Injectable()
 export class HookManager implements OnModuleInit {
   constructor(
     private readonly httpAdapterHost: HttpAdapterHost,
-    private readonly projectHook: ProjectHook,
-    private readonly hostHook: HostHook,
-    private readonly corsHook: CorsHook,
-    private readonly authHook: AuthHook,
-    private readonly apiHook: ApiHook,
-    private readonly projectUsageHook: ProjectUsageHook,
+    @Inject(HOOKS) private readonly hooks: Hook[],
   ) {}
 
   async onModuleInit() {
     const fastify =
       this.httpAdapterHost.httpAdapter.getInstance<FastifyInstance>();
-    const instances: Hook[] = [
-      this.projectHook,
-      this.hostHook,
-      this.corsHook,
-      this.authHook,
-      this.apiHook,
-      this.projectUsageHook,
-    ];
 
-    const hooks: Hooks[] = [
+    const lifecycleHooks: Hooks[] = [
       'onRequest',
       'preParsing',
       'preValidation',
@@ -51,15 +33,24 @@ export class HookManager implements OnModuleInit {
       'onRegister',
     ];
 
-    hooks.forEach((hookName) => {
-      instances.forEach((instance) => {
+    lifecycleHooks.forEach((hookName) => {
+      this.hooks.forEach((instance) => {
         const hookMethod = instance[hookName];
         if (hookMethod) {
           fastify.addHook(hookName, async (req, reply, ...args) => {
-            if (hookMethod.constructor.name === 'AsyncFunction') {
-              await hookMethod.call(instance, req, reply, ...args);
-            } else {
-              hookMethod.call(instance, req, reply, ...args);
+            try {
+              if (hookMethod.constructor.name === 'AsyncFunction') {
+                await (hookMethod as AsyncHook).call(
+                  instance,
+                  req,
+                  reply,
+                  ...args,
+                );
+              } else {
+                (hookMethod as SyncHook).call(instance, req, reply, ...args);
+              }
+            } catch (error) {
+              console.error(`Error in ${hookName} hook:`, error);
             }
           });
         }

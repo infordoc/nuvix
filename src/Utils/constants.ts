@@ -46,6 +46,7 @@ export const IS_PUBLIC_KEY = 'isPublic';
 export const LOCALE = 'locale';
 export const API_KEY = 'apiKey';
 export const SCOPES = 'scopes';
+export const HOOKS = 'hooks';
 
 const allowedHeaders = [
   'Content-Type',

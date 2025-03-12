@@ -8,108 +8,42 @@ import { ApplicationHook, LifecycleHook } from 'fastify/types/hooks';
 
 export type Hooks = ApplicationHook | LifecycleHook;
 
+export type AsyncHook<T = void> = (
+  req: FastifyRequest,
+  reply: FastifyReply,
+  ...args: T[]
+) => Promise<void>;
+export type SyncHook<T = void> = (
+  req: FastifyRequest,
+  reply: FastifyReply,
+  done: HookHandlerDoneFunction,
+  ...args: T[]
+) => void;
+
 export type LifecycleHookMethods = {
-  onRequest:
-    | ((req: FastifyRequest, reply: FastifyReply) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  preParsing:
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-      ) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  preValidation:
-    | ((req: FastifyRequest, reply: FastifyReply) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  preHandler:
-    | ((req: FastifyRequest, reply: FastifyReply) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  preSerialization:
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-      ) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  onSend:
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-      ) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        payload: any,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  onResponse:
-    | ((req: FastifyRequest, reply: FastifyReply) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  onError:
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        error: Error,
-      ) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        error: Error,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  onTimeout:
-    | ((req: FastifyRequest, reply: FastifyReply) => Promise<void>)
-    | ((
-        req: FastifyRequest,
-        reply: FastifyReply,
-        done: HookHandlerDoneFunction,
-      ) => void);
-  onReady: (() => Promise<void>) | ((done: HookHandlerDoneFunction) => void);
-  onListen: (() => Promise<void>) | ((done: HookHandlerDoneFunction) => void);
+  onRequest: AsyncHook | SyncHook;
+  preParsing: AsyncHook<{ payload: any }> | SyncHook<{ payload: any }>;
+  preValidation: AsyncHook | SyncHook;
+  preHandler: AsyncHook | SyncHook;
+  preSerialization: AsyncHook<{ payload: any }> | SyncHook<{ payload: any }>;
+  onSend: AsyncHook<{ payload: any }> | SyncHook<{ payload: any }>;
+  onResponse: AsyncHook | SyncHook;
+  onError: AsyncHook<{ error: Error }> | SyncHook<{ error: Error }>;
+  onTimeout: AsyncHook | SyncHook;
+  onReady: AsyncHook | SyncHook;
+  onListen: AsyncHook | SyncHook;
   onClose:
-    | ((instance: FastifyInstance) => Promise<void>)
-    | ((instance: FastifyInstance, done: HookHandlerDoneFunction) => void);
+    | AsyncHook<{ instance: FastifyInstance }>
+    | SyncHook<{ instance: FastifyInstance }>;
   preClose:
-    | ((instance: FastifyInstance) => Promise<void>)
-    | ((instance: FastifyInstance, done: HookHandlerDoneFunction) => void);
+    | AsyncHook<{ instance: FastifyInstance }>
+    | SyncHook<{ instance: FastifyInstance }>;
   onRoute:
-    | ((opts: Record<string, any>) => void)
-    | ((opts: Record<string, any>, done: HookHandlerDoneFunction) => void);
+    | AsyncHook<{ opts: Record<string, any> }>
+    | SyncHook<{ opts: Record<string, any> }>;
   onRegister:
-    | ((instance: FastifyInstance, opts: Record<string, any>) => Promise<void>)
-    | ((
-        instance: FastifyInstance,
-        opts: Record<string, any>,
-        done: HookHandlerDoneFunction,
-      ) => void);
+    | AsyncHook<{ instance: FastifyInstance; opts: Record<string, any> }>
+    | SyncHook<{ instance: FastifyInstance; opts: Record<string, any> }>;
 };
 
 export interface Hook extends Partial<LifecycleHookMethods> {}
