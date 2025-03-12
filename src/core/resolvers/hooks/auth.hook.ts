@@ -12,11 +12,11 @@ import {
   PROJECT,
   USER,
 } from 'src/Utils/constants';
-import { BaseHook, Hooks } from './base.hook';
+import { Hook } from './base.hook';
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
-export class AuthHook implements BaseHook {
+export class AuthHook implements Hook {
   private readonly logger = new Logger(AuthHook.name);
   constructor(
     @Inject(DB_FOR_CONSOLE) readonly db: Database,
@@ -24,9 +24,7 @@ export class AuthHook implements BaseHook {
     private readonly jwtService: JwtService,
   ) {}
 
-  hookName: Hooks = 'onRequest';
-
-  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
     const mode =

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { Document } from '@nuvix/database';
 import { PROJECT, SERVER_CONFIG } from 'src/Utils/constants';
-import { BaseHook } from './base.hook';
+import { Hook } from './base.hook';
 import {
   addOriginToVaryHeader,
   addAccessControlRequestHeadersToVaryHeader,
@@ -20,9 +20,8 @@ interface CorsOptions {
 }
 
 @Injectable()
-export class CorsHook implements BaseHook {
+export class CorsHook implements Hook {
   private readonly logger = new Logger(CorsHook.name);
-  hookName: 'onRequest' = 'onRequest';
 
   private readonly defaultOptions: CorsOptions = {
     methods: SERVER_CONFIG.methods,
@@ -34,7 +33,7 @@ export class CorsHook implements BaseHook {
     strictPreflight: true,
   };
 
-  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const hostname = req.hostname;
       const project: Document = req[PROJECT];
@@ -42,6 +41,7 @@ export class CorsHook implements BaseHook {
         project.getId() === 'console' || hostname === SERVER_CONFIG.host;
 
       const origin = req.headers.origin;
+      this.logger.log(`Origin: ${origin}`);
       const validOrigin = this.determineOrigin(origin, isConsoleRequest);
       const options = { ...this.defaultOptions, origin: validOrigin };
 
@@ -53,18 +53,15 @@ export class CorsHook implements BaseHook {
       }
     } catch (error) {
       this.logger.error(`CORS setup failed: ${error.message}`);
+      reply.status(500).send('Internal Server Error');
     }
   }
 
-  private determineOrigin(
-    hostname: string,
-    isConsole: boolean,
-  ): string | false {
-    if (isConsole)
-      return SERVER_CONFIG.allowedOrigins.includes(hostname)
-        ? hostname
-        : 'null';
-    // TODO: handle dyanmic core validation
+  private determineOrigin(origin: string, isConsole: boolean): string | false {
+    if (isConsole) {
+      return SERVER_CONFIG.allowedOrigins.includes(origin) ? origin : 'null';
+    }
+    // TODO: handle dynamic CORS validation
     return false; // Default fallback when not a console request
   }
 
@@ -75,6 +72,10 @@ export class CorsHook implements BaseHook {
   ) {
     if (origin) {
       reply.header('Access-Control-Allow-Origin', origin);
+    } else {
+      this.logger.log(
+        'CORS: Origin not allowed, skipping Access-Control-Allow-Origin header',
+      );
     }
 
     if (options.credentials) {
@@ -104,9 +105,18 @@ export class CorsHook implements BaseHook {
     reply: FastifyReply,
     options: typeof this.defaultOptions,
   ) {
+    const origin = req.headers.origin;
+    if (!origin || !SERVER_CONFIG.allowedOrigins.includes(origin)) {
+      reply
+        .status(403)
+        .header('Content-Type', 'text/plain')
+        .send('Origin not allowed');
+      return;
+    }
+
     if (
       options.strictPreflight &&
-      (!req.headers.origin || !req.headers['access-control-request-method'])
+      (!origin || !req.headers['access-control-request-method'])
     ) {
       reply
         .status(400)

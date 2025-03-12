@@ -17,20 +17,19 @@ import { roles } from 'src/core/config/roles';
 import ParamsHelper from 'src/core/helper/params.helper';
 import { JwtService } from '@nestjs/jwt';
 import { APP_PLATFORM_SERVER, platforms } from 'src/core/config/platforms';
-import { BaseHook, Hooks } from './base.hook';
+import { Hook } from './base.hook';
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
-export class ApiHook implements BaseHook {
+export class ApiHook implements Hook {
   private readonly logger = new Logger(ApiHook.name);
-  hookName: Hooks = 'onRequest';
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(DB_FOR_PROJECT) private readonly projectDb: Database,
     private readonly jwtService: JwtService,
   ) {}
 
-  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
     let user: Document = req[USER];

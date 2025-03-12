@@ -3,19 +3,17 @@ import { Authorization, Database, Document } from '@nuvix/database';
 import ParamsHelper from 'src/core/helper/params.helper';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { DB_FOR_CONSOLE, DB_FOR_PROJECT, PROJECT } from 'src/Utils/constants';
-import { BaseHook, Hooks } from './base.hook';
+import { Hook } from './base.hook';
 
 @Injectable()
-export class ProjectHook implements BaseHook {
+export class ProjectHook implements Hook {
   private readonly logger = new Logger(ProjectHook.name);
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(DB_FOR_PROJECT) private readonly projectDb: Database,
   ) {}
 
-  hookName: Hooks = 'onRequest';
-
-  async run(req: FastifyRequest, reply: FastifyReply) {
+  async onRequest(req: FastifyRequest, reply: FastifyReply) {
     const params = new ParamsHelper(req);
     const projectId =
       params.getFromHeaders('x-nuvix-project') ||

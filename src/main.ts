@@ -54,7 +54,6 @@ async function bootstrap() {
   );
 
   const fastify = app.getHttpAdapter().getInstance();
-  global['fastifyInstance'] = fastify;
 
   fastify.addHook('onRequest', (req, res, done) => {
     res.header('X-Powered-By', 'Nuvix-Server');

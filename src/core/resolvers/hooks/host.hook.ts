@@ -3,18 +3,16 @@ import { Authorization, Database, Document, Query } from '@nuvix/database';
 import { Exception } from 'src/core/extend/exception';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { DB_FOR_CONSOLE, PROJECT, SERVER_CONFIG } from 'src/Utils/constants';
-import { BaseHook, Hooks } from './base.hook';
+import { Hook } from './base.hook';
 
 @Injectable()
-export class HostHook implements BaseHook {
+export class HostHook implements Hook {
   private readonly logger = new Logger(HostHook.name);
-  hookName: Hooks = 'onRequest';
-
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
   ) {}
 
-  async run(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const host = req.hostname ?? SERVER_CONFIG.host;
     const project: Document = req[PROJECT];
 
