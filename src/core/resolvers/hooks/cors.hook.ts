@@ -19,6 +19,7 @@ interface CorsOptions {
   origin?: string | false;
 }
 
+// TODO: make this system more secure and dynamic for production
 @Injectable()
 export class CorsHook implements Hook {
   private readonly logger = new Logger(CorsHook.name);
@@ -34,6 +35,30 @@ export class CorsHook implements Hook {
   };
 
   async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const hostname = req.hostname;
+      const project: Document = req[PROJECT];
+      const isConsoleRequest =
+        project.getId() === 'console' || hostname === SERVER_CONFIG.host;
+
+      const origin = req.headers.origin;
+      this.logger.log(`Origin: ${origin}`);
+      const validOrigin = this.determineOrigin(origin, isConsoleRequest);
+      const options = { ...this.defaultOptions, origin: validOrigin };
+
+      this.addCorsHeaders(reply, origin, options);
+      this.handleVaryHeaders(reply, options);
+
+      if (req.method.toUpperCase() === 'OPTIONS' && options.preflight) {
+        this.handlePreflight(req, reply, options);
+      }
+    } catch (error) {
+      this.logger.error(`CORS setup failed: ${error.message}`);
+      reply.status(500).send('Internal Server Error');
+    }
+  }
+
+  async onError(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
       const hostname = req.hostname;
       const project: Document = req[PROJECT];

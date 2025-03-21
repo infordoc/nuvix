@@ -37,6 +37,7 @@ export const APP_SMTP_DKIM_PRIVATE_KEY = process.env.APP_SMTP_DKIM_PRIVATE_KEY;
 export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
+export const POOLS = 'pools';
 export const DB_FOR_CONSOLE = 'dbForConsole';
 export const DB_FOR_PROJECT = 'dbForProject';
 export const GET_PROJECT_DB = 'getProjectDb';

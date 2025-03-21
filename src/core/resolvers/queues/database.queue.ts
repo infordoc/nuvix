@@ -101,6 +101,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         attribute = await dbForProject.getDocument(
           'attributes',
           attribute.getId(),
@@ -273,6 +274,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         const collectionId = collection.getId();
         const key = attribute.getAttribute('key', '');
         const status = attribute.getAttribute('status', '');
@@ -484,6 +486,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         const collectionId = collection.getId();
         const key = index.getAttribute('key', '');
         const type = index.getAttribute('type', '');
@@ -565,6 +568,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         const key = index.getAttribute('key', '');
         const status = index.getAttribute('status', '');
         const projectDoc = await dbForConsole.getDocument(
@@ -620,6 +624,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         await this.deleteByGroup(
           databaseId,
           [],
@@ -661,6 +666,7 @@ export class DatabaseQueue extends Queue {
     await dbForProject.withTenant(
       project.getAttribute('$internalId'),
       async () => {
+        dbForProject.setPrefix(`_${project.getAttribute('$internalId')}`);
         const collectionId = collection.getId();
         const collectionInternalId = collection.getInternalId();
         const databaseId = database.getId();

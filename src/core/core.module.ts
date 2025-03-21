@@ -18,6 +18,7 @@ import {
   APP_REDIS_DB,
   APP_REDIS_SECURE,
   GET_PROJECT_DB,
+  POOLS,
 } from 'src/Utils/constants';
 import { Database, MariaDB, Structure } from '@nuvix/database';
 import { filters, formats } from './resolvers/db.resolver';
@@ -25,6 +26,7 @@ import { CountryResponse, Reader } from 'maxmind';
 import { Cache, Redis } from '@nuvix/cache';
 import { Telemetry } from '@nuvix/telemetry';
 import { ProjectUsageService } from './project-usage.service';
+import { Adapter } from '@nuvix/database/dist/adapter/base';
 
 Object.keys(filters).forEach((key) => {
   Database.addFilter(key, {
@@ -40,6 +42,13 @@ Object.keys(formats).forEach((key) => {
 @Global()
 @Module({
   providers: [
+    {
+      provide: POOLS,
+      useFactory: async () => {
+        const pools = new Map<string, Adapter>();
+        return pools;
+      },
+    },
     {
       provide: CACHE_DB,
       useFactory: async () => {
@@ -90,9 +99,10 @@ Object.keys(formats).forEach((key) => {
       inject: [CACHE],
     },
     {
+      // TODO: This is a temporary solution, we need to find a better way to handle this (request scope or hook)
       provide: DB_FOR_PROJECT,
       // scope: Scope.REQUEST,
-      useFactory: async (cache: Cache) => {
+      useFactory: async (cache: Cache, pools: Map<string, Adapter>) => {
         const adapter = new MariaDB({
           connection: {
             host: process.env.DATABASE_HOST || 'localhost',
@@ -114,7 +124,7 @@ Object.keys(formats).forEach((key) => {
 
         return connection;
       },
-      inject: [CACHE],
+      inject: [CACHE, POOLS],
     },
     {
       provide: GET_PROJECT_DB,

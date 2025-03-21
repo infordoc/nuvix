@@ -1,8 +1,9 @@
 /**
  * Nuvix is a Backend as a Service (BaaS) that allows you to create a backend for your application in minutes.
  * This file is the entry point of the application, where the application is created and started.
- * @author Ravikant Saini
+ * @author Nuvix-Tech
  * @version 1.0
+ * @beta
  */
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
