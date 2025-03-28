@@ -3,7 +3,7 @@ import { IsBoolean, IsIn } from 'class-validator';
 import apis from 'src/core/config/apis';
 
 export class ProjectApiStatusDTO {
-  @IsIn(Object.values(apis).map((api) => api.key))
+  @IsIn(Object.values(apis).map(api => api.key))
   api: string;
 
   @IsBoolean()

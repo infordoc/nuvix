@@ -17,6 +17,8 @@ import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { APP_DEBUG_COLORS, APP_DEBUG_FORMAT } from './Utils/constants';
 import { Authorization, Role, storage } from '@nuvix/database';
 import { ErrorFilter } from './core/filters/globle-error.filter';
+import cookieParser from '@fastify/cookie';
+import fastifyMultipart from '@fastify/multipart';
 
 config();
 Authorization.enableStorage();
@@ -40,8 +42,8 @@ async function bootstrap() {
   );
 
   app.enableVersioning();
-  app.register(require('@fastify/cookie'));
-  app.register(require('@fastify/multipart'));
+  app.register(cookieParser as any);
+  app.register(fastifyMultipart as any);
 
   app.useGlobalPipes(
     new ValidationPipe({

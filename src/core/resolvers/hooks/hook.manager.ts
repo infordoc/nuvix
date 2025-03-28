@@ -33,8 +33,8 @@ export class HookManager implements OnModuleInit {
       'onRegister',
     ];
 
-    lifecycleHooks.forEach((hookName) => {
-      this.hooks.forEach((instance) => {
+    lifecycleHooks.forEach(hookName => {
+      this.hooks.forEach(instance => {
         const hookMethod = instance[hookName];
         if (hookMethod) {
           fastify.addHook(hookName, async (req, reply, ...args) => {

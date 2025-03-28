@@ -7,7 +7,7 @@ export class WhiteList {
     this.strict = strict;
 
     if (!this.strict) {
-      this.list = this.list.map((value) => value.toLowerCase());
+      this.list = this.list.map(value => value.toLowerCase());
     }
   }
 

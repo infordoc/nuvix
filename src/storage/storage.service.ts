@@ -365,7 +365,7 @@ export class StorageService {
     );
     if (!permissions || permissions.length === 0) {
       permissions = user.getId()
-        ? allowedPermissions.map((permission) =>
+        ? allowedPermissions.map(permission =>
             new Permission(permission, 'user', user.getId()).toString(),
           )
         : [];
@@ -373,7 +373,7 @@ export class StorageService {
 
     const roles = Authorization.getRoles();
     if (!Auth.isAppUser(roles) && !Auth.isPrivilegedUser(roles)) {
-      permissions.forEach((permission) => {
+      permissions.forEach(permission => {
         const parsedPermission = Permission.parse(permission);
         if (!Authorization.isRole(parsedPermission.toString())) {
           throw new Exception(
@@ -1104,7 +1104,7 @@ export class StorageService {
       !Auth.isPrivilegedUser(roles) &&
       permissions
     ) {
-      permissions.forEach((permission) => {
+      permissions.forEach(permission => {
         const parsedPermission = Permission.parse(permission);
         if (!Authorization.isRole(parsedPermission.toString())) {
           throw new Exception(
@@ -1363,9 +1363,9 @@ function calculateFileHash(filePath: string): Promise<string> {
     const hash = crypto.createHash('sha256');
     const stream = fs.createReadStream(filePath);
 
-    stream.on('data', (data) => hash.update(data));
+    stream.on('data', data => hash.update(data));
     stream.on('end', () => resolve(hash.digest('hex')));
-    stream.on('error', (err) => reject(err));
+    stream.on('error', err => reject(err));
   });
 }
 

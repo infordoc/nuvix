@@ -94,7 +94,7 @@ export class ProjectService {
         }
       });
 
-      Object.values(services).forEach((value) => {
+      Object.values(services).forEach(value => {
         if (value.optional) {
           defaultServices[value.key] = true;
         }
@@ -201,7 +201,7 @@ export class ProjectService {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -895,7 +895,7 @@ export class ProjectService {
     }
 
     const apisObj = {};
-    Object.keys(apis).forEach((api) => {
+    Object.keys(apis).forEach(api => {
       apisObj[api] = status;
     });
 
@@ -1138,7 +1138,7 @@ export class ProjectService {
     }
 
     const uniqueNumbers: { [key: string]: string } = {};
-    input.numbers.forEach((number) => {
+    input.numbers.forEach(number => {
       if (uniqueNumbers[number.phone]) {
         throw new Exception(
           Exception.GENERAL_BAD_REQUEST,
@@ -1238,7 +1238,7 @@ export class ProjectService {
 function loadAuthConfig(authMethods: Record<string, AuthMethod>) {
   const authConfig = { ...defaultAuthConfig };
 
-  Object.values(authMethods).forEach((method) => {
+  Object.values(authMethods).forEach(method => {
     if (method.enabled) {
       authConfig[method.key] = true;
     }

@@ -144,7 +144,7 @@ export class ApiHook implements Hook {
           }
 
           const sdksList = platforms[APP_PLATFORM_SERVER].sdks.map(
-            (sdk) => sdk.name,
+            sdk => sdk.name,
           );
 
           const sdk = params.get('x-sdk-name') || 'UNKNOWN';

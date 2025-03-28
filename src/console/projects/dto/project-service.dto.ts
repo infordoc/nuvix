@@ -3,7 +3,7 @@ import { IsBoolean, IsIn } from 'class-validator';
 import { services } from 'src/core/config/services';
 
 export class UpdateProjectServiceDTO {
-  @IsIn(Object.values(services).map((value) => value.optional && value.key))
+  @IsIn(Object.values(services).map(value => value.optional && value.key))
   service: string;
 
   @IsBoolean()

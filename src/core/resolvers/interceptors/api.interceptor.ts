@@ -85,7 +85,7 @@ export class ApiInterceptor implements NestInterceptor {
 
     if (scope) {
       const requiredScopes = Array.isArray(scope) ? scope : [scope];
-      const missingScopes = requiredScopes.filter((s) => !scopes.includes(s));
+      const missingScopes = requiredScopes.filter(s => !scopes.includes(s));
 
       if (missingScopes.length > 0) {
         if (project.isEmpty()) {

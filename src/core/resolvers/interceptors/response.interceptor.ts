@@ -97,7 +97,7 @@ export class ResponseInterceptor implements NestInterceptor {
     }
 
     return Array.isArray(response)
-      ? response.map((item) => {
+      ? response.map(item => {
           if (item instanceof Document) {
             item = item.toObject();
           }
@@ -120,7 +120,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
       for (const key of keys) {
         if (Array.isArray(response[key])) {
-          serializedResponse[key] = response[key].map((item) => {
+          serializedResponse[key] = response[key].map(item => {
             if (item instanceof Document) {
               item = item.toObject();
             }
@@ -146,7 +146,7 @@ export class ResponseInterceptor implements NestInterceptor {
 
     for (const key in response) {
       if (Array.isArray(response[key])) {
-        serializedResponse[key] = response[key].map((item) => {
+        serializedResponse[key] = response[key].map(item => {
           if (item instanceof Document) {
             item = item.toObject();
           }

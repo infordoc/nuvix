@@ -160,7 +160,7 @@ export class DatabaseService {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -274,7 +274,7 @@ export class DatabaseService {
     const resource = `database/${databaseId}`;
     const logs = []; //await audit.getLogsByResource(resource, limit, offset);
 
-    const output = logs.map((log) => {
+    const output = logs.map(log => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
       // detector.skipBotDetection();
 
@@ -390,7 +390,7 @@ export class DatabaseService {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -491,7 +491,7 @@ export class DatabaseService {
     const resource = `database/${databaseId}/collection/${collectionId}`;
     const logs = []; //await audit.getLogsByResource(resource, limit, offset);
 
-    const output = logs.map((log) => {
+    const output = logs.map(log => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
       // detector.skipBotDetection();
 
@@ -658,7 +658,7 @@ export class DatabaseService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -741,7 +741,7 @@ export class DatabaseService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -847,21 +847,21 @@ export class DatabaseService {
     }
 
     const select = queries.some(
-      (query) => query.getMethod() === Query.TYPE_SELECT,
+      query => query.getMethod() === Query.TYPE_SELECT,
     );
 
     // Check if the SELECT query includes $databaseId and $collectionId
     const hasDatabaseId =
       select &&
       queries.some(
-        (query) =>
+        query =>
           query.getMethod() === Query.TYPE_SELECT &&
           query.getValues().includes('$databaseId'),
       );
     const hasCollectionId =
       select &&
       queries.some(
-        (query) =>
+        query =>
           query.getMethod() === Query.TYPE_SELECT &&
           query.getValues().includes('$collectionId'),
       );
@@ -2416,7 +2416,7 @@ export class DatabaseService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -2893,7 +2893,7 @@ export class DatabaseService {
     const resource = `database/${databaseId}/collection/${collectionId}/document/${document.getId()}`;
     const logs = []; //await audit.getLogsByResource(resource, limit, offset);
 
-    const output = logs.map((log) => {
+    const output = logs.map(log => {
       const detector = new Detector(log.userAgent || 'UNKNOWN');
       // detector.skipBotDetection();
 

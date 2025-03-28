@@ -97,10 +97,10 @@ export const filters = {
         Query.limit(database.getLimitForAttributes()),
       ]);
 
-      attributes.forEach((attribute) => {
+      attributes.forEach(attribute => {
         if (attribute.getAttribute('type') === Database.VAR_RELATIONSHIP) {
           const options = attribute.getAttribute('options');
-          Object.keys(options).forEach((key) => {
+          Object.keys(options).forEach(key => {
             attribute.setAttribute(key, options[key]);
           });
           attribute.removeAttribute('options');

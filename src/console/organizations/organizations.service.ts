@@ -36,7 +36,7 @@ export class OrganizationsService {
     }
 
     // Get cursor document if there was a cursor query
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -92,7 +92,7 @@ export class OrganizationsService {
           search: [teamId, input.name].join(' '),
         }),
       )
-      .catch((error) => {
+      .catch(error => {
         if (error instanceof DuplicateException) {
           throw new Exception(Exception.TEAM_ALREADY_EXISTS);
         }
@@ -393,7 +393,7 @@ export class OrganizationsService {
     queries.push(Query.equal('teamInternalId', [team.getInternalId()]));
 
     // Get cursor document if there was a cursor query
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -421,8 +421,8 @@ export class OrganizationsService {
     const total = await this.db.count('memberships', filterQueries);
 
     const validMemberships = memberships
-      .filter((membership) => membership.getAttribute('userId'))
-      .map(async (membership) => {
+      .filter(membership => membership.getAttribute('userId'))
+      .map(async membership => {
         const user = await this.db.getDocument(
           'users',
           membership.getAttribute('userId'),

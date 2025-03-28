@@ -62,7 +62,7 @@ export class UsersService {
     }
 
     // Find cursor query if it exists
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -741,7 +741,7 @@ export class UsersService {
     queries.push(Query.equal('userId', [userId]));
 
     // Find cursor query if it exists
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),
@@ -1151,7 +1151,7 @@ export class UsersService {
     }
 
     // Find cursor query if it exists
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),

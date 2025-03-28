@@ -816,7 +816,7 @@ export class AccountService {
   async getIdentities(user: Document, queries: Query[]) {
     queries.push(Query.equal('userInternalId', [user.getInternalId()]));
 
-    const cursor = queries.find((query) =>
+    const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
         query.getMethod(),
       ),

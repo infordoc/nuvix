@@ -28,14 +28,14 @@ import { Telemetry } from '@nuvix/telemetry';
 import { ProjectUsageService } from './project-usage.service';
 import { Adapter } from '@nuvix/database/dist/adapter/base';
 
-Object.keys(filters).forEach((key) => {
+Object.keys(filters).forEach(key => {
   Database.addFilter(key, {
     encode: filters[key].serialize,
     decode: filters[key].deserialize,
   });
 });
 
-Object.keys(formats).forEach((key) => {
+Object.keys(formats).forEach(key => {
   Structure.addFormat(key, formats[key].create, formats[key].type);
 });
 

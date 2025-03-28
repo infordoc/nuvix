@@ -83,12 +83,10 @@ export const SERVER_CONFIG: ServerConfig = {
   methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
   allowedOrigins: (process.env.CORS_ORIGIN ?? '')
     .split(',')
-    .map((origin) => origin.trim()),
+    .map(origin => origin.trim()),
   allowedHeaders: [
     ...allowedHeaders,
-    ...(process.env.CORS_HEADERS ?? '')
-      .split(',')
-      .map((header) => header.trim()),
+    ...(process.env.CORS_HEADERS ?? '').split(',').map(header => header.trim()),
   ],
   credentials: true,
   exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
