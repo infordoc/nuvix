@@ -81,7 +81,7 @@ export class AvatarsService {
       const buffer = canvas.toBuffer('image/png');
 
       // Process Image with Sharp (for better output)
-      let processedImage = await sharp(buffer)
+      const processedImage = await sharp(buffer)
         .resize(width, height)
         .png()
         .toBuffer();

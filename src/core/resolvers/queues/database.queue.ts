@@ -252,7 +252,7 @@ export class DatabaseQueue extends Queue {
   private async deleteAttribute(data: any, token: any): Promise<void> {
     const database = new Document(data.database);
     const collection = new Document(data.collection);
-    let attribute = new Document(data.attribute);
+    const attribute = new Document(data.attribute);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
     const dbForProject = await this.getProjectDb(project.getInternalId());
@@ -457,7 +457,7 @@ export class DatabaseQueue extends Queue {
   private async createIndex(data: any, token: any): Promise<void> {
     const database = new Document(data.database);
     const collection = new Document(data.collection);
-    let index = new Document(data.index);
+    const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
     const dbForProject = await this.getProjectDb(project.getInternalId());
@@ -532,7 +532,7 @@ export class DatabaseQueue extends Queue {
   private async deleteIndex(data: any, token: any): Promise<void> {
     const database = new Document(data.database);
     const collection = new Document(data.collection);
-    let index = new Document(data.index);
+    const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
     const dbForProject = await this.getProjectDb(project.getInternalId());
@@ -632,7 +632,7 @@ export class DatabaseQueue extends Queue {
   private async deleteCollection(data: any, token: any): Promise<void> {
     const database = new Document(data.database);
     const project = new Document(data.project);
-    let collection = new Document(data.collection);
+    const collection = new Document(data.collection);
     const dbForProject = await this.getProjectDb(project.getInternalId());
 
     if (collection.isEmpty()) {

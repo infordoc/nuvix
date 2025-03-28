@@ -37,7 +37,7 @@ export class UsageQueue extends Queue {
 }
 
 export interface UsageQueueOptions {
-  project: Object;
+  project: object;
   value: number;
   timestamp: number;
   region: string;
