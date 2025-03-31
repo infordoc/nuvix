@@ -71,7 +71,6 @@ config();
       global: true,
     }),
     CoreModule,
-    // HookModule,
     BaseModule,
     ConsoleModule,
     UsersModule,

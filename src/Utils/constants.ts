@@ -41,6 +41,7 @@ export const POOLS = 'pools';
 export const DB_FOR_CONSOLE = 'dbForConsole';
 export const DB_FOR_PROJECT = 'dbForProject';
 export const GET_PROJECT_DB = 'getProjectDb';
+export const PROJECT_DB = Symbol('project-db');
 export const GEO_DB = 'geoDb';
 export const CACHE_DB = 'cacheDb';
 export const CACHE = 'cache';

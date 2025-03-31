@@ -27,6 +27,7 @@ import {
   PoolManager,
   PostgreDB,
   PoolOptions,
+  Pool,
 } from '@nuvix/database';
 import { filters, formats } from './resolvers/db.resolver';
 import { CountryResponse, Reader } from 'maxmind';
@@ -34,7 +35,7 @@ import { Cache, Redis } from '@nuvix/cache';
 import { Telemetry } from '@nuvix/telemetry';
 import { ProjectUsageService } from './project-usage.service';
 import { Adapter } from '@nuvix/database/dist/adapter/base';
-import { Pool } from 'pg';
+import { Pool as PgPool } from 'pg';
 
 Object.keys(filters).forEach(key => {
   Database.addFilter(key, {
@@ -47,21 +48,26 @@ Object.keys(formats).forEach(key => {
   Structure.addFormat(key, formats[key].create, formats[key].type);
 });
 
+export type PoolStoreFn<T = PgPool> = (
+  name: string,
+  options: Omit<PoolOptions, 'name'> & { database: string },
+) => Promise<Pool<T>>;
+
 @Global()
 @Module({
   providers: [
     {
       provide: POOLS,
-      useFactory: async () => {
+      useFactory: (): PoolStoreFn<PgPool> => {
         const poolManager = PoolManager.getInstance();
         return async (
           name: string,
           options: PoolOptions & { database: string },
         ) => {
-          const pool = await poolManager.getPool(
+          const pool = await poolManager.getPool<PgPool>(
             name,
             (async _options => {
-              return new Pool({
+              return new PgPool({
                 host: process.env.APP_POSTGRES_HOST || 'localhost',
                 port: parseInt(process.env.APP_POSTGRES_PORT || '5432'),
                 database: options.database,
@@ -151,25 +157,15 @@ Object.keys(formats).forEach(key => {
     },
     {
       provide: GET_PROJECT_DB,
-      // scope: Scope.REQUEST,
       useFactory: async (cache: Cache) => {
-        return async (projectId: string) => {
-          // const adapter = new MariaDB({
-          //   connection: {
-          //     host: process.env.DATABASE_HOST || 'localhost',
-          //     user: process.env.DATABASE_USER,
-          //     password: process.env.DATABASE_PASSWORD,
-          //     database: process.env.DATABASE_NAME2,
-          //     port: 3306,
-          //   },
-          //   maxVarCharLimit: 5000,
-          // });
-          // await adapter.init();
-          // const connection = new Database(adapter, cache);
-          // connection.setSharedTables(true);
-          // connection.setPrefix(`_${projectId}`);
-          // connection.setTenant(Number(projectId));
-          // return connection;
+        return async (pool: PgPool, projectId: string) => {
+          const adapter = new PostgreDB({
+            connection: pool,
+          });
+          adapter.init();
+          const connection = new Database(adapter, cache);
+          connection.setPrefix(projectId);
+          return connection;
         };
       },
       inject: [CACHE],
