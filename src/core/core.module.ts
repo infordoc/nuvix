@@ -193,6 +193,7 @@ export type PoolStoreFn<T = PgPool> = (
     ProjectUsageService,
   ],
   exports: [
+    POOLS,
     DB_FOR_CONSOLE,
     DB_FOR_PROJECT,
     GET_PROJECT_DB,

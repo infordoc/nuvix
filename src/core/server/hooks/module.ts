@@ -261,11 +261,9 @@ export class HooksModule<
     }
 
     const isStatic = wrapper.isDependencyTreeStatic();
-    console.log(`isStatic: ${isStatic}`); // $LOG
     if (isStatic) {
       for (const method of hasAnyHookMethod) {
         const proxy = await this.createProxy(instance, method);
-        console.log(`proxy: ${proxy}`); // $LOG
         this.registerHandler(applicationRef, routeInfo, method, proxy);
       }
       return;
@@ -353,7 +351,6 @@ export class HooksModule<
     paths.some(path => path.match(/^\/?$/))
       ? pathsToApplyMiddleware.push('/')
       : pathsToApplyMiddleware.push(...paths);
-    console.log(pathsToApplyMiddleware);
     pathsToApplyMiddleware.forEach(path =>
       (router as any)(path, middlewareFunction, hookName),
     );

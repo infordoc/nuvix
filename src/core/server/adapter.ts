@@ -36,7 +36,6 @@ export class NuvixAdapter extends FastifyAdapter {
         re = hasEndOfStringCharacter
           ? new RegExp(re.source + '$', re.flags)
           : re;
-        console.log(re);
         // Store the hook instead of immediately applying it
         this.hooks.push({
           path: normalizedPath,
