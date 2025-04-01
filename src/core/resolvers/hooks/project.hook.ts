@@ -9,6 +9,7 @@ import {
   POOLS,
   PROJECT,
   PROJECT_DB,
+  PROJECT_POOL,
 } from 'src/Utils/constants';
 import { Hook } from '../../server/hooks/interface';
 import { GetProjectDbFn, PoolStoreFn } from 'src/core/core.module';
@@ -46,6 +47,7 @@ export class ProjectHook implements Hook {
         const pool = await this.getPool(project.getId(), {
           database: databaseName,
         });
+        req[PROJECT_POOL] = pool;
         req[PROJECT_DB] = this.getProjectDb(pool, project.getId());
         const authDB = this.getProjectDb(pool, project.getId());
         authDB.setDatabase('auth');

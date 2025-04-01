@@ -1,6 +1,12 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Database, Document } from '@nuvix/database';
-import { AUTH_SCHEMA_DB, FUNCTIONS_SCHEMA_DB, MESSAGING_SCHEMA_DB, PROJECT, STORAGE_SCHEMA_DB } from 'src/Utils/constants';
+import {
+  AUTH_SCHEMA_DB,
+  FUNCTIONS_SCHEMA_DB,
+  MESSAGING_SCHEMA_DB,
+  PROJECT,
+  STORAGE_SCHEMA_DB,
+} from 'src/Utils/constants';
 
 export const Project = createParamDecorator<Document>(
   (data: unknown, ctx: ExecutionContext) => {
@@ -49,4 +55,4 @@ export const MessagingDatabase = createParamDecorator<any, Database>(
 
     return database;
   },
-);    
+);

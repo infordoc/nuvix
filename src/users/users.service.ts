@@ -14,12 +14,7 @@ import {
   UpdateUserPoneVerificationDTO,
   UpdateUserStatusDTO,
 } from './dto/user.dto';
-import {
-  APP_LIMIT_COUNT,
-  DB_FOR_PROJECT,
-  GEO_DB,
-  PROJECT,
-} from 'src/Utils/constants';
+import { APP_LIMIT_COUNT, GEO_DB } from 'src/Utils/constants';
 import { Auth } from 'src/core/helper/auth.helper';
 import { CreateTargetDTO, UpdateTargetDTO } from './dto/target.dto';
 import { EmailValidator } from 'src/core/validators/email.validator';
