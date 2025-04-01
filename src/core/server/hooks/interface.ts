@@ -6,6 +6,7 @@ export type Hooks = LifecycleHook;
 export type AsyncHook<T = void> = (
   req: FastifyRequest,
   reply: FastifyReply,
+  next: (err?: Error) => void,
   ...args: T[]
 ) => Promise<void>;
 

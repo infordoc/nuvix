@@ -58,30 +58,6 @@ export class CorsHook implements Hook {
     }
   }
 
-  async onError(req: FastifyRequest, reply: FastifyReply): Promise<void> {
-    try {
-      const hostname = req.hostname;
-      const project: Document = req[PROJECT];
-      const isConsoleRequest =
-        project.getId() === 'console' || hostname === SERVER_CONFIG.host;
-
-      const origin = req.headers.origin;
-      this.logger.log(`Origin: ${origin}`);
-      const validOrigin = this.determineOrigin(origin, isConsoleRequest);
-      const options = { ...this.defaultOptions, origin: validOrigin };
-
-      this.addCorsHeaders(reply, origin, options);
-      this.handleVaryHeaders(reply, options);
-
-      if (req.method.toUpperCase() === 'OPTIONS' && options.preflight) {
-        this.handlePreflight(req, reply, options);
-      }
-    } catch (error) {
-      this.logger.error(`CORS setup failed: ${error.message}`);
-      reply.status(500).send('Internal Server Error');
-    }
-  }
-
   private determineOrigin(origin: string, isConsole: boolean): string | false {
     if (isConsole) {
       return SERVER_CONFIG.allowedOrigins.includes(origin) ? origin : 'null';

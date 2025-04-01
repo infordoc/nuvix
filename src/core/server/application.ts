@@ -7,11 +7,19 @@ import {
 } from '@nestjs/core';
 import { HooksModule } from './hooks/module';
 import { HooksContainer } from './hooks/container';
+import { optionalRequire } from '@nestjs/core/helpers/optional-require';
+
+const { MicroservicesModule } = optionalRequire(
+  '@nestjs/microservices/microservices-module',
+  () => require('@nestjs/microservices/microservices-module'),
+);
 
 // @ts-ignore
 export class NuvixApplication extends NestApplication {
   private readonly hooksModule: HooksModule;
   private readonly middlewareContainer = new HooksContainer(this.container);
+  private override readonly microservicesModule =
+    MicroservicesModule && new MicroservicesModule();
 
   constructor(
     container: NestContainer,
@@ -25,8 +33,18 @@ export class NuvixApplication extends NestApplication {
     this.hooksModule = new HooksModule();
   }
 
-  public async registerModules(): Promise<void> {
-    await super.registerModules();
+  public override async registerModules(): Promise<void> {
+    this.registerWsModule();
+
+    if (this.microservicesModule) {
+      this.microservicesModule.register(
+        this.container,
+        this.graphInspector,
+        this.config,
+        this.appOptions,
+      );
+      this.microservicesModule.setupClients(this.container);
+    }
 
     await this.hooksModule.register(
       this.middlewareContainer,

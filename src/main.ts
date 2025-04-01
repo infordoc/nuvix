@@ -11,7 +11,11 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { config } from 'dotenv';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
-import { APP_DEBUG_COLORS, APP_DEBUG_FORMAT } from './Utils/constants';
+import {
+  APP_DEBUG_COLORS,
+  APP_DEBUG_FORMAT,
+  APP_VERSION_STABLE,
+} from './Utils/constants';
 import { Authorization, Role, storage } from '@nuvix/database';
 import { ErrorFilter } from './core/filters/globle-error.filter';
 import cookieParser from '@fastify/cookie';
@@ -26,7 +30,7 @@ async function bootstrap() {
     new NuvixAdapter({
       trustProxy: true,
       skipMiddie: true,
-      logger: false,
+      logger: true,
     }),
     {
       abortOnError: false,
@@ -35,9 +39,11 @@ async function bootstrap() {
         colors: APP_DEBUG_COLORS,
         prefix: 'Nuvix',
       }),
+      autoFlushLogs: true,
     },
   );
 
+  app.enableShutdownHooks();
   app.enableVersioning();
   app.register(cookieParser as any);
   app.register(fastifyMultipart as any);
@@ -81,6 +87,17 @@ async function bootstrap() {
       Authorization.setRole(Role.any().toString());
       done();
     }
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    await app.close();
+    process.exit(0);
+  });
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    await app.close();
+    process.exit(0);
   });
 
   app.useGlobalFilters(new HttpExceptionFilter(), new ErrorFilter());

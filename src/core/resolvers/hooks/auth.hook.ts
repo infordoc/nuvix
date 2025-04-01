@@ -8,8 +8,8 @@ import {
   APP_MODE_ADMIN,
   APP_MODE_DEFAULT,
   DB_FOR_CONSOLE,
-  DB_FOR_PROJECT,
   PROJECT,
+  PROJECT_DB,
   USER,
 } from 'src/Utils/constants';
 import { Hook } from '../../server/hooks/interface';
@@ -18,15 +18,16 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 @Injectable()
 export class AuthHook implements Hook {
   private readonly logger = new Logger(AuthHook.name);
+  private projectDb: Database;
   constructor(
     @Inject(DB_FOR_CONSOLE) readonly db: Database,
-    @Inject(DB_FOR_PROJECT) readonly projectDb: Database,
     private readonly jwtService: JwtService,
   ) {}
 
   async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
+    this.projectDb = req[PROJECT_DB];
     const mode =
       params.getFromHeaders('x-nuvix-mode') ||
       params.getFromQuery('mode', APP_MODE_DEFAULT);

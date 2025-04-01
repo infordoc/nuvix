@@ -129,29 +129,29 @@ export class ApiInterceptor implements NestInterceptor {
     }
 
     request[USER] = user;
-    this.dbForProject
-      .on(
-        Database.EVENT_DOCUMENT_CREATE,
-        'calculate-usage',
-        async (event, document) =>
-          await this.projectUsage.databaseListener({
-            event,
-            document,
-            project,
-            dbForProject: this.dbForProject,
-          }),
-      )
-      .on(
-        Database.EVENT_DOCUMENT_DELETE,
-        'calculate-usage',
-        async (event, document) =>
-          await this.projectUsage.databaseListener({
-            event,
-            document,
-            project,
-            dbForProject: this.dbForProject,
-          }),
-      );
+    // this.dbForProject
+    //   .on(
+    //     Database.EVENT_DOCUMENT_CREATE,
+    //     'calculate-usage',
+    //     async (event, document) =>
+    //       await this.projectUsage.databaseListener({
+    //         event,
+    //         document,
+    //         project,
+    //         dbForProject: this.dbForProject,
+    //       }),
+    //   )
+    //   .on(
+    //     Database.EVENT_DOCUMENT_DELETE,
+    //     'calculate-usage',
+    //     async (event, document) =>
+    //       await this.projectUsage.databaseListener({
+    //         event,
+    //         document,
+    //         project,
+    //         dbForProject: this.dbForProject,
+    //       }),
+    //   );
 
     return next.handle();
   }

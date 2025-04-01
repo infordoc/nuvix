@@ -252,11 +252,11 @@ export class HooksModule<
     collection: Map<InjectionToken, InstanceWrapper>,
   ) {
     const { instance, metatype } = wrapper;
-    const hasAnyHookMethod = HookMethods.filter(
-      method => !isUndefined(instance?.[method]),
+    const hasAnyHookMethod = new Set(
+      HookMethods.filter(method => !isUndefined(instance?.[method])),
     );
 
-    if (!hasAnyHookMethod.length) {
+    if (!hasAnyHookMethod.size) {
       throw new InvalidHookException(metatype!.name);
     }
 
@@ -275,7 +275,11 @@ export class HooksModule<
         applicationRef,
         routeInfo,
         method,
-        async <TRequest, TResponse>(req: TRequest, res: TResponse) => {
+        async <TRequest, TResponse>(
+          req: TRequest,
+          res: TResponse,
+          next: VoidFunction,
+        ) => {
           try {
             const contextId = this.getContextId(req, isTreeDurable);
             const contextInstance = await this.injector.loadPerContext(
@@ -289,7 +293,7 @@ export class HooksModule<
               method,
               contextId,
             );
-            return proxy(req, res);
+            return proxy(req, res, next);
           } catch (err) {
             let exceptionsHandler = this.exceptionFiltersCache.get(
               instance[method],
@@ -317,7 +321,9 @@ export class HooksModule<
     instance: Hook,
     method: string,
     contextId = STATIC_CONTEXT,
-  ): Promise<(req: TRequest, res: TResponse) => Promise<void>> {
+  ): Promise<
+    (req: TRequest, res: TResponse, next: VoidFunction) => Promise<void>
+  > {
     const exceptionsHandler = this.routerExceptionFilter.create(
       instance,
       instance[method],
@@ -332,7 +338,11 @@ export class HooksModule<
     applicationRef: HttpServer,
     routeInfo: RouteInfo,
     hookName: string,
-    proxy: <TRequest, TResponse>(req: TRequest, res: TResponse) => void,
+    proxy: <TRequest, TResponse>(
+      req: TRequest,
+      res: TResponse,
+      next: VoidFunction,
+    ) => void,
   ): Promise<void> {
     const { method } = routeInfo;
     const paths = this.routeInfoPathExtractor.extractPathsFrom(routeInfo);
@@ -341,9 +351,13 @@ export class HooksModule<
     const router = await applicationRef.createMiddlewareFactory(method);
     const middlewareFunction = isMethodAll
       ? proxy
-      : async <TRequest, TResponse>(req: TRequest, res: TResponse) => {
+      : async <TRequest, TResponse>(
+          req: TRequest,
+          res: TResponse,
+          next: VoidFunction,
+        ) => {
           if (applicationRef.getRequestMethod?.(req) === requestMethod) {
-            return proxy(req, res);
+            return await proxy(req, res, next);
           }
           return Promise.resolve();
         };

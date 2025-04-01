@@ -31,13 +31,14 @@ export class HooksContainer {
     return this.configurationSets;
   }
 
+  private a = 0;
+
   public insertConfig(
     configList: MiddlewareConfiguration[],
     moduleKey: string,
   ) {
     const middleware = this.getMiddlewareCollection(moduleKey);
     const targetConfig = this.getTargetConfig(moduleKey)!;
-
     const configurations = configList || [];
     const insertMiddleware = <T extends Type<unknown>>(metatype: T) => {
       const token = metatype;
@@ -56,6 +57,7 @@ export class HooksContainer {
       [].concat(config.middleware).map(insertMiddleware);
       targetConfig.add(config);
     });
+    this.a++;
   }
 
   private getTargetConfig(moduleName: string) {
