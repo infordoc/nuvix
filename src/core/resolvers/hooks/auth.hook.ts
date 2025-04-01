@@ -7,9 +7,9 @@ import ParamsHelper from 'src/core/helper/params.helper';
 import {
   APP_MODE_ADMIN,
   APP_MODE_DEFAULT,
+  AUTH_SCHEMA_DB,
   DB_FOR_CONSOLE,
   PROJECT,
-  PROJECT_DB,
   USER,
 } from 'src/Utils/constants';
 import { Hook } from '../../server/hooks/interface';
@@ -27,7 +27,7 @@ export class AuthHook implements Hook {
   async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
-    this.projectDb = req[PROJECT_DB];
+    this.projectDb = req[AUTH_SCHEMA_DB];
     const mode =
       params.getFromHeaders('x-nuvix-mode') ||
       params.getFromQuery('mode', APP_MODE_DEFAULT);

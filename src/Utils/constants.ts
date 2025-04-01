@@ -53,6 +53,11 @@ export const API_KEY = 'apiKey';
 export const SCOPES = 'scopes';
 export const HOOKS = 'hooks';
 
+export const AUTH_SCHEMA_DB = 'authSchemaDb';
+export const STORAGE_SCHEMA_DB = 'storageSchemaDb';
+export const FUNCTIONS_SCHEMA_DB = 'functionsSchemaDb';
+export const MESSAGING_SCHEMA_DB = 'messagingSchemaDb';
+
 const allowedHeaders = [
   'Content-Type',
   'Content-Length',

@@ -3,6 +3,7 @@ import { Authorization, Database, Document } from '@nuvix/database';
 import ParamsHelper from 'src/core/helper/params.helper';
 import { FastifyRequest, FastifyReply } from 'fastify';
 import {
+  AUTH_SCHEMA_DB,
   DB_FOR_CONSOLE,
   GET_PROJECT_DB,
   POOLS,
@@ -10,7 +11,7 @@ import {
   PROJECT_DB,
 } from 'src/Utils/constants';
 import { Hook } from '../../server/hooks/interface';
-import { PoolStoreFn } from 'src/core/core.module';
+import { GetProjectDbFn, PoolStoreFn } from 'src/core/core.module';
 import { Exception } from 'src/core/extend/exception';
 
 @Injectable()
@@ -20,7 +21,7 @@ export class ProjectHook implements Hook {
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(POOLS) private readonly getPool: PoolStoreFn,
     @Inject(GET_PROJECT_DB)
-    private readonly getProjectDb: (pool: any, id: any) => Promise<Database>,
+    private readonly getProjectDb: GetProjectDbFn,
   ) {}
 
   async onRequest(req: FastifyRequest, reply: FastifyReply) {
@@ -45,10 +46,10 @@ export class ProjectHook implements Hook {
         const pool = await this.getPool(project.getId(), {
           database: databaseName,
         });
-        req[PROJECT_DB] = await this.getProjectDb(
-          pool,
-          project.getInternalId(),
-        );
+        req[PROJECT_DB] = this.getProjectDb(pool, project.getId());
+        const authDB = this.getProjectDb(pool, project.getId());
+        authDB.setDatabase('auth');
+        req[AUTH_SCHEMA_DB] = authDB;
       } catch (e) {
         this.logger.error('Something wen wrong while connecting database.', e);
         throw new Exception(Exception.GENERAL_SERVER_ERROR);
