@@ -3,13 +3,16 @@ import { Document } from '@nuvix/database';
 import { GetProjectDbFn } from 'src/core/core.module';
 import {
   FUNCTIONS_SCHEMA_DB,
+  GET_PROJECT_DB,
   PROJECT,
   PROJECT_POOL,
 } from 'src/Utils/constants';
 
 @Injectable()
 export class FunctionsInterceptor implements NestInterceptor {
-  constructor(@Inject() private readonly getProjectDB: GetProjectDbFn) {}
+  constructor(
+    @Inject(GET_PROJECT_DB) private readonly getProjectDB: GetProjectDbFn,
+  ) {}
 
   intercept(context: any, next: any) {
     const request = context.switchToHttp().getRequest();

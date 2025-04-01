@@ -1,13 +1,26 @@
-import { Inject, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  Inject,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Document } from '@nuvix/database';
 import { GetProjectDbFn } from 'src/core/core.module';
-import { PROJECT, PROJECT_POOL, STORAGE_SCHEMA_DB } from 'src/Utils/constants';
+import {
+  GET_PROJECT_DB,
+  PROJECT,
+  PROJECT_POOL,
+  STORAGE_SCHEMA_DB,
+} from 'src/Utils/constants';
 
 @Injectable()
 export class StorageInterceptor implements NestInterceptor {
-  constructor(@Inject() private readonly getProjectDB: GetProjectDbFn) {}
+  constructor(
+    @Inject(GET_PROJECT_DB) private readonly getProjectDB: GetProjectDbFn,
+  ) {}
 
-  intercept(context: any, next: any) {
+  intercept(context: ExecutionContext, next: CallHandler) {
     const request = context.switchToHttp().getRequest();
     const project = request[PROJECT] as Document;
     const pool = request[PROJECT_POOL];

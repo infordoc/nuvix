@@ -22,7 +22,6 @@ import {
   APP_SYSTEM_EMAIL_ADDRESS,
   APP_SYSTEM_EMAIL_NAME,
   CONSOLE_CONFIG,
-  DB_FOR_PROJECT,
   EVENT_SESSION_CREATE,
   EVENT_SESSION_DELETE,
   EVENT_SESSION_UPDATE,
@@ -45,7 +44,6 @@ import { MailQueueOptions } from 'src/core/resolvers/queues/mail.queue';
 @Injectable()
 export class AccountService {
   constructor(
-    @Inject(DB_FOR_PROJECT) private readonly db: Database,
     @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
     @InjectQueue('mails') private readonly mailQueue: Queue<MailQueueOptions>,
     private eventEmitter: EventEmitter2,
@@ -55,6 +53,7 @@ export class AccountService {
    * Create a new account
    */
   async createAccount(
+    db: Database,
     userId: string,
     email: string,
     password: string,
@@ -69,14 +68,14 @@ export class AccountService {
     const limit = auths.limit ?? 0;
 
     if (limit !== 0) {
-      const total = await this.db.count('users', []);
+      const total = await db.count('users', []);
 
       if (total >= limit) {
         throw new Exception(Exception.USER_COUNT_EXCEEDED);
       }
     }
 
-    const identityWithMatchingEmail = await this.db.findOne('identities', [
+    const identityWithMatchingEmail = await db.findOne('identities', [
       Query.equal('providerEmail', [email]),
     ]);
 
@@ -136,13 +135,13 @@ export class AccountService {
       });
       user.removeAttribute('$internalId');
       user = await Authorization.skip(
-        async () => await this.db.createDocument('users', user),
+        async () => await db.createDocument('users', user),
       );
 
       try {
         const target = await Authorization.skip(
           async () =>
-            await this.db.createDocument(
+            await db.createDocument(
               'targets',
               new Document({
                 $permissions: [
@@ -163,7 +162,7 @@ export class AccountService {
         ]);
       } catch (error) {
         if (error instanceof DuplicateException) {
-          const existingTarget = await this.db.findOne('targets', [
+          const existingTarget = await db.findOne('targets', [
             Query.equal('identifier', [email]),
           ]);
           if (existingTarget) {
@@ -178,7 +177,7 @@ export class AccountService {
         }
       }
 
-      await this.db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId());
     } catch (error) {
       console.log(error);
       if (error instanceof DuplicateException) {
@@ -202,21 +201,25 @@ export class AccountService {
     return user;
   }
 
-  async updatePrefs(user: Document, prefs: { [key: string]: any }) {
+  async updatePrefs(
+    db: Database,
+    user: Document,
+    prefs: { [key: string]: any },
+  ) {
     user.setAttribute('prefs', prefs);
 
-    user = await this.db.updateDocument('users', user.getId(), user);
+    user = await db.updateDocument('users', user.getId(), user);
 
     return user.getAttribute('prefs', {});
   }
 
-  async deleteAccount(user: Document) {
+  async deleteAccount(db: Database, user: Document) {
     if (user.isEmpty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     await Authorization.skip(
-      async () => await this.db.deleteDocument('users', user.getId()),
+      async () => await db.deleteDocument('users', user.getId()),
     );
 
     await this.eventEmitter.emitAsync(EVENT_USER_DELETE, {
@@ -227,7 +230,7 @@ export class AccountService {
       },
     });
 
-    await this.db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId());
 
     return user;
   }
@@ -269,6 +272,7 @@ export class AccountService {
    * Delete User's Session
    */
   async deleteSessions(
+    db: Database,
     user: Document,
     locale: LocaleTranslator,
     request: FastifyRequest,
@@ -278,7 +282,7 @@ export class AccountService {
     const sessions = user.getAttribute('sessions', []);
 
     for (const session of sessions) {
-      await this.db.deleteDocument('sessions', session.getId());
+      await db.deleteDocument('sessions', session.getId());
 
       if (!CONSOLE_CONFIG.domainVerification) {
         response.header('X-Fallback-Cookies', JSON.stringify([]));
@@ -327,7 +331,7 @@ export class AccountService {
       }
     }
 
-    await this.db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId());
 
     await this.eventEmitter.emitAsync(EVENT_SESSIONS_DELETE, {
       userId: user.getId(),
@@ -388,6 +392,7 @@ export class AccountService {
    * Delete a Session
    */
   async deleteSession(
+    db: Database,
     user: Document,
     sessionId: string,
     request: FastifyRequest,
@@ -402,7 +407,7 @@ export class AccountService {
         continue;
       }
 
-      await this.db.deleteDocument('sessions', session.getId());
+      await db.deleteDocument('sessions', session.getId());
 
       session.setAttribute('current', false);
 
@@ -433,7 +438,7 @@ export class AccountService {
         response.header('X-Fallback-Cookies', JSON.stringify({}));
       }
 
-      await this.db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId());
 
       await this.eventEmitter.emitAsync(EVENT_SESSION_DELETE, {
         userId: user.getId(),
@@ -455,7 +460,12 @@ export class AccountService {
   /**
    * Update a Session
    */
-  async updateSession(user: Document, sessionId: string, project: Document) {
+  async updateSession(
+    db: Database,
+    user: Document,
+    sessionId: string,
+    project: Document,
+  ) {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
@@ -511,8 +521,8 @@ export class AccountService {
         );
     }
 
-    await this.db.updateDocument('sessions', sessionId, session);
-    await this.db.purgeCachedDocument('users', user.getId());
+    await db.updateDocument('sessions', sessionId, session);
+    await db.purgeCachedDocument('users', user.getId());
 
     await this.eventEmitter.emitAsync(EVENT_SESSION_UPDATE, {
       userId: user.getId(),
@@ -529,7 +539,7 @@ export class AccountService {
   /**
    * Update User's Email
    */
-  async updateEmail(user: Document, input: UpdateEmailDTO) {
+  async updateEmail(db: Database, user: Document, input: UpdateEmailDTO) {
     const passwordUpdate = user.getAttribute('passwordUpdate');
 
     if (
@@ -547,7 +557,7 @@ export class AccountService {
     const oldEmail = user.getAttribute('email');
     const email = input.email.toLowerCase();
 
-    const identityWithMatchingEmail = await this.db.findOne('identities', [
+    const identityWithMatchingEmail = await db.findOne('identities', [
       Query.equal('providerEmail', [email]),
       Query.notEqual('userInternalId', user.getInternalId()),
     ]);
@@ -573,7 +583,7 @@ export class AccountService {
 
     const target = await Authorization.skip(
       async () =>
-        await this.db.findOne('targets', [Query.equal('identifier', [email])]),
+        await db.findOne('targets', [Query.equal('identifier', [email])]),
     );
 
     if (target && !target.isEmpty()) {
@@ -581,20 +591,20 @@ export class AccountService {
     }
 
     try {
-      user = await this.db.updateDocument('users', user.getId(), user);
+      user = await db.updateDocument('users', user.getId(), user);
       const oldTarget = user.find<any>('identifier', oldEmail, 'targets');
 
       if (oldTarget && !oldTarget.isEmpty()) {
         await Authorization.skip(
           async () =>
-            await this.db.updateDocument(
+            await db.updateDocument(
               'targets',
               oldTarget.getId(),
               oldTarget.setAttribute('identifier', email),
             ),
         );
       }
-      await this.db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId());
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.GENERAL_BAD_REQUEST);
@@ -608,6 +618,7 @@ export class AccountService {
    * Create a new session for the user using Email & Password
    */
   async createEmailSession(
+    db: Database,
     user: Document,
     input: CreateEmailSessionDTO,
     request: FastifyRequest,
@@ -618,9 +629,7 @@ export class AccountService {
     const email = input.email.toLowerCase();
     const protocol = request.protocol;
 
-    const profile = await this.db.findOne('users', [
-      Query.equal('email', [email]),
-    ]);
+    const profile = await db.findOne('users', [Query.equal('email', [email])]);
 
     if (
       !profile ||
@@ -651,7 +660,7 @@ export class AccountService {
     const record = this.geodb.get(request.ip);
     const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
 
-    const session = new Document({
+    const session = new Document<any>({
       $id: ID.unique(),
       userId: user.getId(),
       userInternalId: user.getInternalId(),
@@ -682,12 +691,12 @@ export class AccountService {
         )
         .setAttribute('hash', Auth.DEFAULT_ALGO)
         .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
-      await this.db.updateDocument('users', user.getId(), user);
+      await db.updateDocument('users', user.getId(), user);
     }
 
-    await this.db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId());
 
-    const createdSession = await this.db.createDocument(
+    const createdSession = await db.createDocument(
       'sessions',
       session.setAttribute('$permissions', [
         Permission.read(Role.user(user.getId())),
@@ -753,7 +762,7 @@ export class AccountService {
     });
 
     if (project.getAttribute('auths', {}).sessionAlerts ?? false) {
-      const sessionCount = await this.db.count('sessions', [
+      const sessionCount = await db.count('sessions', [
         Query.equal('userId', [user.getId()]),
       ]);
 

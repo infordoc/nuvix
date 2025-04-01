@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { ProjectGuard } from 'src/core/resolvers/guards/project.guard';
-import { Document } from '@nuvix/database';
+import { Database, Document } from '@nuvix/database';
 import {
   CreateAccountDTO,
   UpdateEmailDTO,
@@ -22,7 +22,7 @@ import {
 import { Models } from 'src/core/helper/response.helper';
 import { Public } from 'src/core/resolvers/guards/auth.guard';
 import { ResponseInterceptor } from 'src/core/resolvers/interceptors/response.interceptor';
-import { Project } from 'src/core/decorators/project.decorator';
+import { AuthDatabase, Project } from 'src/core/decorators/project.decorator';
 import { User } from 'src/core/decorators/project-user.decorator';
 import { CreateEmailSessionDTO } from './DTO/session.dto';
 import { Locale } from 'src/core/decorators/locale.decorator';
@@ -40,11 +40,13 @@ export class AccountController {
   @Post()
   @ResModel(Models.USER)
   async createAccount(
+    @AuthDatabase() authDatabase: Database,
     @Body() input: CreateAccountDTO,
     @User() user: Document,
     @Project() project: Document,
   ) {
     return await this.accountService.createAccount(
+      authDatabase,
       input.userId,
       input.email,
       input.password,
@@ -68,23 +70,37 @@ export class AccountController {
 
   @Patch('prefs')
   @ResModel(Models.PREFERENCES)
-  async updatePrefs(@User() user: Document, @Body() input: UpdatePrefsDTO) {
-    return await this.accountService.updatePrefs(user, input.prefs);
+  async updatePrefs(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: UpdatePrefsDTO,
+  ) {
+    return await this.accountService.updatePrefs(
+      authDatabase,
+      user,
+      input.prefs,
+    );
   }
 
   @Patch('email')
   @ResModel(Models.USER)
   async updateEmail(
+    @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Body() updateEmailDto: UpdateEmailDTO,
   ) {
-    return await this.accountService.updateEmail(user, updateEmailDto);
+    return await this.accountService.updateEmail(
+      authDatabase,
+      user,
+      updateEmailDto,
+    );
   }
 
   @Public()
   @Post(['sessions/email', 'sessions'])
   @ResModel(Models.SESSION)
   async createEmailSession(
+    @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Body() input: CreateEmailSessionDTO,
     @Req() request: any,
@@ -93,6 +109,7 @@ export class AccountController {
     @Project() project: Document,
   ) {
     return await this.accountService.createEmailSession(
+      authDatabase,
       user,
       input,
       request,
@@ -114,12 +131,14 @@ export class AccountController {
   @Delete('sessions')
   @ResModel(Models.NONE)
   async deleteSessions(
+    @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Req() request: any,
     @Res({ passthrough: true }) response: any,
     @Locale() locale: LocaleTranslator,
   ) {
     return await this.accountService.deleteSessions(
+      authDatabase,
       user,
       locale,
       request,
@@ -140,6 +159,7 @@ export class AccountController {
   @Delete('sessions/:id')
   @ResModel(Models.NONE)
   async deleteSession(
+    @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Param('id') id: string,
     @Req() request: any,
@@ -147,6 +167,7 @@ export class AccountController {
     @Locale() locale: LocaleTranslator,
   ) {
     return await this.accountService.deleteSession(
+      authDatabase,
       user,
       id,
       request,
@@ -158,10 +179,16 @@ export class AccountController {
   @Patch('sessions/:id')
   @ResModel(Models.SESSION)
   async updateSession(
+    @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Param('id') id: string,
     @Project() project: Document,
   ) {
-    return await this.accountService.updateSession(user, id, project);
+    return await this.accountService.updateSession(
+      authDatabase,
+      user,
+      id,
+      project,
+    );
   }
 }
