@@ -69,10 +69,16 @@ export type GetProjectPG = (pool: PgPool, context?: Context) => DataSource;
               process.env.APP_POSTGRES_SSL === 'true'
                 ? { rejectUnauthorized: false }
                 : undefined,
-            max: 30,
-            idleTimeoutMillis: 30000,
-            connectionTimeoutMillis: 2000,
+            max: 15, // Maximum number of clients
+            idleTimeoutMillis: 30000, // 30 seconds
+            connectionTimeoutMillis: 5000, // 5 seconds
+            statement_timeout: 30000, // 30 seconds
+            query_timeout: 30000, // 30 seconds
             application_name: 'nuvix',
+            // Add these additional settings
+            keepAlive: true,
+            keepAliveInitialDelayMillis: 10000, // 10 seconds
+            allowExitOnIdle: false,
           });
           return pool;
         }) as any;

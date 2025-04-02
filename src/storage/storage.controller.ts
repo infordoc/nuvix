@@ -30,11 +30,10 @@ import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import { ApiInterceptor } from 'src/core/resolvers/interceptors/api.interceptor';
 import { ParseDuplicatePipe } from 'src/core/pipes/duplicate.pipe';
 import { MultipartFile } from '@fastify/multipart';
-import { StorageInterceptor } from 'src/core/resolvers/interceptors';
 
 @Controller({ version: ['1'], path: 'storage' })
 @UseGuards(ProjectGuard)
-@UseInterceptors(StorageInterceptor, ApiInterceptor, ResponseInterceptor)
+@UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 

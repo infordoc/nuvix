@@ -1,12 +1,8 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Inject,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Document } from '@nuvix/database';
+import { FastifyRequest } from 'fastify';
 import { GetProjectDbFn } from 'src/core/core.module';
+import { Hook } from 'src/core/server';
 import {
   GET_PROJECT_DB,
   PROJECT,
@@ -15,18 +11,17 @@ import {
 } from 'src/Utils/constants';
 
 @Injectable()
-export class StorageInterceptor implements NestInterceptor {
+export class StorageHook implements Hook {
   constructor(
     @Inject(GET_PROJECT_DB) private readonly getProjectDB: GetProjectDbFn,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler) {
-    const request = context.switchToHttp().getRequest();
+  async preHandler(request: FastifyRequest) {
     const project = request[PROJECT] as Document;
     const pool = request[PROJECT_POOL];
     const db = this.getProjectDB(pool, project.getId());
     db.setDatabase('storage');
     request[STORAGE_SCHEMA_DB] = db;
-    return next.handle();
+    return null;
   }
 }
