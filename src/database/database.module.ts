@@ -1,8 +1,9 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { DatabaseController } from './database.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { DatabaseQueue } from 'src/core/resolvers/queues/database.queue';
+import { DatabaseHook } from 'src/core/resolvers/hooks/database.hook';
 
 @Module({
   imports: [
@@ -13,4 +14,8 @@ import { DatabaseQueue } from 'src/core/resolvers/queues/database.queue';
   controllers: [DatabaseController],
   providers: [DatabaseService, DatabaseQueue],
 })
-export class DatabaseModule {}
+export class DatabaseModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(DatabaseHook).forRoutes(DatabaseController);
+  }
+}

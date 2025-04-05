@@ -1,7 +1,10 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Database, Document } from '@nuvix/database';
+import { DataSource } from '@nuvix/pg';
 import {
   AUTH_SCHEMA_DB,
+  CURRENT_SCHEMA_DB,
+  CURRENT_SCHEMA_PG,
   FUNCTIONS_SCHEMA_DB,
   MESSAGING_SCHEMA_DB,
   PROJECT,
@@ -57,6 +60,24 @@ export const MessagingDatabase = createParamDecorator<any, Database>(
     const project = request[PROJECT] as Document;
     const database = request[MESSAGING_SCHEMA_DB] as Database;
     database.setPrefix(project.getId());
+    return database;
+  },
+);
+
+export const CurrentDatabase = createParamDecorator<any, Database>(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request: Request = ctx.switchToHttp().getRequest();
+    const project = request[PROJECT] as Document;
+    const database = request[CURRENT_SCHEMA_DB] as Database;
+    database.setPrefix(project.getId());
+    return database;
+  },
+);
+
+export const CurrentSchema = createParamDecorator<any, DataSource | undefined>(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request: Request = ctx.switchToHttp().getRequest();
+    const database = request[CURRENT_SCHEMA_PG] as DataSource;
     return database;
   },
 );

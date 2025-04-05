@@ -38,16 +38,16 @@ export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
 export const POOLS = 'pools';
-export const DB_FOR_CONSOLE = 'dbForConsole';
+export const DB_FOR_CONSOLE = Symbol('dbForConsole');
 /**@deprecated use {PROJECT_DB} and upgrade to new setup*/
 export const DB_FOR_PROJECT = 'dbForProject';
-export const GET_PROJECT_DB = 'getProjectDb';
-export const GET_PROJECT_PG = 'getProjectPostgreDb';
+export const GET_PROJECT_DB = Symbol('getProjectDb');
+export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
 export const PROJECT_DB = Symbol('project-db');
 export const PROJECT_PG = Symbol('project-pg');
 export const PROJECT_POOL = Symbol('project-pool');
-export const GEO_DB = 'geoDb';
-export const CACHE_DB = 'cacheDb';
+export const GEO_DB = Symbol('geoDb');
+export const CACHE_DB = Symbol('cacheDb');
 export const CACHE = 'cache';
 export const IS_PUBLIC_KEY = 'isPublic';
 export const LOCALE = 'locale';
@@ -55,10 +55,12 @@ export const API_KEY = 'apiKey';
 export const SCOPES = 'scopes';
 export const HOOKS = 'hooks';
 
-export const AUTH_SCHEMA_DB = 'authSchemaDb';
-export const STORAGE_SCHEMA_DB = 'storageSchemaDb';
-export const FUNCTIONS_SCHEMA_DB = 'functionsSchemaDb';
-export const MESSAGING_SCHEMA_DB = 'messagingSchemaDb';
+export const AUTH_SCHEMA_DB = Symbol('authSchemaDb');
+export const STORAGE_SCHEMA_DB = Symbol('storageSchemaDb');
+export const FUNCTIONS_SCHEMA_DB = Symbol('functionsSchemaDb');
+export const MESSAGING_SCHEMA_DB = Symbol('messagingSchemaDb');
+export const CURRENT_SCHEMA_DB = Symbol('currentSchemaDb');
+export const CURRENT_SCHEMA_PG = Symbol('currentSchemaPg');
 
 const allowedHeaders = [
   'Content-Type',

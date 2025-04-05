@@ -7,13 +7,19 @@ import {
   CACHE,
   DB_FOR_CONSOLE,
   GET_PROJECT_DB,
+  GET_PROJECT_PG,
   POOLS,
   PROJECT,
   PROJECT_DB,
+  PROJECT_PG,
   PROJECT_POOL,
 } from 'src/Utils/constants';
 import { Hook } from '../../server/hooks/interface';
-import { GetProjectDbFn, PoolStoreFn } from 'src/core/core.module';
+import {
+  GetProjectDbFn,
+  GetProjectPG,
+  PoolStoreFn,
+} from 'src/core/core.module';
 import { Exception } from 'src/core/extend/exception';
 import { Cache } from '@nuvix/cache';
 
@@ -23,7 +29,7 @@ export class ProjectHook implements Hook {
   constructor(
     @Inject(DB_FOR_CONSOLE) private readonly db: Database,
     @Inject(POOLS) private readonly getPool: PoolStoreFn,
-    @Inject(CACHE) private readonly cache: Cache,
+    @Inject(GET_PROJECT_PG) private readonly gerProjectPg: GetProjectPG,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
   ) {}
@@ -52,6 +58,7 @@ export class ProjectHook implements Hook {
         });
         req[PROJECT_POOL] = pool;
         req[PROJECT_DB] = this.getProjectDb(pool, project.getId());
+        req[PROJECT_PG] = this.gerProjectPg(pool);
         const authDB = this.getProjectDb(pool, project.getId());
         authDB.setDatabase('auth');
         authDB.setPrefix(project.getId());

@@ -7342,15 +7342,15 @@ const collections = {
       ...dbCollections.collections,
       attributes: [
         ...dbCollections.collections.attributes.filter(
-          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
         ),
-      ]
+      ],
     },
     schema: [
       {
         ...projectCollections.attributes,
         attributes: projectCollections.attributes.attributes.filter(
-          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
         ),
         indexes: [
           {
@@ -7360,12 +7360,12 @@ const collections = {
             lengths: [Database.LENGTH_KEY],
             orders: [Database.ORDER_ASC],
           },
-        ]
+        ],
       },
       {
         ...projectCollections.indexes,
         attributes: projectCollections.indexes.attributes.filter(
-          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
         ),
         indexes: [
           {
@@ -7375,10 +7375,10 @@ const collections = {
             lengths: [Database.LENGTH_KEY],
             orders: [Database.ORDER_ASC],
           },
-        ]
-      }
-    ]
-  }
+        ],
+      },
+    ],
+  },
 };
 
 export default collections;
