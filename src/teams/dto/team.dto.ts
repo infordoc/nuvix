@@ -2,21 +2,16 @@ import { OmitType, PartialType } from '@nestjs/mapped-types';
 import {
   IsString,
   Length,
-  Matches,
   IsArray,
   ArrayMaxSize,
-  ArrayMinSize,
   IsOptional,
   IsObject,
 } from 'class-validator';
+import { IsUID } from 'src/core/validators';
 import { APP_LIMIT_ARRAY_PARAMS_SIZE } from 'src/Utils/constants';
 
 export class CreateTeamDTO {
-  @IsString()
-  @Matches(/^[a-zA-Z0-9][a-zA-Z0-9.-_]{0,35}$/, {
-    message:
-      'Team ID must be 1-36 characters long, can contain a-z, A-Z, 0-9, period, hyphen, and underscore, and cannot start with a special character.',
-  })
+  @IsUID()
   teamId: string;
 
   @IsString()

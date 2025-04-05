@@ -8,8 +8,10 @@ import {
   FUNCTIONS_SCHEMA_DB,
   MESSAGING_SCHEMA_DB,
   PROJECT,
+  PROJECT_PG,
   STORAGE_SCHEMA_DB,
 } from 'src/Utils/constants';
+import { Exception } from '../extend/exception';
 
 export const Project = createParamDecorator<Document>(
   (data: unknown, ctx: ExecutionContext) => {
@@ -78,6 +80,16 @@ export const CurrentSchema = createParamDecorator<any, DataSource | undefined>(
   (data: unknown, ctx: ExecutionContext) => {
     const request: Request = ctx.switchToHttp().getRequest();
     const database = request[CURRENT_SCHEMA_PG] as DataSource;
+    if (database)
+      throw new Exception(Exception.DATABASE_NOT_FOUND, 'Schema Not Found.'); // TODO: improve error message.
     return database;
+  },
+);
+
+export const ProjectPg = createParamDecorator<any, DataSource | undefined>(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request: Request = ctx.switchToHttp().getRequest();
+    const dataSource = request[PROJECT_PG] as DataSource;
+    return dataSource;
   },
 );

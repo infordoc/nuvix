@@ -1,9 +1,25 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { SchemaService } from './schema.service';
 import { SchemaController } from './schema.controller';
+import { SchemaHook } from 'src/core/resolvers/hooks/schema.hook';
+import { BullModule } from '@nestjs/bullmq';
+import { SchemaQueue } from 'src/core/resolvers/queues/schema.queue';
 
 @Module({
   controllers: [SchemaController],
-  providers: [SchemaService],
+  providers: [SchemaService, SchemaQueue],
+  imports: [
+    BullModule.registerQueue({
+      name: 'schema',
+      defaultJobOptions: {
+        removeOnComplete: true,
+        attempts: 2,
+      },
+    }),
+  ],
 })
-export class SchemaModule {}
+export class SchemaModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(SchemaHook).forRoutes(SchemaController);
+  }
+}

@@ -132,6 +132,12 @@ const admins = [
   'subscribers.update',
   'subscribers.delete',
   'subscribers.read',
+
+  // schema
+  'schema.read',
+  'schema.create',
+  'schema.update',
+  'schema.delete',
 ];
 
 export const roles = {

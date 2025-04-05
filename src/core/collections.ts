@@ -7346,38 +7346,36 @@ const collections = {
         ),
       ],
     },
-    schema: [
-      {
-        ...projectCollections.attributes,
-        attributes: projectCollections.attributes.attributes.filter(
-          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
-        ),
-        indexes: [
-          {
-            $id: ID.custom('_key_collection'),
-            type: Database.INDEX_KEY,
-            attributes: ['collectionInternalId'],
-            lengths: [Database.LENGTH_KEY],
-            orders: [Database.ORDER_ASC],
-          },
-        ],
-      },
-      {
-        ...projectCollections.indexes,
-        attributes: projectCollections.indexes.attributes.filter(
-          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
-        ),
-        indexes: [
-          {
-            $id: ID.custom('_key_collection'),
-            type: Database.INDEX_KEY,
-            attributes: ['collectionInternalId'],
-            lengths: [Database.LENGTH_KEY],
-            orders: [Database.ORDER_ASC],
-          },
-        ],
-      },
-    ],
+    attributes: {
+      ...projectCollections.attributes,
+      attributes: projectCollections.attributes.attributes.filter(
+        v => !['databaseId', 'databaseInternalId'].includes(v.$id),
+      ),
+      indexes: [
+        {
+          $id: ID.custom('_key_collection'),
+          type: Database.INDEX_KEY,
+          attributes: ['collectionInternalId'],
+          lengths: [Database.LENGTH_KEY],
+          orders: [Database.ORDER_ASC],
+        },
+      ],
+    },
+    indexes: {
+      ...projectCollections.indexes,
+      attributes: projectCollections.indexes.attributes.filter(
+        v => !['databaseId', 'databaseInternalId'].includes(v.$id),
+      ),
+      indexes: [
+        {
+          $id: ID.custom('_key_collection'),
+          type: Database.INDEX_KEY,
+          attributes: ['collectionInternalId'],
+          lengths: [Database.LENGTH_KEY],
+          orders: [Database.ORDER_ASC],
+        },
+      ],
+    },
   },
 };
 

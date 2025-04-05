@@ -254,4 +254,19 @@ export const scopes = {
   'assistant.read': {
     description: 'Access to read the Assistant service',
   },
+
+  // schema
+
+  'schema.create': {
+    description: 'Access to create a schema',
+  },
+  'schema.update': {
+    description: 'Access to update a schema',
+  },
+  'schema.delete': {
+    description: 'Access to delete a schema',
+  },
+  'schema.read': {
+    description: 'Access to read a schema',
+  },
 };
