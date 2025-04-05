@@ -1088,7 +1088,7 @@ export class DatabaseService {
 
     const size = maxValue > 2147483647 ? 8 : 4; // Automatically create BigInt depending on max value
 
-    let attribute = new Document({
+    let attribute = new Document<any>({
       key,
       type: Database.VAR_INTEGER,
       size,

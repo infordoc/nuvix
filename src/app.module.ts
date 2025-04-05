@@ -38,6 +38,7 @@ import {
   ProjectHook,
   ProjectUsageHook,
 } from './core/resolvers/hooks';
+import { SchemaModule } from './schema/schema.module';
 config();
 
 @Module({
@@ -81,6 +82,7 @@ config();
     RealtimeModule,
     FunctionsModule,
     StorageModule,
+    SchemaModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailQueue],

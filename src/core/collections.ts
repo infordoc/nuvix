@@ -7337,6 +7337,48 @@ const collections = {
   console: consoleCollections,
   buckets: bucketCollections,
   databases: dbCollections,
+  docSchema: {
+    collections: {
+      ...dbCollections.collections,
+      attributes: [
+        ...dbCollections.collections.attributes.filter(
+          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+        ),
+      ]
+    },
+    schema: [
+      {
+        ...projectCollections.attributes,
+        attributes: projectCollections.attributes.attributes.filter(
+          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+        ),
+        indexes: [
+          {
+            $id: ID.custom('_key_collection'),
+            type: Database.INDEX_KEY,
+            attributes: ['collectionInternalId'],
+            lengths: [Database.LENGTH_KEY],
+            orders: [Database.ORDER_ASC],
+          },
+        ]
+      },
+      {
+        ...projectCollections.indexes,
+        attributes: projectCollections.indexes.attributes.filter(
+          (v) => !["databaseId", "databaseInternalId"].includes(v.$id)
+        ),
+        indexes: [
+          {
+            $id: ID.custom('_key_collection'),
+            type: Database.INDEX_KEY,
+            attributes: ['collectionInternalId'],
+            lengths: [Database.LENGTH_KEY],
+            orders: [Database.ORDER_ASC],
+          },
+        ]
+      }
+    ]
+  }
 };
 
 export default collections;
