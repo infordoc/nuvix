@@ -4,7 +4,24 @@ import {
   ResolverTypeContextOptions,
 } from '../resolvers/interceptors';
 
-export const ResModel = (options: ResolverTypeContextOptions | Type<any>) =>
-  typeof options === 'function'
-    ? SetMetadata(CLASS_SERIALIZER_OPTIONS, { type: options })
-    : SetMetadata(CLASS_SERIALIZER_OPTIONS, options);
+function ResModel(type: Type<any>): MethodDecorator;
+function ResModel(options: ResolverTypeContextOptions): MethodDecorator;
+function ResModel(
+  type: Type<any>,
+  options: Omit<ResolverTypeContextOptions, 'type'>,
+): MethodDecorator;
+function ResModel(
+  typeOrOptions: ResolverTypeContextOptions | Type<any>,
+  extra?: Omit<ResolverTypeContextOptions, 'type'>,
+): MethodDecorator {
+  if (typeof typeOrOptions === 'object' && !typeOrOptions.type) {
+    throw new Error('You must provide a type or options with a type property');
+  }
+  const _options =
+    typeof typeOrOptions === 'function'
+      ? { type: typeOrOptions, ...extra }
+      : { ...typeOrOptions };
+  return SetMetadata(CLASS_SERIALIZER_OPTIONS, _options);
+}
+
+export { ResModel };

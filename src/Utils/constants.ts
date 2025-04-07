@@ -62,6 +62,13 @@ export const MESSAGING_SCHEMA_DB = Symbol('messagingSchemaDb');
 export const CURRENT_SCHEMA_DB = Symbol('currentSchemaDb');
 export const CURRENT_SCHEMA_PG = Symbol('currentSchemaPg');
 
+export const INTERNAL_SCHEMAS = [
+  'auth',
+  'storage',
+  'functions',
+  'messaging',
+] as const;
+
 const allowedHeaders = [
   'Content-Type',
   'Content-Length',

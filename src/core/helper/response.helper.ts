@@ -102,6 +102,7 @@ import { PaymentMethodModel } from '../models/PaymentMethod.model';
 import { BillingPlanModel } from '../models/Plan.model';
 import { KeyModel } from '../models/Key.model';
 import { ProjectModel } from '../models/Project.model';
+import { SchemaModel } from '../models/Schema.model';
 
 /**
  * The `Response` class provides a collection of static properties representing various models used in the application.
@@ -251,6 +252,9 @@ export class Models {
   public static INVOICE = InvoiceModel;
   public static PAYMENT_METHOD = PaymentMethodModel;
   public static BILLING_PLAN = BillingPlanModel;
+
+  // Schema
+  public static SCHEMA = SchemaModel;
 
   public empty() {
     return Models.NONE;

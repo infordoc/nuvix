@@ -59,7 +59,8 @@ export type GetProjectPG = (pool: PgPool, context?: Context) => DataSource;
       useFactory: (): PoolStoreFn<PgPool> => {
         const poolManager = PoolManager.getInstance();
         return (async (name: string, options: { database: string }) => {
-          const pool = poolManager.getPool(name, {
+          // const pool = poolManager.getPool(name,
+          return new PgPool({
             host: process.env.APP_POSTGRES_HOST || 'localhost',
             port: parseInt(process.env.APP_POSTGRES_PORT || '5432'),
             database: options.database ?? process.env.APP_POSTGRES_DB,
@@ -69,18 +70,18 @@ export type GetProjectPG = (pool: PgPool, context?: Context) => DataSource;
               process.env.APP_POSTGRES_SSL === 'true'
                 ? { rejectUnauthorized: false }
                 : undefined,
-            max: 15, // Maximum number of clients
-            idleTimeoutMillis: 30000, // 30 seconds
-            connectionTimeoutMillis: 5000, // 5 seconds
-            statement_timeout: 30000, // 30 seconds
-            query_timeout: 30000, // 30 seconds
-            application_name: 'nuvix',
-            // Add these additional settings
-            keepAlive: true,
-            keepAliveInitialDelayMillis: 10000, // 10 seconds
-            allowExitOnIdle: false,
+            // max: 10, // Maximum number of clients
+            // idleTimeoutMillis: 30000, // 30 seconds
+            // connectionTimeoutMillis: 5000, // 5 seconds
+            // statement_timeout: 30000, // 30 seconds
+            // query_timeout: 30000, // 30 seconds
+            // application_name: 'nuvix',
+            // // Add these additional settings
+            // keepAlive: true,
+            // keepAliveInitialDelayMillis: 10000, // 10 seconds
+            // allowExitOnIdle: false,
           });
-          return pool;
+          //   return pool;
         }) as any;
       },
     },

@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Get,
+  Param,
   Post,
   UseGuards,
   UseInterceptors,
@@ -20,10 +22,11 @@ import {
   Scope,
 } from 'src/core/decorators';
 import { Document } from '@nuvix/database';
+import { DataSource } from '@nuvix/pg';
+import { Models } from 'src/core/helper';
 
 // DTO's
 import { CreateDocumentSchema } from './DTO/create-schema.dto';
-import { DataSource } from '@nuvix/pg';
 
 @Controller({ version: ['1'], path: 'schema' })
 @UseGuards(ProjectGuard)
@@ -35,6 +38,7 @@ export class SchemaController {
   @Scope('schema.create')
   @Label('res.type', 'JSON')
   @Label('res.status', 'CREATED')
+  @ResModel(Models.SCHEMA)
   async createDocTypeSchema(
     @ProjectPg() pg: DataSource,
     @Project() project: Document,
@@ -45,6 +49,26 @@ export class SchemaController {
       project,
       body,
     );
+    return result;
+  }
+
+  @Get()
+  @Scope('schema.read')
+  @Label('res.type', 'JSON')
+  @Label('res.status', 'OK')
+  @ResModel(Models.SCHEMA, { list: true })
+  async getSchemas(@ProjectPg() pg: DataSource) {
+    const schemas = await this.schemaService.getSchemas(pg);
+    return schemas;
+  }
+
+  @Get(':schemaId')
+  @Scope('schema.read')
+  @Label('res.type', 'JSON')
+  @Label('res.status', 'OK')
+  @ResModel(Models.SCHEMA)
+  async getSchema(@ProjectPg() pg: DataSource, @Param('schemaId') id: string) {
+    const result = await this.schemaService.getSchema(pg, id);
     return result;
   }
 }
