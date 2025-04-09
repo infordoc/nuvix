@@ -1,5 +1,4 @@
 
-
 declare namespace Storage {
     declare interface ObjectMetadata {
         content_type: string;

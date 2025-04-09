@@ -80,15 +80,15 @@ export class StorageService {
     const permissions = Permission.aggregate(input.permissions ?? []);
 
     try {
-      const objects = (collections['buckets'] ?? {})['objects'] ?? {};
-      if (!objects) {
+      const files = (collections['buckets'] ?? {})['files'] ?? {};
+      if (!files) {
         throw new Exception(
           Exception.GENERAL_SERVER_ERROR,
           'Files collection is not configured.',
         );
       }
 
-      const attributes = objects['attributes'].map(
+      const attributes = files['attributes'].map(
         (attribute: any) =>
           new Document({
             $id: attribute.$id,
@@ -103,7 +103,7 @@ export class StorageService {
           }),
       );
 
-      const indexes = objects['indexes'].map(
+      const indexes = files['indexes'].map(
         (index: any) =>
           new Document({
             $id: index.$id,
@@ -234,7 +234,6 @@ export class StorageService {
 
   /**
    * Get files.
-   * @deprecated use `getObjects` instead
    */
   async getFiles(
     db: Database,
@@ -323,6 +322,7 @@ export class StorageService {
 
   /**
    * Get Objects
+   * @ignore Not Used in Current Structure
    */
   async getObjects(
     db: Database,
@@ -416,6 +416,7 @@ export class StorageService {
 
   /**
    * Create folder.
+   * @ignore Not Used in Current Structure
    */
   async createFolder(
     db: Database,
@@ -507,7 +508,6 @@ export class StorageService {
 
   /**
    * Create|Upload file.
-   * @deprecated use `createObject` instead
    */
   async createFile(
     db: Database,
@@ -799,6 +799,7 @@ export class StorageService {
 
   /**
    * Upload File
+   * @ignore Not Used in Current Structure
    */
   async uploadFile(
     db: Database,

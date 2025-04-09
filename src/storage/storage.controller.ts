@@ -94,61 +94,61 @@ export class StorageController {
     return await this.storageService.getFiles(db, id, queries, search);
   }
 
-  @Get('buckets/:id/objects')
-  @ResModel(Models.OBJECT, { list: true })
-  async getObjects(
-    @StorageDatabase() db: Database,
-    @Param('id') id: string,
-    @Query('queries', ParseQueryPipe) queries: Queries[],
-    @Query('search') search?: string,
-    @Query('path') path?: string,
-  ) {
-    return await this.storageService.getObjects(db, id, queries, search, path);
-  }
+  // @Get('buckets/:id/objects')
+  // @ResModel(Models.OBJECT, { list: true })
+  // async getObjects(
+  //   @StorageDatabase() db: Database,
+  //   @Param('id') id: string,
+  //   @Query('queries', ParseQueryPipe) queries: Queries[],
+  //   @Query('search') search?: string,
+  //   @Query('path') path?: string,
+  // ) {
+  //   return await this.storageService.getObjects(db, id, queries, search, path);
+  // }
 
-  @Post('buckets/:id/objects')
-  @Scope('files.create')
-  @Label('res.status', 'CREATED')
-  @Label('res.type', 'JSON')
-  @ResModel(Models.OBJECT)
-  async createObject(
-    @StorageDatabase() db: Database,
-    @Param('id') id: string,
-    @Body() createObjectDto: CreateBucketDTO,
-    @User() user: Document,
-  ) {
-    return await this.storageService.createFolder(
-      db,
-      user,
-      id,
-      createObjectDto,
-    );
-  }
+  // @Post('buckets/:id/objects')
+  // @Scope('files.create')
+  // @Label('res.status', 'CREATED')
+  // @Label('res.type', 'JSON')
+  // @ResModel(Models.OBJECT)
+  // async createObject(
+  //   @StorageDatabase() db: Database,
+  //   @Param('id') id: string,
+  //   @Body() createObjectDto: CreateBucketDTO,
+  //   @User() user: Document,
+  // ) {
+  //   return await this.storageService.createFolder(
+  //     db,
+  //     user,
+  //     id,
+  //     createObjectDto,
+  //   );
+  // }
 
-  @Post('buckets/:id/upload')
-  @Scope('files.create')
-  @Label('res.status', 'CREATED')
-  @Label('res.type', 'JSON')
-  @ResModel(Models.OBJECT)
-  async uploadFile(
-    @StorageDatabase() db: Database,
-    @Param('id') id: string,
-    @Body('fileId') fileId: string,
-    @Body('name') name: string,
-    @Body('permissions') permissions: string[] = [],
-    @UploadedFile() file: MultipartFile,
-    @Req() req: FastifyRequest,
-    @User() user: Document,
-  ) {
-    return await this.storageService.uploadFile(
-      db,
-      id,
-      { fileId, permissions, name },
-      file,
-      req,
-      user,
-    );
-  }
+  // @Post('buckets/:id/upload')
+  // @Scope('files.create')
+  // @Label('res.status', 'CREATED')
+  // @Label('res.type', 'JSON')
+  // @ResModel(Models.OBJECT)
+  // async uploadFile(
+  //   @StorageDatabase() db: Database,
+  //   @Param('id') id: string,
+  //   @Body('fileId') fileId: string,
+  //   @Body('name') name: string,
+  //   @Body('permissions') permissions: string[] = [],
+  //   @UploadedFile() file: MultipartFile,
+  //   @Req() req: FastifyRequest,
+  //   @User() user: Document,
+  // ) {
+  //   return await this.storageService.uploadFile(
+  //     db,
+  //     id,
+  //     { fileId, permissions, name },
+  //     file,
+  //     req,
+  //     user,
+  //   );
+  // }
 
   @Post('buckets/:id/files')
   @ResModel(Models.FILE)
