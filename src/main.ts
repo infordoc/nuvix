@@ -31,7 +31,12 @@ async function bootstrap() {
     new NuvixAdapter({
       trustProxy: true,
       skipMiddie: true,
-      logger: true,
+      logger: {
+        enabled: true,
+        edgeLimit: 100,
+        msgPrefix: '[Nuvix] ',
+        safe: true,
+      },
     }),
     {
       abortOnError: false,
@@ -51,7 +56,6 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      enableDebugMessages: true,
       stopAtFirstError: false,
       transform: true,
       transformOptions: {

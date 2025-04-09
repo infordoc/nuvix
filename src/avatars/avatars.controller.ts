@@ -12,7 +12,7 @@ export class AvatarsController {
     @Query('name', ParseDuplicatePipe) name: string = 'NA',
     @Query('width', ParseDuplicatePipe) width: string = '100',
     @Query('height', ParseDuplicatePipe) height: string = '100',
-    @Query('background', ParseDuplicatePipe) background: string = 'f67520',
+    @Query('background', ParseDuplicatePipe) background: string,
     @Query('circle', ParseDuplicatePipe) circle: boolean = false,
     @Res() res: FastifyReply,
   ) {

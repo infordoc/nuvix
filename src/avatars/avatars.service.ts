@@ -35,7 +35,9 @@ export class AvatarsService {
       width = Number(width);
       height = Number(height);
       circle = circle === true || circle === 'true'; // Handle boolean query
-      background = `#${background.replace(/[^0-9a-fA-F]/g, '')}`; // Sanitize background color
+      background = background
+        ? `#${background.replace(/[^0-9a-fA-F]/g, '')}`
+        : this.getHSLColorFromName(name); // Sanitize background color
 
       const cacheKey = this.generateCacheKey(
         name,
@@ -126,5 +128,23 @@ export class AvatarsService {
 
   private cacheImage(key: string, image: Buffer): void {
     this.cache[key] = image;
+  }
+
+  private hashFnv1a(str: string): number {
+    let hash = 2166136261;
+    for (let i = 0; i < str.length; i++) {
+      hash ^= str.charCodeAt(i);
+      hash +=
+        (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    return hash >>> 0; // Ensure unsigned integer
+  }
+
+  private getHSLColorFromName(name: string): string {
+    const hash = this.hashFnv1a(name);
+    const hue = hash % 360;
+    const saturation = 65;
+    const lightness = 55;
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
   }
 }

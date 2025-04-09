@@ -54,6 +54,7 @@ export const LOCALE = 'locale';
 export const API_KEY = 'apiKey';
 export const SCOPES = 'scopes';
 export const HOOKS = 'hooks';
+export const APP_COLOR = '#f67520';
 
 export const AUTH_SCHEMA_DB = Symbol('authSchemaDb');
 export const STORAGE_SCHEMA_DB = Symbol('storageSchemaDb');
