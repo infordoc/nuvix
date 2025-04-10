@@ -9,7 +9,7 @@ import {
   ArrayMaxSize,
   IsIn,
 } from 'class-validator';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from 'src/Utils/constants';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE, APP_STORAGE_MAX_SIZE } from 'src/Utils/constants';
 import { IsUID } from 'src/core/validators/input.validator';
 
 export class CreateBucketDTO {
@@ -38,7 +38,7 @@ export class CreateBucketDTO {
   @IsInt()
   @Min(1)
   @IsOptional()
-  maximumFileSize: number = 10 * 1024 * 4102; // TODO: ---
+  maximumFileSize: number = APP_STORAGE_MAX_SIZE;
 
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)

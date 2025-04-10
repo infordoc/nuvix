@@ -11,11 +11,7 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { config } from 'dotenv';
 import { HttpExceptionFilter } from './core/filters/http-exception.filter';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
-import {
-  APP_DEBUG_COLORS,
-  APP_DEBUG_FORMAT,
-  APP_VERSION_STABLE,
-} from './Utils/constants';
+import { APP_DEBUG_COLORS, APP_DEBUG_FORMAT } from './Utils/constants';
 import { Authorization, Role, storage } from '@nuvix/database';
 import { ErrorFilter } from './core/filters/globle-error.filter';
 import cookieParser from '@fastify/cookie';
@@ -52,7 +48,12 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.enableVersioning();
   app.register(cookieParser as any);
-  app.register(fastifyMultipart as any);
+  app.register(fastifyMultipart as any, {
+    attachFieldsToBody: true,
+    limits: {
+      fileSize: 1024 * 1024 * 1024, // 1 GB
+    },
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

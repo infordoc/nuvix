@@ -26,6 +26,7 @@ import usageConfig from 'src/core/config/usage';
 import sharp from 'sharp';
 import { MultipartFile } from '@fastify/multipart';
 import { CreateFolderDTO, UploadFileDTO } from './DTO/object.dto';
+import { logos } from 'src/core/config/storage/logos';
 
 @Injectable()
 export class StorageService {
@@ -1228,6 +1229,17 @@ export class StorageService {
     const mimeType = file.getAttribute('mimeType');
     const fileName = file.getAttribute('name', '');
     const size = file.getAttribute('sizeOriginal', 0);
+
+    // Unsupported file types or files larger then 10 MB
+    if (!mimeType.startsWith('image/') || size / 1024 > 10 * 1024) {
+      let path = logos[mimeType] ?? logos.default;
+      const buffer = fs.readFileSync(path);
+      return new StreamableFile(buffer, {
+        type: `image/png`,
+        disposition: `inline; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    }
 
     let image = sharp(path);
 
