@@ -588,10 +588,10 @@ export class StorageService {
     const fileExt = fileName.split('.').pop();
     const contentRange = request.headers['content-range'];
 
-    if (!fileBuffer) {
+    if (!fileBuffer || !fileSize) {
       throw new Exception(
         Exception.STORAGE_FILE_EMPTY,
-        'File buffer is missing.',
+        'File buffer is missing or file size is zero.',
       );
     }
 
