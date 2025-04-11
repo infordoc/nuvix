@@ -21,6 +21,7 @@ import { ErrorFilter } from './core/filters/globle-error.filter';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import { openApiSetup } from './core/helper';
+import QueryString from 'qs';
 
 config();
 Authorization.enableStorage();
@@ -31,6 +32,9 @@ async function bootstrap() {
     new NuvixAdapter({
       trustProxy: true,
       skipMiddie: true,
+      querystringParser(str) {
+        return QueryString.parse(str);
+      },
       logger: {
         enabled: true,
         edgeLimit: 100,
