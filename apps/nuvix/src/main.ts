@@ -24,7 +24,10 @@ import fastifyMultipart from '@fastify/multipart';
 import { openApiSetup } from '@nuvix/core/helper';
 import QueryString from 'qs';
 
-config();
+if (process.env.NODE_ENV !== 'production') {
+  // Load environment variables from .env file in development mode
+  config();
+}
 Authorization.enableStorage();
 
 async function bootstrap() {

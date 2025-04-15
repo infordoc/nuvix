@@ -22,7 +22,10 @@ import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import QueryString from 'qs';
 
-config();
+if (process.env.NODE_ENV !== 'production') {
+  // Load environment variables from .env file in development mode
+  config();
+}
 Authorization.enableStorage();
 
 async function bootstrap() {

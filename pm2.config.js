@@ -1,5 +1,24 @@
 // pm2.config.js
+const dotenv = require('dotenv');
+const fs = require('fs');
+
+// Load environment variables with error handling
+const loadEnvFile = (path) => {
+    try {
+        return fs.existsSync(path) ? dotenv.parse(fs.readFileSync(path)) : {};
+    } catch (error) {
+        console.error(`Error loading ${path}: ${error.message}`);
+        return {};
+    }
+};
+
+// Load configurations with fallbacks
+const shared = loadEnvFile('.env');
+const api = { ...loadEnvFile('.env.api') };
+const console = { ...loadEnvFile('.env.console') };
+
 module.exports = {
+
     apps: [
         {
             name: 'nuvix-api',
@@ -8,6 +27,8 @@ module.exports = {
             instances: 2, // Use 'max' to scale across all available CPU cores
             exec_mode: 'cluster', // Use 'cluster' for multi-core scaling
             env: {
+                ...shared,
+                ...api,
                 NODE_ENV: 'production',
             },
         },
@@ -18,6 +39,8 @@ module.exports = {
             instances: 1,
             exec_mode: 'fork',
             env: {
+                ...shared,
+                ...console,
                 NODE_ENV: 'production',
             },
         },

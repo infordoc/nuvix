@@ -1,9 +1,11 @@
-import { config } from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
 import { ServerConfig } from './types';
-
-config();
+import { config } from 'dotenv';
+if (process.env.NODE_ENV !== 'production') {
+  // Load environment variables from .env file in development mode
+  config();
+}
 
 // Find project root directory (where package.json is located)
 function findProjectRoot(): string {
