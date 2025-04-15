@@ -13,7 +13,6 @@ function findProjectRoot(): string {
     const packageJsonPath = path.join(currentDir, 'package.json');
 
     if (fs.existsSync(packageJsonPath)) {
-      console.log('Project root directory found:', currentDir);
       return currentDir;
     }
 

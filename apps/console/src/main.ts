@@ -123,6 +123,6 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new HttpExceptionFilter(), new ErrorFilter());
-  await app.listen(process.env.PORT ?? 3000, '127.0.0.1');
+  await app.listen(process.env.APP_CONSOLE_PORT ?? 4100, '127.0.0.1');
 }
 bootstrap();

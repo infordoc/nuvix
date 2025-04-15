@@ -127,6 +127,6 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter(), new ErrorFilter());
   openApiSetup(app);
-  await app.listen(process.env.PORT ?? 3000, '127.0.0.1');
+  await app.listen(process.env.APP_API_PORT ?? 4000, '127.0.0.1');
 }
 bootstrap();
