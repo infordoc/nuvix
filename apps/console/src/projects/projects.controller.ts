@@ -56,7 +56,7 @@ import { AuthGuard } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 import { ResModel } from '@nuvix/core/decorators';
 
-@Controller({ version: ['1'], path: 'console/projects' })
+@Controller({ version: ['1'], path: 'projects' })
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class ProjectsController {

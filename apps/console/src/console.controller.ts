@@ -14,7 +14,7 @@ import { Models } from '@nuvix/core/helper/response.helper';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 import { ResModel } from '@nuvix/core/decorators';
 
-@Controller({ version: ['1'], path: 'console' })
+@Controller()
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class ConsoleController {
@@ -24,7 +24,7 @@ export class ConsoleController {
   @Get('variables')
   async getVariables() {
     return {
-      _APP_DOMAIN_TARGET: 'nuvix-console.vercel.app',
+      _APP_DOMAIN_TARGET: 'nuvix.in',
       _APP_STORAGE_LIMIT: 5368709120,
       _APP_FUNCTIONS_SIZE_LIMIT: 30000000,
       _APP_USAGE_STATS: 'disabled',

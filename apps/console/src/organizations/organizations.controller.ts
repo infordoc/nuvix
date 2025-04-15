@@ -27,7 +27,7 @@ import { roles } from '@nuvix/core/config/roles';
 
 @Controller({
   version: ['1'],
-  path: 'console/organizations',
+  path: 'organizations',
 })
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)

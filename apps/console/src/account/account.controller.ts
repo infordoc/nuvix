@@ -33,7 +33,7 @@ import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 
-@Controller({ version: ['1'], path: 'console/account' })
+@Controller({ version: ['1'], path: 'account' })
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class AccountController {
