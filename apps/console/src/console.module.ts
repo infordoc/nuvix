@@ -25,6 +25,7 @@ import {
 } from '@nuvix/utils/constants';
 import { HostHook, AuthHook, ApiHook } from '@nuvix/core/resolvers/hooks';
 import { ProjectHook } from './hooks/project.hook';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ProjectHook } from './hooks/project.hook';
     AccountModule,
     OrganizationsModule,
     ProjectModule,
+    DatabaseModule,
   ],
   controllers: [ConsoleController],
   providers: [ConsoleService, MailQueue],
