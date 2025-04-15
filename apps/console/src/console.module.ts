@@ -25,7 +25,9 @@ import {
 } from '@nuvix/utils/constants';
 import { HostHook, AuthHook, ApiHook } from '@nuvix/core/resolvers/hooks';
 import { ProjectHook } from './hooks/project.hook';
+import { ProjectHook as RequestProjectHook } from '@nuvix/core/resolvers/hooks';
 import { DatabaseModule } from './database/database.module';
+import { DatabaseController } from './database/database.controller';
 
 @Module({
   imports: [
@@ -70,7 +72,11 @@ import { DatabaseModule } from './database/database.module';
 export class ConsoleModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectHook, HostHook)
+      .apply(ProjectHook)
+      .forRoutes('*')
+      .apply(RequestProjectHook)
+      .forRoutes(DatabaseController)
+      .apply(HostHook)
       .forRoutes('*')
       .apply(AuthHook, ApiHook)
       .forRoutes('*');

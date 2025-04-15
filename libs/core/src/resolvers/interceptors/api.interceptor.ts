@@ -11,7 +11,6 @@ import {
   APP_MODE_ADMIN,
   APP_MODE_DEFAULT,
   CACHE_DB,
-  DB_FOR_PROJECT,
   PROJECT,
   SCOPES,
   SESSION,
@@ -32,7 +31,6 @@ import { FastifyRequest } from 'fastify';
 export class ApiInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
-    @Inject(DB_FOR_PROJECT) private readonly dbForProject: Database,
     @Inject(CACHE_DB) private readonly cacheDb: Redis,
     private readonly projectUsage: ProjectUsageService,
   ) {}
