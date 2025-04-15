@@ -14,8 +14,8 @@ const loadEnvFile = (path) => {
 
 // Load configurations with fallbacks
 const shared = loadEnvFile('.env');
-const api = { ...loadEnvFile('.env.api') };
-const console = { ...loadEnvFile('.env.console') };
+const api = loadEnvFile('.env.api');
+const console = loadEnvFile('.env.console');
 
 module.exports = {
     apps: [

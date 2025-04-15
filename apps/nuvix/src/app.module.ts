@@ -38,7 +38,6 @@ import {
   ProjectUsageHook,
 } from '@nuvix/core/resolvers/hooks';
 import { SchemaModule } from './schema/schema.module';
-config();
 
 @Module({
   imports: [
