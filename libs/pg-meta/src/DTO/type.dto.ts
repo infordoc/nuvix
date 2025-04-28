@@ -5,11 +5,15 @@ import {
   IsString,
   Min,
   Max,
-  IsArray,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class TriggerQueryDto {
+export class TypeQueryDto {
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true')
+  includeArrayTypes?: boolean;
+
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => value === 'true')

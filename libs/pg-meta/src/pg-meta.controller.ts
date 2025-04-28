@@ -63,10 +63,15 @@ import { TablePrivilegeQueryDto } from './DTO/table-privilege.dto';
 import { TablePrivilegeGrantDto } from './DTO/table-privilege-grant.dto';
 import { TablePrivilegeRevokeDto } from './DTO/table-privilege-revoke.dto';
 import { TriggerQueryDto } from './DTO/trigger.dto';
-import { TriggerIdParamDto } from './DTO/trigger-id.dto';
 import { TriggerCreateDto } from './DTO/trigger-create.dto';
 import { TriggerUpdateDto } from './DTO/trigger-update.dto';
 import { TriggerDeleteQueryDto } from './DTO/trigger-delete.dto';
+import { TypeQueryDto } from './DTO/type.dto';
+import { GeneratorQueryDto } from './DTO/generator.dto';
+import { getGeneratorMetadata } from './lib/generators';
+import { apply as applyTypescriptTemplate } from './templates/typescript';
+import { apply as applyGoTemplate } from './templates/go';
+import { apply as applySwiftTemplate } from './templates/swift';
 
 @Controller({ path: 'meta', version: ['1'] })
 export class PgMetaController {
@@ -866,5 +871,77 @@ export class PgMetaController {
     const { cascade } = query;
     const { data } = await client.triggers.remove(id, { cascade });
     return data;
+  }
+
+  /*************************** Types *********************************/
+
+  @Get('types')
+  async getTypes(@Query() query: TypeQueryDto, @Client() client: PostgresMeta) {
+    const {
+      includeArrayTypes,
+      includeSystemSchemas,
+      includedSchemas,
+      excludedSchemas,
+      limit,
+      offset,
+    } = query;
+    const { data } = await client.types.list({
+      includeArrayTypes,
+      includeSystemSchemas,
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+    });
+    return data ?? [];
+  }
+
+  /*************************** Generators *********************************/
+
+  @Get('generators/typescript')
+  async generateTypescript(
+    @Query() query: GeneratorQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { includedSchemas, excludedSchemas, detectOneToOneRelationships } =
+      query;
+    const { data } = await getGeneratorMetadata(client, {
+      includedSchemas: includedSchemas?.split(',').map(schema => schema.trim()),
+      excludedSchemas: excludedSchemas?.split(',').map(schema => schema.trim()),
+    });
+
+    return applyTypescriptTemplate({
+      ...data,
+      detectOneToOneRelationships,
+    });
+  }
+
+  @Get('generators/go')
+  async generateGo(
+    @Query() query: GeneratorQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { includedSchemas, excludedSchemas } = query;
+    const { data } = await getGeneratorMetadata(client, {
+      includedSchemas: includedSchemas?.split(',').map(schema => schema.trim()),
+      excludedSchemas: excludedSchemas?.split(',').map(schema => schema.trim()),
+    });
+    return applyGoTemplate(data);
+  }
+
+  @Get('generators/swift')
+  async generateSwift(
+    @Query() query: GeneratorQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { includedSchemas, excludedSchemas, access_control } = query;
+    const { data } = await getGeneratorMetadata(client, {
+      includedSchemas: includedSchemas?.split(',').map(schema => schema.trim()),
+      excludedSchemas: excludedSchemas?.split(',').map(schema => schema.trim()),
+    });
+    return applySwiftTemplate({
+      ...data,
+      accessControl: access_control ?? 'internal',
+    });
   }
 }
