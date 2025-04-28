@@ -8,6 +8,11 @@ import { SchemaIdParamDto } from './DTO/schema-id.dto';
 import { SchemaCreateDto } from './DTO/schema-create.dto';
 import { SchemaUpdateDto } from './DTO/schema-update.dto';
 import { SchemaDeleteQueryDto } from './DTO/schema-delete.dto';
+import { TableQueryDto } from './DTO/table.dto';
+import { TableIdParamDto } from './DTO/table-id.dto';
+import { TableCreateDto } from './DTO/table-create.dto';
+import { TableUpdateDto } from './DTO/table-update.dto';
+import { TableDeleteQueryDto } from './DTO/table-delete.dto';
 
 @Controller({ path: 'meta', version: ['1'] })
 export class PgMetaController {
@@ -100,6 +105,67 @@ export class PgMetaController {
         const { id } = params;
         const { cascade } = query;
         const { data } = await client.schemas.remove(id, { cascade });
+        return data;
+    }
+
+    /*************************** Tables *********************************/
+
+    @Get('tables')
+    async getTables(
+        @Query() query: TableQueryDto,
+        @Client() client: PostgresMeta,
+    ) {
+        const { includeSystemSchemas, includedSchemas, excludedSchemas, limit, offset, includeColumns } = query;
+        const { data } = await client.tables.list({
+            includeSystemSchemas,
+            includedSchemas: includedSchemas?.split(','),
+            excludedSchemas: excludedSchemas?.split(','),
+            limit,
+            offset,
+            includeColumns,
+        });
+        return data ?? [];
+    }
+
+    @Get('tables/:id')
+    async getTableById(
+        @Param() params: TableIdParamDto,
+        @Client() client: PostgresMeta,
+    ) {
+        const { id } = params;
+        const { data } = await client.tables.retrieve({ id });
+        return data;
+    }
+
+    @Post('tables')
+    async createTable(
+        @Body() body: TableCreateDto,
+        @Client() client: PostgresMeta,
+    ) {
+        const { data } = await client.tables.create(body);
+        return data;
+    }
+
+    @Patch('tables/:id')
+    async updateTable(
+        @Param() params: TableIdParamDto,
+        @Body() body: TableUpdateDto,
+        @Client() client: PostgresMeta,
+    ) {
+        const { id } = params;
+        const { data } = await client.tables.update(id, body);
+        return data;
+    }
+
+    @Delete('tables/:id')
+    async deleteTable(
+        @Param() params: TableIdParamDto,
+        @Query() query: TableDeleteQueryDto,
+        @Client() client: PostgresMeta,
+    ) {
+        const { id } = params;
+        const { cascade } = query;
+        const { data } = await client.tables.remove(id, { cascade });
         return data;
     }
 }
