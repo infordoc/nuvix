@@ -33,6 +33,18 @@ import { ExtensionNameParamDto } from './DTO/extension-name.dto';
 import { ExtensionCreateDto } from './DTO/extension-create.dto';
 import { ExtensionUpdateDto } from './DTO/extension-update.dto';
 import { ExtensionDeleteQueryDto } from './DTO/extension-delete.dto';
+import { RoleQueryDto } from './DTO/role.dto';
+import { RoleIdParamDto } from './DTO/role-id.dto';
+import { RoleCreateDto } from './DTO/role-create.dto';
+import { RoleUpdateDto } from './DTO/role-update.dto';
+import { FunctionQueryDto } from './DTO/function.dto';
+import { FunctionIdParamDto } from './DTO/function-id.dto';
+import { FunctionCreateDto } from './DTO/function-create.dto';
+import { FunctionUpdateDto } from './DTO/function-update.dto';
+import { IndexQueryDto } from './DTO/index.dto';
+import { IndexIdParamDto } from './DTO/index-id.dto';
+import { ViewQueryDto } from './DTO/view.dto';
+import { ViewIdParamDto } from './DTO/view-id.dto';
 
 @Controller({ path: 'meta', version: ['1'] })
 export class PgMetaController {
@@ -323,6 +335,190 @@ export class PgMetaController {
     const { name } = params;
     const { cascade } = query;
     const { data } = await client.extensions.remove(name, { cascade });
+    return data;
+  }
+
+  /*************************** Roles *********************************/
+
+  @Get('roles')
+  async getRoles(@Query() query: RoleQueryDto, @Client() client: PostgresMeta) {
+    const { includeDefaultRoles, limit, offset } = query;
+    const { data } = await client.roles.list({
+      includeDefaultRoles,
+      limit,
+      offset,
+    });
+    return data ?? [];
+  }
+
+  @Get('roles/:id')
+  async getRoleById(
+    @Param() params: RoleIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.roles.retrieve({ id });
+    return data;
+  }
+
+  @Post('roles')
+  async createRole(
+    @Body() body: RoleCreateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { data } = await client.roles.create(body);
+    return data;
+  }
+
+  @Patch('roles/:id')
+  async updateRole(
+    @Param() params: RoleIdParamDto,
+    @Body() body: RoleUpdateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.roles.update(id, body);
+    return data;
+  }
+
+  @Delete('roles/:id')
+  async deleteRole(
+    @Param() params: RoleIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.roles.remove(id);
+    return data;
+  }
+
+  /*************************** Functions *********************************/
+
+  @Get('functions')
+  async getFunctions(
+    @Query() query: FunctionQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const {
+      includeSystemSchemas,
+      includedSchemas,
+      excludedSchemas,
+      limit,
+      offset,
+    } = query;
+    const { data } = await client.functions.list({
+      includeSystemSchemas,
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+    });
+    return data ?? [];
+  }
+
+  @Get('functions/:id')
+  async getFunctionById(
+    @Param() params: FunctionIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.functions.retrieve({ id });
+    return data;
+  }
+
+  @Post('functions')
+  async createFunction(
+    @Body() body: FunctionCreateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { data } = await client.functions.create(body);
+    return data;
+  }
+
+  @Patch('functions/:id')
+  async updateFunction(
+    @Param() params: FunctionIdParamDto,
+    @Body() body: FunctionUpdateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.functions.update(id, body);
+    return data;
+  }
+
+  @Delete('functions/:id')
+  async deleteFunction(
+    @Param() params: FunctionIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.functions.remove(id);
+    return data;
+  }
+
+  /*************************** Indexes *********************************/
+
+  @Get('indexes')
+  async getIndexes(
+    @Query() query: IndexQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const {
+      includeSystemSchemas,
+      includedSchemas,
+      excludedSchemas,
+      limit,
+      offset,
+    } = query;
+    const { data } = await client.indexes.list({
+      includeSystemSchemas,
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+    });
+    return data ?? [];
+  }
+
+  @Get('indexes/:id')
+  async getIndexById(
+    @Param() params: IndexIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.indexes.retrieve({ id });
+    return data;
+  }
+
+  /*************************** Views *********************************/
+
+  @Get('views')
+  async getViews(@Query() query: ViewQueryDto, @Client() client: PostgresMeta) {
+    const {
+      includeSystemSchemas,
+      includedSchemas,
+      excludedSchemas,
+      limit,
+      offset,
+      includeColumns,
+    } = query;
+    const { data } = await client.views.list({
+      includeSystemSchemas,
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+      includeColumns,
+    });
+    return data ?? [];
+  }
+
+  @Get('views/:id')
+  async getViewById(
+    @Param() params: ViewIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.views.retrieve({ id });
     return data;
   }
 }
