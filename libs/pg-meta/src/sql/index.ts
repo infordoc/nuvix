@@ -1,36 +1,35 @@
-import { readFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { ASSETS } from '@nuvix/utils/constants';
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
+const _dirname = join(ASSETS.ROOT, 'sql');
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export const columnPrivilegesSql = await readFile(join(__dirname, 'column_privileges.sql'), 'utf-8')
-export const columnsSql = await readFile(join(__dirname, 'columns.sql'), 'utf-8')
-export const configSql = await readFile(join(__dirname, 'config.sql'), 'utf-8')
-export const extensionsSql = await readFile(join(__dirname, 'extensions.sql'), 'utf-8')
-export const foreignTablesSql = await readFile(join(__dirname, 'foreign_tables.sql'), 'utf-8')
-export const functionsSql = await readFile(join(__dirname, 'functions.sql'), 'utf-8')
-export const indexesSql = await readFile(join(__dirname, 'indexes.sql'), 'utf-8')
-export const materializedViewsSql = await readFile(
- join(__dirname, 'materialized_views.sql'),
+export const columnPrivilegesSql = readFileSync(join(_dirname, 'column_privileges.sql'), 'utf-8')
+export const columnsSql = readFileSync(join(_dirname, 'columns.sql'), 'utf-8')
+export const configSql = readFileSync(join(_dirname, 'config.sql'), 'utf-8')
+export const extensionsSql = readFileSync(join(_dirname, 'extensions.sql'), 'utf-8')
+export const foreignTablesSql = readFileSync(join(_dirname, 'foreign_tables.sql'), 'utf-8')
+export const functionsSql = readFileSync(join(_dirname, 'functions.sql'), 'utf-8')
+export const indexesSql = readFileSync(join(_dirname, 'indexes.sql'), 'utf-8')
+export const materializedViewsSql = readFileSync(
+  join(_dirname, 'materialized_views.sql'),
   'utf-8'
 )
-export const policiesSql = await readFile(join(__dirname, 'policies.sql'), 'utf-8')
-export const publicationsSql = await readFile(join(__dirname, 'publications.sql'), 'utf-8')
-export const tableRelationshipsSql = await readFile(
-  join(__dirname, 'table_relationships.sql'),
+export const policiesSql = readFileSync(join(_dirname, 'policies.sql'), 'utf-8')
+export const publicationsSql = readFileSync(join(_dirname, 'publications.sql'), 'utf-8')
+export const tableRelationshipsSql = readFileSync(
+  join(_dirname, 'table_relationships.sql'),
   'utf-8'
 )
-export const rolesSql = await readFile(join(__dirname, 'roles.sql'), 'utf-8')
-export const schemasSql = await readFile(join(__dirname, 'schemas.sql'), 'utf-8')
-export const tablePrivilegesSql = await readFile(join(__dirname, 'table_privileges.sql'), 'utf-8')
-export const tablesSql = await readFile(join(__dirname, 'tables.sql'), 'utf-8')
-export const triggersSql = await readFile(join(__dirname, 'triggers.sql'), 'utf-8')
-export const typesSql = await readFile(join(__dirname, 'types.sql'), 'utf-8')
-export const versionSql = await readFile(join(__dirname, 'version.sql'), 'utf-8')
-export const viewsKeyDependenciesSql = await readFile(
-  join(__dirname, 'views_key_dependencies.sql'),
+export const rolesSql = readFileSync(join(_dirname, 'roles.sql'), 'utf-8')
+export const schemasSql = readFileSync(join(_dirname, 'schemas.sql'), 'utf-8')
+export const tablePrivilegesSql = readFileSync(join(_dirname, 'table_privileges.sql'), 'utf-8')
+export const tablesSql = readFileSync(join(_dirname, 'tables.sql'), 'utf-8')
+export const triggersSql = readFileSync(join(_dirname, 'triggers.sql'), 'utf-8')
+export const typesSql = readFileSync(join(_dirname, 'types.sql'), 'utf-8')
+export const versionSql = readFileSync(join(_dirname, 'version.sql'), 'utf-8')
+export const viewsKeyDependenciesSql = readFileSync(
+  join(_dirname, 'views_key_dependencies.sql'),
   'utf-8'
 )
-export const viewsSql = await readFile(join(__dirname, 'views.sql'), 'utf-8')
+export const viewsSql = readFileSync(join(_dirname, 'views.sql'), 'utf-8')
