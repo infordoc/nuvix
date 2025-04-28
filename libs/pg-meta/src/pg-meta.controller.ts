@@ -45,6 +45,13 @@ import { IndexQueryDto } from './DTO/index.dto';
 import { IndexIdParamDto } from './DTO/index-id.dto';
 import { ViewQueryDto } from './DTO/view.dto';
 import { ViewIdParamDto } from './DTO/view-id.dto';
+import { ForeignTableQueryDto } from './DTO/foreign-table.dto';
+import { ForeignTableIdParamDto } from './DTO/foreign-table-id.dto';
+import { ColumnPrivilegeQueryDto } from './DTO/column-privilege.dto';
+import { ColumnPrivilegeGrantDto } from './DTO/column-privilege-grant.dto';
+import { ColumnPrivilegeRevokeDto } from './DTO/column-privilege-revoke.dto';
+import { MaterializedViewQueryDto } from './DTO/materialized-view.dto';
+import { MaterializedViewIdParamDto } from './DTO/materialized-view-id.dto';
 
 @Controller({ path: 'meta', version: ['1'] })
 export class PgMetaController {
@@ -519,6 +526,103 @@ export class PgMetaController {
   ) {
     const { id } = params;
     const { data } = await client.views.retrieve({ id });
+    return data;
+  }
+
+  /*************************** Foreign Tables *********************************/
+
+  @Get('foreign-tables')
+  async getForeignTables(
+    @Query() query: ForeignTableQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { limit, offset, includeColumns } = query;
+    const { data } = await client.foreignTables.list({
+      limit,
+      offset,
+      includeColumns,
+    });
+    return data ?? [];
+  }
+
+  @Get('foreign-tables/:id')
+  async getForeignTableById(
+    @Param() params: ForeignTableIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.foreignTables.retrieve({ id });
+    return data;
+  }
+
+  /*************************** Column Privileges *********************************/
+
+  @Get('column-privileges')
+  async getColumnPrivileges(
+    @Query() query: ColumnPrivilegeQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const {
+      includeSystemSchemas,
+      includedSchemas,
+      excludedSchemas,
+      limit,
+      offset,
+    } = query;
+    const { data } = await client.columnPrivileges.list({
+      includeSystemSchemas,
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+    });
+    return data ?? [];
+  }
+
+  @Post('column-privileges')
+  async grantColumnPrivileges(
+    @Body() body: ColumnPrivilegeGrantDto[],
+    @Client() client: PostgresMeta,
+  ) {
+    const { data } = await client.columnPrivileges.grant(body);
+    return data;
+  }
+
+  @Delete('column-privileges')
+  async revokeColumnPrivileges(
+    @Body() body: ColumnPrivilegeRevokeDto[],
+    @Client() client: PostgresMeta,
+  ) {
+    const { data } = await client.columnPrivileges.revoke(body);
+    return data;
+  }
+
+  /*************************** Materialized Views *********************************/
+
+  @Get('materialized-views')
+  async getMaterializedViews(
+    @Query() query: MaterializedViewQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { includedSchemas, excludedSchemas, limit, offset, includeColumns } =
+      query;
+    const { data } = await client.materializedViews.list({
+      includedSchemas: includedSchemas?.split(','),
+      excludedSchemas: excludedSchemas?.split(','),
+      limit,
+      offset,
+      includeColumns,
+    });
+    return data ?? [];
+  }
+
+  @Get('materialized-views/:id')
+  async getMaterializedViewById(
+    @Param() params: MaterializedViewIdParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { id } = params;
+    const { data } = await client.materializedViews.retrieve({ id });
     return data;
   }
 }
