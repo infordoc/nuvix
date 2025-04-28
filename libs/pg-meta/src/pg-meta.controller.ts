@@ -28,6 +28,11 @@ import { ColumnCreateDto } from './DTO/column-create.dto';
 import { ColumnUpdateDto } from './DTO/column-update.dto';
 import { ColumnIdParamDto } from './DTO/column-id.dto';
 import { ColumnDeleteQueryDto } from './DTO/column-delete.dto';
+import { ExtensionQueryDto } from './DTO/extension.dto';
+import { ExtensionNameParamDto } from './DTO/extension-name.dto';
+import { ExtensionCreateDto } from './DTO/extension-create.dto';
+import { ExtensionUpdateDto } from './DTO/extension-update.dto';
+import { ExtensionDeleteQueryDto } from './DTO/extension-delete.dto';
 
 @Controller({ path: 'meta', version: ['1'] })
 export class PgMetaController {
@@ -264,6 +269,60 @@ export class PgMetaController {
     const { id } = params;
     const { cascade } = query;
     const { data } = await client.columns.remove(id, { cascade });
+    return data;
+  }
+
+  /*************************** Extensions *********************************/
+
+  @Get('extensions')
+  async getExtensions(
+    @Query() query: ExtensionQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { limit, offset } = query;
+    const { data } = await client.extensions.list({ limit, offset });
+    return data ?? [];
+  }
+
+  @Get('extensions/:name')
+  async getExtensionByName(
+    @Param() params: ExtensionNameParamDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { name } = params;
+    const { data } = await client.extensions.retrieve({ name });
+    return data;
+  }
+
+  @Post('extensions')
+  async createExtension(
+    @Body() body: ExtensionCreateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { data } = await client.extensions.create(body);
+    return data;
+  }
+
+  @Patch('extensions/:name')
+  async updateExtension(
+    @Param() params: ExtensionNameParamDto,
+    @Body() body: ExtensionUpdateDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { name } = params;
+    const { data } = await client.extensions.update(name, body);
+    return data;
+  }
+
+  @Delete('extensions/:name')
+  async deleteExtension(
+    @Param() params: ExtensionNameParamDto,
+    @Query() query: ExtensionDeleteQueryDto,
+    @Client() client: PostgresMeta,
+  ) {
+    const { name } = params;
+    const { cascade } = query;
+    const { data } = await client.extensions.remove(name, { cascade });
     return data;
   }
 }
