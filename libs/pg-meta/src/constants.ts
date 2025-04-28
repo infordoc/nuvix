@@ -1,5 +1,2 @@
-export const DEFAULT_SYSTEM_SCHEMAS = [
-  'information_schema',
-  'pg_catalog',
-  'pg_toast',
-];
+
+export const CLIENT = Symbol('PG_META_CLIENT');
