@@ -1,4 +1,4 @@
-import prettier from 'prettier/standalone';
+import * as prettier from 'prettier';
 import SqlFormatter from 'prettier-plugin-sql';
 import { parse, deparse } from 'pgsql-parser';
 import { FormatterOptions } from './types';
@@ -60,6 +60,7 @@ export async function Format(
 
     return { data: formatted, error: null };
   } catch (error: any) {
+    console.log(error);
     throw new PgMetaException(error.message);
   }
 }

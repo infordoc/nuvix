@@ -140,6 +140,7 @@
     "argon2",
     "bcrypt",
     "canvas",
+    "libpg-query",
     "msgpackr-extract",
     "sharp"
   ]

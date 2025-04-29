@@ -65,7 +65,7 @@ const poolerQueryHandleError = (
   // )
 };
 
-export const init: (config: PoolConfig) => {
+export const init: (config: PoolConfig | any) => {
   query: (
     sql: string,
     trackQueryInSentry?: boolean,
@@ -107,7 +107,7 @@ export const init: (config: PoolConfig) => {
   // need to call `pool.end()`, but since the server needs this, we make a
   // compromise: if we run `query` after `pool.end()` is called (i.e. pool is
   // `null`), we temporarily create a pool and close it right after.
-  let pool: pg.Pool | null = new pg.Pool(config);
+  let pool: pg.Pool | null = config; //new pg.Pool(config);
 
   return {
     async query(sql, trackQueryInSentry = true) {

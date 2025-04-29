@@ -1,7 +1,7 @@
 import { Static, Type } from '@sinclair/typebox';
 import { DatabaseError } from 'pg-protocol';
 import type { Options as PrettierOptions } from 'prettier';
-import { PoolConfig as PgPoolConfig } from 'pg';
+import { PoolConfig as PgPoolConfig, Pool } from 'pg';
 
 export interface FormatterOptions extends PrettierOptions {}
 
@@ -420,6 +420,8 @@ export type PostgresColumnPrivileges = Static<
   typeof postgresColumnPrivilegesSchema
 >;
 
-export interface PoolConfig extends PgPoolConfig {
+export interface Config extends PgPoolConfig {
   maxResultSize?: number;
 }
+
+export type PoolConfig = Config | Pool;

@@ -73,7 +73,7 @@ import { apply as applyTypescriptTemplate } from './templates/typescript';
 import { apply as applyGoTemplate } from './templates/go';
 import { apply as applySwiftTemplate } from './templates/swift';
 
-@Controller({ path: 'meta', version: ['1'] })
+@Controller({ path: 'database', version: ['1'] })
 export class PgMetaController {
   @Post('query')
   async query(@Client() client: PostgresMeta, @Body() body: QueryDto) {
@@ -249,7 +249,7 @@ export class PgMetaController {
     return data ?? [];
   }
 
-  @Get('columns/:tableId:ordinalPosition')
+  @Get('columns/:tableId/:ordinalPosition')
   async getColumnsByTable(
     @Param() params: ColumnTableParams,
     @Query() query: ColumnQueryDto,
