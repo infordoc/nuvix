@@ -28,6 +28,7 @@ import { ProjectHook } from './hooks/project.hook';
 import { ProjectHook as RequestProjectHook } from '@nuvix/core/resolvers/hooks';
 import { DatabaseModule } from './database/database.module';
 import { DatabaseController } from './database/database.controller';
+import { PgMetaController, PgMetaModule } from '@nuvix/pg-meta';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { DatabaseController } from './database/database.controller';
     OrganizationsModule,
     ProjectModule,
     DatabaseModule,
+    PgMetaModule,
   ],
   controllers: [ConsoleController],
   providers: [ConsoleService, MailQueue],
@@ -75,7 +77,7 @@ export class ConsoleModule implements NestModule {
       .apply(ProjectHook)
       .forRoutes('*')
       .apply(RequestProjectHook)
-      .forRoutes(DatabaseController)
+      .forRoutes(DatabaseController, PgMetaController)
       .apply(HostHook)
       .forRoutes('*')
       .apply(AuthHook, ApiHook)

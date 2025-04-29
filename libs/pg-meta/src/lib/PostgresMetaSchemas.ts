@@ -1,0 +1,135 @@
+import { ident, literal } from 'pg-format';
+import { DEFAULT_SYSTEM_SCHEMAS } from './constants';
+import { schemasSql } from './sql/index';
+import { PostgresMetaResult, PostgresSchema } from './types';
+import { SchemaCreateDto } from '../DTO/schema-create.dto';
+import { SchemaUpdateDto } from '../DTO/schema-update.dto';
+import { PgMetaException } from '../extra/execption';
+
+export default class PostgresMetaSchemas {
+  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+
+  constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
+    this.query = query;
+  }
+
+  async list({
+    includeSystemSchemas = false,
+    limit,
+    offset,
+  }: {
+    includeSystemSchemas?: boolean;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<PostgresMetaResult<PostgresSchema[]>> {
+    let sql = schemasSql;
+    if (!includeSystemSchemas) {
+      sql = `${sql} AND NOT (n.nspname IN (${DEFAULT_SYSTEM_SCHEMAS.map(literal).join(',')}))`;
+    }
+    if (limit) {
+      sql = `${sql} LIMIT ${limit}`;
+    }
+    if (offset) {
+      sql = `${sql} OFFSET ${offset}`;
+    }
+    return await this.query(sql);
+  }
+
+  async retrieve({
+    id,
+  }: {
+    id: number;
+  }): Promise<PostgresMetaResult<PostgresSchema>>;
+  async retrieve({
+    name,
+  }: {
+    name: string;
+  }): Promise<PostgresMetaResult<PostgresSchema>>;
+  async retrieve({
+    id,
+    name,
+  }: {
+    id?: number;
+    name?: string;
+  }): Promise<PostgresMetaResult<PostgresSchema>> {
+    if (id) {
+      const sql = `${schemasSql} AND n.oid = ${literal(id)};`;
+      const { data, error } = await this.query(sql);
+      if (error) {
+        return { data, error };
+      } else if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a schema with ID ${id}`);
+      } else {
+        return { data: data[0], error };
+      }
+    } else if (name) {
+      const sql = `${schemasSql} AND n.nspname = ${literal(name)};`;
+      const { data, error } = await this.query(sql);
+      if (error) {
+        return { data, error };
+      } else if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a schema named ${name}`);
+      } else {
+        return { data: data[0], error };
+      }
+    } else {
+      throw new PgMetaException('Invalid parameters on schema retrieve');
+    }
+  }
+
+  async create({
+    name,
+    owner = 'postgres',
+  }: SchemaCreateDto): Promise<PostgresMetaResult<PostgresSchema>> {
+    const sql = `CREATE SCHEMA ${ident(name)} AUTHORIZATION ${ident(owner)};`;
+    const { error } = await this.query(sql);
+    if (error) {
+      return { data: null, error };
+    }
+    return await this.retrieve({ name });
+  }
+
+  async update(
+    id: number,
+    { name, owner }: SchemaUpdateDto,
+  ): Promise<PostgresMetaResult<PostgresSchema>> {
+    const { data: old, error } = await this.retrieve({ id });
+    if (error) {
+      return { data: null, error };
+    }
+    const nameSql =
+      name === undefined
+        ? ''
+        : `ALTER SCHEMA ${ident(old!.name)} RENAME TO ${ident(name)};`;
+    const ownerSql =
+      owner === undefined
+        ? ''
+        : `ALTER SCHEMA ${ident(old!.name)} OWNER TO ${ident(owner)};`;
+    const sql = `BEGIN; ${ownerSql} ${nameSql} COMMIT;`;
+    {
+      const { error } = await this.query(sql);
+      if (error) {
+        return { data: null, error };
+      }
+    }
+    return await this.retrieve({ id });
+  }
+
+  async remove(
+    id: number,
+    { cascade = false } = {},
+  ): Promise<PostgresMetaResult<PostgresSchema>> {
+    const { data: schema, error } = await this.retrieve({ id });
+    if (error) {
+      return { data: null, error };
+    }
+    const sql = `DROP SCHEMA ${ident(schema!.name)} ${cascade ? 'CASCADE' : 'RESTRICT'};`;
+    {
+      const { error } = await this.query(sql);
+      if (error) {
+        return { data: null, error };
+      }
+    }
+    return { data: schema!, error: null };
+  }
+}
