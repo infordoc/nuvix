@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Delete,
+  UseFilters,
 } from '@nestjs/common';
 import { Client } from './decorators';
 import { PostgresMeta } from './lib';
@@ -72,8 +73,10 @@ import { getGeneratorMetadata } from './lib/generators';
 import { apply as applyTypescriptTemplate } from './templates/typescript';
 import { apply as applyGoTemplate } from './templates/go';
 import { apply as applySwiftTemplate } from './templates/swift';
+import { PgMetaExceptionFilter } from './extra/exception.filter';
 
 @Controller({ path: 'database', version: ['1'] })
+@UseFilters(PgMetaExceptionFilter)
 export class PgMetaController {
   @Post('query')
   async query(@Client() client: PostgresMeta, @Body() body: QueryDto) {
