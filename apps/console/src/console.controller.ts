@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Post,
-  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -19,6 +18,18 @@ import { ResModel } from '@nuvix/core/decorators';
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class ConsoleController {
   constructor(private readonly consoleService: ConsoleService) {}
+
+  @Get()
+  @Public()
+  getMain() {
+    return {
+      message: 'Welcome to Nuvix Console API!',
+      version: '1.0.0',
+      status: 'ok',
+      uptime: process.uptime(),
+      date: new Date(),
+    };
+  }
 
   @Public()
   @Get('variables')

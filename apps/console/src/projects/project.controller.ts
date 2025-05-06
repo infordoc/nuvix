@@ -3,7 +3,6 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   Get,
-  Scope,
 } from '@nestjs/common';
 
 @Controller({ version: ['1'], path: 'project' })
