@@ -1,4 +1,6 @@
+import { Transform } from 'class-transformer';
 import { registerDecorator, ValidationOptions } from 'class-validator';
+import { ValidateIf, isBoolean } from 'class-validator';
 
 export function IsUID(
   validationOptions?: ValidationOptions,
@@ -41,5 +43,21 @@ export function IsKey(
         },
       },
     });
+  };
+}
+
+/**
+ * Decorator that transforms string values 'true' to boolean true
+ * and any other string to boolean false. If the value is already
+ * a boolean, it keeps it as is.
+ */
+export function TransformStringToBoolean() {
+  return function (target: any, propertyKey: string) {
+    Transform(({ value }) => {
+      if (isBoolean(value)) return value;
+      return value === 'true';
+    })(target, propertyKey);
+
+    ValidateIf((_, value) => value !== undefined)(target, propertyKey);
   };
 }

@@ -1,12 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Allow, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class ColumnTableParams {
-  @IsNumber()
   @Type(() => Number)
+  @IsNumber()
   tableId: number;
 
   @IsOptional()
   @IsString()
-  ordinalPosition?: string;
+  ordinalPosition: string;
 }

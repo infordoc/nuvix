@@ -1,7 +1,7 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBooleanString, IsOptional } from 'class-validator';
 
 export class SchemaDeleteQueryDto {
   @IsOptional()
-  @IsBoolean()
+  @IsBooleanString()
   cascade?: boolean;
 }

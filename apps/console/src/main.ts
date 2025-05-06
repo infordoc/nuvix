@@ -87,11 +87,12 @@ async function bootstrap() {
   app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({
-      stopAtFirstError: false,
+      stopAtFirstError: true,
       transform: true,
       transformOptions: {
         exposeDefaultValues: true,
       },
+      whitelist: true,
     }),
   );
 

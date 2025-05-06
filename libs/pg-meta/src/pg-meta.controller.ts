@@ -76,6 +76,8 @@ import { apply as applyTypescriptTemplate } from './templates/typescript';
 import { apply as applyGoTemplate } from './templates/go';
 import { apply as applySwiftTemplate } from './templates/swift';
 import { PgMetaExceptionFilter } from './extra/exception.filter';
+import { ParseComaStringPipe } from '@nuvix/core/pipes/string-coma.pipe';
+import { Exception } from '@nuvix/core/extend/exception';
 
 @Controller({ path: 'database', version: ['1'] })
 @UseFilters(PgMetaExceptionFilter)
@@ -121,11 +123,7 @@ export class PgMetaController {
   }
 
   @Get('schemas/:id')
-  async getSchemaById(
-    @Param() params: SchemaIdParamDto,
-    @Client() client: PostgresMeta,
-  ) {
-    const { id } = params;
+  async getSchemaById(@Param('id') id: number, @Client() client: PostgresMeta) {
     const { data } = await client.schemas.retrieve({ id });
     return data;
   }
@@ -218,11 +216,10 @@ export class PgMetaController {
   @Delete('tables/:id')
   async deleteTable(
     @Param() params: TableIdParamDto,
-    @Query() query: TableDeleteQueryDto,
     @Client() client: PostgresMeta,
+    @Query('cascade') cascade?: boolean,
   ) {
     const { id } = params;
-    const { cascade } = query;
     const { data } = await client.tables.remove(id, { cascade });
     return data;
   }
@@ -231,53 +228,62 @@ export class PgMetaController {
 
   @Get('columns')
   async getColumns(
-    @Query() query: ColumnQueryDto,
     @Client() client: PostgresMeta,
+    @Query('include_system_schemas') includeSystemSchemas?: boolean,
+    @Query('included_schemas', ParseComaStringPipe) includedSchemas?: string[],
+    @Query('excluded_schemas', ParseComaStringPipe) excludedSchemas?: string[],
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
   ) {
-    const {
+    const { data } = await client.columns.list({
       includeSystemSchemas,
       includedSchemas,
       excludedSchemas,
-      limit,
-      offset,
-    } = query;
-    const { data } = await client.columns.list({
-      includeSystemSchemas,
-      includedSchemas: includedSchemas?.split(','),
-      excludedSchemas: excludedSchemas?.split(','),
       limit,
       offset,
     });
     return data ?? [];
   }
 
-  @Get('columns/:tableId/:ordinalPosition')
+  @Get('columns/:tableAndOrdinalPosition')
   async getColumnsByTable(
-    @Param() params: ColumnTableParams,
-    @Query() query: ColumnQueryDto,
+    @Param('tableAndOrdinalPosition') id: string,
     @Client() client: PostgresMeta,
+    @Query('include_system_schemas') includeSystemSchemas?: boolean,
+    @Query('limit') limit?: number,
+    @Query('offset') offset?: number,
+    @Query('included_schemas', ParseComaStringPipe) includedSchemas?: string[],
+    @Query('excluded_schemas', ParseComaStringPipe) excludedSchemas?: string[],
   ) {
-    const { tableId, ordinalPosition } = params;
-    const { includeSystemSchemas, limit, offset } = query;
+    let tableId: number, ordinalPosition: string;
+    if (id.includes('.')) {
+      const [tableIdString, ordinalPositionString] = id.split('.');
+      tableId = parseInt(tableIdString);
+      ordinalPosition = ordinalPositionString;
+    } else {
+      tableId = parseInt(id);
+    }
 
-    if (!ordinalPosition) {
+    if (ordinalPosition) {
       // Get all columns for the table
       const { data } = await client.columns.list({
         tableId,
         includeSystemSchemas,
         limit,
         offset,
+        includedSchemas,
+        excludedSchemas,
       });
-      return data?.[0] ?? null;
-    } else if (
-      ordinalPosition.startsWith('.') &&
-      /^\.\d+$/.test(ordinalPosition)
-    ) {
+      if (data?.[0]) return data[0];
+      throw new Exception(Exception.GENERAL_NOT_FOUND);
+    } else if (/^\.\d+$/.test(ordinalPosition)) {
       // Get specific column by tableId.ordinalPosition
       const position = ordinalPosition.slice(1);
       const id = `${tableId}.${position}`;
       const { data } = await client.columns.retrieve({ id });
       return data;
+    } else {
+      throw new Exception(Exception.GENERAL_NOT_FOUND);
     }
   }
 
@@ -292,23 +298,20 @@ export class PgMetaController {
 
   @Patch('columns/:id')
   async updateColumn(
-    @Param() params: ColumnIdParamDto,
+    @Param('id') id: string,
     @Body() body: ColumnUpdateDto,
     @Client() client: PostgresMeta,
   ) {
-    const { id } = params;
     const { data } = await client.columns.update(id, body);
     return data;
   }
 
   @Delete('columns/:id')
   async deleteColumn(
-    @Param() params: ColumnIdParamDto,
-    @Query() query: ColumnDeleteQueryDto,
+    @Param('id') id: string,
     @Client() client: PostgresMeta,
+    @Query('cascade') cascade?: boolean,
   ) {
-    const { id } = params;
-    const { cascade } = query;
     const { data } = await client.columns.remove(id, { cascade });
     return data;
   }
@@ -371,7 +374,7 @@ export class PgMetaController {
 
   @Get('roles')
   async getRoles(@Query() query: RoleQueryDto, @Client() client: PostgresMeta) {
-    const { includeDefaultRoles, limit, offset } = query;
+    const { include_default_roles: includeDefaultRoles, limit, offset } = query;
     const { data } = await client.roles.list({
       includeDefaultRoles,
       limit,
@@ -428,9 +431,9 @@ export class PgMetaController {
     @Client() client: PostgresMeta,
   ) {
     const {
-      includeSystemSchemas,
-      includedSchemas,
-      excludedSchemas,
+      include_system_schemas: includeSystemSchemas,
+      included_schemas: includedSchemas,
+      excluded_schemas: excludedSchemas,
       limit,
       offset,
     } = query;
@@ -492,9 +495,9 @@ export class PgMetaController {
     @Client() client: PostgresMeta,
   ) {
     const {
-      includeSystemSchemas,
-      includedSchemas,
-      excludedSchemas,
+      include_system_schemas: includeSystemSchemas,
+      included_schemas: includedSchemas,
+      excluded_schemas: excludedSchemas,
       limit,
       offset,
     } = query;
