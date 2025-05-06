@@ -8,8 +8,6 @@ import {
   Patch,
   Delete,
   UseFilters,
-  ParseBoolPipe,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { Client } from './decorators';
 import { PostgresMeta } from './lib';
@@ -20,17 +18,11 @@ import { SchemaIdParamDto } from './DTO/schema-id.dto';
 import { SchemaCreateDto } from './DTO/schema-create.dto';
 import { SchemaUpdateDto } from './DTO/schema-update.dto';
 import { SchemaDeleteQueryDto } from './DTO/schema-delete.dto';
-import { TableQueryDto } from './DTO/table.dto';
 import { TableIdParamDto } from './DTO/table-id.dto';
 import { TableCreateDto } from './DTO/table-create.dto';
 import { TableUpdateDto } from './DTO/table-update.dto';
-import { TableDeleteQueryDto } from './DTO/table-delete.dto';
-import { ColumnQueryDto } from './DTO/column.dto';
-import { ColumnTableParams } from './DTO/column-table.dto';
 import { ColumnCreateDto } from './DTO/column-create.dto';
 import { ColumnUpdateDto } from './DTO/column-update.dto';
-import { ColumnIdParamDto } from './DTO/column-id.dto';
-import { ColumnDeleteQueryDto } from './DTO/column-delete.dto';
 import { ExtensionQueryDto } from './DTO/extension.dto';
 import { ExtensionNameParamDto } from './DTO/extension-name.dto';
 import { ExtensionCreateDto } from './DTO/extension-create.dto';
