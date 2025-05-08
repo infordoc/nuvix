@@ -27,8 +27,10 @@ import sharp from 'sharp';
 import { MultipartFile } from '@fastify/multipart';
 import { CreateFolderDTO } from './DTO/object.dto';
 import { logos } from '@nuvix/core/config/storage/logos';
-import { createReadStream, createWriteStream, WriteStream } from 'fs';
-import { pipeline } from 'stream/promises';
+import { createReadStream, createWriteStream, statSync, WriteStream } from 'fs';
+import { finished, pipeline } from 'stream/promises';
+import retry from 'async-retry';
+import path from 'path';
 
 @Injectable()
 export class StorageService {
@@ -574,15 +576,17 @@ export class StorageService {
       });
     }
 
-    const maximumFileSize = bucket.getAttribute('maximumFileSize', 0);
+    const maximumFileSize = Math.min(
+      bucket.getAttribute('maximumFileSize', APP_STORAGE_LIMIT),
+      APP_STORAGE_LIMIT,
+    );
     if (maximumFileSize > APP_STORAGE_LIMIT) {
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
-        'Maximum bucket file size is larger than APP_STORAGE_LIMIT',
+        'Maximum bucket file size exceeds APP_STORAGE_LIMIT',
       );
     }
 
-    if (Array.isArray(file)) file = file[0];
     if (!file) {
       throw new Exception(Exception.STORAGE_FILE_EMPTY);
     }
@@ -611,15 +615,9 @@ export class StorageService {
       }
 
       const [, start, end, size] = match.map(Number);
-
       const headerFileId = request.headers['x-nuvix-id'];
       if (headerFileId) {
-        if (Array.isArray(headerFileId)) {
-          fileId = headerFileId[0];
-        } else {
-          fileId = headerFileId as string;
-        }
-
+        fileId = Array.isArray(headerFileId) ? headerFileId[0] : headerFileId;
         if (!/^(?:[a-zA-Z0-9][a-zA-Z0-9._-]{0,35})$/.test(fileId)) {
           throw new Exception(
             Exception.INVALID_PARAMS,
@@ -636,10 +634,7 @@ export class StorageService {
       }
 
       const chunkSize = end - start + 1;
-      if (initialChunkSize === 0) {
-        initialChunkSize = chunkSize;
-      }
-
+      initialChunkSize = initialChunkSize || chunkSize;
       chunks = Math.ceil(size / initialChunkSize);
       chunk = Math.floor(start / initialChunkSize) + 1;
     }
@@ -661,27 +656,31 @@ export class StorageService {
     if (fileSize > maximumFileSize) {
       throw new Exception(
         Exception.STORAGE_INVALID_FILE_SIZE,
-        'File size not allowed',
+        'File size exceeds bucket limit',
       );
     }
 
-    const storagePath = `${APP_STORAGE_UPLOADS}/bucket_${bucket.getInternalId()}`;
+    const storagePath = path.join(
+      APP_STORAGE_UPLOADS,
+      `bucket_${bucket.getInternalId()}`,
+    );
     const chunksPath = `${storagePath}/chunks/${fileId}`;
-    const finalFilePath = `${storagePath}/${fileId}.${fileName.split('.').pop()}`;
+    const finalFilePath = `${storagePath}/${fileId}.${fileExt}`;
+
+    let fileDocument: Document;
+    let metadata = { content_type: file.mimetype };
+    let chunksUploaded = 0;
 
     try {
-      // Create directories if they don't exist
+      // Create directories
       await fs.mkdir(storagePath, { recursive: true });
       await fs.mkdir(chunksPath, { recursive: true });
 
-      let fileDocument = await db.getDocument(
+      // Fetch existing document
+      fileDocument = await db.getDocument(
         'bucket_' + bucket.getInternalId(),
         fileId,
       );
-
-      let metadata = { content_type: file.mimetype };
-      let chunksUploaded = 0;
-
       if (!fileDocument.isEmpty()) {
         const chunksTotal = fileDocument.getAttribute('chunksTotal', 1);
         chunksUploaded = fileDocument.getAttribute('chunksUploaded', 0);
@@ -695,90 +694,135 @@ export class StorageService {
       }
 
       const chunkPath = `${chunksPath}/part_${chunk}`;
-      await fs.writeFile(chunkPath, file.file);
-      await fs.chmod(chunkPath, 0o644);
+      this.logger.debug(
+        'Stream not readable, using file buffer for small file',
+      );
+      const buffer = await file.toBuffer();
+      await fs.writeFile(chunkPath, buffer);
+      this.logger.debug(`Buffer written to file, size: ${buffer.length} bytes`);
+
+      const chunkStats = await fs.stat(chunkPath);
+      if (chunkStats.size !== fileSize) {
+        throw new Exception(
+          Exception.STORAGE_INVALID_FILE_SIZE,
+          `Chunk size ${chunkStats.size} does not match expected ${fileSize}`,
+        );
+      }
       chunksUploaded += 1;
 
+      this.logger.debug(
+        `Chunk ${chunk} uploaded to ${chunkPath} (${chunkStats.size} bytes)`,
+      );
+
+      // Combine chunks if all are uploaded
       if (chunksUploaded === chunks) {
         let writeStream: WriteStream | null = null;
         try {
-          // Validate chunks existence with minimal memory usage
-          for (let i = 1; i <= chunks; i++) {
-            const partPath = `${chunksPath}/part_${i}`;
-            const exists = await fs
-              .access(partPath)
+          // Validate chunks in parallel
+          const chunkChecks = Array.from({ length: chunks }, (_, i) =>
+            fs
+              .access(`${chunksPath}/part_${i + 1}`)
               .then(() => true)
-              .catch(() => false);
-            if (!exists) {
-              throw new Exception(
-                Exception.STORAGE_FILE_CHUNK_MISSING,
-                `Missing chunk ${i}`,
-              );
-            }
+              .catch(() => false),
+          );
+          const results = await Promise.all(chunkChecks);
+          const missingChunk = results.findIndex(exists => !exists) + 1;
+          if (missingChunk > 0) {
+            throw new Exception(
+              Exception.STORAGE_FILE_CHUNK_MISSING,
+              `Missing chunk ${missingChunk}`,
+            );
           }
 
-          // Create the final file
+          // Create final file
           writeStream = createWriteStream(finalFilePath, { flags: 'w' });
+          let bytesWritten = 0;
 
-          // Process chunks one at a time with smaller buffer sizes
+          // Handle single chunk case
+          if (chunks === 1) {
+            this.logger.debug('Processing single chunk');
+            const readStream = createReadStream(chunkPath, {
+              highWaterMark: 128 * 1024,
+            });
+            readStream.on('data', chunk => {
+              bytesWritten += chunk.length;
+              this.logger.debug(`Read ${chunk.length} bytes from chunk`);
+            });
+            readStream.on('end', () => {
+              this.logger.debug('Read stream ended');
+            });
+            readStream.on('error', err => {
+              this.logger.error('Read stream error', err);
+              throw err;
+            });
+            writeStream.on('error', err => {
+              this.logger.error('Write stream error', err);
+              throw err;
+            });
+            await pipeline(readStream, writeStream);
+            await finished(writeStream);
+            this.logger.debug(
+              `Wrote ${bytesWritten} bytes to ${finalFilePath}`,
+            );
+          } else {
+            // Process multiple chunks
+            for (let i = 1; i <= chunks; i++) {
+              const partPath = `${chunksPath}/part_${i}`;
+              const readStream = createReadStream(partPath, {
+                highWaterMark: 16 * 1024,
+              });
+              readStream.on('data', chunk => {
+                bytesWritten += chunk.length;
+                this.logger.debug(`Read ${chunk.length} bytes from chunk ${i}`);
+              });
+              readStream.on('end', () => {
+                this.logger.debug(`Read stream ended for chunk ${i}`);
+              });
+              readStream.on('error', err => {
+                this.logger.error(`Read stream error for chunk ${i}`, err);
+                throw err;
+              });
+              await pipeline(readStream, writeStream, { end: false });
+              this.logger.debug(
+                `Wrote chunk ${i}, total bytes: ${bytesWritten}`,
+              );
+            }
+            writeStream.end();
+            await finished(writeStream);
+          }
+
+          // Delete chunks with retries
           for (let i = 1; i <= chunks; i++) {
             const partPath = `${chunksPath}/part_${i}`;
-
-            // Use pipeline with highWaterMark option to control buffer size
-            await pipeline(
-              createReadStream(partPath, { highWaterMark: 16 * 1024 }), // 16KB buffer size
-              writeStream,
-              { end: false },
-            );
-
-            // Delete chunk immediately to free up disk space
-            try {
-              await fs.unlink(partPath);
-              this.logger.debug(`Deleted chunk ${i} at ${partPath}`);
-            } catch (err) {
+            await retry(
+              async () => {
+                await fs.unlink(partPath);
+                this.logger.debug(`Deleted chunk ${i} at ${partPath}`);
+              },
+              { retries: 3, minTimeout: 100 },
+            ).catch(err => {
               this.logger.warn(
-                `Failed to delete chunk ${i}, will retry later`,
+                `Failed to delete chunk ${i} after retries`,
                 err,
               );
-              // Continue processing - we'll try to clean up at the end
-            }
+            });
           }
 
-          // Properly close the write stream
-          await new Promise<void>((resolve, reject) => {
-            if (!writeStream) {
-              return reject(new Error('Write stream not initialized'));
-            }
-
-            writeStream
-              .on('error', err => {
-                this.logger.error('Write stream error', err);
-                reject(err);
-              })
-              .on('finish', () => {
-                this.logger.debug('Write stream finished');
-                resolve();
-              })
-              .end();
+          // Clean up chunks directory
+          await retry(
+            () => fs.rm(chunksPath, { recursive: true, force: true }),
+            { retries: 3, minTimeout: 100 },
+          ).catch(err => {
+            this.logger.warn('Failed to delete chunks directory', err);
           });
 
-          // Try to clean up chunks directory regardless of individual chunk deletion status
-          fs.rm(chunksPath, { recursive: true, force: true }).catch(err =>
-            this.logger.warn('Failed to delete chunks directory', err),
-          );
-
-          // Calculate hash with streaming approach to reduce memory usage
-          this.logger.debug('Calculating file hash');
-          const fileHash = await calculateFileHash(finalFilePath);
-
-          // Get file stats
-          this.logger.debug('Retrieving file stats');
+          // Validate file
           const stats = await fs.stat(finalFilePath);
           const sizeActual = stats.size;
+          const fileHash = await calculateFileHash(finalFilePath);
           const mimeType = file.mimetype;
 
-          // Validate file size if needed
-          if (contentRange && sizeActual !== fileSize) {
+          if (sizeActual !== fileSize) {
             await fs.unlink(finalFilePath).catch(() => {});
             throw new Exception(
               Exception.STORAGE_INVALID_FILE_SIZE,
@@ -788,29 +832,26 @@ export class StorageService {
 
           // Create or update file document
           if (fileDocument.isEmpty()) {
-            const doc = new Document({
-              $id: fileId,
-              $permissions: permissions,
-              bucketId: bucket.getId(),
-              bucketInternalId: bucket.getInternalId(),
-              name: fileName,
-              path: finalFilePath,
-              signature: fileHash,
-              mimeType,
-              sizeOriginal: fileSize,
-              sizeActual,
-              chunksTotal: chunks,
-              chunksUploaded,
-              search: [fileId, fileName].join(' '),
-              metadata,
-            });
-
-            fileDocument = (await db.createDocument(
+            fileDocument = await db.createDocument(
               'bucket_' + bucket.getInternalId(),
-              doc,
-            )) as any;
+              new Document({
+                $id: fileId,
+                $permissions: permissions,
+                bucketId: bucket.getId(),
+                bucketInternalId: bucket.getInternalId(),
+                name: fileName,
+                path: finalFilePath,
+                signature: fileHash,
+                mimeType,
+                sizeOriginal: fileSize,
+                sizeActual,
+                chunksTotal: chunks,
+                chunksUploaded,
+                search: [fileId, fileName].join(' '),
+                metadata,
+              }),
+            );
           } else {
-            // Update existing document
             fileDocument = fileDocument
               .setAttribute('$permissions', permissions)
               .setAttribute('signature', fileHash)
@@ -819,21 +860,20 @@ export class StorageService {
               .setAttribute('metadata', metadata)
               .setAttribute('chunksUploaded', chunksUploaded);
 
-            const validator = new Authorization(Database.PERMISSION_UPDATE);
-            if (!validator.isValid(bucket.getUpdate())) {
+            const updateValidator = new Authorization(
+              Database.PERMISSION_UPDATE,
+            );
+            if (!updateValidator.isValid(bucket.getUpdate())) {
               throw new Exception(Exception.USER_UNAUTHORIZED);
             }
 
-            fileDocument = await Authorization.skip(() =>
-              db.updateDocument(
-                'bucket_' + bucket.getInternalId(),
-                fileId,
-                fileDocument,
-              ),
+            fileDocument = await db.updateDocument(
+              'bucket_' + bucket.getInternalId(),
+              fileId,
+              fileDocument,
             );
           }
         } catch (error) {
-          // Clean up on error
           this.logger.error('Error during chunk combining', error);
           try {
             if (writeStream) {
@@ -850,45 +890,43 @@ export class StorageService {
         }
       } else {
         if (fileDocument.isEmpty()) {
-          const doc = new Document({
-            $id: fileId,
-            $permissions: permissions,
-            bucketId: bucket.getId(),
-            bucketInternalId: bucket.getInternalId(),
-            name: fileName,
-            path: finalFilePath,
-            signature: '',
-            mimeType: '',
-            sizeOriginal: fileSize,
-            sizeActual: 0,
-            chunksTotal: chunks,
-            chunksUploaded,
-            search: [fileId, fileName].join(' '),
-            metadata,
-          });
-
-          fileDocument = (await db.createDocument(
+          fileDocument = await db.createDocument(
             'bucket_' + bucket.getInternalId(),
-            doc,
-          )) as any;
+            new Document({
+              $id: fileId,
+              $permissions: permissions,
+              bucketId: bucket.getId(),
+              bucketInternalId: bucket.getInternalId(),
+              name: fileName,
+              path: finalFilePath,
+              signature: '',
+              mimeType: '',
+              sizeOriginal: fileSize,
+              sizeActual: 0,
+              chunksTotal: chunks,
+              chunksUploaded,
+              search: [fileId, fileName].join(' '),
+              metadata,
+            }),
+          );
         } else {
-          const updatedDoc = fileDocument
-            .setAttribute('chunksUploaded', chunksUploaded)
-            .setAttribute('metadata', metadata);
-
           fileDocument = await db.updateDocument(
             'bucket_' + bucket.getInternalId(),
             fileId,
-            updatedDoc,
+            fileDocument
+              .setAttribute('chunksUploaded', chunksUploaded)
+              .setAttribute('metadata', metadata),
           );
         }
       }
 
       return fileDocument;
     } catch (error) {
-      // Clean up on error
       try {
-        await fs.rm(chunksPath, { recursive: true, force: true });
+        await retry(() => fs.rm(chunksPath, { recursive: true, force: true }), {
+          retries: 3,
+          minTimeout: 100,
+        });
       } catch (cleanupError) {
         this.logger.error('Failed to clean up chunks directory', cleanupError);
       }

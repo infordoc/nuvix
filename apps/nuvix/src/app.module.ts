@@ -1,17 +1,8 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { config } from 'dotenv';
-import { BaseModule } from './base/base.module';
-import { DatabaseModule } from './database/database.module';
-import { AvatarsModule } from './avatars/avatars.module';
-import { UsersModule } from './users/users.module';
-import { AccountModule } from './account/account.module';
-import { TeamsModule } from './teams/teams.module';
-import { RealtimeModule } from './realtime/realtime.module';
-import { FunctionsModule } from './functions/functions.module';
-import { CoreModule } from '@nuvix/core/core.module';
-import { BullModule } from '@nestjs/bullmq';
+import { MailQueue } from '@nuvix/core/resolvers/queues/mail.queue';
+// Constants
 import {
   APP_REDIS_DB,
   APP_REDIS_HOST,
@@ -24,11 +15,7 @@ import {
   WORKER_TYPE_MAILS,
   WORKER_TYPE_USAGE,
 } from '@nuvix/utils/constants';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { StorageModule } from './storage/storage.module';
-import { JwtModule } from '@nestjs/jwt';
-import { MailQueue } from '@nuvix/core/resolvers/queues/mail.queue';
-import { ScheduleModule } from '@nestjs/schedule';
+// Hooks
 import {
   ApiHook,
   AuthHook,
@@ -37,7 +24,32 @@ import {
   ProjectHook,
   ProjectUsageHook,
 } from '@nuvix/core/resolvers/hooks';
+// Modules
+import { JwtModule } from '@nestjs/jwt';
+import { BullModule } from '@nestjs/bullmq';
+import { ScheduleModule } from '@nestjs/schedule';
+import { CoreModule } from '@nuvix/core/core.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BaseModule } from './base/base.module';
+import { DatabaseModule } from './database/database.module';
+import { AvatarsModule } from './avatars/avatars.module';
+import { UsersModule } from './users/users.module';
+import { AccountModule } from './account/account.module';
+import { TeamsModule } from './teams/teams.module';
+import { RealtimeModule } from './realtime/realtime.module';
+import { FunctionsModule } from './functions/functions.module';
+import { StorageModule } from './storage/storage.module';
+// Controllers
 import { SchemaModule } from './schema/schema.module';
+import { BaseController } from './base/base.controller';
+import { UsersController } from './users/users.controller';
+import { TeamsController } from './teams/teams.controller';
+import { AccountController } from './account/account.controller';
+import { DatabaseController } from './database/database.controller';
+import { AvatarsController } from './avatars/avatars.controller';
+import { FunctionsController } from './functions/functions.controller';
+import { SchemaController } from './schema/schema.controller';
+import { StorageController } from './storage/storage.controller';
 
 @Module({
   imports: [
@@ -88,8 +100,28 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(ProjectHook, HostHook, CorsHook)
-      .forRoutes('*')
+      .forRoutes(
+        BaseController,
+        UsersController,
+        TeamsController,
+        AccountController,
+        DatabaseController,
+        AvatarsController,
+        FunctionsController,
+        SchemaController,
+        StorageController,
+      )
       .apply(AuthHook, ApiHook, ProjectUsageHook)
-      .forRoutes('*');
+      .forRoutes(
+        BaseController,
+        UsersController,
+        TeamsController,
+        AccountController,
+        DatabaseController,
+        AvatarsController,
+        FunctionsController,
+        SchemaController,
+        StorageController,
+      );
   }
 }

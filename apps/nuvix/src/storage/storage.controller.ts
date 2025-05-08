@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   ParseIntPipe,
   Post,
@@ -22,7 +23,6 @@ import { Database, Document, Query as Queries } from '@nuvix/database';
 import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import {
-  Label,
   MultipartParam,
   ResModel,
   Scope,
@@ -34,13 +34,15 @@ import { UpdateFileDTO } from './DTO/file.dto';
 import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
-import { MultipartFile } from '@fastify/multipart';
+import { MultipartFile, MultipartValue } from '@fastify/multipart';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
+import { Exception } from '@nuvix/core/extend/exception';
 
 @Controller({ version: ['1'], path: 'storage' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
+  private readonly logger = new Logger(StorageController.name);
   constructor(private readonly storageService: StorageService) {}
 
   @Get('buckets')
@@ -163,6 +165,8 @@ export class StorageController {
     @User() user: Document,
     @Mode() mode: string,
   ) {
+    if (!fileId)
+      throw new Exception(Exception.INVALID_PARAMS, 'fileId is required');
     return await this.storageService.createFile(
       db,
       id,

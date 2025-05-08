@@ -1,14 +1,15 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { FastifyRequest } from 'fastify';
 import { Exception } from '../extend/exception';
+import { MultipartValue } from '@fastify/multipart';
 
 export const UploadedFile = createParamDecorator(
-  async (data: unknown, ctx: ExecutionContext) => {
+  async (data: string = 'file', ctx: ExecutionContext) => {
     const request: FastifyRequest = ctx
       .switchToHttp()
       .getRequest<FastifyRequest>();
 
-    const file = await request.file();
+    const file = request.body[data];
     if (!file) {
       throw new Exception(Exception.STORAGE_INVALID_FILE);
     }
@@ -22,16 +23,7 @@ export const MultipartParam = createParamDecorator(
       .switchToHttp()
       .getRequest<FastifyRequest>();
 
-    const file = await request.file();
-
-    if (!file) {
-      throw new Exception(Exception.STORAGE_INVALID_FILE);
-    }
-
-    let param = file.fields[data];
-    param = Array.isArray(param)
-      ? (param[0] as any).value
-      : (param as any)?.value;
-    return param;
+    const param = request.body[data] as MultipartValue;
+    return param ? param.value : undefined;
   },
 );
