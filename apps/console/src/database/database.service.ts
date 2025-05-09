@@ -8,7 +8,7 @@ import {
   SchemaJobs,
   SchemaQueueOptions,
 } from '@nuvix/core/resolvers/queues/schema.queue';
-import { INTERNAL_SCHEMAS } from '@nuvix/utils/constants';
+import { INTERNAL_SCHEMAS, SYSTEM_SCHEMA } from '@nuvix/utils/constants';
 
 // DTO's
 import { CreateDocumentSchema, CreateSchema } from './DTO/create-schema.dto';
@@ -21,7 +21,7 @@ export class DatabaseService {
   constructor(
     @InjectQueue('schema')
     private readonly schemasQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
-  ) {}
+  ) { }
 
   public async createDocumentSchema(
     db: DataSource,
@@ -53,7 +53,7 @@ export class DatabaseService {
    */
   public async getSchemas(pg: DataSource) {
     const schemas = await pg
-      .table('schemas', { schema: 'metadata' })
+      .table('schemas', { schema: SYSTEM_SCHEMA })
       .select('name', 'description', 'type')
       .whereNotIn('name', INTERNAL_SCHEMAS);
 

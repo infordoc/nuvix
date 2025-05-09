@@ -107,6 +107,8 @@ export const INTERNAL_SCHEMAS = [
   'messaging',
 ] as const;
 
+export const SYSTEM_SCHEMA = 'system' as const;
+
 const allowedHeaders = [
   'Content-Type',
   'Content-Length',
