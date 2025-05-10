@@ -26,7 +26,6 @@ import { Redis } from 'ioredis';
 import { ProjectUsageService } from '@nuvix/core/project-usage.service';
 import { Namespace, Scope } from '@nuvix/core/decorators';
 
-
 @Injectable()
 export class ApiInterceptor implements NestInterceptor {
   constructor(

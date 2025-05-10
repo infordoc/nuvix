@@ -20,7 +20,12 @@ export class Auth {
   ];
 
   public static readonly DEFAULT_ALGO = 'argon2';
-  public static readonly DEFAULT_ALGO_OPTIONS = { type: 'argon2', memoryCost: 2048, timeCost: 4, threads: 3 };
+  public static readonly DEFAULT_ALGO_OPTIONS = {
+    type: 'argon2',
+    memoryCost: 2048,
+    timeCost: 4,
+    threads: 3,
+  };
 
   // User Roles
   public static readonly USER_ROLE_ANY = 'any';
@@ -71,7 +76,7 @@ export class Auth {
 
   public static cookieName: string = 'session';
   public static cookieDomain = SERVER_CONFIG?.cookieDomain || '';
-  public static cookieSamesite: boolean | "none" | "lax" | "strict" = 'none';
+  public static cookieSamesite: boolean | 'none' | 'lax' | 'strict' = 'none';
   public static unique: string = '';
   public static secret: string = '';
 

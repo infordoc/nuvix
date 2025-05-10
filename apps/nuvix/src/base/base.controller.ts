@@ -4,7 +4,6 @@ import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { SEND_TYPE_EMAIL } from '@nuvix/utils/constants';
 import { Queue } from 'bullmq';
 
-
 @Controller({ version: ['1'] })
 export class BaseController {
   constructor(@InjectQueue('mails') private readonly mailQueue: Queue) {}

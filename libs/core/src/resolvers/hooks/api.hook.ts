@@ -18,7 +18,6 @@ import { JwtService } from '@nestjs/jwt';
 import { APP_PLATFORM_SERVER, platforms } from '@nuvix/core/config/platforms';
 import { Hook } from '../../server/hooks/interface';
 
-
 @Injectable()
 export class ApiHook implements Hook {
   private readonly logger = new Logger(ApiHook.name);

@@ -9,7 +9,6 @@ import {
 import { ProjectUsageService } from '@nuvix/core/project-usage.service';
 import { Hook } from '../../server/hooks/interface';
 
-
 @Injectable()
 export class ProjectUsageHook implements Hook {
   private readonly logger = new Logger(ProjectUsageHook.name);

@@ -21,7 +21,7 @@ export class DatabaseService {
   constructor(
     @InjectQueue('schema')
     private readonly schemasQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
-  ) { }
+  ) {}
 
   public async createDocumentSchema(
     db: DataSource,

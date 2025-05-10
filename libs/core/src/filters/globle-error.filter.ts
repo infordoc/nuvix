@@ -6,7 +6,6 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 
-
 @Catch(BadRequestException)
 export class ErrorFilter implements ExceptionFilter {
   private readonly logger = new Logger(ErrorFilter.name);

@@ -5,9 +5,7 @@ import { MultipartValue } from '@fastify/multipart';
 
 export const UploadedFile = createParamDecorator(
   async (data: string = 'file', ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx
-      .switchToHttp()
-      .getRequest<NuvixRequest>();
+    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>();
 
     const file = request.body[data];
     if (!file) {
@@ -19,9 +17,7 @@ export const UploadedFile = createParamDecorator(
 
 export const MultipartParam = createParamDecorator(
   async (data: string, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx
-      .switchToHttp()
-      .getRequest<NuvixRequest>();
+    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>();
 
     const param = request.body[data] as MultipartValue;
     return param ? param.value : undefined;

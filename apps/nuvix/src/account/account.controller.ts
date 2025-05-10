@@ -11,35 +11,35 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AccountService } from './account.service';
+import { AuditEvent, Label, Scope } from '@nuvix/core/decorators';
+import { Locale } from '@nuvix/core/decorators/locale.decorator';
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
+import {
+  AuthDatabase,
+  Project,
+} from '@nuvix/core/decorators/project.decorator';
+import { User } from '@nuvix/core/decorators/project-user.decorator';
+import { Exception } from '@nuvix/core/extend/exception';
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
+import { Models } from '@nuvix/core/helper/response.helper';
+import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
+import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { Database, Document } from '@nuvix/database';
 import {
   CreateAccountDTO,
   UpdateEmailDTO,
   UpdatePrefsDTO,
 } from './DTO/account.dto';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
 import { CreateEmailSessionDTO } from './DTO/session.dto';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { AuditEvent, Label, Scope } from '@nuvix/core/decorators';
-import { Exception } from '@nuvix/core/extend/exception';
+import { AccountService } from './account.service';
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class AccountController {
-  constructor(private readonly accountService: AccountService) { }
+  constructor(private readonly accountService: AccountService) {}
 
   @Public()
   @Post()
@@ -72,7 +72,7 @@ export class AccountController {
   @ResModel(Models.USER)
   async getAccount(@User() user: Document) {
     if (user.isEmpty()) {
-      throw new Exception(Exception.USER_NOT_FOUND)
+      throw new Exception(Exception.USER_NOT_FOUND);
     }
     return user;
   }
@@ -87,10 +87,7 @@ export class AccountController {
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
   ) {
-    return await this.accountService.deleteAccount(
-      authDatabase,
-      user,
-    );
+    return await this.accountService.deleteAccount(authDatabase, user);
   }
 
   @Get('sessions')
@@ -190,7 +187,10 @@ export class AccountController {
   @Label('res.status', 'CREATED')
   @Label('res.type', 'JSON')
   @ResModel(Models.SESSION)
-  @AuditEvent('session.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
   async createEmailSession(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
@@ -212,13 +212,20 @@ export class AccountController {
   }
 
   @Get('prefs')
+  @Scope('account')
+  @Label('res.status', 'OK')
+  @Label('res.type', 'JSON')
   @ResModel(Models.PREFERENCES)
   getPrefs(@User() user: Document) {
     return user.getAttribute('prefs', {});
   }
 
   @Patch('prefs')
+  @Scope('account')
+  @Label('res.status', 'OK')
+  @Label('res.type', 'JSON')
   @ResModel(Models.PREFERENCES)
+  @AuditEvent('user.update', 'user/{res.$id}')
   async updatePrefs(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
@@ -232,7 +239,11 @@ export class AccountController {
   }
 
   @Patch('email')
+  @Scope('account')
+  @Label('res.status', 'OK')
+  @Label('res.type', 'JSON')
   @ResModel(Models.USER)
+  @AuditEvent('user.update', 'user/{res.$id}')
   async updateEmail(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
@@ -244,7 +255,4 @@ export class AccountController {
       updateEmailDto,
     );
   }
-
-
-
 }

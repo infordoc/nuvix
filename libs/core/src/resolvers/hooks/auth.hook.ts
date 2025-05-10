@@ -14,7 +14,6 @@ import {
 } from '@nuvix/utils/constants';
 import { Hook } from '../../server/hooks/interface';
 
-
 @Injectable()
 export class AuthHook implements Hook {
   private readonly logger = new Logger(AuthHook.name);

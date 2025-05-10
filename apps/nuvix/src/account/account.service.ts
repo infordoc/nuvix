@@ -49,7 +49,7 @@ export class AccountService {
     @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
     @InjectQueue('mails') private readonly mailQueue: Queue<MailQueueOptions>,
     private eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   /**
    * Create a new account
@@ -234,10 +234,7 @@ export class AccountService {
 
       session.setAttribute('countryName', countryName);
       session.setAttribute('current', current === session.getId());
-      session.setAttribute(
-        'secret',
-        session.getAttribute('secret', ''),
-      );
+      session.setAttribute('secret', session.getAttribute('secret', ''));
 
       return session;
     });
@@ -281,15 +278,14 @@ export class AccountService {
         session.setAttribute('current', true);
 
         // If current session, delete the cookies too
-        response
-          .cookie(Auth.cookieName, '', {
-            expires: new Date(0),
-            path: '/',
-            domain: Auth.cookieDomain,
-            secure: protocol === 'https',
-            httpOnly: true,
-            sameSite: Auth.cookieSamesite,
-          });
+        response.cookie(Auth.cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          domain: Auth.cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: Auth.cookieSamesite,
+        });
 
         // queueForDeletes.setType(DELETE_TYPE_SESSION_TARGETS).setDocument(session).trigger();
       }
@@ -316,9 +312,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     for (const session of sessions) {
@@ -334,10 +330,7 @@ export class AccountService {
             session.getAttribute('secret') === Auth.hash(Auth.secret),
           )
           .setAttribute('countryName', countryName)
-          .setAttribute(
-            'secret',
-            session.getAttribute('secret', '')
-          );
+          .setAttribute('secret', session.getAttribute('secret', ''));
 
         return session;
       }
@@ -379,15 +372,14 @@ export class AccountService {
           ),
         );
 
-        response
-          .cookie(Auth.cookieName, '', {
-            expires: new Date(0),
-            path: '/',
-            domain: Auth.cookieDomain,
-            secure: protocol === 'https',
-            httpOnly: true,
-            sameSite: Auth.cookieSamesite,
-          });
+        response.cookie(Auth.cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          domain: Auth.cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: Auth.cookieSamesite,
+        });
 
         response.header('X-Fallback-Cookies', JSON.stringify({}));
       }
@@ -424,9 +416,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     const sessions = user.getAttribute('sessions', []);
@@ -457,15 +449,10 @@ export class AccountService {
 
     if (provider && className in authClass) {
       const appId = CONSOLE_CONFIG.oAuthProviders[`${provider}Appid`] ?? '';
-      const appSecret = CONSOLE_CONFIG.oAuthProviders[`${provider}Secret`] ?? '';
+      const appSecret =
+        CONSOLE_CONFIG.oAuthProviders[`${provider}Secret`] ?? '';
 
-      const oauth2 = new authClass[className](
-        appId,
-        appSecret,
-        '',
-        [],
-        [],
-      );
+      const oauth2 = new authClass[className](appId, appSecret, '', [], []);
       await oauth2.refreshTokens(refreshToken);
 
       session
@@ -688,10 +675,7 @@ export class AccountService {
     createdSession
       .setAttribute('current', true)
       .setAttribute('countryName', countryName)
-      .setAttribute(
-        'secret',
-        Auth.encodeSession(user.getId(), secret)
-      );
+      .setAttribute('secret', Auth.encodeSession(user.getId(), secret));
 
     // TODO: Handle Events
     // await this.eventEmitter.emitAsync(EVENT_SESSION_CREATE, {
@@ -728,7 +712,7 @@ export class AccountService {
     let subject: string = locale.getText('emails.sessionAlert.subject');
     const customTemplate =
       project.getAttribute('templates', {})?.[
-      'email.sessionAlert-' + locale.default
+        'email.sessionAlert-' + locale.default
       ] ?? {};
     const templatePath =
       PROJECT_ROOT + 'assets/locale/templates/email-session-alert.tpl';

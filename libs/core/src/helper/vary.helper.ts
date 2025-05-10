@@ -1,4 +1,3 @@
-
 const validFieldnameRE = /^[!#$%&'*+\-.^\w`|~]+$/u;
 
 export function validateFieldname(fieldname: string) {

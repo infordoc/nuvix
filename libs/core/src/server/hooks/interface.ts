@@ -1,4 +1,3 @@
-
 import { LifecycleHook } from 'fastify/types/hooks';
 
 export type Hooks = LifecycleHook;

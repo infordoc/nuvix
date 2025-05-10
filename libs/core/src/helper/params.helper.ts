@@ -1,5 +1,3 @@
-
-
 /**
  * Helper class to get params from headers or query
  */

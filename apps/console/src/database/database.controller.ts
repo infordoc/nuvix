@@ -33,7 +33,7 @@ import { CreateDocumentSchema, CreateSchema } from './DTO/create-schema.dto';
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 export class DatabaseController {
-  constructor(private readonly databaseService: DatabaseService) { }
+  constructor(private readonly databaseService: DatabaseService) {}
 
   @Post('schemas/document')
   @Scope('schema.create')
