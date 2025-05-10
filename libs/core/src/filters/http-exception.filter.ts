@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
 import { Exception } from '../extend/exception';
-import { NuvixRes, NuvixRequest } from 'fastify';
+
 import { DatabaseError } from '@nuvix/database';
 
 @Catch(Exception, DatabaseError)

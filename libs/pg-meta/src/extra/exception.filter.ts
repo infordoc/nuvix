@@ -1,5 +1,5 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
-import { NuvixRes, NuvixRequest } from 'fastify';
+
 import { PgMetaException } from './execption';
 
 @Catch(PgMetaException)
