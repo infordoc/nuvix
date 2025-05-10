@@ -1,12 +1,12 @@
-import { FastifyRequest } from 'fastify';
+
 
 /**
  * Helper class to get params from headers or query
  */
 class ParamsHelper {
-  private req: FastifyRequest;
+  private req: NuvixRequest;
 
-  constructor(req: FastifyRequest) {
+  constructor(req: NuvixRequest) {
     this.req = req;
   }
 

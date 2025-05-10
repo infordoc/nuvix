@@ -10,7 +10,7 @@ import {
   Authorization,
 } from '@nuvix/database';
 import { DuplicateException } from '@nuvix/database';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
@@ -255,8 +255,8 @@ export class AccountService {
     db: Database,
     user: Document,
     locale: LocaleTranslator,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
   ) {
     const protocol = request.protocol;
     const sessions = user.getAttribute('sessions', []);
@@ -353,8 +353,8 @@ export class AccountService {
     db: Database,
     user: Document,
     sessionId: string,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
     locale: LocaleTranslator,
   ) {
     const protocol = request.protocol;
@@ -578,8 +578,8 @@ export class AccountService {
     db: Database,
     user: Document,
     input: CreateEmailSessionDTO,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
     locale: LocaleTranslator,
     project: Document,
   ) {
@@ -604,10 +604,6 @@ export class AccountService {
     if (profile.getAttribute('status') === false) {
       throw new Exception(Exception.USER_BLOCKED);
     }
-
-    const roles = Authorization.getRoles();
-    const isPrivilegedUser = Auth.isPrivilegedUser(roles);
-    const isAppUser = Auth.isAppUser(roles);
 
     user.setAttributes(profile.toObject());
 
@@ -674,22 +670,12 @@ export class AccountService {
     const expire = new Date(Date.now() + duration * 1000);
 
     response
-      .cookie(
-        `${Auth.cookieName}_legacy`,
-        Auth.encodeSession(user.getId(), secret),
-        {
-          expires: expire,
-          path: '/',
-          secure: protocol === 'https',
-          sameSite: Auth.cookieSamesite as any,
-          httpOnly: true,
-        },
-      )
       .cookie(Auth.cookieName, Auth.encodeSession(user.getId(), secret), {
         expires: expire,
         path: '/',
         secure: protocol === 'https',
-        sameSite: Auth.cookieSamesite as any,
+        domain: Auth.cookieDomain,
+        sameSite: Auth.cookieSamesite,
         httpOnly: true,
       })
       .status(201);
@@ -704,19 +690,18 @@ export class AccountService {
       .setAttribute('countryName', countryName)
       .setAttribute(
         'secret',
-        isPrivilegedUser || isAppUser
-          ? Auth.encodeSession(user.getId(), secret)
-          : '',
+        Auth.encodeSession(user.getId(), secret)
       );
 
-    await this.eventEmitter.emitAsync(EVENT_SESSION_CREATE, {
-      userId: user.getId(),
-      sessionId: createdSession.getId(),
-      payload: {
-        data: createdSession,
-        type: Models.SESSION,
-      },
-    });
+    // TODO: Handle Events
+    // await this.eventEmitter.emitAsync(EVENT_SESSION_CREATE, {
+    //   userId: user.getId(),
+    //   sessionId: createdSession.getId(),
+    //   payload: {
+    //     data: createdSession,
+    //     type: Models.SESSION,
+    //   },
+    // });
 
     if (project.getAttribute('auths', {}).sessionAlerts ?? false) {
       const sessionCount = await db.count('sessions', [

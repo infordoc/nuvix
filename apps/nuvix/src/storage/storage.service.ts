@@ -18,7 +18,7 @@ import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import collections from '@nuvix/core/collections';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { CreateFileDTO, UpdateFileDTO } from './DTO/file.dto';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import { JwtService } from '@nestjs/jwt';
@@ -522,7 +522,7 @@ export class StorageService {
     bucketId: string,
     input: CreateFileDTO,
     file: MultipartFile,
-    request: FastifyRequest,
+    request: NuvixRequest,
     user: Document,
     mode: string,
   ) {
@@ -1070,8 +1070,8 @@ export class StorageService {
     db: Database,
     bucketId: string,
     fileId: string,
-    response: FastifyReply,
-    request: FastifyRequest,
+    response: NuvixRes,
+    request: NuvixRequest,
   ) {
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
@@ -1174,8 +1174,8 @@ export class StorageService {
     db: Database,
     bucketId: string,
     fileId: string,
-    response: FastifyReply,
-    request: FastifyRequest,
+    response: NuvixRes,
+    request: NuvixRequest,
   ) {
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
@@ -1276,8 +1276,8 @@ export class StorageService {
     bucketId: string,
     fileId: string,
     jwt: string,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
   ) {
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),

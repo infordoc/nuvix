@@ -3,7 +3,7 @@ import { All, Controller, Query, Res } from '@nestjs/common';
 import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { SEND_TYPE_EMAIL } from '@nuvix/utils/constants';
 import { Queue } from 'bullmq';
-import { FastifyReply } from 'fastify';
+
 
 @Controller({ version: ['1'] })
 export class BaseController {
@@ -11,7 +11,7 @@ export class BaseController {
 
   @All('health/version')
   @Public()
-  healthVersion(@Res() res: FastifyReply): FastifyReply {
+  healthVersion(@Res() res: NuvixRes): NuvixRes {
     return res.status(200).send({
       status: 'UP',
       version: '1.0.0',
@@ -20,7 +20,7 @@ export class BaseController {
 
   @All('vcs/installations')
   @Public()
-  vcsInstallations(@Res() res: FastifyReply): FastifyReply {
+  vcsInstallations(@Res() res: NuvixRes): NuvixRes {
     return res.status(200).send({
       total: 0,
       installations: [],

@@ -1,5 +1,5 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
-import { FastifyReply, FastifyRequest } from 'fastify';
+import { NuvixRes, NuvixRequest } from 'fastify';
 import { PgMetaException } from './execption';
 
 @Catch(PgMetaException)
@@ -8,8 +8,8 @@ export class PgMetaExceptionFilter implements ExceptionFilter {
 
   catch(exception: PgMetaException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<FastifyReply>();
-    const request = ctx.getRequest<FastifyRequest>();
+    const response = ctx.getResponse<NuvixRes>();
+    const request = ctx.getRequest<NuvixRequest>();
 
     let status = getStatusCodeFromError(exception);
 

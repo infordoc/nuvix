@@ -8,7 +8,7 @@ import {
 } from '@nuvix/utils/constants';
 import { ProjectUsageService } from '@nuvix/core/project-usage.service';
 import { Hook } from '../../server/hooks/interface';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 
 @Injectable()
 export class ProjectUsageHook implements Hook {
@@ -16,7 +16,7 @@ export class ProjectUsageHook implements Hook {
 
   constructor(private readonly projectUsage: ProjectUsageService) {}
 
-  async onRequest(req: FastifyRequest): Promise<void> {
+  async onRequest(req: NuvixRequest): Promise<void> {
     try {
       const project: Document = req[PROJECT];
       if (project.isEmpty() || project.getId() === 'console') return;
@@ -35,7 +35,7 @@ export class ProjectUsageHook implements Hook {
     }
   }
 
-  async onResponse(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onResponse(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     try {
       const project: Document = req[PROJECT];
       if (project.isEmpty() || project.getId() === 'console') return;
@@ -53,7 +53,7 @@ export class ProjectUsageHook implements Hook {
     }
   }
 
-  private calculateInboundSize(req: FastifyRequest): number {
+  private calculateInboundSize(req: NuvixRequest): number {
     let size = 0;
 
     if (req.body) {
@@ -82,7 +82,7 @@ export class ProjectUsageHook implements Hook {
     return size;
   }
 
-  private calculateOutboundSize(reply: FastifyReply): number {
+  private calculateOutboundSize(reply: NuvixRes): number {
     let size = 0;
     size += Number(reply.getHeader('content-length')) || 0;
     size += Buffer.byteLength(JSON.stringify(reply.getHeaders()));

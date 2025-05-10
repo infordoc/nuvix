@@ -9,7 +9,7 @@ import {
   Query,
   Role,
 } from '@nuvix/database';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { CountryResponse, Reader } from 'maxmind';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
@@ -60,7 +60,7 @@ export class AccountService {
     email: string,
     password: string,
     name: string,
-    request: FastifyRequest,
+    request: NuvixRequest,
     user: Document,
   ): Promise<Document> {
     email = email.toLowerCase();
@@ -602,8 +602,8 @@ export class AccountService {
    */
   async deleteSessions(
     user: Document,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
   ) {
     const protocol = request.protocol;
     const sessions = user.getAttribute('sessions', []);
@@ -703,8 +703,8 @@ export class AccountService {
   async deleteSession(
     user: Document,
     sessionId: string,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
   ) {
     const protocol = request.protocol;
     const sessions = user.getAttribute('sessions', []);
@@ -870,8 +870,8 @@ export class AccountService {
   async createEmailSession(
     user: Document,
     input: CreateEmailSessionDTO,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
   ) {
     const email = input.email.toLowerCase();
     const protocol = request.protocol;
@@ -1009,8 +1009,8 @@ export class AccountService {
   async createSession(
     userId: string,
     secret: string,
-    request: FastifyRequest,
-    response: FastifyReply,
+    request: NuvixRequest,
+    response: NuvixRes,
     user: Document,
     // locale: Locale,
     // queueForEvents: Event,

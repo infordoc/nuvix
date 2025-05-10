@@ -40,7 +40,7 @@ import {
   AuthType,
   AuthDatabase,
 } from '@nuvix/core/decorators';
-import { FastifyRequest } from 'fastify';
+
 import { CreateTokenDTO } from './dto/token.dto';
 import { CreateJwtDTO } from './dto/jwt.dto';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
@@ -435,7 +435,7 @@ export class UsersController {
     @AuthDatabase() authDatabase: Database,
     @Param('id') id: string,
     @Body() input: CreateTokenDTO,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
   ): Promise<any> {
     return await this.usersService.createToken(authDatabase, id, input, req);
   }

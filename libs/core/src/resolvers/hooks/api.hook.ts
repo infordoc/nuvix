@@ -17,7 +17,7 @@ import ParamsHelper from '@nuvix/core/helper/params.helper';
 import { JwtService } from '@nestjs/jwt';
 import { APP_PLATFORM_SERVER, platforms } from '@nuvix/core/config/platforms';
 import { Hook } from '../../server/hooks/interface';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 
 @Injectable()
 export class ApiHook implements Hook {
@@ -27,7 +27,7 @@ export class ApiHook implements Hook {
     private readonly jwtService: JwtService,
   ) {}
 
-  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
     const project: Document = req[PROJECT];
     let user: Document = req[USER];

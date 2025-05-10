@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { Document } from '@nuvix/database';
 import { PROJECT, SERVER_CONFIG } from '@nuvix/utils/constants';
 import { Hook } from '../../server/hooks/interface';
@@ -34,7 +34,7 @@ export class CorsHook implements Hook {
     strictPreflight: true,
   };
 
-  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     try {
       const hostname = req.hostname;
       const project: Document = req[PROJECT];
@@ -67,7 +67,7 @@ export class CorsHook implements Hook {
   }
 
   private addCorsHeaders(
-    reply: FastifyReply,
+    reply: NuvixRes,
     origin: string | false,
     options: CorsOptions,
   ) {
@@ -92,7 +92,7 @@ export class CorsHook implements Hook {
   }
 
   private handleVaryHeaders(
-    reply: FastifyReply,
+    reply: NuvixRes,
     options: typeof this.defaultOptions,
   ) {
     if (typeof options.origin === 'string' && options.origin !== '*') {
@@ -102,8 +102,8 @@ export class CorsHook implements Hook {
   }
 
   private handlePreflight(
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     options: typeof this.defaultOptions,
   ) {
     const origin = req.headers.origin;

@@ -1,4 +1,4 @@
-import { FastifyReply } from 'fastify';
+
 const validFieldnameRE = /^[!#$%&'*+\-.^\w`|~]+$/u;
 
 export function validateFieldname(fieldname: string) {
@@ -17,7 +17,7 @@ export function createAddFieldnameToVary(fieldname: string) {
   validateFieldname(fieldname);
   const fieldLower = fieldname.toLowerCase();
 
-  return (reply: FastifyReply) => {
+  return (reply: NuvixRes) => {
     const existing = reply.getHeader('Vary')?.toString() || '';
     const values = new Set(parse(existing));
 

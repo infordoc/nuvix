@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Document } from '@nuvix/database';
 import { DataSource } from '@nuvix/pg';
-import { FastifyRequest } from 'fastify';
+
 import { GetProjectDbFn } from '@nuvix/core/core.module';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
@@ -19,7 +19,7 @@ export class DatabaseHook implements Hook {
     @Inject(GET_PROJECT_DB) private readonly getProjectDB: GetProjectDbFn,
   ) {}
 
-  async preHandler(request: FastifyRequest) {
+  async preHandler(request: NuvixRequest) {
     const project = request[PROJECT] as Document;
     if (project.isEmpty() || project.getId() === 'console') {
       throw new Exception(Exception.PROJECT_NOT_FOUND);

@@ -22,7 +22,7 @@ import { PhoneValidator } from '@nuvix/core/validators/phone.validator';
 import { PasswordHistoryValidator } from '@nuvix/core/validators/password-history.validator';
 import { MfaType, TOTP } from '@nuvix/core/validators/MFA.validator';
 import { Detector } from '@nuvix/core/helper/detector.helper';
-import { FastifyRequest } from 'fastify';
+
 import { CreateTokenDTO } from './dto/token.dto';
 import { CreateJwtDTO } from './dto/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -1228,7 +1228,7 @@ export class UsersService {
     db: Database,
     userId: string,
     input: CreateTokenDTO,
-    req: FastifyRequest,
+    req: NuvixRequest,
   ) {
     const user = await db.getDocument('users', userId);
 
@@ -1313,7 +1313,7 @@ export class UsersService {
   async createSession(
     db: Database,
     userId: string,
-    req: FastifyRequest,
+    req: NuvixRequest,
     project: Document,
   ) {
     const user = await db.getDocument('users', userId);

@@ -1,11 +1,11 @@
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { LifecycleHook } from 'fastify/types/hooks';
 
 export type Hooks = LifecycleHook;
 
 export type AsyncHook<T extends any[] = []> = (
-  req: FastifyRequest,
-  reply: FastifyReply,
+  req: NuvixRequest,
+  reply: NuvixRes,
   next: (err?: Error) => void,
   ...args: T
 ) => Promise<unknown>;
@@ -77,57 +77,57 @@ export type HookMethod = keyof LifecycleHookMethods;
 export interface Hook extends Partial<LifecycleHookMethods> {
   // Explicitly define method signatures for better IDE autocompletion
   onRequest?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
   preParsing?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
     payload: unknown,
   ) => Promise<unknown>;
   preValidation?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
   preHandler?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
   preSerialization?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
     payload: unknown,
   ) => Promise<unknown>;
   onSend?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
     payload: unknown,
   ) => Promise<unknown>;
   onResponse?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
   onError?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
     error: Error,
   ) => Promise<unknown>;
   onTimeout?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
   onRequestAbort?: (
-    req: FastifyRequest,
-    reply: FastifyReply,
+    req: NuvixRequest,
+    reply: NuvixRes,
     next: (err?: Error) => void,
   ) => Promise<unknown>;
 }

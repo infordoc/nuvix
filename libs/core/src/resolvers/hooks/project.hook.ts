@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Authorization, Database, Document } from '@nuvix/database';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import {
   AUTH_SCHEMA_DB,
   CACHE,
@@ -36,7 +36,7 @@ export class ProjectHook implements Hook {
     private readonly getProjectDb: GetProjectDbFn,
   ) {}
 
-  async onRequest(req: FastifyRequest, reply: FastifyReply) {
+  async onRequest(req: NuvixRequest, reply: NuvixRes) {
     const params = new ParamsHelper(req);
     const projectId =
       params.getFromHeaders('x-nuvix-project') ||
@@ -75,7 +75,7 @@ export class ProjectHook implements Hook {
     return null;
   }
 
-  async onResponse(req: FastifyRequest) {
+  async onResponse(req: NuvixRequest) {
     const dataSource: DataSource | undefined = req[PROJECT_PG];
     if (dataSource && dataSource instanceof DataSource) {
       try {

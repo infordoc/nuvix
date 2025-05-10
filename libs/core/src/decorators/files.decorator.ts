@@ -1,13 +1,13 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+
 import { Exception } from '../extend/exception';
 import { MultipartValue } from '@fastify/multipart';
 
 export const UploadedFile = createParamDecorator(
   async (data: string = 'file', ctx: ExecutionContext) => {
-    const request: FastifyRequest = ctx
+    const request: NuvixRequest = ctx
       .switchToHttp()
-      .getRequest<FastifyRequest>();
+      .getRequest<NuvixRequest>();
 
     const file = request.body[data];
     if (!file) {
@@ -19,9 +19,9 @@ export const UploadedFile = createParamDecorator(
 
 export const MultipartParam = createParamDecorator(
   async (data: string, ctx: ExecutionContext) => {
-    const request: FastifyRequest = ctx
+    const request: NuvixRequest = ctx
       .switchToHttp()
-      .getRequest<FastifyRequest>();
+      .getRequest<NuvixRequest>();
 
     const param = request.body[data] as MultipartValue;
     return param ? param.value : undefined;

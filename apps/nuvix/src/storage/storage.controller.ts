@@ -14,7 +14,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FastifyRequest } from 'fastify';
+
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { StorageService } from './storage.service';
 import { Models } from '@nuvix/core/helper/response.helper';
@@ -140,7 +140,7 @@ export class StorageController {
   //   @Body('name') name: string,
   //   @Body('permissions') permissions: string[] = [],
   //   @UploadedFile() file: MultipartFile,
-  //   @Req() req: FastifyRequest,
+  //   @Req() req: NuvixRequest,
   //   @User() user: Document,
   // ) {
   //   return await this.storageService.uploadFile(
@@ -161,7 +161,7 @@ export class StorageController {
     @MultipartParam('fileId') fileId: string,
     @MultipartParam('permissions') permissions: string[] = [],
     @UploadedFile() file: MultipartFile,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
     @User() user: Document,
     @Mode() mode: string,
   ) {
@@ -193,7 +193,7 @@ export class StorageController {
     @StorageDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
     @Query('width', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     width?: string,
     @Query('height', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -241,7 +241,7 @@ export class StorageController {
     @StorageDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.downloadFile(db, id, fileId, res, req);
@@ -252,7 +252,7 @@ export class StorageController {
     @StorageDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.viewFile(db, id, fileId, res, req);
@@ -264,7 +264,7 @@ export class StorageController {
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Query('jwt') jwt: string,
-    @Req() req: FastifyRequest,
+    @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
   ) {
     return await this.storageService.getFileForPushNotification(

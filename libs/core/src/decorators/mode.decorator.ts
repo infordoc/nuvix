@@ -1,13 +1,13 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import ParamsHelper from '../helper/params.helper';
 import { APP_MODE_DEFAULT } from '@nuvix/utils/constants';
-import { FastifyRequest } from 'fastify';
+
 
 export const Mode = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: FastifyRequest = ctx
+    const request: NuvixRequest = ctx
       .switchToHttp()
-      .getRequest<FastifyRequest>();
+      .getRequest<NuvixRequest>();
 
     const params = new ParamsHelper(request);
 

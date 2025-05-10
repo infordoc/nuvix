@@ -3,7 +3,7 @@ import { createCanvas, registerFont } from 'canvas';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import { default as path } from 'path';
-import { FastifyReply } from 'fastify';
+
 import { PROJECT_ROOT } from '@nuvix/utils/constants';
 import fs from 'fs';
 
@@ -44,7 +44,7 @@ export class AvatarsService {
     height: number | string;
     background: string;
     circle: boolean | string;
-    res: FastifyReply;
+    res: NuvixRes;
   }) {
     try {
       width = Number(width);

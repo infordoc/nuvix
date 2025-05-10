@@ -25,7 +25,7 @@ import { TOTP } from '../../validators/MFA.validator';
 import { Redis } from 'ioredis';
 import { ProjectUsageService } from '@nuvix/core/project-usage.service';
 import { Namespace, Scope } from '@nuvix/core/decorators';
-import { FastifyRequest } from 'fastify';
+
 
 @Injectable()
 export class ApiInterceptor implements NestInterceptor {
@@ -36,7 +36,7 @@ export class ApiInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const request = context.switchToHttp().getRequest<FastifyRequest>();
+    const request = context.switchToHttp().getRequest<NuvixRequest>();
     const params = new ParamsHelper(request);
     const project = request[PROJECT] as Document;
     let user = request[USER] as Document;

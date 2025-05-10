@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Authorization, Database, Document, Query } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
-import { FastifyRequest, FastifyReply } from 'fastify';
+
 import { DB_FOR_CONSOLE, PROJECT, SERVER_CONFIG } from '@nuvix/utils/constants';
 import { Hook } from '../../server/hooks/interface';
 
@@ -12,7 +12,7 @@ export class HostHook implements Hook {
     @Inject(DB_FOR_CONSOLE) private readonly dbForConsole: Database,
   ) {}
 
-  async onRequest(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+  async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const host = req.hostname ?? SERVER_CONFIG.host;
     const project: Document = req[PROJECT];
 

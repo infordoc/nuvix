@@ -184,6 +184,32 @@ export class AccountController {
     );
   }
 
+  @Public()
+  @Post(['sessions/email', 'sessions'])
+  @Scope('sessions.create')
+  @Label('res.status', 'CREATED')
+  @Label('res.type', 'JSON')
+  @ResModel(Models.SESSION)
+  @AuditEvent('session.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  async createEmailSession(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreateEmailSessionDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createEmailSession(
+      authDatabase,
+      user,
+      input,
+      request,
+      response,
+      locale,
+      project,
+    );
+  }
 
   @Get('prefs')
   @ResModel(Models.PREFERENCES)
@@ -219,28 +245,6 @@ export class AccountController {
     );
   }
 
-  @Public()
-  @Post(['sessions/email', 'sessions'])
-  @ResModel(Models.SESSION)
-  async createEmailSession(
-    @AuthDatabase() authDatabase: Database,
-    @User() user: Document,
-    @Body() input: CreateEmailSessionDTO,
-    @Req() request: any,
-    @Res({ passthrough: true }) response: any,
-    @Locale() locale: LocaleTranslator,
-    @Project() project: Document,
-  ) {
-    return await this.accountService.createEmailSession(
-      authDatabase,
-      user,
-      input,
-      request,
-      response,
-      locale,
-      project,
-    );
-  }
 
 
 }
