@@ -2,6 +2,7 @@ import {
   IsBoolean,
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsPhoneNumber,
@@ -16,21 +17,20 @@ export class CreateUserDTO {
   @IsUID()
   userId: string;
 
+  @IsOptional()
   @IsEmail()
-  @IsNotEmpty()
   email: string;
 
   @IsOptional()
   @IsPhoneNumber(null)
-  @IsNotEmpty()
   phone: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @Length(8)
   password: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @Length(1, 128)
   name: string;
 }
@@ -54,19 +54,19 @@ export class CreateUserWithScryptDTO extends CreateUserDTO {
   passwordSalt?: string;
 
   @IsOptional()
-  @IsNotEmpty()
+  @IsNumber()
   passwordCpu?: number;
 
   @IsOptional()
-  @IsNotEmpty()
+  @IsNumber()
   passwordMemory?: number;
 
   @IsOptional()
-  @IsNotEmpty()
+  @IsNumber()
   passwordParallel?: number;
 
   @IsOptional()
-  @IsNotEmpty()
+  @IsNumber()
   passwordLength?: number;
 }
 
