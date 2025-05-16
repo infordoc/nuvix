@@ -9,7 +9,12 @@ import type {
   GetProjectPG,
   GetProjectDbFn,
 } from '@nuvix/core/core.module';
-import { POOLS, GET_PROJECT_PG, GET_PROJECT_DB, APP_POSTGRES_PASSWORD } from '@nuvix/utils/constants';
+import {
+  POOLS,
+  GET_PROJECT_PG,
+  GET_PROJECT_DB,
+  APP_POSTGRES_PASSWORD,
+} from '@nuvix/utils/constants';
 import collections from '@nuvix/core/collections';
 
 @Processor('schema')
