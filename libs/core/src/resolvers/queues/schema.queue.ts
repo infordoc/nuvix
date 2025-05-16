@@ -9,7 +9,7 @@ import type {
   GetProjectPG,
   GetProjectDbFn,
 } from '@nuvix/core/core.module';
-import { POOLS, GET_PROJECT_PG, GET_PROJECT_DB } from '@nuvix/utils/constants';
+import { POOLS, GET_PROJECT_PG, GET_PROJECT_DB, APP_POSTGRES_PASSWORD } from '@nuvix/utils/constants';
 import collections from '@nuvix/core/collections';
 
 @Processor('schema')
@@ -42,8 +42,14 @@ export class SchemaQueue extends Queue {
     project: Document,
     schema: string,
   ): Promise<void> {
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const db = this.getProjectDb(pool, project.getId());
     db.setDatabase(schema);

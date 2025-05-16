@@ -10,6 +10,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import {
+  APP_POSTGRES_PASSWORD,
   DATABASE_TYPE_CREATE_ATTRIBUTE,
   DATABASE_TYPE_CREATE_INDEX,
   DATABASE_TYPE_DELETE_ATTRIBUTE,
@@ -81,8 +82,14 @@ export class DatabaseQueue extends Queue {
     this.logger.debug('createAttribute', collection, attribute, project);
 
     const dbForConsole = this.dbForConsole;
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const dbForProject = this.getProjectDb(pool, project.getId());
     dbForProject.setDatabase(data.database);
@@ -158,8 +165,8 @@ export class DatabaseQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                    '_' +
-                    options['twoWayKey'],
+                  '_' +
+                  options['twoWayKey'],
                 );
                 await dbForProject.updateDocument(
                   'attributes',
@@ -237,8 +244,14 @@ export class DatabaseQueue extends Queue {
     const attribute = new Document(data.attribute);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const dbForProject = this.getProjectDb(pool, project.getId());
     dbForProject.setDatabase(data.database);
@@ -367,9 +380,9 @@ export class DatabaseQueue extends Queue {
               if (
                 existing.getAttribute('key') !== index.getAttribute('key') &&
                 existing.getAttribute('attributes').toString() ===
-                  index.getAttribute('attributes').toString() &&
+                index.getAttribute('attributes').toString() &&
                 existing.getAttribute('orders').toString() ===
-                  index.getAttribute('orders').toString()
+                index.getAttribute('orders').toString()
               ) {
                 exists = true;
                 break;
@@ -426,8 +439,14 @@ export class DatabaseQueue extends Queue {
     const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const dbForProject = this.getProjectDb(pool, project.getId());
     dbForProject.setDatabase(data.database);
@@ -498,8 +517,14 @@ export class DatabaseQueue extends Queue {
     const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForConsole = this.dbForConsole;
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const dbForProject = this.getProjectDb(pool, project.getId());
     dbForProject.setDatabase(data.database);
@@ -558,8 +583,14 @@ export class DatabaseQueue extends Queue {
   private async deleteCollection(data: any, token: any): Promise<void> {
     const project = new Document(data.project);
     const collection = new Document(data.collection);
+    const dbOptions = project.getAttribute('database');
     const pool = await this.getPool(project.getId(), {
-      database: project.getAttribute('database'),
+      database: dbOptions.name,
+      user: dbOptions.adminRole,
+      password: APP_POSTGRES_PASSWORD,
+      port: dbOptions.port,
+      host: dbOptions.host,
+      max: 30,
     });
     const dbForProject = this.getProjectDb(pool, project.getId());
     dbForProject.setDatabase(data.database);

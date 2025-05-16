@@ -3,8 +3,8 @@ import { Authorization, Database, Document } from '@nuvix/database';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
 
 import {
+  APP_POSTGRES_PASSWORD,
   AUTH_SCHEMA_DB,
-  CACHE,
   DB_FOR_CONSOLE,
   GET_PROJECT_DB,
   GET_PROJECT_PG,
@@ -36,7 +36,7 @@ export class ProjectHook implements Hook {
     private readonly getProjectDb: GetProjectDbFn,
   ) {}
 
-  async onRequest(req: NuvixRequest, reply: NuvixRes) {
+  async onRequest(req: NuvixRequest) {
     const params = new ParamsHelper(req);
     const projectId =
       params.getFromHeaders('x-nuvix-project') ||
@@ -52,18 +52,21 @@ export class ProjectHook implements Hook {
     );
 
     if (!project.isEmpty()) {
-      this.logger.debug(`Project: ${project.getAttribute('name')}`);
-      const databaseName = project.getAttribute('database');
       try {
+        const dbOptions = project.getAttribute('database');
         const pool = await this.getPool(project.getId(), {
-          database: databaseName,
+          database: dbOptions.name,
+          user: dbOptions.adminRole,
+          password: APP_POSTGRES_PASSWORD,
+          port: dbOptions.port,
+          host: dbOptions.host,
+          max: 30,
         });
         req[PROJECT_POOL] = pool;
         req[PROJECT_DB] = this.getProjectDb(pool, project.getId());
         req[PROJECT_PG] = this.gerProjectPg(await pool.connect());
         const authDB = this.getProjectDb(pool, project.getId());
         authDB.setDatabase('auth');
-        authDB.setPrefix(project.getId());
         req[AUTH_SCHEMA_DB] = authDB;
       } catch (e) {
         this.logger.error('Something went wrong while connecting database.', e);
@@ -81,10 +84,7 @@ export class ProjectHook implements Hook {
       try {
         const client: PoolClient | undefined = dataSource.getClient();
         if (client) {
-          await client.release();
-          this.logger.debug(`Pool client released successfully`);
-        } else {
-          this.logger.debug(`No pool client to release`);
+          client.release();
         }
 
         // Clear the reference to prevent potential memory leaks

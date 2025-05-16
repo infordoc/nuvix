@@ -66,8 +66,8 @@ interface PoolOptions {
   max?: number;
 }
 export interface PoolStoreFn {
-  (name: string, options: Partial<PoolOptions>): Promise<PgPool>;
-  (name: 'root', options?: PoolOptions): Promise<PgPool>;
+  (name: string, options: PoolOptions): Promise<PgPool>;
+  (name: 'root', options?: Partial<PoolOptions>): Promise<PgPool>;
 }
 
 export type GetProjectDbFn = (pool: PgPool, projectId: string) => Database;
