@@ -126,6 +126,8 @@ export const APP_DATABASE_PORT = parseInt(
   10,
 );
 
+export const APP_INTERNAL_POOL_API = process.env.APP_POOL_API;
+
 export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
