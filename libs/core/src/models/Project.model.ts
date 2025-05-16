@@ -353,6 +353,9 @@ export class ProjectModel extends BaseModel {
    */
   @Expose() region: string;
 
+  @Expose() status: string;
+  @Expose() enabled: boolean;
+
   constructor() {
     super();
     this.$permissions = [];

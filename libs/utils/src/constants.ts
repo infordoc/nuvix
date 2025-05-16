@@ -62,7 +62,7 @@ export const ASSETS = {
   FONTS: path.join(PROJECT_ROOT, process.env.ASSETS_FONTS || 'assets/fonts'),
   TEMPLATES: path.join(
     PROJECT_ROOT,
-    process.env.ASSETS_TEMPLATES || 'assets/templates',
+    'assets/templates',
   ),
   PUBLIC: path.join(PROJECT_ROOT, process.env.ASSETS_PUBLIC || 'public'),
   get: (relativePath: string) => path.join(PROJECT_ROOT, relativePath),

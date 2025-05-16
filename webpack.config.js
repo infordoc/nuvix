@@ -11,7 +11,7 @@ function printStylizedNuvix() {
 ╚═╝  ╚═══╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝  ╚═╝
   `;
 
-  console.log('\x1b[36m' + name + '\x1b[0m');
+  console.log('\x1b[93m' + name + '\x1b[0m');
 }
 
 
