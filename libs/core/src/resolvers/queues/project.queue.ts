@@ -48,9 +48,9 @@ export class ProjectQueue extends Queue {
   }
 
   private async initProject(project: Document): Promise<void> {
-    const dbName = `p${ID.unique().slice(-10)}${project.getInternalId()}`;
+    const dbName = `project_${project.getInternalId()}`;
     const pool = await this.getPool('root', { max: 2 });
-    const roleSuffix = `${project.getInternalId()}_${Math.floor(Date.now() / 1000).toString(36)}`;
+    const roleSuffix = `${project.getInternalId()}_project`;
     const client = await pool.connect();
 
     const projectAdmin = `nuvix_${roleSuffix}`;
@@ -72,34 +72,24 @@ export class ProjectQueue extends Queue {
       }
 
       // 2. Create admin role with full privileges
-      this.logger.debug('NOW CREATING ADMIN ROLE')
+      this.logger.debug('NOW CREATING ADMIN ROLE');
       await client.query(
-        `CREATE ROLE "${projectAdmin}" WITH LOGIN PASSWORD '${APP_POSTGRES_PASSWORD}' CREATEROLE NOCREATEDB`,
+        `CREATE ROLE IF NOT EXISTS "${projectAdmin}" WITH LOGIN PASSWORD '${APP_POSTGRES_PASSWORD}' NOCREATEDB CREATEROLE;`
       );
-      this.logger.debug('ASSIGINING OWNERSHIP')
+      this.logger.debug('ASSIGNING OWNERSHIP');
       await client.query(
-        `ALTER DATABASE "${projectDatabase}" OWNER TO "${projectAdmin}"`,
+        `ALTER DATABASE "${projectDatabase}" OWNER TO "${projectAdmin}";`
       );
 
       // 3. Create user role with limited privileges
-      this.logger.debug('SECOND USER')
+      this.logger.debug('SECOND USER');
       await client.query(
-        `CREATE ROLE "${projectUser}" WITH LOGIN PASSWORD '${projectPassword}' NOCREATEDB NOCREATEROLE NOREPLICATION`,
+        `CREATE ROLE IF NOT EXISTS "${projectUser}" WITH LOGIN PASSWORD '${projectPassword}' NOCREATEDB NOCREATEROLE NOREPLICATION;`
       );
-      this.logger.debug('GRANTING...')
+      this.logger.debug('GRANTING...');
       await client.query(
-        `GRANT CONNECT ON DATABASE "${projectDatabase}" TO "${projectUser}"`,
+        `GRANT CONNECT ON DATABASE "${projectDatabase}" TO "${projectUser}";`
       );
-
-      try {
-        // We don't need this client anymore
-        client.release();
-        if (!pool.ended) {
-          await pool.end();
-        }
-      } catch (e) {
-        this.logger.error(e);
-      }
 
       const requestBody = {
         dbName: projectDatabase,
@@ -126,13 +116,13 @@ export class ProjectQueue extends Queue {
           },
         },
       );
-
+      this.logger.debug('DONE REQUEST')
       if (res.status > 300) {
         throw new Error('Failed to add database to the pool');
       }
 
       // Init the database
-      const projectPool = await this.getPool(project.getId(), {
+      const projectPool = await this.getPoolWithRetries(project, {
         database: projectDatabase,
         user: APP_POSTGRES_USER,
         password: APP_POSTGRES_PASSWORD,
@@ -306,10 +296,13 @@ export class ProjectQueue extends Queue {
         'Failed to create project database',
       );
     } finally {
-      if (client) {
-        try {
-          client.release();
-        } catch { }
+      try {
+        client.release();
+        if (!pool.ended) {
+          await pool.end();
+        }
+      } catch (e) {
+        this.logger.error(e);
       }
     }
     this.logger.log(`Project ${project.getId()} successfully initialized.`);
@@ -326,6 +319,31 @@ export class ProjectQueue extends Queue {
       `Job ${job.id} of type ${job.name} failed with error: ${JSON.stringify(err)}`,
     );
   }
+
+  async getPoolWithRetries(project: Document, config: Parameters<PoolStoreFn>["1"]) {
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY_MS = 5000;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const pool = await this.getPool(project.getId(), config as any);
+        return pool;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Attempt ${attempt} failed: ${error.message}`);
+
+        if (attempt < MAX_RETRIES) {
+          console.log(`Waiting ${RETRY_DELAY_MS / 1000} seconds before retrying...`);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        }
+      }
+    }
+
+    throw new Error(`Failed after ${MAX_RETRIES} attempts. Last error: ${lastError?.message}`);
+  }
+
 }
 
 export interface ProjectQueueOptions {
