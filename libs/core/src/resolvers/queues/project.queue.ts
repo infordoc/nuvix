@@ -73,9 +73,16 @@ export class ProjectQueue extends Queue {
 
       // 2. Create admin role with full privileges
       this.logger.debug('NOW CREATING ADMIN ROLE');
-      await client.query(
-        `CREATE ROLE IF NOT EXISTS "${projectAdmin}" WITH LOGIN PASSWORD '${APP_POSTGRES_PASSWORD}' NOCREATEDB CREATEROLE;`
-      );
+      await client.query(`
+       DO $$
+       BEGIN
+         IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${projectAdmin}') THEN
+           CREATE ROLE "${projectAdmin}" WITH LOGIN PASSWORD '${APP_POSTGRES_PASSWORD}' NOCREATEDB CREATEROLE;
+         END IF;
+       END
+       $$;
+     `);
+
       this.logger.debug('ASSIGNING OWNERSHIP');
       await client.query(
         `ALTER DATABASE "${projectDatabase}" OWNER TO "${projectAdmin}";`
@@ -83,9 +90,16 @@ export class ProjectQueue extends Queue {
 
       // 3. Create user role with limited privileges
       this.logger.debug('SECOND USER');
-      await client.query(
-        `CREATE ROLE IF NOT EXISTS "${projectUser}" WITH LOGIN PASSWORD '${projectPassword}' NOCREATEDB NOCREATEROLE NOREPLICATION;`
-      );
+      await client.query(`
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${projectUser}') THEN
+            CREATE ROLE "${projectUser}" WITH LOGIN PASSWORD '${projectPassword}' NOCREATEDB NOCREATEROLE NOREPLICATION;
+          END IF;
+        END
+        $$;
+      `);
+
       this.logger.debug('GRANTING...');
       await client.query(
         `GRANT CONNECT ON DATABASE "${projectDatabase}" TO "${projectUser}";`
