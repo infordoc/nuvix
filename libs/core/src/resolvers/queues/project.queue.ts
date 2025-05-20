@@ -85,7 +85,7 @@ export class ProjectQueue extends Queue {
 
       this.logger.debug('ASSIGNING OWNERSHIP');
       await client.query(
-        `ALTER DATABASE "${projectDatabase}" OWNER TO "${projectAdmin}";`
+        `ALTER DATABASE "${projectDatabase}" OWNER TO "${projectAdmin}";`,
       );
 
       // 3. Create user role with limited privileges
@@ -102,7 +102,7 @@ export class ProjectQueue extends Queue {
 
       this.logger.debug('GRANTING...');
       await client.query(
-        `GRANT CONNECT ON DATABASE "${projectDatabase}" TO "${projectUser}";`
+        `GRANT CONNECT ON DATABASE "${projectDatabase}" TO "${projectUser}";`,
       );
 
       const requestBody = {
@@ -113,12 +113,18 @@ export class ProjectQueue extends Queue {
             { username: projectUser, password: projectPassword },
           ],
           shard: {
-            servers: [[projectHost, parseInt(process.env.APP_CLUSTER_PORT, 10), 'primary']],
+            servers: [
+              [
+                projectHost,
+                parseInt(process.env.APP_CLUSTER_PORT, 10),
+                'primary',
+              ],
+            ],
             database: projectDatabase,
           },
         },
-      }
-      console.log(requestBody)
+      };
+      console.log(requestBody);
       // Create the database in the pool
       // [noop] not a good solution but it works for now!
       const res = await this.httpService.axiosRef.post(
@@ -130,7 +136,7 @@ export class ProjectQueue extends Queue {
           },
         },
       );
-      this.logger.debug('DONE REQUEST')
+      this.logger.debug('DONE REQUEST');
       if (res.status > 300) {
         throw new Error('Failed to add database to the pool');
       }
@@ -182,7 +188,7 @@ export class ProjectQueue extends Queue {
         await dataSource.execute(`
           -- Grant read-only access to internal schemas
           ${INTERNAL_SCHEMAS.map(
-          schema => `
+            schema => `
             GRANT USAGE ON SCHEMA ${schema} TO "${projectUser}";
             GRANT SELECT ON ALL TABLES IN SCHEMA ${schema} TO "${projectUser}";
             GRANT SELECT ON ALL SEQUENCES IN SCHEMA ${schema} TO "${projectUser}";
@@ -196,7 +202,7 @@ export class ProjectQueue extends Queue {
             ALTER DEFAULT PRIVILEGES FOR ROLE "${projectAdmin}" IN SCHEMA ${schema}
             GRANT EXECUTE ON FUNCTIONS TO "${projectUser}";
           `,
-        ).join('\n')}
+          ).join('\n')}
           
           -- Grant full access to public schema only
           GRANT USAGE ON SCHEMA public TO "${projectUser}";
@@ -226,7 +232,7 @@ export class ProjectQueue extends Queue {
           try {
             dataSource.getClient().release();
             projectPool.end();
-          } catch { }
+          } catch {}
         }
       }
 
@@ -285,7 +291,7 @@ export class ProjectQueue extends Queue {
 
       try {
         await adminPool.end();
-      } catch { }
+      } catch {}
     } catch (error) {
       this.logger.error(
         `Failed to create database: ${error.message}`,
@@ -334,7 +340,10 @@ export class ProjectQueue extends Queue {
     );
   }
 
-  async getPoolWithRetries(project: Document, config: Parameters<PoolStoreFn>["1"]) {
+  async getPoolWithRetries(
+    project: Document,
+    config: Parameters<PoolStoreFn>['1'],
+  ) {
     const MAX_RETRIES = 3;
     const RETRY_DELAY_MS = 5000;
 
@@ -349,15 +358,18 @@ export class ProjectQueue extends Queue {
         console.warn(`Attempt ${attempt} failed: ${error.message}`);
 
         if (attempt < MAX_RETRIES) {
-          console.log(`Waiting ${RETRY_DELAY_MS / 1000} seconds before retrying...`);
+          console.log(
+            `Waiting ${RETRY_DELAY_MS / 1000} seconds before retrying...`,
+          );
           await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
         }
       }
     }
 
-    throw new Error(`Failed after ${MAX_RETRIES} attempts. Last error: ${lastError?.message}`);
+    throw new Error(
+      `Failed after ${MAX_RETRIES} attempts. Last error: ${lastError?.message}`,
+    );
   }
-
 }
 
 export interface ProjectQueueOptions {

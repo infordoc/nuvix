@@ -1,0 +1,86 @@
+version: "3.9"
+
+services:
+  mariadb:
+    image: mariadb:11
+    container_name: nuvix-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${APP_DATABASE_PASSWORD}
+      MYSQL_DATABASE: ${APP_DATABASE_NAME}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - nuvix
+
+  valkey:
+    image: valkey/valkey:latest
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey-data:/data
+    restart: unless-stopped
+
+  nuvix-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: nuvix-api
+    env_file:
+      - .env
+      - .env.api
+    environment:
+      APP_DATABASE_HOST: mariadb
+      APP_REDIS_HOST: valkey
+    depends_on:
+      - mariadb
+      - valkey
+    networks:
+      - nuvix
+      - caddy
+
+  console-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: console-api
+    env_file:
+      - .env
+      - .env.console
+    environment:
+      APP_DATABASE_HOST: mariadb
+      APP_REDIS_HOST: valkey
+    depends_on:
+      - mariadb
+      - valkey
+    networks:
+      - nuvix
+      - caddy
+
+  caddy:
+    image: caddy:2
+    container_name: nuvix-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - caddy
+      - nuvix
+
+volumes:
+  mariadb_data:
+  valkey-data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  nuvix:
+  caddy:

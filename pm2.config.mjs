@@ -20,6 +20,7 @@ const loadEnvFile = (envPath) => {
 const shared = loadEnvFile('.env');
 const api = loadEnvFile('.env.api');
 const consoleEnv = loadEnvFile('.env.console');
+const extra = import.meta.env;
 
 export const apps = [
   {
@@ -32,6 +33,7 @@ export const apps = [
     interpreter: "bun",
     max_memory_restart: '1G', // Restart if memory exceeds 1GB
     env: {
+      ...extra,
       ...shared,
       ...api,
       NODE_ENV: 'production',
@@ -50,6 +52,7 @@ export const apps = [
     autorestart: true,
     max_memory_restart: '500M', // Restart if memory exceeds 500MB
     env: {
+      ...extra,
       ...shared,
       ...consoleEnv,
       NODE_ENV: 'production',
