@@ -21,8 +21,6 @@ services:
   valkey:
     image: valkey/valkey:latest
     container_name: valkey
-    ports:
-      - "127.0.0.1:6379:6379" # only expose on host, not externally by default
     volumes:
       - valkey-data:/data
     restart: unless-stopped

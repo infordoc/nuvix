@@ -1,51 +1,45 @@
 services:
+  mariadb:
+    container_name: nuvix-db
+    expose:
+      - "3306:3306"
+    networks:
+      - nuvix
+
+  valkey:
+    container_name: valkey
+    expose:
+      - "6379:6379"
+    networks:
+      - nuvix
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   nuvix-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: nuvix-api-dev
-    command: ["bun", "--bun", "run", "start:dev","nuvix"]
-    volumes:
-      - .:/app
-      - /app/node_modules
-    ports:
-      - "4000:4000"
-    environment:
-      - NODE_ENV=development
-      - APP_DATABASE_HOST=mariadb
-      - APP_REDIS_HOST=valkey
+    container_name: nuvix-api
+    command: []
     depends_on:
       mariadb:
-        condition: service_healthy
+        condition: service_healthy # Waits for mariadb to be healthy
       valkey:
-        condition: service_healthy
+        condition: service_healthy # Waits for valkey to be healthy
     networks:
       - nuvix
       - caddy
-    restart: unless-stopped # Or 'no' for dev if you prefer manual restarts
+    restart: unless-stopped
 
   console-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development 
-    container_name: console-api-dev
-    command: ["bun", "--bun", "run", "start:dev", "console"]
-    volumes:
-      - .:/app
-      - /app/node_modules
-    ports:
-      - "4100:4100"
-    environment:
-      - NODE_ENV=development
-      - APP_DATABASE_HOST=mariadb
-      - APP_REDIS_HOST=valkey
+    container_name: console-api
+    command: []
     depends_on:
       mariadb:
-        condition: service_healthy
+        condition: service_healthy 
       valkey:
-        condition: service_healthy
+        condition: service_healthy 
     networks:
       - nuvix
       - caddy
