@@ -22,6 +22,7 @@ import {
   APP_NAME,
   APP_SYSTEM_EMAIL_ADDRESS,
   APP_SYSTEM_EMAIL_NAME,
+  ASSETS,
   CONSOLE_CONFIG,
   EVENT_SESSION_CREATE,
   EVENT_SESSION_DELETE,
@@ -34,15 +35,20 @@ import {
   SEND_TYPE_EMAIL,
 } from '@nuvix/utils/constants';
 import { UpdateEmailDTO } from './DTO/account.dto';
-import { CreateEmailSessionDTO } from './DTO/session.dto';
+import {
+  CreateEmailSessionDTO,
+  CreateOAuth2SessionDTO,
+  CreateSessionDTO,
+} from './DTO/session.dto';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 import { CountryResponse, Reader } from 'maxmind';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as Template from 'handlebars';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import { MailQueueOptions } from '@nuvix/core/resolvers/queues/mail.queue';
 import { OAuth2 } from '@nuvix/core/OAuth2';
+import path from 'path';
 
 @Injectable()
 export class AccountService {
@@ -713,6 +719,228 @@ export class AccountService {
     return createdSession;
   }
 
+  async createAnonymousSession({
+    request,
+    response,
+    locale,
+    user,
+    project,
+    db,
+  }: {
+    request: NuvixRequest;
+    response: NuvixRes;
+    locale: LocaleTranslator;
+    user: Document;
+    project: Document;
+    db: Database;
+  }) {
+    const protocol = request.protocol;
+    const limit = project.getAttribute('auths', {})['limit'] ?? 0;
+
+    if (limit !== 0) {
+      const total = await db.count('users', [], APP_LIMIT_USERS);
+
+      if (total >= limit) {
+        throw new Exception(Exception.USER_COUNT_EXCEEDED);
+      }
+    }
+
+    const userId = ID.unique();
+    user.setAttributes({
+      $id: userId,
+      $permissions: [
+        Permission.read(Role.any()),
+        Permission.update(Role.user(userId)),
+        Permission.delete(Role.user(userId)),
+      ],
+      email: null,
+      emailVerification: false,
+      status: true,
+      password: null,
+      hash: Auth.DEFAULT_ALGO,
+      hashOptions: Auth.DEFAULT_ALGO_OPTIONS,
+      passwordUpdate: null,
+      registration: new Date(),
+      reset: false,
+      name: null,
+      mfa: false,
+      prefs: {},
+      sessions: null,
+      tokens: null,
+      memberships: null,
+      authenticators: null,
+      search: userId,
+      accessedAt: new Date(),
+    });
+    user.removeAttribute('$internalId');
+    await Authorization.skip(
+      async () => await db.createDocument('users', user),
+    );
+
+    // Create session token
+    const duration =
+      project.getAttribute('auths', {})['duration'] ??
+      Auth.TOKEN_EXPIRATION_LOGIN_LONG;
+    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
+    const record = this.geodb.get(request.ip);
+    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
+
+    const session = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      provider: Auth.SESSION_PROVIDER_ANONYMOUS,
+      secret: Auth.hash(secret),
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
+      ip: request.ip,
+      factors: ['anonymous'],
+      countryCode: record ? record.country.iso_code.toLowerCase() : '--',
+      expire: new Date(Date.now() + duration * 1000),
+      ...detector.getOS(),
+      ...detector.getClient(),
+      ...detector.getDevice(),
+    });
+
+    Authorization.setRole(Role.user(user.getId()).toString());
+
+    const createdSession = await db.createDocument(
+      'sessions',
+      session.setAttribute('$permissions', [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ]),
+    );
+
+    await db.purgeCachedDocument('users', user.getId());
+
+    await this.eventEmitter.emitAsync(EVENT_USER_CREATE, {
+      userId: user.getId(),
+      sessionId: createdSession.getId(),
+    });
+
+    if (!CONSOLE_CONFIG.domainVerification) {
+      response.header(
+        'X-Fallback-Cookies',
+        JSON.stringify({
+          [Auth.cookieName]: Auth.encodeSession(user.getId(), secret),
+        }),
+      );
+    }
+
+    const expire = new Date(Date.now() + duration * 1000);
+
+    response
+      .cookie(Auth.cookieName, Auth.encodeSession(user.getId(), secret), {
+        expires: expire,
+        path: '/',
+        domain: Auth.cookieDomain,
+        secure: protocol === 'https',
+        httpOnly: true,
+        sameSite: Auth.cookieSamesite,
+      })
+      .status(201);
+
+    const countryName = locale.getText(
+      'countries.' +
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
+      locale.getText('locale.country.unknown'),
+    );
+
+    createdSession
+      .setAttribute('current', true)
+      .setAttribute('countryName', countryName)
+      .setAttribute('secret', Auth.encodeSession(user.getId(), secret));
+
+    return createdSession;
+  }
+
+  async createOAuth2Session({
+    input,
+    request,
+    response,
+    project,
+    oauthDefaultSuccess,
+    oauthDefaultFailure,
+  }: {
+    input: CreateOAuth2SessionDTO;
+    request: NuvixRequest;
+    response: NuvixRes;
+    project: Document;
+    oauthDefaultSuccess: string;
+    oauthDefaultFailure: string;
+  }) {
+    const protocol = request.protocol;
+    const provider = input.provider;
+    const success = input.success || '';
+    const failure = input.failure || '';
+    const scopes = input.scopes || [];
+
+    const callback = `${protocol}://${request.hostname}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
+    const oAuthProviders = project.getAttribute('oAuthProviders', {});
+    const providerEnabled = oAuthProviders[provider]?.enabled ?? false;
+
+    if (!providerEnabled) {
+      throw new Exception(
+        Exception.PROJECT_PROVIDER_DISABLED,
+        `This provider is disabled. Please enable the provider from your ${APP_NAME} console to continue.`,
+      );
+    }
+
+    const appId = oAuthProviders[provider]?.appId ?? '';
+    let appSecret = oAuthProviders[provider]?.secret ?? '{}';
+
+    // Handle encrypted app secret
+    if (appSecret && typeof appSecret === 'object' && appSecret.version) {
+      // Note: You'll need to implement OpenSSL decryption equivalent in TypeScript
+      // const key = process.env[`_APP_OPENSSL_KEY_V${appSecret.version}`];
+      // appSecret = await OpenSSL.decrypt(appSecret.data, appSecret.method, key, 0,
+      //   Buffer.from(appSecret.iv, 'hex'), Buffer.from(appSecret.tag, 'hex'));
+    }
+
+    if (!appId || !appSecret) {
+      throw new Exception(
+        Exception.PROJECT_PROVIDER_DISABLED,
+        `This provider is disabled. Please configure the provider app ID and app secret key from your ${APP_NAME} console to continue.`,
+      );
+    }
+
+    // Dynamic import of OAuth2 provider class
+    const authClass = await import(
+      /* webpackChunkName: "OAuth2" */
+      /* webpackInclude: /\.js$/ */
+      `@nuvix/core/OAuth2/${provider.toLowerCase()}`
+    );
+
+    const className = `${provider.charAt(0).toUpperCase() + provider.slice(1)}OAuth2`;
+
+    if (!(className in authClass)) {
+      throw new Exception(Exception.PROJECT_PROVIDER_UNSUPPORTED);
+    }
+
+    const finalSuccess =
+      success || `${protocol}://${request.hostname}${oauthDefaultSuccess}`;
+    const finalFailure =
+      failure || `${protocol}://${request.hostname}${oauthDefaultFailure}`;
+
+    const oauth2: OAuth2 = new authClass[className](
+      appId,
+      appSecret,
+      callback,
+      {
+        success: finalSuccess,
+        failure: finalFailure,
+        token: false,
+      },
+      scopes,
+    );
+
+    response
+      .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      .header('Pragma', 'no-cache')
+      .redirect(oauth2.getLoginURL());
+  }
+
   /**
    * Send Session Alert.
    */
@@ -727,9 +955,8 @@ export class AccountService {
       project.getAttribute('templates', {})?.[
         'email.sessionAlert-' + locale.default
       ] ?? {};
-    const templatePath =
-      PROJECT_ROOT + 'assets/locale/templates/email-session-alert.tpl';
-    const templateSource = fs.readFileSync(templatePath, 'utf8');
+    const templatePath = path.join(ASSETS.TEMPLATES, 'email-session-alert.tpl');
+    const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
     const emailData = {
@@ -808,5 +1035,199 @@ export class AccountService {
       server: smtpServer,
       variables: emailVariables,
     });
+  }
+
+  /**
+   * Create Session
+   */
+  async createSession({
+    user,
+    input,
+    request,
+    response,
+    locale,
+    project,
+    authDatabase,
+  }: {
+    user: Document;
+    input: CreateSessionDTO;
+    request: NuvixRequest;
+    response: NuvixRes;
+    locale: LocaleTranslator;
+    project: Document;
+    authDatabase: Database;
+  }) {
+    const userFromRequest = await Authorization.skip(
+      async () => await authDatabase.getDocument('users', input.userId),
+    );
+
+    if (userFromRequest.isEmpty()) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    const verifiedToken = Auth.tokenVerify(
+      userFromRequest.getAttribute('tokens', []),
+      null,
+      input.secret,
+    );
+
+    if (!verifiedToken) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    user.setAttributes(userFromRequest.toObject());
+
+    const duration =
+      project.getAttribute('auths', {})['duration'] ??
+      Auth.TOKEN_EXPIRATION_LOGIN_LONG;
+    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
+    const record = this.geodb.get(request.ip);
+    const sessionSecret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
+
+    const tokenType = verifiedToken.getAttribute('type');
+    let factor: string;
+
+    switch (tokenType) {
+      case Auth.TOKEN_TYPE_MAGIC_URL:
+      case Auth.TOKEN_TYPE_OAUTH2:
+      case Auth.TOKEN_TYPE_EMAIL:
+        factor = 'email';
+        break;
+      case Auth.TOKEN_TYPE_PHONE:
+        factor = 'phone';
+        break;
+      case Auth.TOKEN_TYPE_GENERIC:
+        factor = 'token';
+        break;
+      default:
+        throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    const session = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      provider: Auth.getSessionProviderByTokenType(
+        verifiedToken.getAttribute('type'),
+      ),
+      secret: Auth.hash(sessionSecret),
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
+      ip: request.ip,
+      factors: [factor],
+      countryCode: record ? record.country.iso_code.toLowerCase() : '--',
+      expire: new Date(Date.now() + duration * 1000),
+      ...detector.getOS(),
+      ...detector.getClient(),
+      ...detector.getDevice(),
+    });
+
+    Authorization.setRole(Role.user(user.getId()).toString());
+
+    const createdSession = await authDatabase.createDocument(
+      'sessions',
+      session.setAttribute('$permissions', [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ]),
+    );
+
+    await Authorization.skip(
+      async () =>
+        await authDatabase.deleteDocument('tokens', verifiedToken.getId()),
+    );
+    await authDatabase.purgeCachedDocument('users', user.getId());
+
+    // Magic URL + Email OTP
+    if (
+      tokenType === Auth.TOKEN_TYPE_MAGIC_URL ||
+      tokenType === Auth.TOKEN_TYPE_EMAIL
+    ) {
+      user.setAttribute('emailVerification', true);
+    }
+
+    if (tokenType === Auth.TOKEN_TYPE_PHONE) {
+      user.setAttribute('phoneVerification', true);
+    }
+
+    try {
+      await authDatabase.updateDocument('users', user.getId(), user);
+    } catch (error) {
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        'Failed saving user to DB',
+      );
+    }
+
+    const isAllowedTokenType =
+      tokenType !== Auth.TOKEN_TYPE_MAGIC_URL &&
+      tokenType !== Auth.TOKEN_TYPE_EMAIL;
+    const hasUserEmail = user.getAttribute('email', false) !== false;
+    const isSessionAlertsEnabled =
+      project.getAttribute('auths', {})['sessionAlerts'] ?? false;
+
+    const sessionCount = await authDatabase.count('sessions', [
+      Query.equal('userId', [user.getId()]),
+    ]);
+    const isNotFirstSession = sessionCount !== 1;
+
+    if (
+      isAllowedTokenType &&
+      hasUserEmail &&
+      isSessionAlertsEnabled &&
+      isNotFirstSession
+    ) {
+      await this.sendSessionAlert(locale, user, project, createdSession);
+    }
+
+    await this.eventEmitter.emitAsync(EVENT_SESSION_CREATE, {
+      userId: user.getId(),
+      sessionId: createdSession.getId(),
+      payload: {
+        data: createdSession,
+        type: Models.SESSION,
+      },
+    });
+
+    if (!CONSOLE_CONFIG.domainVerification) {
+      response.header(
+        'X-Fallback-Cookies',
+        JSON.stringify({
+          [Auth.cookieName]: Auth.encodeSession(user.getId(), sessionSecret),
+        }),
+      );
+    }
+
+    const expire = new Date(Date.now() + duration * 1000);
+    const protocol = request.protocol;
+
+    response
+      .cookie(
+        Auth.cookieName,
+        Auth.encodeSession(user.getId(), sessionSecret),
+        {
+          expires: expire,
+          path: '/',
+          domain: Auth.cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: Auth.cookieSamesite,
+        },
+      )
+      .status(201);
+
+    const countryName = locale.getText(
+      'countries.' +
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
+      locale.getText('locale.country.unknown'),
+    );
+
+    createdSession
+      .setAttribute('current', true)
+      .setAttribute('countryName', countryName)
+      .setAttribute('expire', expire.toISOString())
+      .setAttribute('secret', Auth.encodeSession(user.getId(), sessionSecret));
+
+    return createdSession;
   }
 }

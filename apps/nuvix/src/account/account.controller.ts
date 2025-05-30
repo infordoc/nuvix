@@ -12,7 +12,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuditEvent, Label, Scope } from '@nuvix/core/decorators';
+import { AuditEvent, Label, Scope, Sdk } from '@nuvix/core/decorators';
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
 import {
@@ -33,7 +33,11 @@ import {
   UpdateEmailDTO,
   UpdatePrefsDTO,
 } from './DTO/account.dto';
-import { CreateEmailSessionDTO } from './DTO/session.dto';
+import {
+  CreateEmailSessionDTO,
+  CreateOAuth2SessionDTO,
+  CreateSessionDTO,
+} from './DTO/session.dto';
 import { AccountService } from './account.service';
 
 @Controller({ version: ['1'], path: 'account' })
@@ -210,6 +214,87 @@ export class AccountController {
       locale,
       project,
     );
+  }
+
+  @Public()
+  @Post('sessions/anonymous')
+  @Scope('sessions.create')
+  @ResModel(Models.SESSION)
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'createAnonymousSession',
+  })
+  async createAnonymousSession(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createAnonymousSession({
+      user,
+      request,
+      response,
+      locale,
+      project,
+      db: authDatabase,
+    });
+  }
+
+  @Public()
+  @Post('sessions/token')
+  @Scope('sessions.update')
+  @ResModel(Models.SESSION)
+  @AuditEvent('session.update', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'createSession',
+  })
+  async createSession(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreateSessionDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createSession({
+      user,
+      input,
+      request,
+      response,
+      locale,
+      project,
+      authDatabase,
+    });
+  }
+
+  @Public()
+  @Post('sessions/oauth2/:provider')
+  @Scope('sessions.create')
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'createOAuth2Session',
+  })
+  async createOAuth2Session(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreateOAuth2SessionDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Project() project: Document,
+  ) {
+    // TODO: ...
   }
 
   @Get('prefs')

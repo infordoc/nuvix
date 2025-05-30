@@ -29,7 +29,7 @@ module.exports = (options) => {
       ...options.output,
       filename: options.output.filename.replace(/\.js$/, '.mjs'),
     },
-    target: 'node16',
+    target: 'node22',
     experiments: {
       outputModule: true,
     },

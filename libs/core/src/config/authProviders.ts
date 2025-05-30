@@ -9,7 +9,7 @@ interface OAuthProvider {
   mock: boolean;
 }
 
-export const oAuthProviders: Record<string, OAuthProvider> = {
+const appOAuthProviders = {
   amazon: {
     name: 'Amazon',
     developers: 'https://developer.amazon.com/apps-and-games/services-and-apis',
@@ -402,4 +402,13 @@ export const oAuthProviders: Record<string, OAuthProvider> = {
     beta: false,
     mock: true,
   },
-};
+} as const;
+
+export const oAuthProviders: Record<
+  keyof typeof appOAuthProviders,
+  OAuthProvider
+> = appOAuthProviders;
+
+export const oAuthProvidersList = Object.entries(oAuthProviders)
+  .filter(([_, provider]) => provider.enabled)
+  .map(([name]) => name) as (keyof typeof oAuthProviders)[];

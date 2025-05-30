@@ -17,3 +17,17 @@ const authTypes = [
 ] as const;
 
 export const AuthType = Reflector.createDecorator<(typeof authTypes)[number]>();
+
+interface SdkOptions {
+  name: string;
+  version?: string;
+  description?: string;
+  tags?: string[];
+  isPublic?: boolean;
+  isInternal?: boolean;
+  isExperimental?: boolean;
+  isDeprecated?: boolean;
+  isHidden?: boolean;
+}
+
+export const Sdk = Reflector.createDecorator<SdkOptions>();
