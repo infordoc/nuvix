@@ -60,12 +60,14 @@ import {
 } from './DTO/token.dto';
 import { OAuthProviders } from '@nuvix/core/config/authProviders';
 import { UpdateMfaStatusDTO } from '../users/dto/user.dto';
+import { DocumentNode } from 'graphql';
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class AccountController {
-  constructor(private readonly accountService: AccountService) { }
+  constructor(private readonly accountService: AccountService) {}
 
   @Public()
   @Post()
@@ -617,14 +619,14 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   @Sdk({
-    name: 'updateName'
+    name: 'updateName',
   })
   async updateName(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Body() { name }: UpdateNameDTO,
   ) {
-    return await this.accountService.updateName(authDatabase, name, user)
+    return await this.accountService.updateName(authDatabase, name, user);
   }
 
   @Patch('password')
@@ -632,15 +634,21 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   @Sdk({
-    name: 'updatePassword'
+    name: 'updatePassword',
   })
   async updatePassword(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Body() { password, oldPassword }: UpdatePasswordDTO,
-    @Project() project: Document
+    @Project() project: Document,
   ) {
-    return await this.accountService.updatePassword({ db: authDatabase, password, oldPassword, user, project })
+    return await this.accountService.updatePassword({
+      db: authDatabase,
+      password,
+      oldPassword,
+      user,
+      project,
+    });
   }
 
   @Patch('email')
@@ -666,15 +674,21 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   @Sdk({
-    name: 'updatePhone'
+    name: 'updatePhone',
   })
   async updatePhone(
     @AuthDatabase() authDatabase: Database,
     @User() user: Document,
     @Body() { password, phone }: UpdatePhoneDTO,
-    @Project() project: Document
+    @Project() project: Document,
   ) {
-    return await this.accountService.updatePhone({ db: authDatabase, password, phone, user, project })
+    return await this.accountService.updatePhone({
+      db: authDatabase,
+      password,
+      phone,
+      user,
+      project,
+    });
   }
 
   @Patch('status')
@@ -682,7 +696,7 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   @Sdk({
-    name: 'updateStatus'
+    name: 'updateStatus',
   })
   async updateStatus(
     @AuthDatabase() authDatabase: Database,
@@ -690,8 +704,63 @@ export class AccountController {
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
   ) {
-    return await this.accountService.updateStatus({ db: authDatabase, user, request, response });
+    return await this.accountService.updateStatus({
+      db: authDatabase,
+      user,
+      request,
+      response,
+    });
   }
 
-  
+  @Public()
+  @Post('recovery')
+  @Scope('sessions.update')
+  @AuditEvent('recovery.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  async createRecovery(
+    @AuthDatabase() db: Database,
+    @User() user: Document,
+    @Body() input: CreateRecoveryDTO,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+    @Req() request: NuvixRequest,
+    @Res() response: NuvixRes,
+  ) {
+    return await this.accountService.createRecovery({
+      db,
+      user,
+      input,
+      locale,
+      project,
+      request,
+      response,
+    });
+  }
+
+  @Public()
+  @Put('recovery')
+  @Post('recovery')
+  @Scope('sessions.update')
+  @AuditEvent('recovery.update', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  async updateRecovery(
+    @AuthDatabase() db: Database,
+    @User() user: Document,
+    @Body() input: UpdateRecoveryDTO,
+    @Project() project: Document,
+    @Res() response: NuvixRes,
+  ) {
+    // TODO: validate newPassword with password dictionry
+    return await this.accountService.updateRecovery({
+      db,
+      user,
+      input,
+      project,
+      response,
+    });
+  }
 }

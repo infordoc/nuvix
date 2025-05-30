@@ -62,6 +62,7 @@ import {
 import { PhraseGenerator } from '@nuvix/utils/auth/pharse';
 import { JwtService } from '@nestjs/jwt';
 import { PasswordHistoryValidator } from '@nuvix/core/validators';
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 
 @Injectable()
 export class AccountService {
@@ -70,7 +71,7 @@ export class AccountService {
     @InjectQueue('mails') private readonly mailQueue: Queue<MailQueueOptions>,
     private eventEmitter: EventEmitter2,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   private readonly oauthDefaultSuccess = '/auth/oauth2/success';
   private readonly oauthDefaultFailure = '/auth/oauth2/failure';
@@ -336,9 +337,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     for (const session of sessions) {
@@ -440,9 +441,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     const sessions = user.getAttribute('sessions', []);
@@ -860,7 +861,7 @@ export class AccountService {
 
     const countryName = locale.getText(
       'countries.' +
-      createdSession.getAttribute('countryCode', '').toLowerCase(),
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -1650,7 +1651,7 @@ export class AccountService {
     let subject = locale.getText('emails.magicSession.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.magicSession-${locale.default}`
+        `email.magicSession-${locale.default}`
       ] ?? {};
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
@@ -1857,7 +1858,7 @@ export class AccountService {
     let subject = locale.getText('emails.otpSession.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.otpSession-${locale.default}`
+        `email.otpSession-${locale.default}`
       ] ?? {};
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
@@ -2139,7 +2140,7 @@ export class AccountService {
     let subject: string = locale.getText('emails.sessionAlert.subject');
     const customTemplate =
       project.getAttribute('templates', {})?.[
-      'email.sessionAlert-' + locale.default
+        'email.sessionAlert-' + locale.default
       ] ?? {};
     const templatePath = path.join(ASSETS.TEMPLATES, 'email-session-alert.tpl');
     const templateSource = await fs.readFile(templatePath, 'utf8');
@@ -2257,11 +2258,7 @@ export class AccountService {
   /**
    * Update User Name.
    */
-  async updateName(
-    db: Database,
-    name: string,
-    user: Document
-  ) {
+  async updateName(db: Database, name: string, user: Document) {
     user.setAttribute('name', name);
 
     user = await db.updateDocument('users', user.getId(), user);
@@ -2275,26 +2272,46 @@ export class AccountService {
    * Update user password.
    */
   async updatePassword({
-    password, oldPassword,
-    user, project, db
+    password,
+    oldPassword,
+    user,
+    project,
+    db,
   }: {
     password: string;
     oldPassword: string;
-    user: Document,
-    project: Document,
-    db: Database
+    user: Document;
+    project: Document;
+    db: Database;
   }) {
     // Check old password only if its an existing user.
-    if (user.getAttribute('passwordUpdate') && !(await Auth.passwordVerify(oldPassword, user.getAttribute('password'), user.getAttribute('hash'), user.getAttribute('hashOptions')))) {
+    if (
+      user.getAttribute('passwordUpdate') &&
+      !(await Auth.passwordVerify(
+        oldPassword,
+        user.getAttribute('password'),
+        user.getAttribute('hash'),
+        user.getAttribute('hashOptions'),
+      ))
+    ) {
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
     }
 
-    const newPassword = await Auth.passwordHash(password, Auth.DEFAULT_ALGO, Auth.DEFAULT_ALGO_OPTIONS);
-    const historyLimit = project.getAttribute('auths', {})['passwordHistory'] ?? 0;
+    const newPassword = await Auth.passwordHash(
+      password,
+      Auth.DEFAULT_ALGO,
+      Auth.DEFAULT_ALGO_OPTIONS,
+    );
+    const historyLimit =
+      project.getAttribute('auths', {})['passwordHistory'] ?? 0;
     const history = user.getAttribute('passwordHistory', []);
 
     if (historyLimit > 0) {
-      const validator = new PasswordHistoryValidator(history, user.getAttribute('hash'), user.getAttribute('hashOptions'));
+      const validator = new PasswordHistoryValidator(
+        history,
+        user.getAttribute('hash'),
+        user.getAttribute('hashOptions'),
+      );
       if (!validator.isValid(password)) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
       }
@@ -2308,7 +2325,7 @@ export class AccountService {
         user.getId(),
         user.getAttribute('email'),
         user.getAttribute('name'),
-        user.getAttribute('phone')
+        user.getAttribute('phone'),
       );
       if (!personalDataValidator.isValid(password)) {
         throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
@@ -2335,14 +2352,18 @@ export class AccountService {
   /**
    * Update User's Phone.
    */
-  async updatePhone({ password, phone,
-    user, project, db
+  async updatePhone({
+    password,
+    phone,
+    user,
+    project,
+    db,
   }: {
     password: string;
     phone: string;
-    user: Document,
-    project: Document,
-    db: Database
+    user: Document;
+    project: Document;
+    db: Database;
   }) {
     // passwordUpdate will be empty if the user has never set a password
     const passwordUpdate = user.getAttribute('passwordUpdate');
@@ -2353,18 +2374,18 @@ export class AccountService {
         password,
         user.getAttribute('password'),
         user.getAttribute('hash'),
-        user.getAttribute('hashOptions')
+        user.getAttribute('hashOptions'),
       ))
-    ) { // Double check user password
+    ) {
+      // Double check user password
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
     }
 
     // hooks.trigger('passwordValidator', [db, project, password, user, false]);
 
     const target = await Authorization.skip(
-      async () => await db.findOne('targets', [
-        Query.equal('identifier', [phone]),
-      ])
+      async () =>
+        await db.findOne('targets', [Query.equal('identifier', [phone])]),
     );
 
     if (!target.isEmpty()) {
@@ -2373,15 +2394,13 @@ export class AccountService {
 
     const oldPhone = user.getAttribute('phone');
 
-    user
-      .setAttribute('phone', phone)
-      .setAttribute('phoneVerification', false); // After this user needs to confirm phone number again
+    user.setAttribute('phone', phone).setAttribute('phoneVerification', false); // After this user needs to confirm phone number again
 
     if (!passwordUpdate) {
       const hashedPassword = await Auth.passwordHash(
         password,
         Auth.DEFAULT_ALGO,
-        Auth.DEFAULT_ALGO_OPTIONS
+        Auth.DEFAULT_ALGO_OPTIONS,
       );
       user
         .setAttribute('password', hashedPassword)
@@ -2396,11 +2415,12 @@ export class AccountService {
 
       if (oldTarget && !oldTarget.isEmpty()) {
         await Authorization.skip(
-          async () => await db.updateDocument(
-            'targets',
-            oldTarget.getId(),
-            oldTarget.setAttribute('identifier', phone)
-          )
+          async () =>
+            await db.updateDocument(
+              'targets',
+              oldTarget.getId(),
+              oldTarget.setAttribute('identifier', phone),
+            ),
         );
       }
       await db.purgeCachedDocument('users', user.getId());
@@ -2445,15 +2465,14 @@ export class AccountService {
     }
 
     const protocol = request.protocol;
-    response
-      .cookie(Auth.cookieName, '', {
-        expires: new Date(Date.now() - 3600000),
-        path: '/',
-        domain: Auth.cookieDomain,
-        secure: protocol === 'https',
-        httpOnly: true,
-        sameSite: Auth.cookieSamesite,
-      });
+    response.cookie(Auth.cookieName, '', {
+      expires: new Date(Date.now() - 3600000),
+      path: '/',
+      domain: Auth.cookieDomain,
+      secure: protocol === 'https',
+      httpOnly: true,
+      sameSite: Auth.cookieSamesite,
+    });
 
     return user;
   }
@@ -2639,7 +2658,7 @@ export class AccountService {
 
     const countryName = locale.getText(
       'countries.' +
-      createdSession.getAttribute('countryCode', '').toLowerCase(),
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -2651,4 +2670,259 @@ export class AccountService {
 
     return createdSession;
   }
+
+  /**
+   * Create Recovery
+   */
+  async createRecovery({
+    db,
+    request,
+    response,
+    user,
+    project,
+    locale,
+    input,
+  }: WithDB<
+    WithReqRes<WithUser<WithProject<WithLocale<{ input: CreateRecoveryDTO }>>>>
+  >) {
+    if (!APP_SMTP_HOST) {
+      throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
+    }
+
+    const email = input.email.toLowerCase();
+    let url = input.url;
+
+    const profile = await db.findOne('users', [Query.equal('email', [email])]);
+
+    if (profile.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    user.setAttributes(profile.toObject());
+
+    if (profile.getAttribute('status') === false) {
+      throw new Exception(Exception.USER_BLOCKED);
+    }
+
+    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_RECOVERY * 1000);
+    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_RECOVERY);
+
+    const recovery = new Document({
+      $id: ID.unique(),
+      userId: profile.getId(),
+      userInternalId: profile.getInternalId(),
+      type: Auth.TOKEN_TYPE_RECOVERY,
+      secret: Auth.hash(secret), // One way hash encryption to protect DB leak
+      expire: expire,
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
+      ip: request.ip,
+    });
+
+    Authorization.setRole(Role.user(profile.getId()).toString());
+
+    const createdRecovery = await db.createDocument(
+      'tokens',
+      recovery.setAttribute('$permissions', [
+        Permission.read(Role.user(profile.getId())),
+        Permission.update(Role.user(profile.getId())),
+        Permission.delete(Role.user(profile.getId())),
+      ]),
+    );
+
+    await db.purgeCachedDocument('users', profile.getId());
+
+    // Parse and merge URL query parameters
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('userId', profile.getId());
+    urlObj.searchParams.set('secret', secret);
+    urlObj.searchParams.set('expire', expire.toISOString());
+    url = urlObj.toString();
+
+    const projectName = project.isEmpty()
+      ? 'Console'
+      : project.getAttribute('name', '[APP-NAME]');
+    let body = locale.getText('emails.recovery.body');
+    let subject = locale.getText('emails.recovery.subject');
+    const customTemplate =
+      project.getAttribute('templates', {})[
+        `email.recovery-${locale.default}`
+      ] ?? {};
+
+    const templatePath = path.join(ASSETS.TEMPLATES, 'email-inner-base.tpl');
+    const templateSource = await fs.readFile(templatePath, 'utf8');
+    const template = Template.compile(templateSource);
+
+    const emailData = {
+      body: body,
+      hello: locale.getText('emails.recovery.hello'),
+      footer: locale.getText('emails.recovery.footer'),
+      thanks: locale.getText('emails.recovery.thanks'),
+      signature: locale.getText('emails.recovery.signature'),
+    };
+
+    body = template(emailData);
+
+    const smtp = project.getAttribute('smtp', {});
+    const smtpEnabled = smtp['enabled'] ?? false;
+
+    let senderEmail = APP_SYSTEM_EMAIL_ADDRESS || APP_EMAIL_TEAM;
+    let senderName = APP_SYSTEM_EMAIL_NAME || APP_NAME + ' Server';
+    let replyTo = '';
+
+    const smtpServer: any = {};
+
+    if (smtpEnabled) {
+      if (smtp['senderEmail']) senderEmail = smtp['senderEmail'];
+      if (smtp['senderName']) senderName = smtp['senderName'];
+      if (smtp['replyTo']) replyTo = smtp['replyTo'];
+
+      smtpServer['host'] = smtp['host'] || '';
+      smtpServer['port'] = smtp['port'] || '';
+      smtpServer['username'] = smtp['username'] || '';
+      smtpServer['password'] = smtp['password'] || '';
+      smtpServer['secure'] = smtp['secure'] ?? false;
+
+      if (customTemplate) {
+        if (customTemplate['senderEmail'])
+          senderEmail = customTemplate['senderEmail'];
+        if (customTemplate['senderName'])
+          senderName = customTemplate['senderName'];
+        if (customTemplate['replyTo']) replyTo = customTemplate['replyTo'];
+
+        body = customTemplate['message'] || body;
+        subject = customTemplate['subject'] || subject;
+      }
+
+      smtpServer['replyTo'] = replyTo;
+      smtpServer['senderEmail'] = senderEmail;
+      smtpServer['senderName'] = senderName;
+    }
+
+    const emailVariables = {
+      direction: locale.getText('settings.direction'),
+      user: profile.getAttribute('name'),
+      redirect: url,
+      project: projectName,
+      team: '',
+    };
+
+    await this.mailQueue.add(SEND_TYPE_EMAIL, {
+      email: profile.getAttribute('email', ''),
+      subject,
+      body,
+      server: smtpServer,
+      variables: emailVariables,
+    });
+
+    createdRecovery.setAttribute('secret', secret);
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', profile.getId())
+    //   .setParam('tokenId', createdRecovery.getId())
+    //   .setUser(profile)
+    //   .setPayload(Response.showSensitive(() => response.output(createdRecovery, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
+
+    response.status(201);
+    return createdRecovery;
+  }
+
+  /**
+   * Update password recovery (confirmation)
+   */
+  async updateRecovery({
+    db,
+    project,
+    user,
+    response,
+    input,
+  }: WithDB<
+    WithProject<WithUser<{ response: NuvixRes; input: UpdateRecoveryDTO }>>
+  >) {
+    const profile = await db.getDocument('users', input.userId);
+
+    if (profile.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const tokens = profile.getAttribute('tokens', []);
+    const verifiedToken = Auth.tokenVerify(
+      tokens,
+      Auth.TOKEN_TYPE_RECOVERY,
+      input.secret,
+    );
+
+    if (!verifiedToken) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    Authorization.setRole(Role.user(profile.getId()).toString());
+
+    const newPassword = await Auth.passwordHash(
+      input.password,
+      Auth.DEFAULT_ALGO,
+      Auth.DEFAULT_ALGO_OPTIONS,
+    );
+
+    const historyLimit =
+      project.getAttribute('auths', {})['passwordHistory'] ?? 0;
+    let history = profile.getAttribute('passwordHistory', []);
+
+    if (historyLimit > 0) {
+      const validator = new PasswordHistoryValidator(
+        history,
+        profile.getAttribute('hash'),
+        profile.getAttribute('hashOptions'),
+      );
+      if (!validator.isValid(input.password)) {
+        throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
+      }
+
+      history.push(newPassword);
+      history = history.slice(Math.max(0, history.length - historyLimit));
+    }
+
+    // hooks.trigger('passwordValidator', [db, project, input.password, user, true]);
+
+    const updatedProfile = await db.updateDocument(
+      'users',
+      profile.getId(),
+      profile
+        .setAttribute('password', newPassword)
+        .setAttribute('passwordHistory', history)
+        .setAttribute('passwordUpdate', new Date())
+        .setAttribute('hash', Auth.DEFAULT_ALGO)
+        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
+        .setAttribute('emailVerification', true),
+    );
+
+    user.setAttributes(updatedProfile.toObject());
+
+    const recoveryDocument = await db.getDocument(
+      'tokens',
+      verifiedToken.getId(),
+    );
+
+    /**
+     * We act like we're updating and validating
+     * the recovery token but actually we don't need it anymore.
+     */
+    await db.deleteDocument('tokens', verifiedToken.getId());
+    await db.purgeCachedDocument('users', profile.getId());
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', profile.getId())
+    //   .setParam('tokenId', recoveryDocument.getId())
+    //   .setPayload(Response.showSensitive(() => response.output(recoveryDocument, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
+
+    response.status(200);
+    return recoveryDocument;
+  }
 }
+
+type WithDB<T> = { db: Database } & T;
+type WithReqRes<T> = { request: NuvixRequest; response: NuvixRes } & T;
+type WithUser<T> = { user: Document } & T;
+type WithProject<T> = { project: Document } & T;
+type WithLocale<T> = { locale: LocaleTranslator } & T;
