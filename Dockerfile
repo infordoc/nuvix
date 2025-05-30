@@ -2,10 +2,8 @@
 FROM node:20 AS node-modules
 WORKDIR /app
 
-COPY package.json ./
-
 # Install native modules (like libpg-query, etc.)
-RUN npm install
+RUN npm install pgsql-parser --no-save
 
 # -------- Stage 2: Bun + Final Build --------
 FROM oven/bun:latest AS base
@@ -14,7 +12,7 @@ WORKDIR /app
 RUN ln -s /usr/local/bin/bun /usr/local/bin/node
 COPY --from=node-modules /app/node_modules ./node_modules
 
-COPY bun.lockb ./
+COPY bun.lock ./
 COPY . .
 
 # Install remaining packages using Bun
