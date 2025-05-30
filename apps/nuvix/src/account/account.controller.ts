@@ -13,7 +13,13 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { AuditEvent, Label, Scope, Sdk } from '@nuvix/core/decorators';
+import {
+  AuditEvent,
+  AuthType,
+  Label,
+  Scope,
+  Sdk,
+} from '@nuvix/core/decorators';
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
 import {
@@ -31,7 +37,11 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { Database, Document } from '@nuvix/database';
 import {
   CreateAccountDTO,
+  UpdateAccountStatusDTO,
   UpdateEmailDTO,
+  UpdateNameDTO,
+  UpdatePasswordDTO,
+  UpdatePhoneDTO,
   UpdatePrefsDTO,
 } from './DTO/account.dto';
 import {
@@ -42,8 +52,14 @@ import {
   ProviderParamDTO,
 } from './DTO/session.dto';
 import { AccountService } from './account.service';
-import { CreateEmailTokenDTO, CreateMagicURLTokenDTO, CreateOAuth2TokenDTO } from './DTO/token.dto';
+import {
+  CreateEmailTokenDTO,
+  CreateMagicURLTokenDTO,
+  CreateOAuth2TokenDTO,
+  CreatePhoneTokenDTO,
+} from './DTO/token.dto';
 import { OAuthProviders } from '@nuvix/core/config/authProviders';
+import { UpdateMfaStatusDTO } from '../users/dto/user.dto';
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(ProjectGuard)
@@ -450,7 +466,7 @@ export class AccountController {
     @Project() project: Document,
     @User() user: Document,
     @AuthDatabase() authDatabase: Database,
-    @Locale() locale: LocaleTranslator
+    @Locale() locale: LocaleTranslator,
   ) {
     return await this.accountService.createEmailToken({
       input,
@@ -459,7 +475,7 @@ export class AccountController {
       project,
       user,
       db: authDatabase,
-      locale
+      locale,
     });
   }
 
@@ -483,8 +499,14 @@ export class AccountController {
     @Project() project: Document,
   ) {
     return await this.accountService.createSession({
-      user, input, request, response, locale, project, authDatabase,
-    })
+      user,
+      input,
+      request,
+      response,
+      locale,
+      project,
+      authDatabase,
+    });
   }
 
   @Public()
@@ -518,6 +540,51 @@ export class AccountController {
     });
   }
 
+  @Public()
+  @Post(['tokens/phone', 'sessions/phone'])
+  @Scope('sessions.create')
+  @ResModel(Models.TOKEN)
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'createPhoneToken',
+  })
+  async createPhoneToken(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreatePhoneTokenDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createPhoneToken({
+      db: authDatabase,
+      user,
+      input,
+      request,
+      response,
+      locale,
+      project,
+    });
+  }
+
+  @Post(['jwts', 'jwt'])
+  @AuthType('JWT')
+  @Scope('account')
+  @ResModel(Models.JWT)
+  @Sdk({
+    name: 'createJWT',
+  })
+  async createJWT(
+    @User() user: Document,
+    @Res({ passthrough: true }) response: NuvixRes,
+  ) {
+    return await this.accountService.createJWT(user, response);
+  }
+
   @Get('prefs')
   @Scope('account')
   @Label('res.status', 'OK')
@@ -545,6 +612,37 @@ export class AccountController {
     );
   }
 
+  @Patch('name')
+  @Scope('account')
+  @ResModel(Models.USER)
+  @AuditEvent('user.update', 'user/{res.$id}')
+  @Sdk({
+    name: 'updateName'
+  })
+  async updateName(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() { name }: UpdateNameDTO,
+  ) {
+    return await this.accountService.updateName(authDatabase, name, user)
+  }
+
+  @Patch('password')
+  @Scope('account')
+  @ResModel(Models.USER)
+  @AuditEvent('user.update', 'user/{res.$id}')
+  @Sdk({
+    name: 'updatePassword'
+  })
+  async updatePassword(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() { password, oldPassword }: UpdatePasswordDTO,
+    @Project() project: Document
+  ) {
+    return await this.accountService.updatePassword({ db: authDatabase, password, oldPassword, user, project })
+  }
+
   @Patch('email')
   @Scope('account')
   @Label('res.status', 'OK')
@@ -562,4 +660,38 @@ export class AccountController {
       updateEmailDto,
     );
   }
+
+  @Patch('phone')
+  @Scope('account')
+  @ResModel(Models.USER)
+  @AuditEvent('user.update', 'user/{res.$id}')
+  @Sdk({
+    name: 'updatePhone'
+  })
+  async updatePhone(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() { password, phone }: UpdatePhoneDTO,
+    @Project() project: Document
+  ) {
+    return await this.accountService.updatePhone({ db: authDatabase, password, phone, user, project })
+  }
+
+  @Patch('status')
+  @Scope('account')
+  @ResModel(Models.USER)
+  @AuditEvent('user.update', 'user/{res.$id}')
+  @Sdk({
+    name: 'updateStatus'
+  })
+  async updateStatus(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+  ) {
+    return await this.accountService.updateStatus({ db: authDatabase, user, request, response });
+  }
+
+  
 }

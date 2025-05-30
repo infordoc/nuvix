@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsObject,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { IsUID } from '@nuvix/core/validators/input.validator';
 
@@ -64,4 +65,9 @@ export class UpdatePhoneDTO {
   @IsNotEmpty()
   @IsString()
   password: string;
+}
+
+export class UpdateAccountStatusDTO {
+  @IsBoolean()
+  status: boolean;
 }

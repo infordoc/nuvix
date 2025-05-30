@@ -52,12 +52,16 @@ import { MailQueueOptions } from '@nuvix/core/resolvers/queues/mail.queue';
 import { getOAuth2Class, OAuth2 } from '@nuvix/core/OAuth2';
 import path from 'path';
 import { URLValidator } from '@nuvix/core/validators/url.validator';
+import { OAuthProviders } from '@nuvix/core/config/authProviders';
 import {
-  OAuthProviders,
-  oAuthProvidersList,
-} from '@nuvix/core/config/authProviders';
-import { CreateEmailTokenDTO, CreateMagicURLTokenDTO, CreateOAuth2TokenDTO } from './DTO/token.dto';
+  CreateEmailTokenDTO,
+  CreateMagicURLTokenDTO,
+  CreateOAuth2TokenDTO,
+  CreatePhoneTokenDTO,
+} from './DTO/token.dto';
 import { PhraseGenerator } from '@nuvix/utils/auth/pharse';
+import { JwtService } from '@nestjs/jwt';
+import { PasswordHistoryValidator } from '@nuvix/core/validators';
 
 @Injectable()
 export class AccountService {
@@ -65,6 +69,7 @@ export class AccountService {
     @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
     @InjectQueue('mails') private readonly mailQueue: Queue<MailQueueOptions>,
     private eventEmitter: EventEmitter2,
+    private readonly jwtService: JwtService,
   ) { }
 
   private readonly oauthDefaultSuccess = '/auth/oauth2/success';
@@ -1761,11 +1766,7 @@ export class AccountService {
       throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
     }
 
-    const {
-      userId,
-      email,
-      phrase: inputPhrase = false,
-    } = input;
+    const { userId, email, phrase: inputPhrase = false } = input;
     let phrase: string;
 
     if (inputPhrase === true) {
@@ -1947,6 +1948,186 @@ export class AccountService {
   }
 
   /**
+   * Create Phone Token.
+   */
+  async createPhoneToken({
+    db,
+    user,
+    input,
+    request,
+    response,
+    locale,
+    project,
+  }: {
+    db: Database;
+    user: Document;
+    input: CreatePhoneTokenDTO;
+    request: NuvixRequest;
+    response: NuvixRes;
+    locale: LocaleTranslator;
+    project: Document;
+  }) {
+    // Check if SMS provider is configured
+    // TODO: import from constants
+    if (!process.env._APP_SMS_PROVIDER) {
+      throw new Exception(
+        Exception.GENERAL_PHONE_DISABLED,
+        'Phone provider not configured',
+      );
+    }
+
+    const { userId, phone } = input;
+
+    const result = await db.findOne('users', [Query.equal('phone', [phone])]);
+    if (!result.isEmpty()) {
+      user.setAttributes(result.toObject());
+    } else {
+      const limit = project.getAttribute('auths', {})['limit'] ?? 0;
+
+      if (limit !== 0) {
+        const total = await db.count('users', [], APP_LIMIT_USERS);
+
+        if (total >= limit) {
+          throw new Exception(Exception.USER_COUNT_EXCEEDED);
+        }
+      }
+
+      const finalUserId = userId === 'unique()' ? ID.unique() : userId;
+      user.setAttributes({
+        $id: finalUserId,
+        $permissions: [
+          Permission.read(Role.any()),
+          Permission.update(Role.user(finalUserId)),
+          Permission.delete(Role.user(finalUserId)),
+        ],
+        email: null,
+        phone: phone,
+        emailVerification: false,
+        phoneVerification: false,
+        status: true,
+        password: null,
+        passwordUpdate: null,
+        registration: new Date(),
+        reset: false,
+        prefs: {},
+        sessions: null,
+        tokens: null,
+        memberships: null,
+        search: [finalUserId, phone].join(' '),
+        accessedAt: new Date(),
+      });
+
+      user.removeAttribute('$internalId');
+      await Authorization.skip(
+        async () => await db.createDocument('users', user),
+      );
+
+      try {
+        const target = await Authorization.skip(
+          async () =>
+            await db.createDocument(
+              'targets',
+              new Document({
+                $permissions: [
+                  Permission.read(Role.user(user.getId())),
+                  Permission.update(Role.user(user.getId())),
+                  Permission.delete(Role.user(user.getId())),
+                ],
+                userId: user.getId(),
+                userInternalId: user.getInternalId(),
+                providerType: 'sms',
+                identifier: phone,
+              }),
+            ),
+        );
+        user.setAttribute('targets', [
+          ...user.getAttribute('targets', []),
+          target,
+        ]);
+      } catch (error) {
+        if (error instanceof DuplicateException) {
+          const existingTarget = await db.findOne('targets', [
+            Query.equal('identifier', [phone]),
+          ]);
+          if (existingTarget && !existingTarget.isEmpty()) {
+            user.setAttribute('targets', [
+              ...user.getAttribute('targets', []),
+              existingTarget,
+            ]);
+          }
+        }
+      }
+      await db.purgeCachedDocument('users', user.getId());
+    }
+
+    let secret: string | null = null;
+    let sendSMS = true;
+    const mockNumbers = project.getAttribute('auths', {})['mockNumbers'] ?? [];
+
+    for (const mockNumber of mockNumbers) {
+      if (mockNumber['phone'] === phone) {
+        secret = mockNumber['otp'];
+        sendSMS = false;
+        break;
+      }
+    }
+
+    secret = secret ?? Auth.codeGenerator(6);
+    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_OTP * 1000);
+
+    const token = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      type: Auth.TOKEN_TYPE_PHONE,
+      secret: Auth.hash(secret),
+      expire: expire,
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
+      ip: request.ip,
+    });
+
+    Authorization.setRole(Role.user(user.getId()).toString());
+
+    const createdToken = await db.createDocument(
+      'tokens',
+      token.setAttribute('$permissions', [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ]),
+    );
+
+    await db.purgeCachedDocument('users', user.getId());
+
+    if (sendSMS) {
+      const customTemplate =
+        project.getAttribute('templates', {})[`sms.login-${locale.default}`] ??
+        {};
+
+      let message = locale.getText('sms.verification.body');
+      if (customTemplate && customTemplate['message']) {
+        message = customTemplate['message'];
+      }
+
+      const messageContent = message
+        .replace('{{project}}', project.getAttribute('name'))
+        .replace('{{secret}}', secret);
+
+      // TODO: Implement SMS queue functionality
+      console.log(`SMS to ${phone}: ${messageContent}`);
+    }
+
+    // createdToken.setAttribute('secret', secret);
+    createdToken.setAttribute(
+      'secret',
+      Auth.encodeSession(user.getId(), secret),
+    );
+
+    response.status(201);
+    return createdToken;
+  }
+
+  /**
    * Send Session Alert.
    */
   async sendSessionAlert(
@@ -2040,6 +2221,241 @@ export class AccountService {
       server: smtpServer,
       variables: emailVariables,
     });
+  }
+
+  /**
+   * Create JWT
+   */
+  async createJWT(user: Document, response: NuvixRes) {
+    const sessions = user.getAttribute('sessions', []);
+    let current = new Document();
+
+    for (const session of sessions) {
+      if (session.getAttribute('secret') === Auth.hash(Auth.secret)) {
+        current = session;
+        break;
+      }
+    }
+
+    if (current.isEmpty()) {
+      throw new Exception(Exception.USER_SESSION_NOT_FOUND);
+    }
+
+    const payload = {
+      userId: user.getId(),
+      sessionId: current.getId(),
+    };
+
+    const jwt = this.jwtService.sign(payload, {
+      expiresIn: '15m', // 900 seconds
+    });
+
+    response.status(201);
+    return new Document({ jwt });
+  }
+
+  /**
+   * Update User Name.
+   */
+  async updateName(
+    db: Database,
+    name: string,
+    user: Document
+  ) {
+    user.setAttribute('name', name);
+
+    user = await db.updateDocument('users', user.getId(), user);
+
+    // TODO: Trigger Event
+
+    return user;
+  }
+
+  /**
+   * Update user password.
+   */
+  async updatePassword({
+    password, oldPassword,
+    user, project, db
+  }: {
+    password: string;
+    oldPassword: string;
+    user: Document,
+    project: Document,
+    db: Database
+  }) {
+    // Check old password only if its an existing user.
+    if (user.getAttribute('passwordUpdate') && !(await Auth.passwordVerify(oldPassword, user.getAttribute('password'), user.getAttribute('hash'), user.getAttribute('hashOptions')))) {
+      throw new Exception(Exception.USER_INVALID_CREDENTIALS);
+    }
+
+    const newPassword = await Auth.passwordHash(password, Auth.DEFAULT_ALGO, Auth.DEFAULT_ALGO_OPTIONS);
+    const historyLimit = project.getAttribute('auths', {})['passwordHistory'] ?? 0;
+    const history = user.getAttribute('passwordHistory', []);
+
+    if (historyLimit > 0) {
+      const validator = new PasswordHistoryValidator(history, user.getAttribute('hash'), user.getAttribute('hashOptions'));
+      if (!validator.isValid(password)) {
+        throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
+      }
+
+      history.push(newPassword);
+      history.splice(0, Math.max(0, history.length - historyLimit));
+    }
+
+    if (project.getAttribute('auths', {})['personalDataCheck'] ?? false) {
+      const personalDataValidator = new PersonalDataValidator(
+        user.getId(),
+        user.getAttribute('email'),
+        user.getAttribute('name'),
+        user.getAttribute('phone')
+      );
+      if (!personalDataValidator.isValid(password)) {
+        throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
+      }
+    }
+
+    // hooks.trigger('passwordValidator', [db, project, password, user, true]);
+
+    user
+      .setAttribute('password', newPassword)
+      .setAttribute('passwordHistory', history)
+      .setAttribute('passwordUpdate', new Date())
+      .setAttribute('hash', Auth.DEFAULT_ALGO)
+      .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
+
+    user = await db.updateDocument('users', user.getId(), user);
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return user;
+  }
+
+  /**
+   * Update User's Phone.
+   */
+  async updatePhone({ password, phone,
+    user, project, db
+  }: {
+    password: string;
+    phone: string;
+    user: Document,
+    project: Document,
+    db: Database
+  }) {
+    // passwordUpdate will be empty if the user has never set a password
+    const passwordUpdate = user.getAttribute('passwordUpdate');
+
+    if (
+      passwordUpdate &&
+      !(await Auth.passwordVerify(
+        password,
+        user.getAttribute('password'),
+        user.getAttribute('hash'),
+        user.getAttribute('hashOptions')
+      ))
+    ) { // Double check user password
+      throw new Exception(Exception.USER_INVALID_CREDENTIALS);
+    }
+
+    // hooks.trigger('passwordValidator', [db, project, password, user, false]);
+
+    const target = await Authorization.skip(
+      async () => await db.findOne('targets', [
+        Query.equal('identifier', [phone]),
+      ])
+    );
+
+    if (!target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+    }
+
+    const oldPhone = user.getAttribute('phone');
+
+    user
+      .setAttribute('phone', phone)
+      .setAttribute('phoneVerification', false); // After this user needs to confirm phone number again
+
+    if (!passwordUpdate) {
+      const hashedPassword = await Auth.passwordHash(
+        password,
+        Auth.DEFAULT_ALGO,
+        Auth.DEFAULT_ALGO_OPTIONS
+      );
+      user
+        .setAttribute('password', hashedPassword)
+        .setAttribute('hash', Auth.DEFAULT_ALGO)
+        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
+        .setAttribute('passwordUpdate', new Date());
+    }
+
+    try {
+      user = await db.updateDocument('users', user.getId(), user);
+      const oldTarget = user.find<any>('identifier', oldPhone, 'targets');
+
+      if (oldTarget && !oldTarget.isEmpty()) {
+        await Authorization.skip(
+          async () => await db.updateDocument(
+            'targets',
+            oldTarget.getId(),
+            oldTarget.setAttribute('identifier', phone)
+          )
+        );
+      }
+      await db.purgeCachedDocument('users', user.getId());
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.USER_PHONE_ALREADY_EXISTS);
+      }
+      throw error;
+    }
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return user;
+  }
+
+  /**
+   * Update Status
+   */
+  async updateStatus({
+    db,
+    user,
+    request,
+    response,
+  }: {
+    db: Database;
+    user: Document;
+    request: NuvixRequest;
+    response: NuvixRes;
+  }) {
+    user.setAttribute('status', false);
+
+    user = await db.updateDocument('users', user.getId(), user);
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setPayload(response.output(user, Response.MODEL_ACCOUNT));
+
+    if (!CONSOLE_CONFIG.domainVerification) {
+      response.header('X-Fallback-Cookies', JSON.stringify([]));
+    }
+
+    const protocol = request.protocol;
+    response
+      .cookie(Auth.cookieName, '', {
+        expires: new Date(Date.now() - 3600000),
+        path: '/',
+        domain: Auth.cookieDomain,
+        secure: protocol === 'https',
+        httpOnly: true,
+        sameSite: Auth.cookieSamesite,
+      });
+
+    return user;
   }
 
   /**

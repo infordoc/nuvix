@@ -12,6 +12,7 @@ import {
   IsNotEmpty,
   IsEmail,
   IsBoolean,
+  IsPhoneNumber,
 } from 'class-validator';
 
 export class CreateOAuth2TokenDTO {
@@ -61,4 +62,15 @@ export class CreateEmailTokenDTO {
   @IsOptional()
   @IsBoolean()
   phrase?: boolean = false;
+}
+
+export class CreatePhoneTokenDTO {
+  @IsString()
+  @MaxLength(36)
+  userId: string;
+
+  @IsNotEmpty()
+  @IsPhoneNumber()
+  @IsString()
+  phone: string;
 }
