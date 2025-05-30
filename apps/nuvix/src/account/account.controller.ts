@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -459,6 +460,61 @@ export class AccountController {
       user,
       db: authDatabase,
       locale
+    });
+  }
+
+  @Public()
+  @Put('sessions/magic-url')
+  @ResModel(Models.SESSION)
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'updateMagicURLSession',
+  })
+  async updateMagicURLSession(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreateSessionDTO,
+    @Req() request: NuvixRequest,
+    @Res() response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createSession({
+      user, input, request, response, locale, project, authDatabase,
+    })
+  }
+
+  @Public()
+  @Put('sessions/phone')
+  @Scope('sessions.update')
+  @ResModel(Models.SESSION)
+  @AuditEvent('session.create', {
+    resource: 'user/{res.userId}',
+    userId: 'res.userId',
+  })
+  @Sdk({
+    name: 'updatePhoneSession',
+  })
+  async updatePhoneSession(
+    @AuthDatabase() authDatabase: Database,
+    @User() user: Document,
+    @Body() input: CreateSessionDTO,
+    @Req() request: NuvixRequest,
+    @Res() response: NuvixRes,
+    @Locale() locale: LocaleTranslator,
+    @Project() project: Document,
+  ) {
+    return await this.accountService.createSession({
+      user,
+      input,
+      request,
+      response,
+      locale,
+      project,
+      authDatabase,
     });
   }
 
