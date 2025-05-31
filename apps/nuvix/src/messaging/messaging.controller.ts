@@ -14,6 +14,9 @@ import { CreateMsg91ProviderDTO } from './DTO/msg91.dto';
 import { CreateTwilioProviderDTO } from './DTO/twilio.dto';
 import { CreateTelesignProviderDTO } from './DTO/telesign.dto';
 import { CreateTextmagicProviderDTO } from './DTO/textmagic.dto';
+import { CreateVonageProviderDTO } from './DTO/vonage.dto';
+import { CreateFcmProviderDTO } from './DTO/fcm.dto';
+import { CreateApnsProviderDTO } from './DTO/apns.dto';
 
 
 @Controller({ path: 'messaging', version: ['1'] })
@@ -136,7 +139,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: CreateTextmagicProviderDTO
   ) {
-    return await this.messagingService.createTextmagicProvider({
+    return await this.messagingService.createTextMagicProvider({
       db,
       input,
     });
@@ -197,6 +200,26 @@ export class MessagingController {
     @Body() input: CreateFcmProviderDTO
   ) {
     return await this.messagingService.createFcmProvider({
+      db,
+      input,
+    });
+  }
+
+  @Post('providers/apns')
+  @Scope('providers.create')
+  @AuditEvent('provider.create', 'provider/{res.$id}')
+  @ResModel(Models.PROVIDER)
+  @Sdk({
+    name: 'createApnsProvider',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.CREATED,
+    description: 'Create a APNs provider',
+  })
+  async createApnsProvider(
+    @MessagingDatabase() db: Database,
+    @Body() input: CreateApnsProviderDTO
+  ) {
+    return await this.messagingService.createApnsProvider({
       db,
       input,
     });

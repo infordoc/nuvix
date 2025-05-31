@@ -7,6 +7,9 @@ import { CreateSMTPProviderDTO } from "./DTO/smtp.dto";
 import { CreateMsg91ProviderDTO } from "./DTO/msg91.dto";
 import { CreateTelesignProviderDTO } from "./DTO/telesign.dto";
 import { CreateTextmagicProviderDTO } from "./DTO/textmagic.dto";
+import { CreateVonageProviderDTO } from "./DTO/vonage.dto";
+import { CreateFcmProviderDTO } from "./DTO/fcm.dto";
+import { CreateApnsProviderDTO } from "./DTO/apns.dto";
 
 interface DB {
     db: Database;
@@ -40,6 +43,9 @@ export interface CreateMsg91Provider extends CreateProviderBase<CreateMsg91Provi
 export interface CreateTelesignProvider extends CreateProviderBase<CreateTelesignProviderDTO> {}
 export interface CreateTextmagicProvider extends CreateProviderBase<CreateTextmagicProviderDTO> {}
 export interface CreateTwilioProvider extends CreateProviderBase<CreateTwilioProviderDTO> {}
+export interface CreateVonageProvider extends CreateProviderBase<CreateVonageProviderDTO> {}
+export interface CreateFcmProvider extends CreateProviderBase<CreateFcmProviderDTO> {}
+export interface CreateApnsProvider extends CreateProviderBase<CreateApnsProviderDTO> {}
 
 export type CreateProviderInput = 
     | CreateMailgunProviderDTO
@@ -48,6 +54,9 @@ export type CreateProviderInput =
     | CreateMsg91ProviderDTO
     | CreateTelesignProviderDTO
     | CreateTextmagicProviderDTO
-    | CreateTwilioProviderDTO;
+    | CreateTwilioProviderDTO
+    | CreateVonageProviderDTO
+    | CreateFcmProviderDTO
+    | CreateApnsProviderDTO;
 
 export type CreateAnyProvider = CreateProviderBase<CreateProviderInput>;

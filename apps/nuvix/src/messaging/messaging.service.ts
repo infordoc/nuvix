@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMailgunProvider, CreateMsg91Provider, CreateSendgridProvider, CreateSmtpProvider, CreateTelesignProvider, CreateTextmagicProvider, CreateTwilioProvider } from './messaging.types';
+import { CreateApnsProvider, CreateFcmProvider, CreateMailgunProvider, CreateMsg91Provider, CreateSendgridProvider, CreateSmtpProvider, CreateTelesignProvider, CreateTextmagicProvider, CreateTwilioProvider, CreateVonageProvider } from './messaging.types';
 import { Database, Document, DuplicateException, ID } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
-import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_SMS } from '@nuvix/utils/constants';
+import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_PUSH, MESSAGE_TYPE_SMS } from '@nuvix/utils/constants';
 
 @Injectable()
 export class MessagingService {
@@ -245,6 +245,73 @@ export class MessagingService {
                 credentials.hasOwnProperty('accountSid') &&
                 credentials.hasOwnProperty('authToken') &&
                 options.hasOwnProperty('from')
+        });
+    }
+
+    /**
+     * Creates a Vonage provider.
+     */
+    async createVonageProvider({ input, db }: CreateVonageProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'vonage',
+            messageType: MESSAGE_TYPE_SMS,
+            credentialFields: {
+                apiKey: 'apiKey',
+                apiSecret: 'apiSecret'
+            },
+            optionFields: {
+                from: 'from'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('apiKey') &&
+                credentials.hasOwnProperty('apiSecret') &&
+                options.hasOwnProperty('from')
+        });
+    }
+
+    /**
+     * Creates a Firebase Cloud Messaging (FCM) provider.
+     */
+    async createFcmProvider({ input, db }: CreateFcmProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'fcm',
+            messageType: MESSAGE_TYPE_PUSH,
+            credentialFields: {
+                serviceAccountJSON: 'serviceAccountJSON'
+            },
+            optionFields: {},
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('serviceAccountJSON')
+        });
+    }
+
+    /**
+     * Creates an APNS provider.
+     */
+    async createApnsProvider({ input, db }: CreateApnsProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'apns',
+            messageType: MESSAGE_TYPE_PUSH,
+            credentialFields: {
+                authKey: 'authKey',
+                authKeyId: 'authKeyId',
+                teamId: 'teamId',
+                bundleId: 'bundleId'
+            },
+            optionFields: {
+                sandbox: 'sandbox'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('authKey') &&
+                credentials.hasOwnProperty('authKeyId') &&
+                credentials.hasOwnProperty('teamId') &&
+                credentials.hasOwnProperty('bundleId')
         });
     }
 
