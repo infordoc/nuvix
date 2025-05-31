@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMailgunProvider, CreateMsg91Provider, CreateSendgridProvider, CreateSmtpProvider, CreateTwilioProvider } from './messaging.types';
+import { CreateMailgunProvider, CreateMsg91Provider, CreateSendgridProvider, CreateSmtpProvider, CreateTelesignProvider, CreateTextmagicProvider, CreateTwilioProvider } from './messaging.types';
 import { Database, Document, DuplicateException, ID } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
 import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_SMS } from '@nuvix/utils/constants';
@@ -175,6 +175,52 @@ export class MessagingService {
             enabledCondition: (credentials, options) =>
                 credentials.hasOwnProperty('senderId') &&
                 credentials.hasOwnProperty('authKey') &&
+                options.hasOwnProperty('from')
+        });
+    }
+
+    /**
+     * Creates a Telesign provider.
+     */
+    async createTelesignProvider({ input, db }: CreateTelesignProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'telesign',
+            messageType: MESSAGE_TYPE_SMS,
+            credentialFields: {
+                customerId: 'customerId',
+                apiKey: 'apiKey'
+            },
+            optionFields: {
+                from: 'from'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('customerId') &&
+                credentials.hasOwnProperty('apiKey') &&
+                options.hasOwnProperty('from')
+        });
+    }
+
+    /**
+     * Creates a TextMagic provider.
+     */
+    async createTextMagicProvider({ input, db }: CreateTextmagicProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'textmagic',
+            messageType: MESSAGE_TYPE_SMS,
+            credentialFields: {
+                username: 'username',
+                apiKey: 'apiKey'
+            },
+            optionFields: {
+                from: 'from'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('username') &&
+                credentials.hasOwnProperty('apiKey') &&
                 options.hasOwnProperty('from')
         });
     }

@@ -12,6 +12,8 @@ import { CreateSendgridProviderDTO } from './DTO/sendgrid.dto';
 import { CreateSMTPProviderDTO } from './DTO/smtp.dto';
 import { CreateMsg91ProviderDTO } from './DTO/msg91.dto';
 import { CreateTwilioProviderDTO } from './DTO/twilio.dto';
+import { CreateTelesignProviderDTO } from './DTO/telesign.dto';
+import { CreateTextmagicProviderDTO } from './DTO/textmagic.dto';
 
 
 @Controller({ path: 'messaging', version: ['1'] })

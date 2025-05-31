@@ -5,6 +5,8 @@ import { CreateSendgridProviderDTO } from "./DTO/sendgrid.dto";
 import { CreateTwilioProviderDTO } from "./DTO/twilio.dto";
 import { CreateSMTPProviderDTO } from "./DTO/smtp.dto";
 import { CreateMsg91ProviderDTO } from "./DTO/msg91.dto";
+import { CreateTelesignProviderDTO } from "./DTO/telesign.dto";
+import { CreateTextmagicProviderDTO } from "./DTO/textmagic.dto";
 
 interface DB {
     db: Database;
@@ -27,22 +29,25 @@ interface Locale {
     locale: LocaleTranslator;
 }
 
-export interface CreateMailgunProvider extends DB {
-    input: CreateMailgunProviderDTO;
+interface CreateProviderBase<T> extends DB {
+    input: T;
 }
 
-export interface CreateSendgridProvider extends DB {
-    input: CreateSendgridProviderDTO;
-}
+export interface CreateMailgunProvider extends CreateProviderBase<CreateMailgunProviderDTO> {}
+export interface CreateSendgridProvider extends CreateProviderBase<CreateSendgridProviderDTO> {}
+export interface CreateSmtpProvider extends CreateProviderBase<CreateSMTPProviderDTO> {}
+export interface CreateMsg91Provider extends CreateProviderBase<CreateMsg91ProviderDTO> {}
+export interface CreateTelesignProvider extends CreateProviderBase<CreateTelesignProviderDTO> {}
+export interface CreateTextmagicProvider extends CreateProviderBase<CreateTextmagicProviderDTO> {}
+export interface CreateTwilioProvider extends CreateProviderBase<CreateTwilioProviderDTO> {}
 
-export interface CreateSmtpProvider extends DB {
-    input: CreateSMTPProviderDTO;
-}
+export type CreateProviderInput = 
+    | CreateMailgunProviderDTO
+    | CreateSendgridProviderDTO
+    | CreateSMTPProviderDTO
+    | CreateMsg91ProviderDTO
+    | CreateTelesignProviderDTO
+    | CreateTextmagicProviderDTO
+    | CreateTwilioProviderDTO;
 
-export interface CreateMsg91Provider extends DB {
-    input: CreateMsg91ProviderDTO;
-}
-
-export interface CreateTwilioProvider extends DB {
-    input: CreateTwilioProviderDTO;
-}
+export type CreateAnyProvider = CreateProviderBase<CreateProviderInput>;
