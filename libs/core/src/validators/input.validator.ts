@@ -2,6 +2,12 @@ import { Transform } from 'class-transformer';
 import { registerDecorator, ValidationOptions } from 'class-validator';
 import { ValidateIf, isBoolean } from 'class-validator';
 
+/**
+ * Decorator that checks if a property is a valid unique ID.
+ * The ID can be a string that is alphanumeric and can include period, hyphen, and underscore,
+ * but cannot start with a special character.
+ * It can also be the string "unique()".
+ */
 export function IsUID(
   validationOptions?: ValidationOptions,
 ): PropertyDecorator {
@@ -24,6 +30,11 @@ export function IsUID(
   };
 }
 
+/**
+ * Decorator that checks if a property is a valid key.
+ * The key must be alphanumeric and can include underscore, but cannot start with a special character.
+ * It is typically used for identifiers or keys in a database or configuration.
+ */
 export function IsKey(
   validationOptions?: ValidationOptions,
 ): PropertyDecorator {
