@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMailgunProvider, CreateSendgridProvider, CreateSmtpProvider, CreateTwilioProvider } from './messaging.types';
-import { Document, DuplicateException, ID } from '@nuvix/database';
+import { CreateMailgunProvider, CreateMsg91Provider, CreateSendgridProvider, CreateSmtpProvider, CreateTwilioProvider } from './messaging.types';
+import { Database, Document, DuplicateException, ID } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
 import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_SMS } from '@nuvix/utils/constants';
 
@@ -10,7 +10,7 @@ export class MessagingService {
     constructor() { }
 
     /**
-     * Common method to create a provider with validation and error handling.
+     * Common method to create a provider.
      */
     private async createProvider({
         input,
@@ -22,7 +22,7 @@ export class MessagingService {
         enabledCondition
     }: {
         input: any;
-        db: any;
+        db: Database;
         providerType: string;
         messageType: string;
         credentialFields: Record<string, string>;
@@ -152,6 +152,30 @@ export class MessagingService {
             enabledCondition: (credentials, options) =>
                 options.fromEmail &&
                 credentials.hasOwnProperty('host')
+        });
+    }
+
+    /**
+     * Creates a MSG91 provider.
+     */
+    async createMsg91Provider({ input, db }: CreateMsg91Provider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'msg91',
+            messageType: MESSAGE_TYPE_SMS,
+            credentialFields: {
+                templateId: 'templateId',
+                senderId: 'senderId',
+                authKey: 'authKey'
+            },
+            optionFields: {
+                from: 'from'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('senderId') &&
+                credentials.hasOwnProperty('authKey') &&
+                options.hasOwnProperty('from')
         });
     }
 

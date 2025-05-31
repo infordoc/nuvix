@@ -1,7 +1,7 @@
 import { IsUID } from '@nuvix/core/validators';
 import { IsString, IsPhoneNumber, IsBoolean, IsOptional, MaxLength, MinLength } from 'class-validator';
 
-export class CreateTwillioProviderDTO {
+export class CreateTwilioProviderDTO {
     @IsString()
     @IsUID()
     providerId: string;
