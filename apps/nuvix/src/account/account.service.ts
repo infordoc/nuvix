@@ -61,9 +61,9 @@ import {
 } from './DTO/token.dto';
 import { PhraseGenerator } from '@nuvix/utils/auth/pharse';
 import { JwtService } from '@nestjs/jwt';
-import { PasswordHistoryValidator, TOTP } from '@nuvix/core/validators';
+import { MfaType, PasswordHistoryValidator, TOTP } from '@nuvix/core/validators';
 import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
-import { CreateEmailVerificationDTO } from './DTO/verification.dto';
+import { TOTP as TOTPChallenge } from '@nuvix/utils/auth/mfa/challenge/totp';
 
 @Injectable()
 export class AccountService {
@@ -3313,7 +3313,149 @@ export class AccountService {
     return user;
   }
 
+  /**
+   * Get Mfa factors
+   */
+  async getMfaFactors(user: Document) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const recoveryCodeEnabled = Array.isArray(mfaRecoveryCodes) && mfaRecoveryCodes.length > 0;
+
+    const totp = TOTP.getAuthenticatorFromUser(user);
+
+    const factors = new Document({
+      totp: totp !== null && totp.getAttribute('verified', false),
+      email: user.getAttribute('email', false) && user.getAttribute('emailVerification', false),
+      phone: user.getAttribute('phone', false) && user.getAttribute('phoneVerification', false),
+      recoveryCode: recoveryCodeEnabled
+    });
+
+    return factors;
+  }
+
+  /**
+   * Create authenticator 
+   */
+  async createMfaAuthenticator({
+    db,
+    user,
+    type,
+    project,
+  }: WithDB<WithUser<WithProject<{ type: string }>>>) {
+    let otp: TOTP;
+
+    switch (type) {
+      case 'totp':
+        otp = new TOTP();
+        break;
+      default:
+        throw new Exception(Exception.GENERAL_ARGUMENT_INVALID, 'Unknown type.');
+    }
+
+    otp.setLabel(user.getAttribute('email'));
+    otp.setIssuer(project.getAttribute('name'));
+
+    const authenticator = TOTP.getAuthenticatorFromUser(user);
+
+    if (authenticator) {
+      if (authenticator.getAttribute('verified')) {
+        throw new Exception(Exception.USER_AUTHENTICATOR_ALREADY_VERIFIED);
+      }
+      await db.deleteDocument('authenticators', authenticator.getId());
+    }
+
+    const newAuthenticator = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      type: 'totp',
+      verified: false,
+      data: {
+        secret: otp.getSecret(),
+      },
+      $permissions: [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ]
+    });
+
+    const model = new Document({
+      secret: otp.getSecret(),
+      uri: otp.getProvisioningUri()
+    });
+
+    await db.createDocument('authenticators', newAuthenticator);
+    await db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return model;
+  }
+
+  /**
+   * Update authenticator (confirmation)
+   */
+  async verifyMfaAuthenticator({
+    type,
+    otp,
+    user,
+    session,
+    db,
+  }: WithDB<WithUser<{ session: Document, otp: string, type: string }>>) {
+    let authenticator: Document | null = null;
+
+    switch (type) {
+      case MfaType.TOTP:
+        authenticator = TOTP.getAuthenticatorFromUser(user);
+        break;
+      default:
+        authenticator = null;
+    }
+
+    if (!authenticator) {
+      throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
+    }
+
+    if (authenticator.getAttribute('verified')) {
+      throw new Exception(Exception.USER_AUTHENTICATOR_ALREADY_VERIFIED);
+    }
+
+    let success = false;
+    switch (type) {
+      case MfaType.TOTP:
+        success = TOTPChallenge.verify(user, otp);
+        break;
+      default:
+        success = false;
+    }
+
+    if (!success) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    authenticator.setAttribute('verified', true);
+
+    await db.updateDocument('authenticators', authenticator.getId(), authenticator);
+    await db.purgeCachedDocument('users', user.getId());
+
+    const factors = session.getAttribute('factors', []);
+    factors.push(type);
+    const uniqueFactors = [...new Set(factors)];
+
+    session.setAttribute('factors', uniqueFactors);
+    await db.updateDocument('sessions', session.getId(), session);
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return user;
+  }
+
+  
+
 }
+
 
 type WithDB<T> = { db: Database } & T;
 type WithReqRes<T> = { request: NuvixRequest; response: NuvixRes } & T;

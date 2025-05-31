@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -10,6 +12,7 @@ import {
   Query,
   Req,
   Res,
+  Session,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -62,12 +65,30 @@ import { OAuthProviders } from '@nuvix/core/config/authProviders';
 import { UpdateMfaStatusDTO } from '../users/dto/user.dto';
 import { DocumentNode } from 'graphql';
 import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
+import {
+  CreateEmailVerificationDTO,
+  UpdateEmailVerificationDTO,
+  CreatePhoneVerificationDTO,
+  UpdatePhoneVerificationDTO,
+} from './DTO/verification.dto';
+import {
+  UpdateAccountMfaDTO,
+  MfaAuthenticatorTypeParamDTO,
+  VerifyMfaAuthenticatorDTO,
+  CreateMfaChallengeDTO,
+  VerifyMfaChallengeDTO,
+} from './DTO/mfa.dto';
+import {
+  CreatePushTargetDTO,
+  TargetIdParamDTO,
+} from './DTO/target.dto';
+import { IdentityIdParamDTO } from './DTO/identity.dto';
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class AccountController {
-  constructor(private readonly accountService: AccountService) {}
+  constructor(private readonly accountService: AccountService) { }
 
   @Public()
   @Post()
@@ -741,7 +762,7 @@ export class AccountController {
 
   @Public()
   @Put('recovery')
-  @Post('recovery')
+  @Post('recovery') // Note: PHP has this as App::put, but also a Post. Assuming both are meant or Put is primary.
   @Scope('sessions.update')
   @AuditEvent('recovery.update', {
     resource: 'user/{res.userId}',
@@ -761,6 +782,365 @@ export class AccountController {
       input,
       project,
       response,
+    });
+  }
+
+  @Post('verification')
+  @Scope('account')
+  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @ResModel(Models.TOKEN)
+  @Sdk({
+    name: 'createVerification',
+  })
+  async createEmailVerification(
+    @Body() { url }: CreateEmailVerificationDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @Project() project: Document,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+    @Locale() locale: LocaleTranslator,
+  ) {
+    return this.accountService.createEmailVerification({
+      url,
+      request,
+      response,
+      project,
+      user,
+      db,
+      locale,
+    });
+  }
+
+  @Public()
+  @Put('verification')
+  @Scope('public')
+  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @ResModel(Models.TOKEN)
+  @Sdk({
+    name: 'updateEmailVerification',
+  })
+  async updateEmailVerification(
+    @Body() { userId, secret }: UpdateEmailVerificationDTO,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.updateEmailVerification({
+      userId,
+      secret,
+      response,
+      user,
+      db,
+    });
+  }
+
+  @Post('verification/phone')
+  @Scope('account')
+  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @ResModel(Models.TOKEN)
+  @Sdk({
+    name: 'createPhoneVerification',
+  })
+  async createPhoneVerification(
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+    @Project() project: Document,
+    @Locale() locale: LocaleTranslator,
+  ) {
+    return this.accountService.createPhoneVerification({
+      request,
+      response,
+      user,
+      db,
+      project,
+      locale,
+    });
+  }
+
+  @Public()
+  @Put('verification/phone')
+  @Scope('public')
+  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @ResModel(Models.TOKEN)
+  @Sdk({
+    name: 'updatePhoneVerification',
+  })
+  async updatePhoneVerification(
+    @Body() { userId, secret }: UpdatePhoneVerificationDTO,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.updatePhoneVerification({
+      userId,
+      secret,
+      user,
+      db,
+    });
+  }
+
+  @Patch('mfa')
+  @Scope('account')
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @ResModel(Models.ACCOUNT)
+  @Sdk({
+    name: 'updateMfa',
+  })
+  async updateMfa(
+    @Body() { mfa }: UpdateAccountMfaDTO,
+    @User() user: Document,
+    @Session() session: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.updateMfa({
+      mfa,
+      session,
+      user,
+      db,
+    });
+  }
+
+  @Get('mfa/factors')
+  @Scope('account')
+  @ResModel(Models.MFA_FACTORS)
+  @Sdk({
+    name: 'listMfaFactors'
+  })
+  async getMfaFactors(
+    @User() user: Document,
+  ) {
+    return this.accountService.getMfaFactors(user);
+  }
+
+  @Post('mfa/authenticators/:type')
+  @Scope('account')
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @ResModel(Models.MFA_TYPE)
+  @Sdk({
+    name: 'createMfaAuthenticator',
+  })
+  async createMfaAuthenticator(
+    @Param() { type }: MfaAuthenticatorTypeParamDTO,
+    @Project() project: Document,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.createMfaAuthenticator({
+      type,
+      project,
+      user,
+      db,
+    });
+  }
+
+  @Put('mfa/authenticators/:type')
+  @Scope('account')
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @ResModel(Models.USER)
+  @Sdk({
+    name: 'updateMfaAuthenticator'
+  })
+  async verifyMfaAuthenticator(
+    @Param() { type }: MfaAuthenticatorTypeParamDTO,
+    @Body() { otp }: VerifyMfaAuthenticatorDTO,
+    @User() user: Document,
+    @Session() session: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.verifyMfaAuthenticator({
+      type,
+      otp,
+      user,
+      session,
+      db,
+    });
+  }
+
+  @Post('mfa/recovery-codes')
+  @Scope('account')
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
+  async createMfaRecoveryCodes(
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.createMfaRecoveryCodes({ response, user, db });
+  }
+
+  @Patch('mfa/recovery-codes')
+  @Scope('account')
+  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
+  async regenerateMfaRecoveryCodes(
+    @AuthDatabase() db: Database,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+  ) {
+    return this.accountService.regenerateMfaRecoveryCodes({ db, response, user });
+  }
+
+  @Get('mfa/recovery-codes')
+  @Scope('account')
+  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
+  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
+  async getMfaRecoveryCodes(
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+  ) {
+    return this.accountService.getMfaRecoveryCodes({ response, user });
+  }
+
+  @Delete('mfa/authenticators/:type')
+  @Scope('account')
+  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResModel(Models.NONE)
+  async deleteMfaAuthenticator(
+    @Param() params: MfaAuthenticatorTypeParamDTO,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.deleteMfaAuthenticator({
+      type: params.type,
+      response,
+      user,
+      db,
+    });
+  }
+
+  @Post('mfa/challenge')
+  @Scope('account') // Or 'public' if challenge can be initiated before full auth for some factors
+  // @ResModel(Models.MFA_CHALLENGE) // TODO: #AI Define Models.MFA_CHALLENGE
+  async createMfaChallenge(
+    @Body() input: CreateMfaChallengeDTO,
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document, // User might be optional if challenge is for an unauthenticated user trying to log in
+    @AuthDatabase() db: Database,
+    @Project() project: Document,
+    @Locale() locale: LocaleTranslator,
+  ) {
+    return this.accountService.createMfaChallenge({
+      ...input,
+      request,
+      response,
+      user, // Handle if user is not yet authenticated
+      db,
+      project,
+      locale,
+    });
+  }
+
+  @Put('mfa/challenge')
+  @Scope('account') // Or 'public'
+  // @ResModel(Models.SESSION or Models.MFA_VERIFY_RESULT) // TODO: #AI Define appropriate response model
+  async verifyMfaChallenge(
+    @Body() input: VerifyMfaChallengeDTO,
+    // @Param('challengeId') challengeId: string, // If passed as path param
+    @Req() request: NuvixRequest,
+    @Res({ passthrough: true }) response: NuvixRes,
+    @User() user: Document, // User might be optional
+    @AuthDatabase() db: Database,
+    @Project() project: Document,
+    @Locale() locale: LocaleTranslator,
+  ) {
+    return this.accountService.verifyMfaChallenge({
+      ...input,
+      // challengeId: input.challengeId || challengeId, // Consolidate challengeId
+      request,
+      response,
+      user,
+      db,
+      project,
+      locale,
+    });
+  }
+
+  @Post('targets/push')
+  @Scope('account')
+  @AuditEvent('target.create', { resource: 'user/{user.$id}/target/{res.$id}', userId: 'user.$id' })
+  // @ResModel(Models.TARGET) // TODO: #AI Define Models.TARGET
+  async createPushTarget(
+    @Body() input: CreatePushTargetDTO,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+    @Project() project: Document,
+  ) {
+    return this.accountService.createPushTarget({
+      ...input,
+      user,
+      db,
+      project,
+    });
+  }
+
+  @Put('targets/:targetId/push')
+  @Scope('account')
+  @AuditEvent('target.update', { resource: 'user/{user.$id}/target/{params.targetId}', userId: 'user.$id' })
+  // @ResModel(Models.TARGET) // TODO: #AI Define Models.TARGET
+  async updatePushTarget(
+    @Param() params: TargetIdParamDTO,
+    @Body() input: CreatePushTargetDTO, // Assuming same DTO for update, adjust if different
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+    @Project() project: Document,
+  ) {
+    return this.accountService.updatePushTarget({
+      targetId: params.targetId,
+      ...input,
+      user,
+      db,
+      project,
+    });
+  }
+
+  @Delete('targets/:targetId/push')
+  @Scope('account')
+  @AuditEvent('target.delete', { resource: 'user/{user.$id}/target/{params.targetId}', userId: 'user.$id' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResModel(Models.NONE)
+  async deletePushTarget(
+    @Param() params: TargetIdParamDTO,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.deletePushTarget({
+      targetId: params.targetId,
+      user,
+      db,
+    });
+  }
+
+  @Get('identities')
+  @Scope('account')
+  // @ResModel(Models.IDENTITY_LIST) // TODO: #AI Define Models.IDENTITY_LIST
+  async getIdentities(
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.getIdentities({ user, db });
+  }
+
+  @Delete('identities/:identityId')
+  @Scope('account')
+  @AuditEvent('user.update', { resource: 'user/{user.$id}/identity/{params.identityId}', userId: 'user.$id' }) // TODO: #AI Revisit AuditEvent type, 'identity.delete' was not recognized. 'user.update' used as placeholder.
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ResModel(Models.NONE)
+  async deleteIdentity(
+    @Param() params: IdentityIdParamDTO,
+    @User() user: Document,
+    @AuthDatabase() db: Database,
+  ) {
+    return this.accountService.deleteIdentity({
+      identityId: params.identityId,
+      user,
+      db,
     });
   }
 }
