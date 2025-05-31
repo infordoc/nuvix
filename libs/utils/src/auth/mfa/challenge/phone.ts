@@ -2,7 +2,7 @@ import { Document } from '@nuvix/database';
 import { Challenge } from '../challenge';
 import { TOTP as TOTPType } from '@nuvix/core/validators';
 
-export class SMSChallenge extends Challenge {
+export class Phone extends Challenge {
     static verify(challenge: Document, otp: string): boolean {
         return challenge.getAttribute('code') === otp;
     }

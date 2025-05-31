@@ -64,6 +64,9 @@ import { JwtService } from '@nestjs/jwt';
 import { MfaType, PasswordHistoryValidator, TOTP } from '@nuvix/core/validators';
 import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 import { TOTP as TOTPChallenge } from '@nuvix/utils/auth/mfa/challenge/totp';
+import { Email as EmailChallenge } from '@nuvix/utils/auth/mfa/challenge/email';
+import { Phone as PhoneChallenge } from '@nuvix/utils/auth/mfa/challenge/phone';
+import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto';
 
 @Injectable()
 export class AccountService {
@@ -3452,13 +3455,322 @@ export class AccountService {
     return user;
   }
 
-  
+  /**
+   * Create MFA recovery codes
+   */
+  async createMfaRecoveryCodes({ user, db }: WithDB<WithUser>) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+
+    if (mfaRecoveryCodes.length > 0) {
+      throw new Exception(Exception.USER_RECOVERY_CODES_ALREADY_EXISTS);
+    }
+
+    const newRecoveryCodes = TOTP.generateBackupCodes();
+    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    await db.updateDocument('users', user.getId(), user);
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    const document = new Document({
+      recoveryCodes: newRecoveryCodes
+    });
+
+    return document;
+  }
+
+  /**
+   * Update MFA recovery codes (regenerate)
+   */
+  async updateMfaRecoveryCodes({ user, db }: WithDB<WithUser>) {
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+
+    if (mfaRecoveryCodes.length === 0) {
+      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
+    }
+
+    const newMfaRecoveryCodes = TOTP.generateBackupCodes();
+    user.setAttribute('mfaRecoveryCodes', newMfaRecoveryCodes);
+    await db.updateDocument('users', user.getId(), user);
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    const document = new Document({
+      recoveryCodes: newMfaRecoveryCodes
+    });
+
+    return document;
+  }
+
+  /**
+   * Delete Authenticator
+   */
+  async deleteMfaAuthenticator({ user, db, type }: WithDB<WithUser<{ type: string }>>) {
+    const authenticator = (() => {
+      switch (type) {
+        case MfaType.TOTP:
+          return TOTP.getAuthenticatorFromUser(user);
+        default:
+          return null;
+      }
+    })();
+
+    if (!authenticator) {
+      throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
+    }
+
+    await db.deleteDocument('authenticators', authenticator.getId());
+    await db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return {};
+  }
+
+  /**
+   * Create MFA Challenge
+   */
+  async createMfaChallenge({
+    db,
+    user,
+    request,
+    response,
+    locale,
+    project,
+    userId,
+    factor,
+  }: WithDB<WithUser<WithProject<WithReqRes<WithLocale<CreateMfaChallengeDTO>>>>>) {
+    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000);
+    const code = Auth.codeGenerator(6);
+
+    const challenge = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      type: factor,
+      token: Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION),
+      code: code,
+      expire: expire,
+      $permissions: [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ],
+    });
+
+    const createdChallenge = await db.createDocument('challenges', challenge);
+
+    switch (factor) {
+      case TOTP.PHONE:
+        if (!process.env._APP_SMS_PROVIDER) {
+          throw new Exception(Exception.GENERAL_PHONE_DISABLED, 'Phone provider not configured');
+        }
+        if (!user.getAttribute('phone')) {
+          throw new Exception(Exception.USER_PHONE_NOT_FOUND);
+        }
+        if (!user.getAttribute('phoneVerification')) {
+          throw new Exception(Exception.USER_PHONE_NOT_VERIFIED);
+        }
+
+        const customSmsTemplate = project.getAttribute('templates', {})[`sms.mfaChallenge-${locale.default}`] ?? {};
+
+        let smsMessage = locale.getText('sms.verification.body');
+        if (customSmsTemplate && customSmsTemplate['message']) {
+          smsMessage = customSmsTemplate['message'];
+        }
+
+        const smsContent = smsMessage
+          .replace('{{project}}', project.getAttribute('name'))
+          .replace('{{secret}}', code);
+
+        const phone = user.getAttribute('phone');
+
+        // TODO: Implement SMS queue functionality
+        console.log(`SMS MFA Challenge to ${phone}: ${smsContent}`);
+
+        // TODO: Implement usage metrics and abuse tracking
+        break;
+
+      case TOTP.EMAIL:
+        if (!APP_SMTP_HOST) {
+          throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
+        }
+        if (!user.getAttribute('email')) {
+          throw new Exception(Exception.USER_EMAIL_NOT_FOUND);
+        }
+        if (!user.getAttribute('emailVerification')) {
+          throw new Exception(Exception.USER_EMAIL_NOT_VERIFIED);
+        }
+
+        let subject = locale.getText('emails.mfaChallenge.subject');
+        const customEmailTemplate = project.getAttribute('templates', {})[`email.mfaChallenge-${locale.default}`] ?? {};
+
+        const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
+        const agentOs = detector.getOS();
+        const agentClient = detector.getClient();
+        const agentDevice = detector.getDevice();
+
+        const templatePath = path.join(ASSETS.TEMPLATES, 'email-mfa-challenge.tpl');
+        const templateSource = await fs.readFile(templatePath, 'utf8');
+        const template = Template.compile(templateSource);
+
+        const emailData = {
+          hello: locale.getText('emails.mfaChallenge.hello'),
+          description: locale.getText('emails.mfaChallenge.description'),
+          clientInfo: locale.getText('emails.mfaChallenge.clientInfo'),
+          thanks: locale.getText('emails.mfaChallenge.thanks'),
+          signature: locale.getText('emails.mfaChallenge.signature'),
+        };
+
+        let body = template(emailData);
+
+        const smtp = project.getAttribute('smtp', {});
+        const smtpEnabled = smtp['enabled'] ?? false;
+
+        let senderEmail = APP_SYSTEM_EMAIL_ADDRESS || APP_EMAIL_TEAM;
+        let senderName = APP_SYSTEM_EMAIL_NAME || APP_NAME + ' Server';
+        let replyTo = '';
+
+        const smtpServer: any = {};
+
+        if (smtpEnabled) {
+          if (smtp['senderEmail']) senderEmail = smtp['senderEmail'];
+          if (smtp['senderName']) senderName = smtp['senderName'];
+          if (smtp['replyTo']) replyTo = smtp['replyTo'];
+
+          smtpServer['host'] = smtp['host'] || '';
+          smtpServer['port'] = smtp['port'] || '';
+          smtpServer['username'] = smtp['username'] || '';
+          smtpServer['password'] = smtp['password'] || '';
+          smtpServer['secure'] = smtp['secure'] ?? false;
+
+          if (customEmailTemplate) {
+            if (customEmailTemplate['senderEmail']) senderEmail = customEmailTemplate['senderEmail'];
+            if (customEmailTemplate['senderName']) senderName = customEmailTemplate['senderName'];
+            if (customEmailTemplate['replyTo']) replyTo = customEmailTemplate['replyTo'];
+
+            body = customEmailTemplate['message'] || body;
+            subject = customEmailTemplate['subject'] || subject;
+          }
+
+          smtpServer['replyTo'] = replyTo;
+          smtpServer['senderEmail'] = senderEmail;
+          smtpServer['senderName'] = senderName;
+        }
+
+        const emailVariables = {
+          direction: locale.getText('settings.direction'),
+          user: user.getAttribute('name'),
+          project: project.getAttribute('name'),
+          otp: code,
+          agentDevice: agentDevice['deviceBrand'] || 'UNKNOWN',
+          agentClient: agentClient['clientName'] || 'UNKNOWN',
+          agentOs: agentOs['osName'] || 'UNKNOWN',
+        };
+
+        await this.mailQueue.add(SEND_TYPE_EMAIL, {
+          email: user.getAttribute('email'),
+          subject,
+          body,
+          server: smtpServer,
+          variables: emailVariables,
+        });
+        break;
+    }
+
+    // TODO: Handle Events
+    // await this.eventEmitter.emitAsync(EVENT_MFA_CHALLENGE_CREATE, {
+    //   userId: user.getId(),
+    //   challengeId: createdChallenge.getId(),
+    // });
+
+    response.status(201);
+    return createdChallenge;
+  }
+
+  /**
+   * 
+   */
+  async updateMfaChallenge({
+    db, user, session, otp, challengeId
+  }:
+    WithDB<WithUser<VerifyMfaChallengeDTO & { session: Document; }>>) {
+
+    const challenge = await db.getDocument('challenges', challengeId);
+
+    if (challenge.isEmpty()) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    const type = challenge.getAttribute('type');
+
+    const recoveryCodeChallenge = async (challenge: Document, user: Document, otp: string): Promise<boolean> => {
+      if (challenge.isSet('type') && challenge.getAttribute('type') === MfaType.RECOVERY_CODE.toLowerCase()) {
+        let mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+        if (mfaRecoveryCodes.includes(otp)) {
+          mfaRecoveryCodes = mfaRecoveryCodes.filter((code: string) => code !== otp);
+          user.setAttribute('mfaRecoveryCodes', mfaRecoveryCodes);
+          await db.updateDocument('users', user.getId(), user);
+          return true;
+        }
+        return false;
+      }
+      return false;
+    };
+
+    let success = false;
+    switch (type) {
+      case MfaType.TOTP:
+        success = TOTPChallenge.challenge(challenge, user, otp);
+        break;
+      case MfaType.PHONE:
+        success = PhoneChallenge.challenge(challenge, user, otp);
+        success = challenge.getAttribute('code') === otp && new Date() < challenge.getAttribute('expire');
+        break;
+      case MfaType.EMAIL:
+        success = EmailChallenge.challenge(challenge, user, otp);
+        success = challenge.getAttribute('code') === otp && new Date() < challenge.getAttribute('expire');
+        break;
+      case MfaType.RECOVERY_CODE.toLowerCase():
+        success = await recoveryCodeChallenge(challenge, user, otp);
+        break;
+      default:
+        success = false;
+    }
+
+    if (!success) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    await db.deleteDocument('challenges', challengeId);
+    await db.purgeCachedDocument('users', user.getId());
+
+    let factors = session.getAttribute('factors', []);
+    factors.push(type);
+    factors = [...new Set(factors)]; // Remove duplicates
+
+    session
+      .setAttribute('factors', factors)
+      .setAttribute('mfaUpdatedAt', new Date());
+
+    await db.updateDocument('sessions', session.getId(), session);
+
+    // TODO: Handle Events
+    // await this.eventEmitter.emitAsync(EVENT_MFA_CHALLENGE_VERIFY, {
+    //   userId: user.getId(),
+    //   sessionId: session.getId(),
+    // });
+
+    return session;
+  }
 
 }
 
 
-type WithDB<T> = { db: Database } & T;
-type WithReqRes<T> = { request: NuvixRequest; response: NuvixRes } & T;
-type WithUser<T> = { user: Document } & T;
-type WithProject<T> = { project: Document } & T;
-type WithLocale<T> = { locale: LocaleTranslator } & T;
+type WithDB<T = unknown> = { db: Database } & T;
+type WithReqRes<T = unknown> = { request: NuvixRequest; response: NuvixRes } & T;
+type WithUser<T = unknown> = { user: Document } & T;
+type WithProject<T = unknown> = { project: Document } & T;
+type WithLocale<T = unknown> = { locale: LocaleTranslator } & T;

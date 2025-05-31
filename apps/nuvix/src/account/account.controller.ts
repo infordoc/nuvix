@@ -961,67 +961,82 @@ export class AccountController {
   @Post('mfa/recovery-codes')
   @Scope('account')
   @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
-  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
+  @ResModel(Models.MFA_RECOVERY_CODES)
+  @Sdk({
+    name: 'createMfaRecoveryCodes'
+  })
   async createMfaRecoveryCodes(
-    @Res({ passthrough: true }) response: NuvixRes,
     @User() user: Document,
     @AuthDatabase() db: Database,
   ) {
-    return this.accountService.createMfaRecoveryCodes({ response, user, db });
+    return this.accountService.createMfaRecoveryCodes({ user, db });
   }
 
   @Patch('mfa/recovery-codes')
   @Scope('account')
-  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
   @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
-  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
-  async regenerateMfaRecoveryCodes(
+  @ResModel(Models.MFA_RECOVERY_CODES)
+  @Sdk({
+    name: 'updateMfaRecoveryCodes'
+  })
+  async updateMfaRecoveryCodes(
     @AuthDatabase() db: Database,
-    @Res({ passthrough: true }) response: NuvixRes,
     @User() user: Document,
   ) {
-    return this.accountService.regenerateMfaRecoveryCodes({ db, response, user });
+    return this.accountService.updateMfaRecoveryCodes({ db, user });
   }
 
   @Get('mfa/recovery-codes')
   @Scope('account')
-  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
-  @ResModel(Models.MFA_RECOVERY_CODES) // TODO: #AI Define Models.MFA_RECOVERY_CODES
+  @ResModel(Models.MFA_RECOVERY_CODES)
+  @Sdk({
+    name: 'getMfaRecoveryCodes'
+  })
   async getMfaRecoveryCodes(
-    @Res({ passthrough: true }) response: NuvixRes,
     @User() user: Document,
   ) {
-    return this.accountService.getMfaRecoveryCodes({ response, user });
+    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+
+    if (!mfaRecoveryCodes || mfaRecoveryCodes.length === 0) {
+      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
+    }
+
+    return {
+      recoveryCodes: mfaRecoveryCodes
+    };
   }
 
   @Delete('mfa/authenticators/:type')
   @Scope('account')
-  // @Label('mfaProtected') // TODO: #AI Implement mfaProtected guard or logic if needed
   @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deleteMfaAuthenticator'
+  })
   async deleteMfaAuthenticator(
-    @Param() params: MfaAuthenticatorTypeParamDTO,
-    @Res({ passthrough: true }) response: NuvixRes,
+    @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @User() user: Document,
     @AuthDatabase() db: Database,
   ) {
     return this.accountService.deleteMfaAuthenticator({
-      type: params.type,
-      response,
+      type,
       user,
       db,
     });
   }
 
   @Post('mfa/challenge')
-  @Scope('account') // Or 'public' if challenge can be initiated before full auth for some factors
-  // @ResModel(Models.MFA_CHALLENGE) // TODO: #AI Define Models.MFA_CHALLENGE
+  @Scope('account')
+  @ResModel(Models.MFA_CHALLENGE)
+  @Sdk({
+    name: 'createMfaChallenge',
+  })
   async createMfaChallenge(
     @Body() input: CreateMfaChallengeDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
-    @User() user: Document, // User might be optional if challenge is for an unauthenticated user trying to log in
+    @User() user: Document,
     @AuthDatabase() db: Database,
     @Project() project: Document,
     @Locale() locale: LocaleTranslator,
@@ -1030,7 +1045,7 @@ export class AccountController {
       ...input,
       request,
       response,
-      user, // Handle if user is not yet authenticated
+      user,
       db,
       project,
       locale,
@@ -1038,27 +1053,22 @@ export class AccountController {
   }
 
   @Put('mfa/challenge')
-  @Scope('account') // Or 'public'
-  // @ResModel(Models.SESSION or Models.MFA_VERIFY_RESULT) // TODO: #AI Define appropriate response model
-  async verifyMfaChallenge(
+  @Scope('account')
+  @ResModel(Models.SESSION)
+  @Sdk({
+    name: 'updateMfaChallenge'
+  })
+  async updateMfaChallenge(
     @Body() input: VerifyMfaChallengeDTO,
-    // @Param('challengeId') challengeId: string, // If passed as path param
-    @Req() request: NuvixRequest,
-    @Res({ passthrough: true }) response: NuvixRes,
-    @User() user: Document, // User might be optional
+    @User() user: Document,
     @AuthDatabase() db: Database,
-    @Project() project: Document,
-    @Locale() locale: LocaleTranslator,
+    @Session() session: Document,
   ) {
-    return this.accountService.verifyMfaChallenge({
+    return this.accountService.updateMfaChallenge({
       ...input,
-      // challengeId: input.challengeId || challengeId, // Consolidate challengeId
-      request,
-      response,
       user,
       db,
-      project,
-      locale,
+      session
     });
   }
 

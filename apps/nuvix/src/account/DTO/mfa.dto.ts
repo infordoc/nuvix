@@ -1,4 +1,5 @@
-import { IsBoolean, IsNotEmpty, IsString, IsIn, IsOptional, IsUUID } from 'class-validator';
+import { IsUID, TOTP } from '@nuvix/core/validators';
+import { IsBoolean, IsNotEmpty, IsString, IsIn, IsOptional } from 'class-validator';
 
 export class UpdateAccountMfaDTO {
   @IsBoolean()
@@ -9,7 +10,7 @@ export class UpdateAccountMfaDTO {
 export class MfaAuthenticatorTypeParamDTO {
   @IsString()
   @IsNotEmpty()
-  @IsIn(['totp']) // TODO: #AI Potentially expand with other types like 'sms', 'email' if supported
+  @IsIn([TOTP.TOTP]) // TODO: Add other supported types 
   type: string;
 }
 
@@ -22,20 +23,21 @@ export class VerifyMfaAuthenticatorDTO {
 export class CreateMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
-  @IsIn(['email', 'sms', 'totp']) // TODO: #AI Review and confirm supported factors
+  @IsIn([TOTP.EMAIL, TOTP.PHONE, TOTP.TOTP, TOTP.RECOVERY_CODE])
   factor: string;
 
   @IsOptional()
   @IsString()
-  @IsUUID()
-  userId?: string; // Optional: If targeting a specific user, otherwise implies current user
+  @IsUID()
+  userId?: string;
 }
+
 
 export class VerifyMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
-  @IsUUID() // Assuming challengeId is a UUID
-  challengeId: string; // Can be a path parameter or part of the body
+  @IsUID()
+  challengeId: string;
 
   @IsString()
   @IsNotEmpty()

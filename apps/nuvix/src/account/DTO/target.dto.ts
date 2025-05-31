@@ -1,19 +1,20 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsUID } from '@nuvix/core/validators';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePushTargetDTO {
   @IsString()
   @IsNotEmpty()
-  identifier: string; // Push identifier (token, ID, etc...)
+  identifier: string;
 
   @IsOptional()
   @IsString()
-  // @IsUUID() // providerId might not always be a UUID, could be a string key
-  providerId?: string; // Push provider ID
+  @IsUID()
+  providerId?: string;
 }
 
 export class TargetIdParamDTO {
   @IsString()
   @IsNotEmpty()
-  @IsUUID()
+  @IsUID()
   targetId: string;
 }
