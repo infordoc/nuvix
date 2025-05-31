@@ -32,6 +32,7 @@ import {
   EVENT_USER_CREATE,
   EVENT_USER_DELETE,
   GEO_DB,
+  MESSAGE_TYPE_PUSH,
   PROJECT_ROOT,
   SEND_TYPE_EMAIL,
 } from '@nuvix/utils/constants';
@@ -67,6 +68,7 @@ import { TOTP as TOTPChallenge } from '@nuvix/utils/auth/mfa/challenge/totp';
 import { Email as EmailChallenge } from '@nuvix/utils/auth/mfa/challenge/email';
 import { Phone as PhoneChallenge } from '@nuvix/utils/auth/mfa/challenge/phone';
 import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto';
+import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto';
 
 @Injectable()
 export class AccountService {
@@ -3691,7 +3693,7 @@ export class AccountService {
   }
 
   /**
-   * 
+   * Update MFA Challenge
    */
   async updateMfaChallenge({
     db, user, session, otp, challengeId
@@ -3764,6 +3766,156 @@ export class AccountService {
     // });
 
     return session;
+  }
+
+  /**
+   * Create Push Target
+   */
+  async createPushTarget({
+    db,
+    user,
+    request,
+    targetId,
+    providerId,
+    identifier
+  }: WithDB<WithUser<CreatePushTargetDTO & { request: NuvixRequest }>>) {
+    const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId;
+
+    const provider = await Authorization.skip(
+      async () => await db.getDocument('providers', providerId)
+    );
+
+    const target = await Authorization.skip(
+      async () => await db.getDocument('targets', finalTargetId)
+    );
+
+    if (!target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+    }
+
+    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
+    const device = detector.getDevice();
+
+    const sessionId = Auth.sessionVerify(user.getAttribute('sessions', []), Auth.secret);
+    const session = await db.getDocument('sessions', sessionId.toString());
+
+    try {
+      const createdTarget = await db.createDocument('targets', new Document({
+        $id: finalTargetId,
+        $permissions: [
+          Permission.read(Role.user(user.getId())),
+          Permission.update(Role.user(user.getId())),
+          Permission.delete(Role.user(user.getId())),
+        ],
+        providerId: providerId || null,
+        providerInternalId: providerId ? provider.getInternalId() : null,
+        providerType: MESSAGE_TYPE_PUSH,
+        userId: user.getId(),
+        userInternalId: user.getInternalId(),
+        sessionId: session.getId(),
+        sessionInternalId: session.getInternalId(),
+        identifier: identifier,
+        name: `${device['deviceBrand']} ${device['deviceModel']}`
+      }));
+
+      await db.purgeCachedDocument('users', user.getId());
+
+      // TODO: Handle Events
+      // queueForEvents
+      //   .setParam('userId', user.getId())
+      //   .setParam('targetId', createdTarget.getId());
+
+      return createdTarget;
+
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Update Push Target
+   */
+  async updatePushTarget({
+    db,
+    user,
+    request,
+    targetId,
+    identifier,
+  }: WithDB<WithUser<UpdatePushTargetDTO & { request: NuvixRequest; targetId: string }>>) {
+    const target = await Authorization.skip(
+      async () => await db.getDocument('targets', targetId)
+    );
+
+    if (target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    if (user.getId() !== target.getAttribute('userId')) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    if (identifier) {
+      target
+        .setAttribute('identifier', identifier)
+        .setAttribute('expired', false);
+    }
+
+    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
+    const device = detector.getDevice();
+
+    target.setAttribute('name', `${device['deviceBrand']} ${device['deviceModel']}`);
+
+    const updatedTarget = await db.updateDocument('targets', target.getId(), target);
+
+    await db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('targetId', updatedTarget.getId());
+
+    return updatedTarget;
+  }
+
+  /**
+   * Delete Push Target
+   */
+  async deletePushTarget({
+    db,
+    user,
+    targetId,
+  }: WithDB<WithUser<{ targetId: string }>>) {
+    const target = await Authorization.skip(
+      async () => await db.getDocument('targets', targetId)
+    );
+
+    if (target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    if (user.getInternalId() !== target.getAttribute('userInternalId')) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    await db.deleteDocument('targets', target.getId());
+
+    await db.purgeCachedDocument('users', user.getId());
+
+    // TODO: Handle Delete Queue
+    // queueForDeletes
+    //   .setType(DELETE_TYPE_TARGET)
+    //   .setDocument(target);
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('targetId', target.getId())
+    //   .setPayload(response.output(target, Response.MODEL_TARGET));
+
+    return {};
   }
 
 }

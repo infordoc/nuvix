@@ -81,6 +81,7 @@ import {
 import {
   CreatePushTargetDTO,
   TargetIdParamDTO,
+  UpdatePushTargetDTO,
 } from './DTO/target.dto';
 import { IdentityIdParamDTO } from './DTO/identity.dto';
 
@@ -96,7 +97,7 @@ export class AccountController {
   @Label('res.status', 'CREATED')
   @Label('res.type', 'JSON')
   @ResModel(Models.USER)
-  @AuditEvent('user.create', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.create', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   async createAccount(
     @AuthDatabase() authDatabase: Database,
     @Body() input: CreateAccountDTO,
@@ -238,7 +239,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   async createEmailSession(
     @AuthDatabase() authDatabase: Database,
@@ -266,7 +267,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'createAnonymousSession',
@@ -295,7 +296,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.update', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'createSession',
@@ -397,7 +398,7 @@ export class AccountController {
   @Scope('public')
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   async OAuth2Redirect(
     @AuthDatabase() authDatabase: Database,
@@ -446,7 +447,7 @@ export class AccountController {
   @ResModel(Models.TOKEN)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'createMagicURLToken',
@@ -477,7 +478,7 @@ export class AccountController {
   @ResModel(Models.TOKEN)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'createEmailToken',
@@ -507,7 +508,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'updateMagicURLSession',
@@ -538,7 +539,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'updatePhoneSession',
@@ -569,7 +570,7 @@ export class AccountController {
   @ResModel(Models.TOKEN)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   @Sdk({
     name: 'createPhoneToken',
@@ -738,7 +739,7 @@ export class AccountController {
   @Scope('sessions.update')
   @AuditEvent('recovery.create', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   async createRecovery(
     @AuthDatabase() db: Database,
@@ -766,7 +767,7 @@ export class AccountController {
   @Scope('sessions.update')
   @AuditEvent('recovery.update', {
     resource: 'user/{res.userId}',
-    userId: 'res.userId',
+    userId: '{res.userId}',
   })
   async updateRecovery(
     @AuthDatabase() db: Database,
@@ -787,7 +788,7 @@ export class AccountController {
 
   @Post('verification')
   @Scope('account')
-  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: '{res.userId}' })
   @ResModel(Models.TOKEN)
   @Sdk({
     name: 'createVerification',
@@ -815,7 +816,7 @@ export class AccountController {
   @Public()
   @Put('verification')
   @Scope('public')
-  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: '{res.userId}' })
   @ResModel(Models.TOKEN)
   @Sdk({
     name: 'updateEmailVerification',
@@ -837,7 +838,7 @@ export class AccountController {
 
   @Post('verification/phone')
   @Scope('account')
-  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @AuditEvent('verification.create', { resource: 'user/{res.userId}', userId: '{res.userId}' })
   @ResModel(Models.TOKEN)
   @Sdk({
     name: 'createPhoneVerification',
@@ -863,7 +864,7 @@ export class AccountController {
   @Public()
   @Put('verification/phone')
   @Scope('public')
-  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: 'res.userId' })
+  @AuditEvent('verification.update', { resource: 'user/{res.userId}', userId: '{res.userId}' })
   @ResModel(Models.TOKEN)
   @Sdk({
     name: 'updatePhoneVerification',
@@ -883,7 +884,7 @@ export class AccountController {
 
   @Patch('mfa')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @ResModel(Models.ACCOUNT)
   @Sdk({
     name: 'updateMfa',
@@ -916,7 +917,7 @@ export class AccountController {
 
   @Post('mfa/authenticators/:type')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @ResModel(Models.MFA_TYPE)
   @Sdk({
     name: 'createMfaAuthenticator',
@@ -937,7 +938,7 @@ export class AccountController {
 
   @Put('mfa/authenticators/:type')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @ResModel(Models.USER)
   @Sdk({
     name: 'updateMfaAuthenticator'
@@ -960,7 +961,7 @@ export class AccountController {
 
   @Post('mfa/recovery-codes')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @ResModel(Models.MFA_RECOVERY_CODES)
   @Sdk({
     name: 'createMfaRecoveryCodes'
@@ -974,7 +975,7 @@ export class AccountController {
 
   @Patch('mfa/recovery-codes')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @ResModel(Models.MFA_RECOVERY_CODES)
   @Sdk({
     name: 'updateMfaRecoveryCodes'
@@ -1008,7 +1009,7 @@ export class AccountController {
 
   @Delete('mfa/authenticators/:type')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: 'res.$id' })
+  @AuditEvent('user.update', { resource: 'user/{res.$id}', userId: '{res.$id}' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ResModel(Models.NONE)
   @Sdk({
@@ -1074,54 +1075,63 @@ export class AccountController {
 
   @Post('targets/push')
   @Scope('account')
-  @AuditEvent('target.create', { resource: 'user/{user.$id}/target/{res.$id}', userId: 'user.$id' })
-  // @ResModel(Models.TARGET) // TODO: #AI Define Models.TARGET
+  @AuditEvent('target.create', { resource: 'user/{user.$id}/target/{res.$id}', userId: '{user.$id}' })
+  @ResModel(Models.TARGET)
+  @Sdk({
+    name: 'createPushTarget',
+  })
   async createPushTarget(
     @Body() input: CreatePushTargetDTO,
     @User() user: Document,
     @AuthDatabase() db: Database,
-    @Project() project: Document,
+    @Req() request: NuvixRequest,
   ) {
     return this.accountService.createPushTarget({
       ...input,
       user,
       db,
-      project,
+      request,
     });
   }
 
   @Put('targets/:targetId/push')
   @Scope('account')
-  @AuditEvent('target.update', { resource: 'user/{user.$id}/target/{params.targetId}', userId: 'user.$id' })
-  // @ResModel(Models.TARGET) // TODO: #AI Define Models.TARGET
+  @AuditEvent('target.update', { resource: 'user/{user.$id}/target/{params.targetId}', userId: '{user.$id}' })
+  @ResModel(Models.TARGET)
+  @Sdk({
+    name: 'updatePushTarget',
+  })
   async updatePushTarget(
-    @Param() params: TargetIdParamDTO,
-    @Body() input: CreatePushTargetDTO, // Assuming same DTO for update, adjust if different
+    @Param() { targetId }: TargetIdParamDTO,
+    @Body() input: UpdatePushTargetDTO,
     @User() user: Document,
     @AuthDatabase() db: Database,
-    @Project() project: Document,
+    @Req() request: NuvixRequest,
   ) {
     return this.accountService.updatePushTarget({
-      targetId: params.targetId,
+      targetId,
       ...input,
       user,
       db,
-      project,
+      request,
     });
   }
 
   @Delete('targets/:targetId/push')
   @Scope('account')
-  @AuditEvent('target.delete', { resource: 'user/{user.$id}/target/{params.targetId}', userId: 'user.$id' })
+  @AuditEvent('target.delete', { resource: 'user/{user.$id}/target/{params.targetId}', userId: '{user.$id}' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deletePushTarget',
+  })
   async deletePushTarget(
-    @Param() params: TargetIdParamDTO,
+    @Param() { targetId }: TargetIdParamDTO,
     @User() user: Document,
     @AuthDatabase() db: Database,
   ) {
     return this.accountService.deletePushTarget({
-      targetId: params.targetId,
+      targetId,
       user,
       db,
     });
@@ -1129,7 +1139,7 @@ export class AccountController {
 
   @Get('identities')
   @Scope('account')
-  // @ResModel(Models.IDENTITY_LIST) // TODO: #AI Define Models.IDENTITY_LIST
+  @ResModel(Models.IDENTITY, { list: true })
   async getIdentities(
     @User() user: Document,
     @AuthDatabase() db: Database,
@@ -1139,7 +1149,7 @@ export class AccountController {
 
   @Delete('identities/:identityId')
   @Scope('account')
-  @AuditEvent('user.update', { resource: 'user/{user.$id}/identity/{params.identityId}', userId: 'user.$id' }) // TODO: #AI Revisit AuditEvent type, 'identity.delete' was not recognized. 'user.update' used as placeholder.
+  @AuditEvent('user.update', { resource: 'user/{user.$id}/identity/{params.identityId}', userId: '{user.$id}' }) // TODO: #AI Revisit AuditEvent type, 'identity.delete' was not recognized. 'user.update' used as placeholder.
   @HttpCode(HttpStatus.NO_CONTENT)
   @ResModel(Models.NONE)
   async deleteIdentity(
