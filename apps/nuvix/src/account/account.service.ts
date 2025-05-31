@@ -61,7 +61,7 @@ import {
 } from './DTO/token.dto';
 import { PhraseGenerator } from '@nuvix/utils/auth/pharse';
 import { JwtService } from '@nestjs/jwt';
-import { PasswordHistoryValidator } from '@nuvix/core/validators';
+import { PasswordHistoryValidator, TOTP } from '@nuvix/core/validators';
 import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 import { CreateEmailVerificationDTO } from './DTO/verification.dto';
 
@@ -3113,6 +3113,204 @@ export class AccountService {
     //   .setPayload(Response.showSensitive(() => response.output(verification, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
 
     return verification;
+  }
+
+  /**
+   * Create phone verification token
+   */
+  async createPhoneVerification({
+    db,
+    user,
+    request,
+    response,
+    locale,
+    project,
+  }: WithDB<
+    WithReqRes<WithUser<WithProject<WithLocale<{}>>>>
+  >) {
+    // Check if SMS provider is configured
+    if (!process.env._APP_SMS_PROVIDER) {
+      throw new Exception(
+        Exception.GENERAL_PHONE_DISABLED,
+        'Phone provider not configured',
+      );
+    }
+
+    const phone = user.getAttribute('phone');
+    if (!phone) {
+      throw new Exception(Exception.USER_PHONE_NOT_FOUND);
+    }
+
+    if (user.getAttribute('phoneVerification')) {
+      throw new Exception(Exception.USER_PHONE_ALREADY_VERIFIED);
+    }
+
+    let secret: string | null = null;
+    let sendSMS = true;
+    const mockNumbers = project.getAttribute('auths', {})['mockNumbers'] ?? [];
+
+    for (const mockNumber of mockNumbers) {
+      if (mockNumber['phone'] === phone) {
+        secret = mockNumber['otp'];
+        sendSMS = false;
+        break;
+      }
+    }
+
+    secret = secret ?? Auth.codeGenerator(6);
+    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000);
+
+    const verification = new Document({
+      $id: ID.unique(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      type: Auth.TOKEN_TYPE_PHONE,
+      secret: Auth.hash(secret),
+      expire: expire,
+      userAgent: request.headers['user-agent'] || 'UNKNOWN',
+      ip: request.ip,
+    });
+
+    Authorization.setRole(Role.user(user.getId()).toString());
+
+    const createdVerification = await db.createDocument(
+      'tokens',
+      verification.setAttribute('$permissions', [
+        Permission.read(Role.user(user.getId())),
+        Permission.update(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ]),
+    );
+
+    await db.purgeCachedDocument('users', user.getId());
+
+    if (sendSMS) {
+      const customTemplate =
+        project.getAttribute('templates', {})[`sms.verification-${locale.default}`] ??
+        {};
+
+      let message = locale.getText('sms.verification.body');
+      if (customTemplate && customTemplate['message']) {
+        message = customTemplate['message'];
+      }
+
+      const messageContent = message
+        .replace('{{project}}', project.getAttribute('name'))
+        .replace('{{secret}}', secret);
+
+      // TODO: Implement SMS queue functionality
+      console.log(`SMS to ${phone}: ${messageContent}`);
+
+      // TODO: Handle stats and abuse tracking if needed
+      // Similar to the PHP implementation with metrics tracking
+    }
+
+    createdVerification.setAttribute('secret', secret);
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('tokenId', createdVerification.getId())
+    //   .setPayload(Response.showSensitive(() => response.output(createdVerification, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
+
+    response.status(201);
+    return createdVerification;
+  }
+
+  /**
+   * Verify phone number
+   */
+  async updatePhoneVerification({
+    db,
+    user,
+    userId,
+    secret,
+  }: WithDB<WithUser<{ userId: string; secret: string }>>) {
+    const profile = await Authorization.skip(
+      async () => await db.getDocument('users', userId)
+    );
+
+    if (profile.isEmpty()) {
+      throw new Exception(Exception.USER_NOT_FOUND);
+    }
+
+    const tokens = user.getAttribute('tokens', []);
+    const verifiedToken = Auth.tokenVerify(
+      tokens,
+      Auth.TOKEN_TYPE_PHONE,
+      secret
+    );
+
+    if (!verifiedToken) {
+      throw new Exception(Exception.USER_INVALID_TOKEN);
+    }
+
+    Authorization.setRole(Role.user(profile.getId()).toString());
+
+    const updatedProfile = await db.updateDocument(
+      'users',
+      profile.getId(),
+      profile.setAttribute('phoneVerification', true)
+    );
+
+    user.setAttributes(updatedProfile.toObject());
+
+    const verificationDocument = await db.getDocument('tokens', verifiedToken.getId());
+
+    /**
+     * We act like we're updating and validating the verification token but actually we don't need it anymore.
+     */
+    await db.deleteDocument('tokens', verifiedToken.getId());
+    await db.purgeCachedDocument('users', profile.getId());
+
+    // TODO: Handle Events
+    // queueForEvents
+    //   .setParam('userId', user.getId())
+    //   .setParam('tokenId', verificationDocument.getId())
+    //   .setPayload(Response.showSensitive(() => response.output(verificationDocument, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
+
+    return verificationDocument;
+  }
+
+  /**
+   * Update MFA
+   */
+  async updateMfa({
+    db,
+    user,
+    mfa,
+    session,
+  }: WithDB<WithUser<{ mfa: boolean; session?: Document }>>) {
+    user.setAttribute('mfa', mfa);
+
+    user = await db.updateDocument('users', user.getId(), user);
+
+    if (mfa && session) {
+      let factors = session.getAttribute('factors', []);
+
+      const totp = TOTP.getAuthenticatorFromUser(user);
+      if (totp && totp.getAttribute('verified', false)) {
+        factors.push('totp');
+      }
+
+      if (user.getAttribute('email', false) && user.getAttribute('emailVerification', false)) {
+        factors.push('email');
+      }
+
+      if (user.getAttribute('phone', false) && user.getAttribute('phoneVerification', false)) {
+        factors.push('phone');
+      }
+
+      factors = [...new Set(factors)]; // Ensure unique factors
+
+      session.setAttribute('factors', factors);
+      await db.updateDocument('sessions', session.getId(), session);
+    }
+
+    // TODO: Handle Events
+    // queueForEvents.setParam('userId', user.getId());
+
+    return user;
   }
 
 }
