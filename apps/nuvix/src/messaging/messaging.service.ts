@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { CreateMailgunProvider } from './messaging.types';
+import { CreateMailgunProvider, CreateSendgridProvider, CreateSmtpProvider, CreateTwilioProvider } from './messaging.types';
 import { Document, DuplicateException, ID } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
-import { MESSAGE_TYPE_EMAIL } from '@nuvix/utils/constants';
+import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_SMS } from '@nuvix/utils/constants';
 
 @Injectable()
 export class MessagingService {
@@ -10,56 +10,52 @@ export class MessagingService {
     constructor() { }
 
     /**
-     * Creates a Mailgun provider.
+     * Common method to create a provider with validation and error handling.
      */
-    async createMailgunProvider({ input, db }: CreateMailgunProvider) {
-        const {
-            providerId: inputProviderId,
-            isEuRegion,
-            apiKey,
-            domain,
-            fromName,
-            fromEmail,
-            replyToName,
-            replyToEmail,
-            name,
-            enabled: inputEnabled
-        } = input;
-
+    private async createProvider({
+        input,
+        db,
+        providerType,
+        messageType,
+        credentialFields,
+        optionFields,
+        enabledCondition
+    }: {
+        input: any;
+        db: any;
+        providerType: string;
+        messageType: string;
+        credentialFields: Record<string, string>;
+        optionFields: Record<string, string>;
+        enabledCondition: (credentials: Record<string, any>, options: Record<string, any>) => boolean;
+    }) {
+        const { providerId: inputProviderId, name, enabled: inputEnabled } = input;
         const providerId = inputProviderId === 'unique()' ? ID.unique() : inputProviderId;
 
         const credentials: Record<string, any> = {};
+        const options: Record<string, any> = {};
 
-        if (isEuRegion !== null && isEuRegion !== undefined) {
-            credentials.isEuRegion = isEuRegion;
-        }
+        // Map credential fields
+        Object.entries(credentialFields).forEach(([key, inputKey]) => {
+            if (input[inputKey]) {
+                credentials[key] = input[inputKey];
+            }
+        });
 
-        if (apiKey) {
-            credentials.apiKey = apiKey;
-        }
+        // Map option fields
+        Object.entries(optionFields).forEach(([key, inputKey]) => {
+            if (input[inputKey]) {
+                options[key] = input[inputKey];
+            }
+        });
 
-        if (domain) {
-            credentials.domain = domain;
-        }
-
-        const options = {
-            fromName,
-            fromEmail,
-            replyToName,
-            replyToEmail,
-        };
-
-        const enabled = inputEnabled === true
-            && fromEmail
-            && credentials.hasOwnProperty('isEuRegion')
-            && credentials.hasOwnProperty('apiKey')
-            && credentials.hasOwnProperty('domain');
+        const enabled = inputEnabled === true && enabledCondition(credentials, options);
 
         const provider = new Document({
             $id: providerId,
             name,
-            provider: 'mailgun',
-            type: MESSAGE_TYPE_EMAIL,
+            provider: providerType,
+            type: messageType,
             enabled,
             credentials,
             options,
@@ -67,10 +63,8 @@ export class MessagingService {
 
         try {
             const createdProvider = await db.createDocument('providers', provider);
-
             // TODO: queue for events
             // this.queueForEvents.setParam('providerId', createdProvider.getId());
-
             return createdProvider;
         } catch (error) {
             if (error instanceof DuplicateException) {
@@ -78,6 +72,110 @@ export class MessagingService {
             }
             throw error;
         }
+    }
+
+    /**
+     * Creates a Mailgun provider.
+     */
+    async createMailgunProvider({ input, db }: CreateMailgunProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'mailgun',
+            messageType: MESSAGE_TYPE_EMAIL,
+            credentialFields: {
+                isEuRegion: 'isEuRegion',
+                apiKey: 'apiKey',
+                domain: 'domain'
+            },
+            optionFields: {
+                fromName: 'fromName',
+                fromEmail: 'fromEmail',
+                replyToName: 'replyToName',
+                replyToEmail: 'replyToEmail'
+            },
+            enabledCondition: (credentials, options) =>
+                options.fromEmail &&
+                credentials.hasOwnProperty('isEuRegion') &&
+                credentials.hasOwnProperty('apiKey') &&
+                credentials.hasOwnProperty('domain')
+        });
+    }
+
+    /**
+     * Creates a SendGrid provider.
+     */
+    async createSendGridProvider({ input, db }: CreateSendgridProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'sendgrid',
+            messageType: MESSAGE_TYPE_EMAIL,
+            credentialFields: {
+                apiKey: 'apiKey'
+            },
+            optionFields: {
+                fromName: 'fromName',
+                fromEmail: 'fromEmail',
+                replyToName: 'replyToName',
+                replyToEmail: 'replyToEmail'
+            },
+            enabledCondition: (credentials, options) =>
+                options.fromEmail && credentials.hasOwnProperty('apiKey')
+        });
+    }
+
+    /**
+     * Creates an SMTP provider.
+     */
+    async createSmtpProvider({ input, db }: CreateSmtpProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'smtp',
+            messageType: MESSAGE_TYPE_EMAIL,
+            credentialFields: {
+                port: 'port',
+                username: 'username',
+                password: 'password',
+                host: 'host'
+            },
+            optionFields: {
+                fromName: 'fromName',
+                fromEmail: 'fromEmail',
+                replyToName: 'replyToName',
+                replyToEmail: 'replyToEmail',
+                encryption: 'encryption',
+                autoTLS: 'autoTLS',
+                mailer: 'mailer'
+            },
+            enabledCondition: (credentials, options) =>
+                options.fromEmail &&
+                credentials.hasOwnProperty('host')
+        });
+    }
+
+    /**
+     * Creates a Twilio provider.
+     */
+    async createTwilioProvider({ input, db }: CreateTwilioProvider) {
+        return this.createProvider({
+            input,
+            db,
+            providerType: 'twilio',
+            messageType: MESSAGE_TYPE_SMS,
+            credentialFields: {
+                accountSid: 'accountSid',
+                authToken: 'authToken'
+            },
+            optionFields: {
+                from: 'from'
+            },
+            enabledCondition: (credentials, options) =>
+                credentials.hasOwnProperty('accountSid') &&
+                credentials.hasOwnProperty('authToken') &&
+                options.hasOwnProperty('from')
+        });
     }
 
 }

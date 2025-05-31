@@ -8,6 +8,8 @@ import { User } from '@nuvix/core/decorators/project-user.decorator';
 
 import { CreateMailgunProviderDTO } from './DTO/mailgun.dto';
 import { Database } from '@nuvix/database';
+import { CreateSendgridProviderDTO } from './DTO/sendgrid.dto';
+import { CreateSMTPProviderDTO } from './DTO/smtp.dto';
 
 
 @Controller({ path: 'messaging', version: ['1'] })
@@ -36,6 +38,44 @@ export class MessagingController {
     });
   }
 
+  @Post('providers/sendgrid')
+  @Scope('providers.create')
+  @AuditEvent('provider.create', 'provider/{res.$id}')
+  @ResModel(Models.PROVIDER)
+  @Sdk({
+    name: 'createSendgridProvider',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.CREATED,
+    description: 'Create a Sendgrid provider',
+  })
+  async createSendgridProvider(
+    @MessagingDatabase() db: Database,
+    @Body() input: CreateSendgridProviderDTO,
+  ) {
+    return await this.messagingService.createSendGridProvider({
+      db,
+      input,
+    });
+  }
 
+  @Post('providers/smtp')
+  @Scope('providers.create')
+  @AuditEvent('provider.create', 'provider/{res.$id}')
+  @ResModel(Models.PROVIDER)
+  @Sdk({
+    name: 'createSmtpProvider',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.CREATED,
+    description: 'Create a SMTP provider',
+  })
+  async createSMTPProvider(
+    @MessagingDatabase() db: Database,
+    @Body() input: CreateSMTPProviderDTO
+  ) {
+    return await this.messagingService.createSmtpProvider({
+      db,
+      input,
+    });
+  }
 
 }
