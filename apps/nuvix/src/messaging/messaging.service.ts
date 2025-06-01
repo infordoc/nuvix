@@ -18,6 +18,7 @@ import type {
   ListMessages,
   ListProviders,
   ListSubscribers,
+  ListTargets,
   ListTopics,
   UpdateApnsProvider,
   UpdateFcmProvider,
@@ -1659,6 +1660,89 @@ export class MessagingService {
 
       return {
         messages,
+        total,
+      };
+    } catch (error) {
+      // TODO: OrderException
+      if (error instanceof DatabaseError) {
+        throw new Exception(
+          Exception.DATABASE_QUERY_ORDER_NULL,
+          `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get Message
+   */
+  async getMessage(db: Database, id: string) {
+    const message = await db.getDocument('messages', id);
+
+    if (message.isEmpty()) {
+      throw new Exception(Exception.MESSAGE_NOT_FOUND);
+    }
+
+    return message;
+  }
+
+  /**
+   *  List targets for a message.
+   */
+  async listTargets({ db, messageId, queries }: ListTargets) {
+    const message = await db.getDocument('messages', messageId);
+
+    if (message.isEmpty()) {
+      throw new Exception(Exception.MESSAGE_NOT_FOUND);
+    }
+
+    const targetIDs = message.getAttribute('targets');
+
+    if (!targetIDs || targetIDs.length === 0) {
+      return {
+        targets: [],
+        total: 0,
+      };
+    }
+
+    queries.push(Query.equal('$id', targetIDs));
+
+    // Get cursor document if there was a cursor query
+    const cursor = queries.find(query =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
+
+    if (cursor) {
+      const validator = new CursorValidator();
+      if (!validator.isValid(cursor)) {
+        throw new Exception(
+          Exception.GENERAL_QUERY_INVALID,
+          validator.getDescription(),
+        );
+      }
+
+      const targetId = cursor.getValue();
+      const cursorDocument = await db.getDocument('targets', targetId);
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Target '${targetId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    try {
+      const targets = await db.find('targets', queries);
+      const total = await db.count('targets', queries);
+
+      return {
+        targets,
         total,
       };
     } catch (error) {

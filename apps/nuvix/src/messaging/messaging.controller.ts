@@ -805,5 +805,42 @@ export class MessagingController {
       search,
     });
   }
-  
+
+  @Get('messages/:messageId')
+  @Scope('messages.read')
+  @ResModel(Models.MESSAGE)
+  @Sdk({
+    name: 'getMessage',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'Get message',
+  })
+  async getMessage(
+    @Param('messageId') messageId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.getMessage(db, messageId);
+  }
+
+  @Get('messages/:messageId/targets')
+  @Scope('messages.read')
+  @ResModel(Models.TARGET, { list: true })
+  @Sdk({
+    name: 'listTargets',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'List all targets for a message',
+  })
+  async listTargets(
+    @Param('messageId') messageId: string,
+    @MessagingDatabase() db: Database,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+  ) {
+    return await this.messagingService.listTargets({
+      db,
+      messageId,
+      queries,
+    });
+  }
+
 }

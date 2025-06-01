@@ -162,3 +162,7 @@ export interface CreatePushMessage extends DB, Project {
 }
 
 export interface ListMessages extends DB, QandS { }
+export interface ListTargets extends DB {
+  messageId: string;
+  queries: Query[];
+}
