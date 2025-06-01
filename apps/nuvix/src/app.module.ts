@@ -50,7 +50,6 @@ import { FunctionsController } from './functions/functions.controller';
 import { SchemaController } from './schema/schema.controller';
 import { StorageController } from './storage/storage.controller';
 import { MessagingModule } from './messaging/messaging.module';
-import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
