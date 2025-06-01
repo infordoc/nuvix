@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
+import type {
   CreateApnsProvider,
   CreateFcmProvider,
   CreateMailgunProvider,
@@ -11,6 +11,16 @@ import {
   CreateTwilioProvider,
   CreateVonageProvider,
   ListProviders,
+  UpdateApnsProvider,
+  UpdateFcmProvider,
+  UpdateMailgunProvider,
+  UpdateMsg91Provider,
+  UpdateSendgridProvider,
+  UpdateSmtpProvider,
+  UpdateTelesignProvider,
+  UpdateTextmagicProvider,
+  UpdateTwilioProvider,
+  UpdateVonageProvider,
 } from './messaging.types';
 import {
   Authorization,
@@ -20,7 +30,6 @@ import {
   Document,
   DuplicateException,
   ID,
-  OrderValidator,
   Query,
 } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
@@ -413,5 +422,356 @@ export class MessagingService {
     }
 
     return provider;
+  }
+
+  /**
+   * Common method to update a provider.
+   */
+  private async updateProvider({
+    providerId,
+    db,
+    providerType,
+    updatedFields,
+    credentialFields,
+    optionFields,
+    enabledCondition,
+  }: {
+    providerId: string;
+    db: Database;
+    providerType: string;
+    updatedFields: Record<string, any>;
+    credentialFields: Record<string, string>;
+    optionFields: Record<string, string>;
+    enabledCondition: (
+      credentials: Record<string, any>,
+      options: Record<string, any>,
+    ) => boolean;
+  }) {
+    const provider = await db.getDocument('providers', providerId);
+
+    if (provider.isEmpty()) {
+      throw new Exception(Exception.PROVIDER_NOT_FOUND);
+    }
+
+    if (provider.getAttribute('provider') !== providerType) {
+      throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
+    }
+
+    if (updatedFields.name) {
+      provider.setAttribute('name', updatedFields.name);
+    }
+
+    // Update credentials
+    const credentials = provider.getAttribute('credentials') || {};
+    Object.entries(credentialFields).forEach(([key, inputKey]) => {
+      if (
+        updatedFields[inputKey] !== undefined &&
+        updatedFields[inputKey] !== ''
+      ) {
+        credentials[key] = updatedFields[inputKey];
+      }
+    });
+    provider.setAttribute('credentials', credentials);
+
+    // Update options
+    const options = provider.getAttribute('options') || {};
+    Object.entries(optionFields).forEach(([key, inputKey]) => {
+      if (
+        updatedFields[inputKey] !== undefined &&
+        updatedFields[inputKey] !== ''
+      ) {
+        options[key] = updatedFields[inputKey];
+      }
+    });
+    provider.setAttribute('options', options);
+
+    // Update enabled status
+    if (updatedFields.enabled !== undefined && updatedFields.enabled !== null) {
+      if (updatedFields.enabled) {
+        if (enabledCondition(credentials, options)) {
+          provider.setAttribute('enabled', true);
+        } else {
+          throw new Exception(Exception.PROVIDER_MISSING_CREDENTIALS);
+        }
+      } else {
+        provider.setAttribute('enabled', false);
+      }
+    }
+
+    const updatedProvider = await db.updateDocument(
+      'providers',
+      provider.getId(),
+      provider,
+    );
+    // TODO: queue for events
+    // this.queueForEvents.setParam('providerId', updatedProvider.getId());
+
+    return updatedProvider;
+  }
+
+  /**
+   * Updates a Mailgun provider.
+   */
+  async updateMailgunProvider({
+    providerId,
+    db,
+    input,
+  }: UpdateMailgunProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'mailgun',
+      updatedFields: input,
+      credentialFields: {
+        isEuRegion: 'isEuRegion',
+        apiKey: 'apiKey',
+        domain: 'domain',
+      },
+      optionFields: {
+        fromName: 'fromName',
+        fromEmail: 'fromEmail',
+        replyToName: 'replyToName',
+        replyToEmail: 'replyToEmail',
+      },
+      enabledCondition: (credentials, options) =>
+        options.hasOwnProperty('fromEmail') &&
+        credentials.hasOwnProperty('isEuRegion') &&
+        credentials.hasOwnProperty('apiKey') &&
+        credentials.hasOwnProperty('domain'),
+    });
+  }
+
+  /**
+   * Updates a SendGrid provider.
+   */
+  async updateSendGridProvider({
+    providerId,
+    db,
+    input,
+  }: UpdateSendgridProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'sendgrid',
+      updatedFields: input,
+      credentialFields: {
+        apiKey: 'apiKey',
+      },
+      optionFields: {
+        fromName: 'fromName',
+        fromEmail: 'fromEmail',
+        replyToName: 'replyToName',
+        replyToEmail: 'replyToEmail',
+      },
+      enabledCondition: (credentials, options) =>
+        options.hasOwnProperty('fromEmail') &&
+        credentials.hasOwnProperty('apiKey'),
+    });
+  }
+
+  /**
+   * Updates an SMTP provider.
+   */
+  async updateSmtpProvider({ providerId, db, input }: UpdateSmtpProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'smtp',
+      updatedFields: input,
+      credentialFields: {
+        host: 'host',
+        port: 'port',
+        username: 'username',
+        password: 'password',
+      },
+      optionFields: {
+        fromName: 'fromName',
+        fromEmail: 'fromEmail',
+        replyToName: 'replyToName',
+        replyToEmail: 'replyToEmail',
+        encryption: 'encryption',
+        autoTLS: 'autoTLS',
+        mailer: 'mailer',
+      },
+      enabledCondition: (credentials, options) =>
+        options.hasOwnProperty('fromEmail') &&
+        credentials.hasOwnProperty('host'),
+    });
+  }
+
+  /**
+   * Updates a MSG91 provider.
+   */
+  async updateMsg91Provider({ providerId, db, input }: UpdateMsg91Provider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'msg91',
+      updatedFields: input,
+      credentialFields: {
+        templateId: 'templateId',
+        senderId: 'senderId',
+        authKey: 'authKey',
+      },
+      optionFields: {
+        from: 'from',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('senderId') &&
+        credentials.hasOwnProperty('authKey') &&
+        options.hasOwnProperty('from'),
+    });
+  }
+
+  /**
+   * Updates a Telesign provider.
+   */
+  async updateTelesignProvider({
+    providerId,
+    db,
+    input,
+  }: UpdateTelesignProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'telesign',
+      updatedFields: input,
+      credentialFields: {
+        customerId: 'customerId',
+        apiKey: 'apiKey',
+      },
+      optionFields: {
+        from: 'from',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('customerId') &&
+        credentials.hasOwnProperty('apiKey') &&
+        options.hasOwnProperty('from'),
+    });
+  }
+
+  /**
+   * Updates a TextMagic provider.
+   */
+  async updateTextMagicProvider({
+    providerId,
+    db,
+    input,
+  }: UpdateTextmagicProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'textmagic',
+      updatedFields: input,
+      credentialFields: {
+        username: 'username',
+        apiKey: 'apiKey',
+      },
+      optionFields: {
+        from: 'from',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('username') &&
+        credentials.hasOwnProperty('apiKey') &&
+        options.hasOwnProperty('from'),
+    });
+  }
+
+  /**
+   * Updates a Twilio provider.
+   */
+  async updateTwilioProvider({ providerId, db, input }: UpdateTwilioProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'twilio',
+      updatedFields: input,
+      credentialFields: {
+        accountSid: 'accountSid',
+        authToken: 'authToken',
+      },
+      optionFields: {
+        from: 'from',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('accountSid') &&
+        credentials.hasOwnProperty('authToken') &&
+        options.hasOwnProperty('from'),
+    });
+  }
+
+  /**
+   * Updates a Vonage provider.
+   */
+  async updateVonageProvider({ providerId, db, input }: UpdateVonageProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'vonage',
+      updatedFields: input,
+      credentialFields: {
+        apiKey: 'apiKey',
+        apiSecret: 'apiSecret',
+      },
+      optionFields: {
+        from: 'from',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('apiKey') &&
+        credentials.hasOwnProperty('apiSecret') &&
+        options.hasOwnProperty('from'),
+    });
+  }
+
+  /**
+   * Updates an FCM provider.
+   */
+  async updateFcmProvider({ providerId, db, input }: UpdateFcmProvider) {
+    // Handle serviceAccountJSON parsing if it's a string
+    if (
+      input.serviceAccountJSON &&
+      typeof input.serviceAccountJSON === 'string'
+    ) {
+      input.serviceAccountJSON = JSON.parse(input.serviceAccountJSON);
+    }
+
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'fcm',
+      updatedFields: input,
+      credentialFields: {
+        serviceAccountJSON: 'serviceAccountJSON',
+      },
+      optionFields: {},
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('serviceAccountJSON'),
+    });
+  }
+
+  /**
+   * Updates an APNS provider.
+   */
+  async updateApnsProvider({ providerId, db, input }: UpdateApnsProvider) {
+    return this.updateProvider({
+      providerId,
+      db,
+      providerType: 'apns',
+      updatedFields: input,
+      credentialFields: {
+        authKey: 'authKey',
+        authKeyId: 'authKeyId',
+        teamId: 'teamId',
+        bundleId: 'bundleId',
+      },
+      optionFields: {
+        sandbox: 'sandbox',
+      },
+      enabledCondition: (credentials, options) =>
+        credentials.hasOwnProperty('authKey') &&
+        credentials.hasOwnProperty('authKeyId') &&
+        credentials.hasOwnProperty('teamId') &&
+        credentials.hasOwnProperty('bundleId'),
+    });
   }
 }

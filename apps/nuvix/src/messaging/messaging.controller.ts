@@ -339,7 +339,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: UpdateSendgridProviderDTO,
   ) {
-    return await this.messagingService.updateSendgridProvider({
+    return await this.messagingService.updateSendGridProvider({
       db,
       providerId,
       input,
@@ -427,7 +427,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: UpdateTextmagicProviderDTO,
   ) {
-    return await this.messagingService.updateTextmagicProvider({
+    return await this.messagingService.updateTextMagicProvider({
       db,
       providerId,
       input,

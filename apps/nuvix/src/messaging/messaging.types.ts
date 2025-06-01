@@ -99,23 +99,28 @@ export type CreateAnyProvider = CreateProviderBase<CreateProviderInput>;
 
 export interface ListProviders extends DB, QandS {}
 
+interface UpdateProviderBase<T> extends DB {
+  input: T;
+  providerId: string;
+}
+
 export interface UpdateMailgunProvider
-  extends CreateProviderBase<UpdateMailgunProviderDTO> {}
+  extends UpdateProviderBase<UpdateMailgunProviderDTO> {}
 export interface UpdateSendgridProvider
-  extends CreateProviderBase<UpdateSendgridProviderDTO> {}
+  extends UpdateProviderBase<UpdateSendgridProviderDTO> {}
 export interface UpdateSmtpProvider
-  extends CreateProviderBase<UpdateSMTPProviderDTO> {}
+  extends UpdateProviderBase<UpdateSMTPProviderDTO> {}
 export interface UpdateMsg91Provider
-  extends CreateProviderBase<UpdateMsg91ProviderDTO> {}
+  extends UpdateProviderBase<UpdateMsg91ProviderDTO> {}
 export interface UpdateTelesignProvider
-  extends CreateProviderBase<UpdateTelesignProviderDTO> {}
+  extends UpdateProviderBase<UpdateTelesignProviderDTO> {}
 export interface UpdateTextmagicProvider
-  extends CreateProviderBase<UpdateTextmagicProviderDTO> {}
+  extends UpdateProviderBase<UpdateTextmagicProviderDTO> {}
 export interface UpdateTwilioProvider
-  extends CreateProviderBase<UpdateTwilioProviderDTO> {}
+  extends UpdateProviderBase<UpdateTwilioProviderDTO> {}
 export interface UpdateVonageProvider
-  extends CreateProviderBase<UpdateVonageProviderDTO> {}
+  extends UpdateProviderBase<UpdateVonageProviderDTO> {}
 export interface UpdateFcmProvider
-  extends CreateProviderBase<UpdateFcmProviderDTO> {}
+  extends UpdateProviderBase<UpdateFcmProviderDTO> {}
 export interface UpdateApnsProvider
-  extends CreateProviderBase<UpdateApnsProviderDTO> {}
+  extends UpdateProviderBase<UpdateApnsProviderDTO> {}
