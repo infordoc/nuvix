@@ -21,6 +21,7 @@ import type {
   UpdateSmtpProvider,
   UpdateTelesignProvider,
   UpdateTextmagicProvider,
+  UpdateTopic,
   UpdateTwilioProvider,
   UpdateVonageProvider,
 } from './messaging.types';
@@ -43,7 +44,7 @@ import {
 
 @Injectable()
 export class MessagingService {
-  constructor() { }
+  constructor() {}
 
   /**
    * Common method to create a provider.
@@ -364,9 +365,10 @@ export class MessagingService {
     }
 
     // Get cursor document if there was a cursor query
-    const cursor = queries.find(
-      query =>
-        [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(query.getMethod())
+    const cursor = queries.find(query =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
     );
 
     if (cursor) {
@@ -830,7 +832,9 @@ export class MessagingService {
 
     // Get cursor document if there was a cursor query
     const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(query.getMethod())
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
     );
 
     if (cursor) {
@@ -890,4 +894,51 @@ export class MessagingService {
     return topic;
   }
 
+  /**
+   * Updates a topic.
+   */
+  async updateTopic({ topicId, db, input }: UpdateTopic) {
+    const topic = await db.getDocument('topics', topicId);
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    if (input.name !== undefined && input.name !== null) {
+      topic.setAttribute('name', input.name);
+    }
+
+    if (input.subscribe !== undefined && input.subscribe !== null) {
+      topic.setAttribute('subscribe', input.subscribe);
+    }
+
+    const updatedTopic = await db.updateDocument('topics', topicId, topic);
+
+    // TODO: queue for events
+    // this.queueForEvents.setParam('topicId', updatedTopic.getId());
+
+    return updatedTopic;
+  }
+
+  /**
+   * Deletes a topic.
+   */
+  async deleteTopic(db: Database, topicId: string) {
+    const topic = await db.getDocument('topics', topicId);
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    await db.deleteDocument('topics', topicId);
+
+    // queueForDeletes
+    //         .setType(DELETE_TYPE_TOPIC)
+    //         .setDocument(topic);
+
+    // queueForEvents
+    //   .setParam('topicId', topic.getId());
+
+    return;
+  }
 }

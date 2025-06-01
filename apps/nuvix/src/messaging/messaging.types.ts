@@ -31,7 +31,7 @@ import {
 } from './DTO/vonage.dto';
 import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
 import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
-import { CreateTopicDTO } from './DTO/topics.dto';
+import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto';
 
 interface DB {
   db: Database;
@@ -128,6 +128,11 @@ export interface UpdateApnsProvider
 
 export interface CreateTopic extends DB {
   input: CreateTopicDTO;
+}
+
+export interface UpdateTopic extends DB {
+  topicId: string;
+  input: UpdateTopicDTO;
 }
 
 export interface ListTopics extends DB, QandS {}

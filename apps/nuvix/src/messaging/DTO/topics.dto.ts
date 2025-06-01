@@ -1,3 +1,5 @@
+import { PartialType } from '@nestjs/mapped-types';
+import { OmitType } from '@nestjs/swagger';
 import { IsUID } from '@nuvix/core/validators';
 import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
 import {
@@ -24,3 +26,7 @@ export class CreateTopicDTO {
   @MaxLength(64, { each: true })
   subscribe?: string[];
 }
+
+export class UpdateTopicDTO extends PartialType(
+  OmitType(CreateTopicDTO, ['topicId']),
+) {}

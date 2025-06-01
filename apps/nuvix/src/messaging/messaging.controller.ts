@@ -59,13 +59,13 @@ import {
 import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
 import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
 import { ParseQueryPipe } from '@nuvix/core/pipes';
-import { CreateTopicDTO } from './DTO/topics.dto';
+import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto';
 
 @Controller({ path: 'messaging', version: ['1'] })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor)
 export class MessagingController {
-  constructor(private readonly messagingService: MessagingService) { }
+  constructor(private readonly messagingService: MessagingService) {}
 
   @Post('providers/mailgun')
   @Scope('providers.create')
@@ -596,5 +596,44 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
   ) {
     return await this.messagingService.getTopic(db, topicId);
+  }
+
+  @Patch('topics/:topicId')
+  @Scope('topics.update')
+  @AuditEvent('topic.update', 'topic/{res.$id}')
+  @ResModel(Models.TOPIC)
+  @Sdk({
+    name: 'updateTopic',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'Update topic',
+  })
+  async updateTopic(
+    @Param('topicId') topicId: string,
+    @MessagingDatabase() db: Database,
+    @Body() input: UpdateTopicDTO,
+  ) {
+    return await this.messagingService.updateTopic({
+      db,
+      topicId,
+      input,
+    });
+  }
+
+  @Delete('topics/:topicId')
+  @Scope('topics.delete')
+  @AuditEvent('topic.delete', 'topic/{req.topicId}')
+  @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deleteTopic',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.NO_CONTENT,
+    description: 'Delete topic',
+  })
+  async deleteTopic(
+    @Param('topicId') topicId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.deleteTopic(db, topicId);
   }
 }
