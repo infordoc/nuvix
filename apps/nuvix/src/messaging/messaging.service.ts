@@ -15,6 +15,7 @@ import type {
   CreateTopic,
   CreateTwilioProvider,
   CreateVonageProvider,
+  ListMessages,
   ListProviders,
   ListSubscribers,
   ListTopics,
@@ -1611,6 +1612,65 @@ export class MessagingService {
     // queueForEvents.setParam('messageId', createdMessage.getId());
 
     return createdMessage;
+  }
+
+  /**
+   * Lists all messages.
+   */
+  async listMessages({ db, queries, search }: ListMessages) {
+    if (search) {
+      queries.push(Query.search('search', search));
+    }
+
+    // Get cursor document if there was a cursor query
+    const cursor = queries.find(query =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
+
+    if (cursor) {
+      const validator = new CursorValidator();
+      if (!validator.isValid(cursor)) {
+        throw new Exception(
+          Exception.GENERAL_QUERY_INVALID,
+          validator.getDescription(),
+        );
+      }
+
+      const messageId = cursor.getValue();
+      const cursorDocument = await Authorization.skip(
+        async () => await db.getDocument('messages', messageId),
+      );
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Message '${messageId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    try {
+      const messages = await db.find('messages', queries);
+      const total = await db.count('messages', queries);
+
+      return {
+        messages,
+        total,
+      };
+    } catch (error) {
+      // TODO: OrderException
+      if (error instanceof DatabaseError) {
+        throw new Exception(
+          Exception.DATABASE_QUERY_ORDER_NULL,
+          `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
+        );
+      }
+      throw error;
+    }
   }
 
 }

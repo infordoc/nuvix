@@ -785,4 +785,25 @@ export class MessagingController {
     });
   }
 
+  @Get('messages')
+  @Scope('messages.read')
+  @ResModel(Models.MESSAGE, { list: true })
+  @Sdk({
+    name: 'listMessages',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'List all messages',
+  })
+  async listMessages(
+    @MessagingDatabase() db: Database,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+    @Query('search') search?: string,
+  ) {
+    return await this.messagingService.listMessages({
+      db,
+      queries,
+      search,
+    });
+  }
+  
 }

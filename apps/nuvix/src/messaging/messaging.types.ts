@@ -160,3 +160,5 @@ export interface CreateSmsMessage extends DB, Project {
 export interface CreatePushMessage extends DB, Project {
   input: CreatePushMessageDTO;
 }
+
+export interface ListMessages extends DB, QandS { }
