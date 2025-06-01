@@ -60,12 +60,13 @@ import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
 import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
 import { ParseQueryPipe } from '@nuvix/core/pipes';
 import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto';
+import { CreateSubscriberDTO } from './DTO/subscriber.dto';
 
 @Controller({ path: 'messaging', version: ['1'] })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor)
 export class MessagingController {
-  constructor(private readonly messagingService: MessagingService) {}
+  constructor(private readonly messagingService: MessagingService) { }
 
   @Post('providers/mailgun')
   @Scope('providers.create')
@@ -636,4 +637,50 @@ export class MessagingController {
   ) {
     return await this.messagingService.deleteTopic(db, topicId);
   }
+
+  @Post('topics/:topicId/subscribers')
+  @Scope('subscribers.create')
+  @AuditEvent('subscriber.create', 'subscriber/{res.$id}')
+  @ResModel(Models.SUBSCRIBER)
+  @Sdk({
+    name: 'createSubscriber',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.CREATED,
+    description: 'Create a subscriber for a topic',
+  })
+  async createSubscriber(
+    @Param('topicId') topicId: string,
+    @MessagingDatabase() db: Database,
+    @Body() input: CreateSubscriberDTO,
+  ) {
+    return await this.messagingService.createSubscriber({
+      db,
+      topicId,
+      input,
+    });
+  }
+
+  @Get('topics/:topicId/subscribers')
+  @Scope('subscribers.read')
+  @ResModel(Models.SUBSCRIBER, { list: true })
+  @Sdk({
+    name: 'listSubscribers',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'List all subscribers for a topic',
+  })
+  async listSubscribers(
+    @Param('topicId') topicId: string,
+    @MessagingDatabase() db: Database,
+    @Query('queries', ParseQueryPipe) queries: Queries[],
+    @Query('search') search?: string,
+  ) {
+    return await this.messagingService.listSubscribers({
+      db,
+      topicId,
+      queries,
+      search,
+    });
+  }
+
 }

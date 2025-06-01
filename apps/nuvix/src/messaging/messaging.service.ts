@@ -6,12 +6,14 @@ import type {
   CreateMsg91Provider,
   CreateSendgridProvider,
   CreateSmtpProvider,
+  CreateSubscriber,
   CreateTelesignProvider,
   CreateTextmagicProvider,
   CreateTopic,
   CreateTwilioProvider,
   CreateVonageProvider,
   ListProviders,
+  ListSubscribers,
   ListTopics,
   UpdateApnsProvider,
   UpdateFcmProvider,
@@ -33,7 +35,9 @@ import {
   Document,
   DuplicateException,
   ID,
+  Permission,
   Query,
+  Role,
 } from '@nuvix/database';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
@@ -44,7 +48,7 @@ import {
 
 @Injectable()
 export class MessagingService {
-  constructor() {}
+  constructor() { }
 
   /**
    * Common method to create a provider.
@@ -941,4 +945,181 @@ export class MessagingService {
 
     return;
   }
+
+  /**
+   * Create Subscriber
+   */
+  async createSubscriber({ input, db, topicId }: CreateSubscriber) {
+    const { subscriberId: inputSubscriberId, targetId } = input;
+    const subscriberId = inputSubscriberId === 'unique()' ? ID.unique() : inputSubscriberId;
+
+    const topic = await Authorization.skip(
+      async () => await db.getDocument('topics', topicId)
+    );
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    const validator = new Authorization('subscribe');
+    if (!validator.isValid(topic.getAttribute('subscribe'))) {
+      throw new Exception(Exception.USER_UNAUTHORIZED, validator.getDescription());
+    }
+
+    const target = await Authorization.skip(
+      async () => await db.getDocument('targets', targetId)
+    );
+
+    if (target.isEmpty()) {
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+    }
+
+    const user = await Authorization.skip(
+      async () => await db.getDocument('users', target.getAttribute('userId'))
+    );
+
+    const subscriber = new Document({
+      $id: subscriberId,
+      $permissions: [
+        Permission.read(Role.user(user.getId())),
+        Permission.delete(Role.user(user.getId())),
+      ],
+      topicId,
+      topicInternalId: topic.getInternalId(),
+      targetId,
+      targetInternalId: target.getInternalId(),
+      userId: user.getId(),
+      userInternalId: user.getInternalId(),
+      providerType: target.getAttribute('providerType'),
+      search: [
+        subscriberId,
+        targetId,
+        user.getId(),
+        target.getAttribute('providerType'),
+      ].join(' '),
+    });
+
+    try {
+      const createdSubscriber = await db.createDocument('subscribers', subscriber);
+
+      const totalAttribute = (() => {
+        switch (target.getAttribute('providerType')) {
+          case MESSAGE_TYPE_EMAIL:
+            return 'emailTotal';
+          case MESSAGE_TYPE_SMS:
+            return 'smsTotal';
+          case MESSAGE_TYPE_PUSH:
+            return 'pushTotal';
+          default:
+            throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE);
+        }
+      })();
+
+      await Authorization.skip(async () =>
+        await db.increaseDocumentAttribute('topics', topicId, totalAttribute)
+      );
+
+      // TODO: queue for events
+      // this.queueForEvents
+      //   .setParam('topicId', topic.getId())
+      //   .setParam('subscriberId', createdSubscriber.getId());
+
+      createdSubscriber
+        .setAttribute('target', target)
+        .setAttribute('userName', user.getAttribute('name'));
+
+      return createdSubscriber;
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.SUBSCRIBER_ALREADY_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Lists all subscribers for a topic.
+   */
+  async listSubscribers({ db, topicId, queries, search }: ListSubscribers) {
+    if (search) {
+      queries.push(Query.search('search', search));
+    }
+
+    const topic = await Authorization.skip(
+      async () => await db.getDocument('topics', topicId)
+    );
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    queries.push(Query.equal('topicInternalId', [topic.getInternalId()]));
+
+    // Get cursor document if there was a cursor query
+    const cursor = queries.find(query =>
+      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
+        query.getMethod(),
+      ),
+    );
+
+    if (cursor) {
+      const validator = new CursorValidator();
+      if (!validator.isValid(cursor)) {
+        throw new Exception(
+          Exception.GENERAL_QUERY_INVALID,
+          validator.getDescription(),
+        );
+      }
+
+      const subscriberId = cursor.getValue();
+      const cursorDocument = await Authorization.skip(
+        async () => await db.getDocument('subscribers', subscriberId),
+      );
+
+      if (cursorDocument.isEmpty()) {
+        throw new Exception(
+          Exception.GENERAL_CURSOR_NOT_FOUND,
+          `Subscriber '${subscriberId}' for the 'cursor' value not found.`,
+        );
+      }
+
+      cursor.setValue(cursorDocument);
+    }
+
+    try {
+      const subscribers = await db.find('subscribers', queries);
+      const total = await db.count('subscribers', queries);
+
+      // Batch process subscribers to add target and userName
+      const enrichedSubscribers = await Promise.all(
+        subscribers.map(async (subscriber) => {
+          const target = await Authorization.skip(
+            async () => await db.getDocument('targets', subscriber.getAttribute('targetId'))
+          );
+          const user = await Authorization.skip(
+            async () => await db.getDocument('users', target.getAttribute('userId'))
+          );
+
+          return subscriber
+            .setAttribute('target', target)
+            .setAttribute('userName', user.getAttribute('name'));
+        })
+      );
+
+      return {
+        subscribers: enrichedSubscribers,
+        total,
+      };
+    } catch (error) {
+      // TODO: OrderException
+      if (error instanceof DatabaseError) {
+        throw new Exception(
+          Exception.DATABASE_QUERY_ORDER_NULL,
+          `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
+        );
+      }
+      throw error;
+    }
+  }
+
 }
