@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   Param,
@@ -63,7 +64,7 @@ import { ParseQueryPipe } from '@nuvix/core/pipes';
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor)
 export class MessagingController {
-  constructor(private readonly messagingService: MessagingService) {}
+  constructor(private readonly messagingService: MessagingService) { }
 
   @Post('providers/mailgun')
   @Scope('providers.create')
@@ -521,4 +522,25 @@ export class MessagingController {
       input,
     });
   }
+
+  @Delete('providers/:providerId')
+  @Scope('providers.delete')
+  @AuditEvent('provider.delete', 'provider/{req.providerId}')
+  @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deleteProvider',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.NO_CONTENT,
+    description: 'Delete provider',
+  })
+  async deleteProvider(
+    @Param('providerId') providerId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.deleteProvider(
+      db,
+      providerId,
+    );
+  }
+
 }

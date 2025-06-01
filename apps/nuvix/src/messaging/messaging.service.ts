@@ -41,7 +41,7 @@ import {
 
 @Injectable()
 export class MessagingService {
-  constructor() {}
+  constructor() { }
 
   /**
    * Common method to create a provider.
@@ -774,4 +774,24 @@ export class MessagingService {
         credentials.hasOwnProperty('bundleId'),
     });
   }
+
+  /**
+   * Deletes a provider.
+   */
+  async deleteProvider(db: Database, providerId: string) {
+    const provider = await db.getDocument('providers', providerId);
+
+    if (provider.isEmpty()) {
+      throw new Exception(Exception.PROVIDER_NOT_FOUND);
+    }
+
+    await db.deleteDocument('providers', providerId);
+
+    // TODO: queue for events
+    // this.queueForEvents.setParam('providerId', providerId);
+
+    return {};
+  }
+
+
 }
