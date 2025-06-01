@@ -1122,4 +1122,88 @@ export class MessagingService {
     }
   }
 
+  /**
+   * Get Subscriber
+   */
+  async getSubscriber(db: Database, topicId: string, subscriberId: string) {
+    const topic = await Authorization.skip(
+      async () => await db.getDocument('topics', topicId)
+    );
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    const subscriber = await db.getDocument('subscribers', subscriberId);
+
+    if (subscriber.isEmpty() || subscriber.getAttribute('topicId') !== topicId) {
+      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
+    }
+
+    const target = await Authorization.skip(
+      async () => await db.getDocument('targets', subscriber.getAttribute('targetId'))
+    );
+    const user = await Authorization.skip(
+      async () => await db.getDocument('users', target.getAttribute('userId'))
+    );
+
+    subscriber
+      .setAttribute('target', target)
+      .setAttribute('userName', user.getAttribute('name'));
+
+    return subscriber;
+  }
+
+  /**
+   * Deletes a subscriber.
+   */
+  async deleteSubscriber(db: Database, topicId: string, subscriberId: string) {
+    const topic = await Authorization.skip(
+      async () => await db.getDocument('topics', topicId)
+    );
+
+    if (topic.isEmpty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    const subscriber = await db.getDocument('subscribers', subscriberId);
+
+    if (subscriber.isEmpty() || subscriber.getAttribute('topicId') !== topicId) {
+      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
+    }
+
+    const target = await db.getDocument('targets', subscriber.getAttribute('targetId'));
+
+    await db.deleteDocument('subscribers', subscriberId);
+
+    const totalAttribute = (() => {
+      switch (target.getAttribute('providerType')) {
+        case MESSAGE_TYPE_EMAIL:
+          return 'emailTotal';
+        case MESSAGE_TYPE_SMS:
+          return 'smsTotal';
+        case MESSAGE_TYPE_PUSH:
+          return 'pushTotal';
+        default:
+          throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE);
+      }
+    })();
+
+    await Authorization.skip(async () =>
+      await db.decreaseDocumentAttribute(
+        'topics',
+        topicId,
+        totalAttribute,
+        0
+      )
+    );
+
+    // TODO: queue for events
+    // this.queueForEvents
+    //   .setParam('topicId', topic.getId())
+    //   .setParam('subscriberId', subscriber.getId());
+
+    return {};
+  }
+
 }

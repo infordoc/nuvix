@@ -683,4 +683,41 @@ export class MessagingController {
     });
   }
 
+  @Get('topics/:topicId/subscribers/:subscriberId')
+  @Scope('subscribers.read')
+  @ResModel(Models.SUBSCRIBER)
+  @Sdk({
+    name: 'getSubscriber',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.OK,
+    description: 'Get a subscriber for a topic',
+  })
+  async getSubscriber(
+    @Param('topicId') topicId: string,
+    @Param('subscriberId') subscriberId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.getSubscriber(db, topicId, subscriberId);
+  }
+
+  @Delete('topics/:topicId/subscribers/:subscriberId')
+  @Scope('subscribers.delete')
+  @AuditEvent('subscriber.delete', 'subscriber/{req.subscriberId}')
+  @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deleteSubscriber',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.NO_CONTENT,
+    description: 'Delete a subscriber for a topic',
+  })
+  async deleteSubscriber(
+    @Param('topicId') topicId: string,
+    @Param('subscriberId') subscriberId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.deleteSubscriber(db, topicId, subscriberId);
+  }
+
+  
+
 }
