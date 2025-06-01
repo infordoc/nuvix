@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type {
   CreateApnsProvider,
   CreateEmailMessage,
@@ -51,6 +51,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 import {
   APP_DOMAIN,
   APP_OPTIONS_FORCE_HTTPS,
+  DB_FOR_PLATFORM,
   MESSAGE_TYPE_EMAIL,
   MESSAGE_TYPE_PUSH,
   MESSAGE_TYPE_SMS,
@@ -58,9 +59,11 @@ import {
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
 
+// TODO: handle queues for messaging
 @Injectable()
 export class MessagingService {
   constructor(
+    @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
     private readonly jwtService: JwtService,
   ) { }
 
@@ -1339,7 +1342,7 @@ export class MessagingService {
           active: true,
         });
 
-        const createdSchedule = await db.createDocument('schedules', schedule);
+        const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
         createdMessage.setAttribute('scheduleId', createdSchedule.getId());
         await db.updateDocument('messages', createdMessage.getId(), createdMessage);
         break;
@@ -1435,7 +1438,7 @@ export class MessagingService {
           active: true,
         });
 
-        const createdSchedule = await db.createDocument('schedules', schedule);
+        const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
         createdMessage.setAttribute('scheduleId', createdSchedule.getId());
         await db.updateDocument('messages', createdMessage.getId(), createdMessage);
         break;
@@ -1607,7 +1610,7 @@ export class MessagingService {
           active: true,
         });
 
-        const createdSchedule = await db.createDocument('schedules', schedule);
+        const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
         createdMessage.setAttribute('scheduleId', createdSchedule.getId());
         await db.updateDocument('messages', createdMessage.getId(), createdMessage);
         break;
@@ -1833,13 +1836,13 @@ export class MessagingService {
         active: status === MessageStatus.SCHEDULED,
       });
 
-      const createdSchedule = await db.createDocument('schedules', schedule);
+      const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
       message.setAttribute('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
-      const schedule = await db.getDocument('schedules', message.getAttribute('scheduleId'));
+      const schedule = await this.dbForPlatform.getDocument('schedules', message.getAttribute('scheduleId'));
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
       if (schedule.isEmpty()) {
@@ -1854,7 +1857,7 @@ export class MessagingService {
         schedule.setAttribute('schedule', input.scheduledAt);
       }
 
-      await db.updateDocument('schedules', schedule.getId(), schedule);
+      await this.dbForPlatform.updateDocument('schedules', schedule.getId(), schedule);
     }
 
     if (input.scheduledAt) {
@@ -2010,13 +2013,13 @@ export class MessagingService {
         active: status === MessageStatus.SCHEDULED,
       });
 
-      const createdSchedule = await db.createDocument('schedules', schedule);
+      const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
       message.setAttribute('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
-      const schedule = await db.getDocument('schedules', message.getAttribute('scheduleId'));
+      const schedule = await this.dbForPlatform.getDocument('schedules', message.getAttribute('scheduleId'));
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
       if (schedule.isEmpty()) {
@@ -2031,7 +2034,7 @@ export class MessagingService {
         schedule.setAttribute('schedule', input.scheduledAt);
       }
 
-      await db.updateDocument('schedules', schedule.getId(), schedule);
+      await this.dbForPlatform.updateDocument('schedules', schedule.getId(), schedule);
     }
 
     if (input.scheduledAt) {
@@ -2148,13 +2151,13 @@ export class MessagingService {
         active: status === MessageStatus.SCHEDULED,
       });
 
-      const createdSchedule = await db.createDocument('schedules', schedule);
+      const createdSchedule = await this.dbForPlatform.createDocument('schedules', schedule);
       message.setAttribute('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
-      const schedule = await db.getDocument('schedules', message.getAttribute('scheduleId'));
+      const schedule = await this.dbForPlatform.getDocument('schedules', message.getAttribute('scheduleId'));
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
       if (schedule.isEmpty()) {
@@ -2169,7 +2172,7 @@ export class MessagingService {
         schedule.setAttribute('schedule', input.scheduledAt);
       }
 
-      await db.updateDocument('schedules', schedule.getId(), schedule);
+      await this.dbForPlatform.updateDocument('schedules', schedule.getId(), schedule);
     }
 
     if (input.scheduledAt) {
@@ -2304,6 +2307,52 @@ export class MessagingService {
     // queueForEvents.setParam('messageId', updatedMessage.getId());
 
     return updatedMessage;
+  }
+
+  /**
+   * Deletes a message.
+   */
+  async deleteMessage(db: Database, messageId: string) {
+    const message = await db.getDocument('messages', messageId);
+
+    if (message.isEmpty()) {
+      throw new Exception(Exception.MESSAGE_NOT_FOUND);
+    }
+
+    switch (message.getAttribute('status')) {
+      case MessageStatus.PROCESSING:
+        throw new Exception(Exception.MESSAGE_ALREADY_SCHEDULED);
+      case MessageStatus.SCHEDULED:
+        const scheduleId = message.getAttribute('scheduleId');
+        const scheduledAt = message.getAttribute('scheduledAt');
+
+        const now = new Date();
+        const scheduledDate = new Date(scheduledAt);
+
+        if (now > scheduledDate) {
+          throw new Exception(Exception.MESSAGE_ALREADY_SCHEDULED);
+        }
+
+        if (scheduleId) {
+          try {
+            await this.dbForPlatform.deleteDocument('schedules', scheduleId);
+          } catch (error) {
+            // Ignore
+          }
+        }
+        break;
+      default:
+        break;
+    }
+
+    await db.deleteDocument('messages', message.getId());
+
+    // TODO: queue for events
+    // this.queueForEvents
+    //   .setParam('messageId', message.getId())
+    //   .setPayload(response.output(message, Response.MODEL_MESSAGE));
+
+    return {};
   }
 
 }

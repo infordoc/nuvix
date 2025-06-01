@@ -13,18 +13,18 @@ import {
 } from '@nestjs/common';
 import { MessagingService } from './messaging.service';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors';
+import { ApiInterceptor, ResponseInterceptor } from '@nuvix/core/resolvers/interceptors';
 import {
   AuditEvent,
   AuthType,
   MessagingDatabase,
+  Namespace,
   Project,
   ResModel,
   Scope,
   Sdk,
 } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
 
 import {
   CreateMailgunProviderDTO,
@@ -64,8 +64,9 @@ import { CreateSubscriberDTO } from './DTO/subscriber.dto';
 import { CreateEmailMessageDTO, CreatePushMessageDTO, CreateSmsMessageDTO, UpdateEmailMessageDTO, UpdatePushMessageDTO, UpdateSmsMessageDTO } from './DTO/message.dto';
 
 @Controller({ path: 'messaging', version: ['1'] })
+@Namespace('messaging')
 @UseGuards(ProjectGuard)
-@UseInterceptors(ResponseInterceptor)
+@UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class MessagingController {
   constructor(private readonly messagingService: MessagingService) { }
 
@@ -913,6 +914,23 @@ export class MessagingController {
       input,
       project,
     });
+  }
+
+  @Delete('messages/:messageId')
+  @Scope('messages.delete')
+  @AuditEvent('message.delete', 'message/{req.messageId}')
+  @ResModel(Models.NONE)
+  @Sdk({
+    name: 'deleteMessage',
+    auth: [AuthType.ADMIN, AuthType.KEY],
+    code: HttpStatus.NO_CONTENT,
+    description: 'Delete message',
+  })
+  async deleteMessage(
+    @Param('messageId') messageId: string,
+    @MessagingDatabase() db: Database,
+  ) {
+    return await this.messagingService.deleteMessage(db, messageId);
   }
 
 }
