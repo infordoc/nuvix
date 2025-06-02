@@ -127,9 +127,9 @@ export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
 export const POOLS = 'pools';
-/**@deprecated use {DB_FOR_PLATFORM} instead */
-export const DB_FOR_CONSOLE = Symbol('dbForConsole');
 export const DB_FOR_PLATFORM = Symbol('dbForPlatform');
+/**@deprecated use {DB_FOR_PLATFORM} instead */
+export const DB_FOR_CONSOLE = DB_FOR_PLATFORM;
 /**@deprecated use {PROJECT_DB} and upgrade to new setup*/
 export const DB_FOR_PROJECT = 'dbForProject';
 export const GET_PROJECT_DB = Symbol('getProjectDb');
