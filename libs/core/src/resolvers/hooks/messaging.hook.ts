@@ -25,7 +25,7 @@ export class MessagingHook implements Hook {
 
     const pool = request[PROJECT_POOL];
     const db = this.getProjectDB(pool, project.getId());
-    db.setDatabase('messaging`');
+    db.setDatabase('messaging');
     request[MESSAGING_SCHEMA_DB] = db;
     return null;
   }
