@@ -16,9 +16,9 @@ pg.types.setTypeParser(pg.types.builtins.DATE, x => x);
 pg.types.setTypeParser(pg.types.builtins.INTERVAL, x => x);
 pg.types.setTypeParser(pg.types.builtins.TIMESTAMP, x => x);
 pg.types.setTypeParser(pg.types.builtins.TIMESTAMPTZ, x => x);
-pg.types.setTypeParser(pg.types.TypeId.TIMESTAMP, parseArray); // _timestamp
-pg.types.setTypeParser(pg.types.TypeId.DATE, parseArray); // _date
-pg.types.setTypeParser(pg.types.TypeId.TIMESTAMPTZ, parseArray); // _timestamptz
+pg.types.setTypeParser(1115 as any, parseArray); // _timestamp
+pg.types.setTypeParser(1182 as any, parseArray); // _date
+pg.types.setTypeParser(1185 as any, parseArray); // _timestamptz
 pg.types.setTypeParser(600 as any, x => x); // point
 pg.types.setTypeParser(1017 as any, x => x); // _point
 
