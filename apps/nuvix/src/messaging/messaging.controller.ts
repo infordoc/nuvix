@@ -19,7 +19,7 @@ import {
 } from '@nuvix/core/resolvers/interceptors';
 import {
   AuditEvent,
-  AuthDatabase,
+  ProjectDatabase,
   AuthType,
   MessagingDatabase,
   Namespace,
@@ -665,7 +665,7 @@ export class MessagingController {
     @Param('topicId') topicId: string,
     @MessagingDatabase() db: Database,
     @Body() input: CreateSubscriberDTO,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.createSubscriber({
       db,
@@ -688,7 +688,7 @@ export class MessagingController {
     @Param('topicId') topicId: string,
     @MessagingDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
     @Query('search') search?: string,
   ) {
     return await this.messagingService.listSubscribers({
@@ -713,7 +713,7 @@ export class MessagingController {
     @Param('topicId') topicId: string,
     @Param('subscriberId') subscriberId: string,
     @MessagingDatabase() db: Database,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.getSubscriber(
       db,
@@ -737,7 +737,7 @@ export class MessagingController {
     @Param('topicId') topicId: string,
     @Param('subscriberId') subscriberId: string,
     @MessagingDatabase() db: Database,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.deleteSubscriber(
       db,
@@ -761,7 +761,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: CreateEmailMessageDTO,
     @Project() project: Document,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.createEmailMessage({
       db,
@@ -785,7 +785,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: CreateSmsMessageDTO,
     @Project() project: Document,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.createSmsMessage({
       db,
@@ -809,7 +809,7 @@ export class MessagingController {
     @MessagingDatabase() db: Database,
     @Body() input: CreatePushMessageDTO,
     @Project() project: Document,
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.createPushMessage({
       db,
@@ -869,7 +869,7 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @MessagingDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
-    @AuthDatabase() authDb: Database,
+    @ProjectDatabase() authDb: Database,
   ) {
     return await this.messagingService.listTargets({
       db,

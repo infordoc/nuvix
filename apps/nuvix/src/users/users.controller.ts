@@ -38,7 +38,7 @@ import {
   ResModel,
   Scope,
   AuthType,
-  AuthDatabase,
+  ProjectDatabase,
 } from '@nuvix/core/decorators';
 
 import { CreateTokenDTO } from './dto/token.dto';
@@ -66,11 +66,11 @@ export class UsersController {
   @Label('res.status', 'OK')
   @ResModel({ type: Models.USER, list: true })
   async findAll(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search: string,
   ) {
-    return await this.usersService.findAll(authDatabase, queries, search);
+    return await this.usersService.findAll(db, queries, search);
   }
 
   @Post()
@@ -80,11 +80,11 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async create(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
-    return await this.usersService.create(authDatabase, createUserDTO, project);
+    return await this.usersService.create(db, createUserDTO, project);
   }
 
   @Post('argon2')
@@ -94,12 +94,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithArgon2(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithArgon2(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -112,12 +112,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithBcrypt(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithBcrypt(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -130,12 +130,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithMd5(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithMd5(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -148,12 +148,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithSha(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithSha(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -166,12 +166,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithPhpass(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithPhpass(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -184,12 +184,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScrypt(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithScrypt(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -202,12 +202,12 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScryptModified(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.createWithScryptMod(
-      authDatabase,
+      db,
       createUserDTO,
       project,
     );
@@ -215,104 +215,104 @@ export class UsersController {
 
   @Get('usage')
   @ResModel({ type: Models.USAGE_USERS })
-  async getUsage(@AuthDatabase() authDatabase: Database) {
-    return await this.usersService.getUsage(authDatabase);
+  async getUsage(@ProjectDatabase() db: Database) {
+    return await this.usersService.getUsage(db);
   }
 
   @Get('identities')
   @Scope('users.read')
   @ResModel({ type: Models.IDENTITY, list: true })
   async getIdentities(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search: string,
   ) {
-    return await this.usersService.getIdentities(authDatabase, queries, search);
+    return await this.usersService.getIdentities(db, queries, search);
   }
 
   @Delete('identities/:id')
   @Scope('users.read')
   async deleteIdentity(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.deleteIdentity(authDatabase, id);
+    return await this.usersService.deleteIdentity(db, id);
   }
 
   @Get(':id')
   @Scope('users.read')
   @ResModel(Models.USER)
   async findOne(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.findOne(authDatabase, id);
+    return await this.usersService.findOne(db, id);
   }
 
   @Get(':id/prefs')
   @Scope('users.read')
   @ResModel(Models.PREFERENCES)
   async getPrefs(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.getPrefs(authDatabase, id);
+    return await this.usersService.getPrefs(db, id);
   }
 
   @Patch(':id/prefs')
   @Scope('users.update')
   @ResModel(Models.USER)
   async updatePrefs(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPrefsDTO,
   ) {
-    return await this.usersService.updatePrefs(authDatabase, id, input.prefs);
+    return await this.usersService.updatePrefs(db, id, input.prefs);
   }
 
   @Patch(':id/status')
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateStatus(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() status: UpdateUserStatusDTO,
   ) {
-    return await this.usersService.updateStatus(authDatabase, id, status);
+    return await this.usersService.updateStatus(db, id, status);
   }
 
   @Put(':id/labels')
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateLabels(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserLabelDTO,
   ) {
-    return await this.usersService.updateLabels(authDatabase, id, input);
+    return await this.usersService.updateLabels(db, id, input);
   }
 
   @Patch(':id/name')
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateName(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserNameDTO,
   ) {
-    return await this.usersService.updateName(authDatabase, id, input);
+    return await this.usersService.updateName(db, id, input);
   }
 
   @Patch(':id/password')
   @ResModel({ type: Models.USER })
   async updatePassword(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPasswordDTO,
     @Project() project: Document,
   ) {
     return await this.usersService.updatePassword(
-      authDatabase,
+      db,
       id,
       input,
       project,
@@ -322,31 +322,31 @@ export class UsersController {
   @Patch(':id/email')
   @ResModel({ type: Models.USER })
   async updateEmail(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserEmailDTO,
   ) {
-    return await this.usersService.updateEmail(authDatabase, id, input.email);
+    return await this.usersService.updateEmail(db, id, input.email);
   }
 
   @Patch(':id/phone')
   @ResModel({ type: Models.USER })
   async updatePhone(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPhoneDTO,
   ) {
-    return await this.usersService.updatePhone(authDatabase, id, input.phone);
+    return await this.usersService.updatePhone(db, id, input.phone);
   }
 
   @Patch(':id/mfa')
   @ResModel({ type: Models.USER })
   async updateMfa(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateMfaStatusDTO,
   ) {
-    return await this.usersService.updateMfaStatus(authDatabase, id, input.mfa);
+    return await this.usersService.updateMfaStatus(db, id, input.mfa);
   }
 
   @Post(':id/targets')
@@ -356,12 +356,12 @@ export class UsersController {
   @ResModel(Models.TARGET)
   @AuditEvent('target.create', 'target/{res.$id}')
   async addTarget(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() createTargetDTO: CreateTargetDTO,
   ): Promise<any> {
     return await this.usersService.createTarget(
-      authDatabase,
+      db,
       id,
       createTargetDTO,
     );
@@ -370,41 +370,41 @@ export class UsersController {
   @Get(':id/targets')
   @ResModel({ type: Models.TARGET, list: true })
   async getTargets(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
-    return await this.usersService.getTargets(authDatabase, id);
+    return await this.usersService.getTargets(db, id);
   }
 
   @Post(':id/jwts')
   @ResModel({ type: Models.JWT })
   async createJwt(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateJwtDTO,
   ): Promise<any> {
-    return await this.usersService.createJwt(authDatabase, id, input);
+    return await this.usersService.createJwt(db, id, input);
   }
 
   @Get(':id/sessions')
   @ResModel({ type: Models.SESSION, list: true })
   async getSessions(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
-    return await this.usersService.getSessions(authDatabase, id);
+    return await this.usersService.getSessions(db, id);
   }
 
   @Post(':id/sessions')
   @ResModel({ type: Models.SESSION })
   async createSession(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Req() req: any,
     @Project() project: Document,
   ): Promise<any> {
     return await this.usersService.createSession(
-      authDatabase,
+      db,
       id,
       req,
       project,
@@ -413,51 +413,51 @@ export class UsersController {
 
   @Delete(':id/sessions')
   async deleteSessions(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.deleteSessions(authDatabase, id);
+    return await this.usersService.deleteSessions(db, id);
   }
 
   @Get(':id/memberships')
   @ResModel({ type: Models.MEMBERSHIP, list: true })
   async getMemberships(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
-    return await this.usersService.getMemberships(authDatabase, id);
+    return await this.usersService.getMemberships(db, id);
   }
 
   @Post(':id/tokens')
   @ResModel({ type: Models.TOKEN })
   async createToken(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateTokenDTO,
     @Req() req: NuvixRequest,
   ): Promise<any> {
-    return await this.usersService.createToken(authDatabase, id, input, req);
+    return await this.usersService.createToken(db, id, input, req);
   }
 
   @Get(':id/logs')
   @ResModel({ type: Models.LOG, list: true })
   async getLogs(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Query('queries') queries: Queries[],
   ): Promise<any> {
-    return await this.usersService.getLogs(authDatabase, id, queries);
+    return await this.usersService.getLogs(db, id, queries);
   }
 
   @Patch(':id/verification')
   @ResModel({ type: Models.USER })
   async verify(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserEmailVerificationDTO,
   ) {
     return await this.usersService.updateEmailVerification(
-      authDatabase,
+      db,
       id,
       input,
     );
@@ -466,12 +466,12 @@ export class UsersController {
   @Patch(':id/verification/phone')
   @ResModel({ type: Models.USER })
   async verifyPhone(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPoneVerificationDTO,
   ) {
     return await this.usersService.updatePhoneVerification(
-      authDatabase,
+      db,
       id,
       input,
     );
@@ -480,23 +480,23 @@ export class UsersController {
   @Get(':id/targets/:targetId')
   @ResModel({ type: Models.TARGET })
   async getTarget(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ): Promise<any> {
-    return await this.usersService.getTarget(authDatabase, id, targetId);
+    return await this.usersService.getTarget(db, id, targetId);
   }
 
   @Patch(':id/targets/:targetId')
   @ResModel({ type: Models.TARGET })
   async updateTarget(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
     @Body() input: UpdateTargetDTO,
   ): Promise<any> {
     return await this.usersService.updateTarget(
-      authDatabase,
+      db,
       id,
       targetId,
       input,
@@ -506,47 +506,47 @@ export class UsersController {
   @Get(':id/mfa/factors')
   @ResModel({ type: Models.MFA_FACTORS })
   async getMfaFactors(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.getMfaFactors(authDatabase, id);
+    return await this.usersService.getMfaFactors(db, id);
   }
 
   @Get(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async getMfaRecoveryCodes(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.getMfaRecoveryCodes(authDatabase, id);
+    return await this.usersService.getMfaRecoveryCodes(db, id);
   }
 
   @Patch(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async generateMfaRecoveryCodes(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.generateMfaRecoveryCodes(authDatabase, id);
+    return await this.usersService.generateMfaRecoveryCodes(db, id);
   }
 
   @Put(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async regenerateMfaRecoveryCodes(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.regenerateMfaRecoveryCodes(authDatabase, id);
+    return await this.usersService.regenerateMfaRecoveryCodes(db, id);
   }
 
   @Delete(':id/mfa/authenticators/:type')
   async deleteMfaAuthenticator(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('type') type: string,
   ) {
     return await this.usersService.deleteMfaAuthenticator(
-      authDatabase,
+      db,
       id,
       type,
     );
@@ -554,27 +554,27 @@ export class UsersController {
 
   @Delete(':id/session/:sessionId')
   async deleteSession(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('sessionId') sessionId: string,
   ) {
-    return await this.usersService.deleteSession(authDatabase, id, sessionId);
+    return await this.usersService.deleteSession(db, id, sessionId);
   }
 
   @Delete(':id/targets/:targetId')
   async deleteTarget(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ) {
-    return await this.usersService.deleteTarget(authDatabase, id, targetId);
+    return await this.usersService.deleteTarget(db, id, targetId);
   }
 
   @Delete(':id')
   async remove(
-    @AuthDatabase() authDatabase: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
   ) {
-    return await this.usersService.remove(authDatabase, id);
+    return await this.usersService.remove(db, id);
   }
 }
