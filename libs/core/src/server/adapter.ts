@@ -5,12 +5,6 @@ import { LegacyRouteConverter } from '@nestjs/core/router/legacy-route-converter
 import { HookMethods } from './hooks/interface';
 
 export class NuvixAdapter extends FastifyAdapter {
-  private hooks: {
-    path: string;
-    regexp: RegExp;
-    hookName: string;
-    callback: Function;
-  }[] = [];
 
   override async createMiddlewareFactory(
     requestMethod: RequestMethod,
@@ -24,29 +18,25 @@ export class NuvixAdapter extends FastifyAdapter {
       path = hasEndOfStringCharacter ? path.slice(0, -1) : path;
 
       let normalizedPath = LegacyRouteConverter.tryConvert(path);
+
+      // Fallback to "*path" to support plugins like GraphQL
       normalizedPath = normalizedPath === '/*path' ? '*path' : normalizedPath;
+
       // Normalize the path to support the prefix if it set in application
-      normalizedPath =
-        this._pathPrefix && !normalizedPath.startsWith(this._pathPrefix)
-          ? `${this._pathPrefix}${normalizedPath}*path`
-          : normalizedPath;
+      if (this._pathPrefix && !normalizedPath.startsWith(this._pathPrefix)) {
+        normalizedPath = `${this._pathPrefix}${normalizedPath}`;
+        if (normalizedPath.endsWith('/')) {
+          normalizedPath = `${normalizedPath}{*path}`;
+        }
+      }
 
       try {
         let { regexp: re } = pathToRegexp(normalizedPath);
         re = hasEndOfStringCharacter
           ? new RegExp(re.source + '$', re.flags)
           : re;
-        // Store the hook instead of immediately applying it
-        this.hooks.push({
-          path: normalizedPath,
-          regexp: re,
-          hookName,
-          callback,
-        });
 
-        // Apply the hook dynamically
-        this.applyHook(normalizedPath, re, hookName, callback, normalizedPath);
-
+        this.applyHook(re, hookName, callback, normalizedPath);
         return this;
       } catch (e) {
         if (e instanceof TypeError) {
@@ -58,7 +48,6 @@ export class NuvixAdapter extends FastifyAdapter {
   }
 
   private applyHook(
-    path: string,
     regexp: RegExp,
     hookName: (typeof HookMethods)[number],
     callback: Function,
@@ -75,19 +64,18 @@ export class NuvixAdapter extends FastifyAdapter {
           ? request.originalUrl.slice(0, queryParamsIndex)
           : request.originalUrl;
 
-      const nextFn =
-        typeof args[args.length - 1] === 'function'
-          ? args[args.length - 1]
-          : (e: Error) => {
-              if (e) throw e;
-            };
-      const extra = args.slice(2, -1);
-
       if (!regexp.exec(pathname + '/') && normalizedPath) {
         return Promise.resolve();
       }
 
-      // Map arguments based on hook type
+      const nextFn =
+        typeof args[args.length - 1] === 'function'
+          ? args[args.length - 1]
+          : (e: Error) => {
+            if (e) throw e;
+          };
+      const extra = args.slice(2, -1);
+      // TODO: handle sync hooks
       switch (hookName) {
         case 'preSerialization':
         case 'onSend':
