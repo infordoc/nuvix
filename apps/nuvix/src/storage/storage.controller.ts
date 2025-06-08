@@ -26,7 +26,7 @@ import {
   MultipartParam,
   ResModel,
   Scope,
-  StorageDatabase,
+  ProjectDatabase,
   UploadedFile,
 } from '@nuvix/core/decorators';
 
@@ -48,7 +48,7 @@ export class StorageController {
   @Get('buckets')
   @ResModel({ type: Models.BUCKET, list: true })
   async getBuckets(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search?: string,
   ) {
@@ -58,7 +58,7 @@ export class StorageController {
   @Post('buckets')
   @ResModel(Models.BUCKET)
   async createBucket(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Body() createBucketDto: CreateBucketDTO,
   ) {
     return await this.storageService.createBucket(db, createBucketDto);
@@ -66,14 +66,14 @@ export class StorageController {
 
   @Get('buckets/:id')
   @ResModel(Models.BUCKET)
-  async getBucket(@StorageDatabase() db: Database, @Param('id') id: string) {
+  async getBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
     return await this.storageService.getBucket(db, id);
   }
 
   @Put('buckets/:id')
   @ResModel(Models.BUCKET)
   async updateBucket(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() createBucketDto: UpdateBucketDTO,
   ) {
@@ -82,14 +82,14 @@ export class StorageController {
 
   @Delete('buckets/:id')
   @ResModel(Models.NONE)
-  async deleteBucket(@StorageDatabase() db: Database, @Param('id') id: string) {
+  async deleteBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
     return await this.storageService.deleteBucket(db, id);
   }
 
   @Get('buckets/:id/files')
   @ResModel({ type: Models.FILE, list: true })
   async getFiles(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search?: string,
@@ -100,7 +100,7 @@ export class StorageController {
   // @Get('buckets/:id/objects')
   // @ResModel(Models.OBJECT, { list: true })
   // async getObjects(
-  //   @StorageDatabase() db: Database,
+  //   @ProjectDatabase() db: Database,
   //   @Param('id') id: string,
   //   @Query('queries', ParseQueryPipe) queries: Queries[],
   //   @Query('search') search?: string,
@@ -115,7 +115,7 @@ export class StorageController {
   // @Label('res.type', 'JSON')
   // @ResModel(Models.OBJECT)
   // async createObject(
-  //   @StorageDatabase() db: Database,
+  //   @ProjectDatabase() db: Database,
   //   @Param('id') id: string,
   //   @Body() createObjectDto: CreateBucketDTO,
   //   @User() user: Document,
@@ -134,7 +134,7 @@ export class StorageController {
   // @Label('res.type', 'JSON')
   // @ResModel(Models.OBJECT)
   // async uploadFile(
-  //   @StorageDatabase() db: Database,
+  //   @ProjectDatabase() db: Database,
   //   @Param('id') id: string,
   //   @Body('fileId') fileId: string,
   //   @Body('name') name: string,
@@ -156,7 +156,7 @@ export class StorageController {
   @Post('buckets/:id/files')
   @ResModel(Models.FILE)
   async createFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @MultipartParam('fileId') fileId: string,
     @MultipartParam('permissions') permissions: string[] = [],
@@ -181,7 +181,7 @@ export class StorageController {
   @Get('buckets/:id/files/:fileId')
   @ResModel(Models.FILE)
   async getFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
   ) {
@@ -190,7 +190,7 @@ export class StorageController {
 
   @Get('buckets/:id/files/:fileId/preview')
   async previewFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
@@ -238,7 +238,7 @@ export class StorageController {
 
   @Get('buckets/:id/files/:fileId/download')
   async downloadFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
@@ -249,7 +249,7 @@ export class StorageController {
 
   @Get('buckets/:id/files/:fileId/view')
   async viewFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
@@ -260,7 +260,7 @@ export class StorageController {
 
   @Get('buckets/:id/files/:fileId/push')
   async getFileForPushNotification(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Query('jwt') jwt: string,
@@ -280,7 +280,7 @@ export class StorageController {
   @Put('buckets/:id/files/:fileId')
   @ResModel(Models.FILE)
   async updateFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Body() updateFileDto: UpdateFileDTO,
@@ -291,7 +291,7 @@ export class StorageController {
   @Delete('buckets/:id/files/:fileId')
   @ResModel(Models.NONE)
   async deleteFile(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
   ) {
@@ -301,7 +301,7 @@ export class StorageController {
   @Get('usage')
   @ResModel(Models.USAGE_STORAGE)
   async getUsage(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Query('range') range?: string,
   ) {
     return await this.storageService.getStorageUsage(db, range);
@@ -310,7 +310,7 @@ export class StorageController {
   @Get(':id/usage')
   @ResModel(Models.USAGE_BUCKETS)
   async getBucketUsage(
-    @StorageDatabase() db: Database,
+    @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Query('range') range?: string,
   ) {
