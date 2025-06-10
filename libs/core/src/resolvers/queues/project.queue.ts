@@ -42,6 +42,7 @@ export class ProjectQueue extends Queue {
       case 'init':
         const project = new Document(job.data.project as object);
         await this.initProject(project);
+        return; // Add explicit return to prevent fall-through
       default: // noop
     }
   }
@@ -58,11 +59,19 @@ export class ProjectQueue extends Queue {
     const projectDatabase = dbName;
 
     try {
+      // Check if project is already initialized
+      if (project.getAttribute('status') === 'active') {
+        this.logger.log(
+          `Project ${project.getId()} is already initialized, skipping...`,
+        );
+        return;
+      }
+
       // Get pool with retry mechanism
       pool = await this.getPool('root', { max: 10 });
       client = await pool.connect();
 
-      // Update project document with database configuration
+      // Update project document with database configuration (temporarily before collections)
       project = await this.db.updateDocument(
         'projects',
         project.getId(),
@@ -78,7 +87,7 @@ export class ProjectQueue extends Queue {
           })
           .setAttribute('status', 'active'),
       );
-
+      await this.db.clearCache();
       // Initialize data source
       const dataSource = new DataSource(client);
       try {
@@ -112,12 +121,17 @@ export class ProjectQueue extends Queue {
       db = this.getProjectDb(client, project.getId());
       db.setDatabase(CORE_SCHEMA);
       await db.create(CORE_SCHEMA);
+      await db.clearCache();
 
       const $collections = Object.entries(collections.project) ?? [];
       let successfulCollections = 0;
       let failedCollections = 0;
 
-      for (const [_, collection] of $collections) {
+      this.logger.log(
+        `Found ${$collections.length} collections to process for project ${project.getId()}`,
+      );
+
+      for (const [key, collection] of $collections) {
         if (collection['$collection'] !== Database.METADATA) {
           continue;
         }

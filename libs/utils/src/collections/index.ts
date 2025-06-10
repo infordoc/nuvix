@@ -3,10 +3,6 @@ import { consoleCollections } from './console';
 import { bucketCollections, dbCollections } from './misc';
 import { projectCollections } from './project';
 
-// Remove the databases property from projectCollections
-// as it is not needed in our new collections structure
-delete projectCollections.databases;
-
 /**
  * $collection: id of the parent collection where this will be inserted
  * $id: id of this collection
@@ -16,9 +12,11 @@ delete projectCollections.databases;
  * indexes: list of indexes
  */
 const collections = {
-  project: {
-    ...projectCollections,
-  },
+  project: Object.fromEntries(
+    Object.entries(projectCollections).filter(
+      ([key]) => !['databases', 'attributes', 'indexes'].includes(key),
+    ),
+  ),
   projects: projectCollections,
   console: consoleCollections,
   buckets: bucketCollections,
@@ -27,17 +25,15 @@ const collections = {
     collections: {
       ...dbCollections.collections,
       $collection: ID.custom(Database.METADATA),
-      attributes: [
-        ...dbCollections.collections.attributes.filter(
-          v => !['databaseId', 'databaseInternalId'].includes(v.$id),
-        ),
-      ],
+      attributes: dbCollections.collections.attributes.filter(
+        attr => !['databaseId', 'databaseInternalId'].includes(attr.$id),
+      ),
     },
     attributes: {
       ...projectCollections.attributes,
       $collection: ID.custom(Database.METADATA),
       attributes: projectCollections.attributes.attributes.filter(
-        v => !['databaseId', 'databaseInternalId'].includes(v.$id),
+        attr => !['databaseId', 'databaseInternalId'].includes(attr.$id),
       ),
       indexes: [
         {
@@ -53,7 +49,7 @@ const collections = {
       ...projectCollections.indexes,
       $collection: ID.custom(Database.METADATA),
       attributes: projectCollections.indexes.attributes.filter(
-        v => !['databaseId', 'databaseInternalId'].includes(v.$id),
+        attr => !['databaseId', 'databaseInternalId'].includes(attr.$id),
       ),
       indexes: [
         {
