@@ -32,6 +32,7 @@ import {
   APP_POSTGRES_USER,
   APP_POSTGRES_PASSWORD,
   APP_POSTGRES_SSL,
+  GET_DEVICE_FOR_PROJECT,
 } from '@nuvix/utils/constants';
 import { Database, MariaDB, Structure, PostgreDB } from '@nuvix/database';
 import { Context, DataSource } from '@nuvix/pg';
@@ -42,6 +43,7 @@ import { Adapter } from '@nuvix/database';
 import { Pool as PgPool, PoolClient } from 'pg';
 import { createHash } from 'crypto';
 import { filters, formats } from '@nuvix/utils/database';
+import { Device, Local } from '@nuvix/storage';
 
 Object.keys(filters).forEach(key => {
   Database.addFilter(key, {
@@ -65,6 +67,10 @@ interface PoolOptions {
 export interface PoolStoreFn {
   (name: string, options: PoolOptions): Promise<PgPool>;
   (name: 'root', options?: Partial<PoolOptions>): Promise<PgPool>;
+}
+
+export interface GetProjectDeviceFn {
+  (projectId: string): Device
 }
 
 export type GetProjectDbFn = (pool: PoolClient, projectId: string) => Database;
@@ -241,6 +247,15 @@ export type GetProjectPG = (
       inject: [CACHE],
     },
     {
+      provide: GET_DEVICE_FOR_PROJECT,
+      useFactory: () => {
+        return (projectId: string) => {
+          const store = new Local(`${projectId}`)
+          return store
+        };
+      },
+    },
+    {
       provide: GET_PROJECT_PG,
       useFactory: () => {
         return (client: PoolClient, ctx?: Context) => {
@@ -280,6 +295,7 @@ export type GetProjectPG = (
     POOLS,
     DB_FOR_PLATFORM,
     DB_FOR_PROJECT,
+    GET_DEVICE_FOR_PROJECT,
     GET_PROJECT_DB,
     GET_PROJECT_PG,
     GEO_DB,
@@ -288,4 +304,4 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
 })
-export class CoreModule {}
+export class CoreModule { }

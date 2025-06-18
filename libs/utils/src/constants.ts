@@ -132,6 +132,7 @@ export const DB_FOR_PLATFORM = Symbol('dbForPlatform');
 export const DB_FOR_CONSOLE = DB_FOR_PLATFORM;
 /**@deprecated use {PROJECT_DB} and upgrade to new setup*/
 export const DB_FOR_PROJECT = 'dbForProject';
+export const GET_DEVICE_FOR_PROJECT = Symbol('getDeviceForProject');
 export const GET_PROJECT_DB = Symbol('getProjectDb');
 export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
 export const PROJECT_DB = Symbol('project-db');
@@ -332,8 +333,8 @@ export const DELETE_TYPE_EXPIRED_TARGETS = 'invalid_targets';
 export const DELETE_TYPE_SESSION_TARGETS = 'session_targets';
 
 // Message types
-export const MESSAGE_SEND_TYPE_INTERNAL = 'internal';
-export const MESSAGE_SEND_TYPE_EXTERNAL = 'external';
+export const MESSAGE_SEND_TYPE_INTERNAL = 'internal' as const;
+export const MESSAGE_SEND_TYPE_EXTERNAL = 'external' as const;
 // Mail Types
 export const MAIL_TYPE_VERIFICATION = 'verification';
 export const MAIL_TYPE_MAGIC_SESSION = 'magicSession';
