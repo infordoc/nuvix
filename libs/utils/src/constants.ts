@@ -284,8 +284,10 @@ export const APP_FUNCTION_MEMORY_DEFAULT = 512;
 export const APP_DEBUG_COLORS = process.env.APP_DEBUG_COLORS === 'true';
 export const APP_DEBUG_FORMAT = process.env.APP_DEBUG_FORMAT === 'json';
 
-// Mails
 export const WORKER_TYPE_MAILS = 'mails';
+export const WORKER_TYPE_MESSAGING = 'messaging';
+
+// Mails
 export const APP_SYSTEM_EMAIL_ADDRESS = 'app@nuvix.io';
 export const APP_SYSTEM_EMAIL_NAME = 'Nuvix';
 export const SEND_TYPE_EMAIL = 'sendEmail';

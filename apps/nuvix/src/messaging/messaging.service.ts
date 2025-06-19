@@ -39,10 +39,10 @@ import {
   Authorization,
   CursorValidator,
   Database,
-  DatabaseError,
   Document,
   DuplicateException,
   ID,
+  OrderException,
   Permission,
   Query,
   Role,
@@ -52,19 +52,25 @@ import {
   APP_DOMAIN,
   APP_OPTIONS_FORCE_HTTPS,
   DB_FOR_PLATFORM,
+  MESSAGE_SEND_TYPE_EXTERNAL,
   MESSAGE_TYPE_EMAIL,
   MESSAGE_TYPE_PUSH,
   MESSAGE_TYPE_SMS,
+  WORKER_TYPE_MESSAGING,
 } from '@nuvix/utils/constants';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { MessagingJob, MessagingJobData } from '@nuvix/core/resolvers/queues/messaging.queue';
 
-// TODO: handle queues for messaging
 @Injectable()
 export class MessagingService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
+    @Inject()
     private readonly jwtService: JwtService,
+    @InjectQueue(WORKER_TYPE_MESSAGING) private readonly queue: Queue<MessagingJobData, any, MessagingJob>
   ) {}
 
   /**
@@ -424,8 +430,7 @@ export class MessagingService {
         total,
       };
     } catch (error) {
-      // TODO: OrderException
-      if (error instanceof DatabaseError) {
+      if (error instanceof OrderException) {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
           `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
@@ -891,8 +896,7 @@ export class MessagingService {
         total,
       };
     } catch (error) {
-      // TODO: OrderException
-      if (error instanceof DatabaseError) {
+      if (error instanceof OrderException) {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
           `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
@@ -1141,8 +1145,7 @@ export class MessagingService {
         total,
       };
     } catch (error) {
-      // TODO: OrderException
-      if (error instanceof DatabaseError) {
+      if (error instanceof OrderException) {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
           `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
@@ -1355,9 +1358,10 @@ export class MessagingService {
 
     switch (status) {
       case MessageStatus.PROCESSING:
-        // queueForMessaging
-        //   .setType('MESSAGE_SEND_TYPE_EXTERNAL')
-        //   .setMessageId(createdMessage.getId());
+        await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+          project, 
+          message: createdMessage
+        })
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -1460,9 +1464,10 @@ export class MessagingService {
 
     switch (status) {
       case MessageStatus.PROCESSING:
-        // queueForMessaging
-        //   .setType('MESSAGE_SEND_TYPE_EXTERNAL')
-        //   .setMessageId(createdMessage.getId());
+        await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+          project,
+          message: createdMessage
+        })
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -1647,9 +1652,10 @@ export class MessagingService {
 
     switch (status) {
       case MessageStatus.PROCESSING:
-        // queueForMessaging
-        //   .setType('MESSAGE_SEND_TYPE_EXTERNAL')
-        //   .setMessageId(createdMessage.getId());
+        await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+          project,
+          message: createdMessage
+        })
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -1729,8 +1735,7 @@ export class MessagingService {
         total,
       };
     } catch (error) {
-      // TODO: OrderException
-      if (error instanceof DatabaseError) {
+      if (error instanceof OrderException) {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
           `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
@@ -1812,8 +1817,7 @@ export class MessagingService {
         total,
       };
     } catch (error) {
-      // TODO: OrderException
-      if (error instanceof DatabaseError) {
+      if (error instanceof OrderException) {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
           `The order attribute '${(error as any).attribute}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
@@ -2007,9 +2011,10 @@ export class MessagingService {
     );
 
     if (status === MessageStatus.PROCESSING) {
-      // queueForMessaging
-      //   .setType(MESSAGE_SEND_TYPE_EXTERNAL)
-      //   .setMessageId(updatedMessage.getId());
+      await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+        project,
+        message: updatedMessage
+      })
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());
@@ -2154,9 +2159,10 @@ export class MessagingService {
     );
 
     if (status === MessageStatus.PROCESSING) {
-      // queueForMessaging
-      //   .setType(MESSAGE_SEND_TYPE_EXTERNAL)
-      //   .setMessageId(updatedMessage.getId());
+      await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+        project,
+        message: updatedMessage
+      })
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());
@@ -2405,9 +2411,10 @@ export class MessagingService {
     );
 
     if (status === MessageStatus.PROCESSING) {
-      // queueForMessaging
-      //   .setType(MESSAGE_SEND_TYPE_EXTERNAL)
-      //   .setMessageId(updatedMessage.getId());
+      await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
+        project,
+        message: updatedMessage
+      })
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());

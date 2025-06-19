@@ -12,12 +12,12 @@ import {
 import { Device } from "@nuvix/storage";
 import { Database, Document, Query } from "@nuvix/database";
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_PUSH, MESSAGE_TYPE_SMS, MESSAGE_SEND_TYPE_EXTERNAL, APP_POSTGRES_PASSWORD, POOLS, GET_PROJECT_DB, INTERNAL_SCHEMAS, CORE_SCHEMA, GET_DEVICE_FOR_PROJECT } from "@nuvix/utils/constants";
+import { MESSAGE_TYPE_EMAIL, MESSAGE_TYPE_PUSH, MESSAGE_TYPE_SMS, MESSAGE_SEND_TYPE_EXTERNAL, APP_POSTGRES_PASSWORD, POOLS, GET_PROJECT_DB, INTERNAL_SCHEMAS, CORE_SCHEMA, GET_DEVICE_FOR_PROJECT, WORKER_TYPE_MESSAGING } from "@nuvix/utils/constants";
 import { MessageStatus } from "@nuvix/core/messaging/status";
 import { GetProjectDbFn, GetProjectDeviceFn, PoolStoreFn } from "@nuvix/core/core.module";
 
 @Injectable()
-@Processor('messaging')
+@Processor(WORKER_TYPE_MESSAGING)
 export class MessagingQueue extends Queue {
     private readonly logger = new Logger(MessagingQueue.name);
 
