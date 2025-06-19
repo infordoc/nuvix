@@ -70,7 +70,7 @@ export interface PoolStoreFn {
 }
 
 export interface GetProjectDeviceFn {
-  (projectId: string): Device
+  (projectId: string): Device;
 }
 
 export type GetProjectDbFn = (pool: PoolClient, projectId: string) => Database;
@@ -250,8 +250,8 @@ export type GetProjectPG = (
       provide: GET_DEVICE_FOR_PROJECT,
       useFactory: () => {
         return (projectId: string) => {
-          const store = new Local(`${projectId}`)
-          return store
+          const store = new Local(`${projectId}`);
+          return store;
         };
       },
     },
@@ -304,4 +304,4 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
 })
-export class CoreModule { }
+export class CoreModule {}

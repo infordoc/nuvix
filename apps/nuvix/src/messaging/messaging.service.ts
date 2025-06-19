@@ -62,15 +62,19 @@ import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { MessagingJob, MessagingJobData } from '@nuvix/core/resolvers/queues/messaging.queue';
+import {
+  MessagingJob,
+  MessagingJobData,
+} from '@nuvix/core/resolvers/queues/messaging.queue';
 
 @Injectable()
 export class MessagingService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
-    @InjectQueue(WORKER_TYPE_MESSAGING) private readonly queue: Queue<MessagingJobData, any, MessagingJob>,
+    @InjectQueue(WORKER_TYPE_MESSAGING)
+    private readonly queue: Queue<MessagingJobData, any, MessagingJob>,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   /**
    * Common method to create a provider.
@@ -1359,8 +1363,8 @@ export class MessagingService {
       case MessageStatus.PROCESSING:
         await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
           project,
-          message: createdMessage
-        })
+          message: createdMessage,
+        });
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -1465,8 +1469,8 @@ export class MessagingService {
       case MessageStatus.PROCESSING:
         await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
           project,
-          message: createdMessage
-        })
+          message: createdMessage,
+        });
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -1653,8 +1657,8 @@ export class MessagingService {
       case MessageStatus.PROCESSING:
         await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
           project,
-          message: createdMessage
-        })
+          message: createdMessage,
+        });
         break;
       case MessageStatus.SCHEDULED:
         const schedule = new Document({
@@ -2012,8 +2016,8 @@ export class MessagingService {
     if (status === MessageStatus.PROCESSING) {
       await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
         project,
-        message: updatedMessage
-      })
+        message: updatedMessage,
+      });
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());
@@ -2160,8 +2164,8 @@ export class MessagingService {
     if (status === MessageStatus.PROCESSING) {
       await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
         project,
-        message: updatedMessage
-      })
+        message: updatedMessage,
+      });
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());
@@ -2412,8 +2416,8 @@ export class MessagingService {
     if (status === MessageStatus.PROCESSING) {
       await this.queue.add(MESSAGE_SEND_TYPE_EXTERNAL, {
         project,
-        message: updatedMessage
-      })
+        message: updatedMessage,
+      });
     }
 
     // queueForEvents.setParam('messageId', updatedMessage.getId());
