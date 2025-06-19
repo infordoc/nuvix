@@ -28,13 +28,14 @@ import {
   Scope,
   ProjectDatabase,
   UploadedFile,
+  Project,
 } from '@nuvix/core/decorators';
 
 import { UpdateFileDTO } from './DTO/file.dto';
 import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
-import { MultipartFile, MultipartValue } from '@fastify/multipart';
+import { MultipartFile, MultipartValue, SavedMultipartFile } from '@fastify/multipart';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
 import { Exception } from '@nuvix/core/extend/exception';
 
@@ -160,10 +161,10 @@ export class StorageController {
     @Param('id') id: string,
     @MultipartParam('fileId') fileId: string,
     @MultipartParam('permissions') permissions: string[] = [],
-    @UploadedFile() file: MultipartFile,
+    @UploadedFile() file: SavedMultipartFile,
     @Req() req: NuvixRequest,
     @User() user: Document,
-    @Mode() mode: string,
+    @Project() project: Document,
   ) {
     if (!fileId)
       throw new Exception(Exception.INVALID_PARAMS, 'fileId is required');
@@ -174,7 +175,7 @@ export class StorageController {
       file,
       req,
       user,
-      mode,
+      project,
     );
   }
 
@@ -194,6 +195,7 @@ export class StorageController {
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
+    @Project() project: Document,
     @Query('width', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     width?: string,
     @Query('height', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -233,7 +235,7 @@ export class StorageController {
       rotation,
       background,
       output,
-    } as any);
+    } as any, project);
   }
 
   @Get('buckets/:id/files/:fileId/download')
@@ -243,8 +245,9 @@ export class StorageController {
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
+    @Project() project: Document,
   ) {
-    return await this.storageService.downloadFile(db, id, fileId, res, req);
+    return await this.storageService.downloadFile(db, id, fileId, res, req, project);
   }
 
   @Get('buckets/:id/files/:fileId/view')
@@ -254,8 +257,9 @@ export class StorageController {
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
+    @Project() project: Document,
   ) {
-    return await this.storageService.viewFile(db, id, fileId, res, req);
+    return await this.storageService.viewFile(db, id, fileId, res, req, project);
   }
 
   @Get('buckets/:id/files/:fileId/push')
@@ -266,6 +270,7 @@ export class StorageController {
     @Query('jwt') jwt: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
+    @Project() project: Document,
   ) {
     return await this.storageService.getFileForPushNotification(
       db,
@@ -274,6 +279,7 @@ export class StorageController {
       jwt,
       req,
       res,
+      project
     );
   }
 
@@ -294,8 +300,9 @@ export class StorageController {
     @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
+    @Project() project: Document,
   ) {
-    return await this.storageService.deleteFile(db, id, fileId);
+    return await this.storageService.deleteFile(db, id, fileId, project);
   }
 
   @Get('usage')

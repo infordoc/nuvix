@@ -33,6 +33,7 @@ import {
   APP_POSTGRES_PASSWORD,
   APP_POSTGRES_SSL,
   GET_DEVICE_FOR_PROJECT,
+  APP_STORAGE_UPLOADS,
 } from '@nuvix/utils/constants';
 import { Database, MariaDB, Structure, PostgreDB } from '@nuvix/database';
 import { Context, DataSource } from '@nuvix/pg';
@@ -250,7 +251,7 @@ export type GetProjectPG = (
       provide: GET_DEVICE_FOR_PROJECT,
       useFactory: () => {
         return (projectId: string) => {
-          const store = new Local(`${projectId}`);
+          const store = new Local(path.join(APP_STORAGE_UPLOADS, projectId));
           return store;
         };
       },
@@ -304,4 +305,4 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
 })
-export class CoreModule {}
+export class CoreModule { }

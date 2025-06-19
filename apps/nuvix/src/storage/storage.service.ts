@@ -1,4 +1,4 @@
-import { Injectable, Logger, StreamableFile } from '@nestjs/common';
+import { Inject, Injectable, Logger, StreamableFile } from '@nestjs/common';
 import {
   Authorization,
   Database,
@@ -12,7 +12,10 @@ import { Exception } from '@nuvix/core/extend/exception';
 import {
   APP_LIMIT_COUNT,
   APP_STORAGE_LIMIT,
+  APP_STORAGE_READ_BUFFER,
   APP_STORAGE_UPLOADS,
+  GET_DEVICE_FOR_PROJECT,
+  MAX_OUTPUT_CHUNK_SIZE,
 } from '@nuvix/utils/constants';
 import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import collections from '@nuvix/core/collections';
@@ -20,23 +23,25 @@ import { Auth } from '@nuvix/core/helper/auth.helper';
 import { CreateFileDTO, UpdateFileDTO } from './DTO/file.dto';
 
 import * as crypto from 'crypto';
-import * as fs from 'fs/promises';
 import { JwtService } from '@nestjs/jwt';
 import usageConfig from '@nuvix/core/config/usage';
 import sharp from 'sharp';
-import { MultipartFile } from '@fastify/multipart';
+import { MultipartFile, SavedMultipartFile } from '@fastify/multipart';
 import { CreateFolderDTO } from './DTO/object.dto';
 import { logos } from '@nuvix/core/config/storage/logos';
-import { createReadStream, createWriteStream, statSync, WriteStream } from 'fs';
-import { finished, pipeline } from 'stream/promises';
-import retry from 'async-retry';
 import path from 'path';
+import * as fs from 'fs/promises';
+import { GetProjectDeviceFn } from '@nuvix/core';
+import { FileExt, FileSize } from '@nuvix/storage';
 
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    @Inject(GET_DEVICE_FOR_PROJECT) private readonly getDeviceForFiles: GetProjectDeviceFn,
+    private readonly jwtService: JwtService
+  ) { }
 
   /**
    * Get buckets.
@@ -285,8 +290,8 @@ export class StorageService {
         fileSecurity && !valid
           ? await db.getDocument('bucket_' + bucket.getInternalId(), fileId)
           : await Authorization.skip(() =>
-              db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-            );
+            db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+          );
 
       if (cursorDocument.isEmpty()) {
         throw new Exception(
@@ -304,23 +309,23 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.find('bucket_' + bucket.getInternalId(), queries)
         : await Authorization.skip(() =>
-            db.find('bucket_' + bucket.getInternalId(), queries),
-          );
+          db.find('bucket_' + bucket.getInternalId(), queries),
+        );
 
     const total =
       fileSecurity && !valid
         ? await db.count(
+          'bucket_' + bucket.getInternalId(),
+          filterQueries,
+          APP_LIMIT_COUNT,
+        )
+        : await Authorization.skip(() =>
+          db.count(
             'bucket_' + bucket.getInternalId(),
             filterQueries,
             APP_LIMIT_COUNT,
-          )
-        : await Authorization.skip(() =>
-            db.count(
-              'bucket_' + bucket.getInternalId(),
-              filterQueries,
-              APP_LIMIT_COUNT,
-            ),
-          );
+          ),
+        );
 
     return {
       files,
@@ -379,8 +384,8 @@ export class StorageService {
         fileSecurity && !valid
           ? await db.getDocument('bucket_' + bucket.getInternalId(), objectId)
           : await Authorization.skip(() =>
-              db.getDocument('bucket_' + bucket.getInternalId(), objectId),
-            );
+            db.getDocument('bucket_' + bucket.getInternalId(), objectId),
+          );
 
       if (cursorDocument.isEmpty()) {
         throw new Exception(
@@ -398,23 +403,23 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.find('bucket_' + bucket.getInternalId(), queries)
         : await Authorization.skip(() =>
-            db.find('bucket_' + bucket.getInternalId(), queries),
-          );
+          db.find('bucket_' + bucket.getInternalId(), queries),
+        );
 
     const total =
       fileSecurity && !valid
         ? await db.count(
+          'bucket_' + bucket.getInternalId(),
+          filterQueries,
+          APP_LIMIT_COUNT,
+        )
+        : await Authorization.skip(() =>
+          db.count(
             'bucket_' + bucket.getInternalId(),
             filterQueries,
             APP_LIMIT_COUNT,
-          )
-        : await Authorization.skip(() =>
-            db.count(
-              'bucket_' + bucket.getInternalId(),
-              filterQueries,
-              APP_LIMIT_COUNT,
-            ),
-          );
+          ),
+        );
 
     return {
       objects,
@@ -464,8 +469,8 @@ export class StorageService {
     if (!permissions || permissions.length === 0) {
       permissions = user.getId()
         ? allowedPermissions.map(permission =>
-            new Permission(permission, 'user', user.getId()).toString(),
-          )
+          new Permission(permission, 'user', user.getId()).toString(),
+        )
         : [];
     }
 
@@ -521,11 +526,12 @@ export class StorageService {
     db: Database,
     bucketId: string,
     input: CreateFileDTO,
-    file: MultipartFile,
+    file: SavedMultipartFile,
     request: NuvixRequest,
     user: Document,
-    mode: string,
+    project: Document,
   ) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -558,8 +564,8 @@ export class StorageService {
     if (!permissions || permissions.length === 0) {
       permissions = user.getId()
         ? allowedPermissions.map(permission =>
-            new Permission(permission, 'user', user.getId()).toString(),
-          )
+          new Permission(permission, 'user', user.getId()).toString(),
+        )
         : [];
     }
 
@@ -592,7 +598,8 @@ export class StorageService {
     }
 
     const fileName = file.filename;
-    const fileSize = file.file.bytesRead || 0;
+    const stats = await fs.stat(file.filepath)
+    const fileSize = stats.size;
     const fileExt = fileName.split('.').pop()?.toLowerCase() ?? '';
     const contentRange = request.headers['content-range'];
 
@@ -645,9 +652,10 @@ export class StorageService {
       'allowedFileExtensions',
       [],
     );
+    const fileExtValidator = new FileExt(allowedFileExtensions);
     if (
       allowedFileExtensions.length &&
-      !allowedFileExtensions.includes(fileExt)
+      !fileExtValidator.isValid(fileName)
     ) {
       throw new Exception(
         Exception.STORAGE_FILE_TYPE_UNSUPPORTED,
@@ -655,29 +663,21 @@ export class StorageService {
       );
     }
 
-    if (finalFileSize > maximumFileSize) {
+    const fileSizeValidator = new FileSize(maximumFileSize);
+    if (!fileSizeValidator.isValid(finalFileSize)) {
       throw new Exception(
         Exception.STORAGE_INVALID_FILE_SIZE,
         'File size exceeds bucket limit',
       );
     }
 
-    const storagePath = path.join(
-      APP_STORAGE_UPLOADS,
-      `bucket_${bucket.getInternalId()}`,
-    );
-    const chunksPath = `${storagePath}/chunks/${fileId}`;
-    const finalFilePath = `${storagePath}/${fileId}.${fileExt}`;
+    let _path = deviceForFiles.getPath(path.join(bucket.getId(), fileId + '.' + fileExt));
 
     let fileDocument: Document;
     let metadata = { content_type: file.mimetype };
     let chunksUploaded = 0;
 
     try {
-      // Create directories
-      await fs.mkdir(storagePath, { recursive: true });
-      await fs.mkdir(chunksPath, { recursive: true });
-
       // Fetch existing document
       fileDocument = await db.getDocument(
         'bucket_' + bucket.getInternalId(),
@@ -694,147 +694,68 @@ export class StorageService {
           throw new Exception(Exception.STORAGE_FILE_ALREADY_EXISTS);
         }
       }
+      this.logger.debug('path', _path, 'OOPATH', file.filepath)
+      chunksUploaded = await deviceForFiles.upload(file.filepath, _path, chunk, chunks, metadata);
 
-      const chunkPath = `${chunksPath}/part_${chunk}`;
-      const buffer = await file.toBuffer();
-      await fs.writeFile(chunkPath, buffer);
-      this.logger.debug(`Buffer written to file, size: ${buffer.length} bytes`);
+      if (!chunksUploaded) {
+        throw new Exception(Exception.GENERAL_SERVER_ERROR, 'Failed uploading file');
+      }
 
-      chunksUploaded += 1;
-
-      // Combine chunks if all are uploaded
       if (chunksUploaded === chunks) {
-        let writeStream: WriteStream | null = null;
-        try {
-          // Validate chunks in parallel
-          const chunkChecks = Array.from({ length: chunks }, (_, i) =>
-            fs
-              .access(`${chunksPath}/part_${i + 1}`)
-              .then(() => true)
-              .catch(() => false),
+        // Validate file
+        const sizeActual = fileSize;
+        const fileHash = await deviceForFiles.getFileHash(_path)
+        const mimeType = file.mimetype;
+
+        const data = await deviceForFiles.read(_path)
+        if (data) {
+          if (!await deviceForFiles.write(_path, data, mimeType)) {
+            throw new Exception(Exception.GENERAL_SERVER_ERROR, 'Failed to save file');
+          }
+        };
+
+        // Create or update file document
+        if (fileDocument.isEmpty()) {
+          fileDocument = await db.createDocument(
+            'bucket_' + bucket.getInternalId(),
+            new Document({
+              $id: fileId,
+              $permissions: permissions,
+              bucketId: bucket.getId(),
+              bucketInternalId: bucket.getInternalId(),
+              name: fileName,
+              path: _path,
+              signature: fileHash,
+              mimeType,
+              sizeOriginal: finalFileSize,
+              sizeActual,
+              chunksTotal: chunks,
+              chunksUploaded,
+              search: [fileId, fileName].join(' '),
+              metadata,
+            }),
           );
-          const results = await Promise.all(chunkChecks);
-          const missingChunk = results.findIndex(exists => !exists) + 1;
-          if (missingChunk > 0) {
-            throw new Exception(
-              Exception.STORAGE_FILE_CHUNK_MISSING,
-              `Missing chunk ${missingChunk}`,
-            );
+        } else {
+          fileDocument = fileDocument
+            .setAttribute('$permissions', permissions)
+            .setAttribute('signature', fileHash)
+            .setAttribute('mimeType', mimeType)
+            .setAttribute('sizeActual', sizeActual)
+            .setAttribute('metadata', metadata)
+            .setAttribute('chunksUploaded', chunksUploaded);
+
+          const updateValidator = new Authorization(
+            Database.PERMISSION_UPDATE,
+          );
+          if (!updateValidator.isValid(bucket.getUpdate())) {
+            throw new Exception(Exception.USER_UNAUTHORIZED);
           }
 
-          // Create final file
-          writeStream = createWriteStream(finalFilePath, { flags: 'w' });
-
-          for (let i = 1; i <= chunks; i++) {
-            const partPath = `${chunksPath}/part_${i}`;
-            const readStream = createReadStream(partPath, {
-              highWaterMark: 16 * 1024,
-            });
-            readStream.on('error', err => {
-              this.logger.error(`Read stream error for chunk ${i}`, err);
-              throw err;
-            });
-            await pipeline(readStream, writeStream, { end: false });
-          }
-
-          writeStream.end();
-          await finished(writeStream);
-
-          // Delete chunks with retries
-          for (let i = 1; i <= chunks; i++) {
-            const partPath = `${chunksPath}/part_${i}`;
-            await retry(
-              async () => {
-                await fs.unlink(partPath);
-              },
-              { retries: 3, minTimeout: 100 },
-            ).catch((err: unknown) => {
-              this.logger.warn(
-                `Failed to delete chunk ${i} after retries`,
-                err,
-              );
-            });
-          }
-
-          // Clean up chunks directory
-          await retry(
-            () => fs.rm(chunksPath, { recursive: true, force: true }),
-            { retries: 3, minTimeout: 100 },
-          ).catch((err: unknown) => {
-            this.logger.warn('Failed to delete chunks directory', err);
-          });
-
-          // Validate file
-          const stats = await fs.stat(finalFilePath);
-          const sizeActual = stats.size;
-          const fileHash = await calculateFileHash(finalFilePath);
-          const mimeType = file.mimetype;
-
-          if (sizeActual !== finalFileSize) {
-            await fs.unlink(finalFilePath).catch(() => {});
-            throw new Exception(
-              Exception.STORAGE_INVALID_FILE_SIZE,
-              `Combined file size ${sizeActual} does not match expected size ${finalFileSize}`,
-            );
-          }
-
-          // Create or update file document
-          if (fileDocument.isEmpty()) {
-            fileDocument = await db.createDocument(
-              'bucket_' + bucket.getInternalId(),
-              new Document({
-                $id: fileId,
-                $permissions: permissions,
-                bucketId: bucket.getId(),
-                bucketInternalId: bucket.getInternalId(),
-                name: fileName,
-                path: finalFilePath,
-                signature: fileHash,
-                mimeType,
-                sizeOriginal: finalFileSize,
-                sizeActual,
-                chunksTotal: chunks,
-                chunksUploaded,
-                search: [fileId, fileName].join(' '),
-                metadata,
-              }),
-            );
-          } else {
-            fileDocument = fileDocument
-              .setAttribute('$permissions', permissions)
-              .setAttribute('signature', fileHash)
-              .setAttribute('mimeType', mimeType)
-              .setAttribute('sizeActual', sizeActual)
-              .setAttribute('metadata', metadata)
-              .setAttribute('chunksUploaded', chunksUploaded);
-
-            const updateValidator = new Authorization(
-              Database.PERMISSION_UPDATE,
-            );
-            if (!updateValidator.isValid(bucket.getUpdate())) {
-              throw new Exception(Exception.USER_UNAUTHORIZED);
-            }
-
-            fileDocument = await db.updateDocument(
-              'bucket_' + bucket.getInternalId(),
-              fileId,
-              fileDocument,
-            );
-          }
-        } catch (error) {
-          this.logger.error('Error during chunk combining', error);
-          try {
-            if (writeStream) {
-              writeStream.destroy();
-            }
-            await fs.unlink(finalFilePath).catch(() => {});
-            await fs
-              .rm(chunksPath, { recursive: true, force: true })
-              .catch(() => {});
-          } catch (cleanupError) {
-            this.logger.error('Failed to clean up after error', cleanupError);
-          }
-          throw error;
+          fileDocument = await db.updateDocument(
+            'bucket_' + bucket.getInternalId(),
+            fileId,
+            fileDocument,
+          );
         }
       } else {
         if (fileDocument.isEmpty()) {
@@ -846,7 +767,7 @@ export class StorageService {
               bucketId: bucket.getId(),
               bucketInternalId: bucket.getInternalId(),
               name: fileName,
-              path: finalFilePath,
+              path: _path,
               signature: '',
               mimeType: '',
               sizeOriginal: finalFileSize,
@@ -870,14 +791,6 @@ export class StorageService {
 
       return fileDocument;
     } catch (error) {
-      try {
-        await retry(() => fs.rm(chunksPath, { recursive: true, force: true }), {
-          retries: 3,
-          minTimeout: 100,
-        });
-      } catch (cleanupError) {
-        this.logger.error('Failed to clean up chunks directory', cleanupError);
-      }
       throw error;
     }
   }
@@ -911,8 +824,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -930,7 +843,9 @@ export class StorageService {
     bucketId: string,
     fileId: string,
     params: PreviewParams,
+    project: Document
   ) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId())
     const {
       width,
       height,
@@ -970,9 +885,9 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(
-            async () =>
-              await db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          async () =>
+            await db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -981,7 +896,7 @@ export class StorageService {
     const path = file.getAttribute('path', '');
 
     try {
-      await fs.access(path);
+      await deviceForFiles.exists(path);
     } catch {
       throw new Exception(
         Exception.STORAGE_FILE_NOT_FOUND,
@@ -996,7 +911,7 @@ export class StorageService {
     // Unsupported file types or files larger then 10 MB
     if (!mimeType.startsWith('image/') || size / 1024 > 10 * 1024) {
       let path = logos[mimeType] ?? logos.default;
-      const buffer = await fs.readFile(path);
+      const buffer = Buffer.from(await deviceForFiles.read(path));
       return new StreamableFile(buffer, {
         type: `image/png`,
         disposition: `inline; filename="${fileName}"`,
@@ -1072,7 +987,9 @@ export class StorageService {
     fileId: string,
     response: NuvixRes,
     request: NuvixRequest,
+    project: Document,
   ) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId())
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1098,8 +1015,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -1108,7 +1025,7 @@ export class StorageService {
     const path = file.getAttribute('path', '');
 
     try {
-      await fs.access(path);
+      await deviceForFiles.exists(path);
     } catch {
       throw new Exception(
         Exception.STORAGE_FILE_NOT_FOUND,
@@ -1156,15 +1073,42 @@ export class StorageService {
       new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toUTCString(),
     );
 
-    const fileStream = createReadStream(path, { start, end });
-    fileStream.on('error', err => {
-      this.logger.error(`Error streaming file: ${err.message}`);
-      throw new Exception(
-        Exception.STORAGE_FILE_NOT_FOUND,
-        `Error accessing file: ${err.message}`,
-      );
-    });
-    return new StreamableFile(fileStream);
+    if (rangeHeader) {
+      const source = await deviceForFiles.read(path);
+      const buffer = Buffer.from(source.slice(start, end + 1));
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    }
+
+    if (size > APP_STORAGE_READ_BUFFER) {
+      const totalChunks = Math.ceil(size / MAX_OUTPUT_CHUNK_SIZE);
+      const chunks: Buffer[] = [];
+
+      for (let i = 0; i < totalChunks; i++) {
+        const offset = i * MAX_OUTPUT_CHUNK_SIZE;
+        const chunkSize = Math.min(MAX_OUTPUT_CHUNK_SIZE, size - offset);
+        const chunkData = await deviceForFiles.read(path, offset, chunkSize);
+        chunks.push(Buffer.from(chunkData));
+      }
+
+      const buffer = Buffer.concat(chunks);
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    } else {
+      const source = await deviceForFiles.read(path);
+      const buffer = Buffer.from(source);
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    }
   }
 
   /**
@@ -1176,7 +1120,9 @@ export class StorageService {
     fileId: string,
     response: NuvixRes,
     request: NuvixRequest,
+    project: Document,
   ) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId())
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1202,8 +1148,8 @@ export class StorageService {
       fileSecurity && !valid
         ? await db.getDocument('bucket_' + bucket.getInternalId(), fileId)
         : await Authorization.skip(() =>
-            db.getDocument('bucket_' + bucket.getInternalId(), fileId),
-          );
+          db.getDocument('bucket_' + bucket.getInternalId(), fileId),
+        );
 
     if (file.isEmpty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -1212,7 +1158,7 @@ export class StorageService {
     const path = file.getAttribute('path', '');
 
     try {
-      await fs.access(path);
+      await deviceForFiles.exists(path);
     } catch {
       throw new Exception(
         Exception.STORAGE_FILE_NOT_FOUND,
@@ -1257,15 +1203,43 @@ export class StorageService {
       new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toUTCString(),
     );
 
-    const fileStream = createReadStream(path, { start, end });
-    fileStream.on('error', err => {
-      this.logger.error(`Error streaming file for viewing: ${err.message}`);
-      throw new Exception(
-        Exception.STORAGE_FILE_NOT_FOUND,
-        `Error accessing file: ${err.message}`,
-      );
-    });
-    return new StreamableFile(fileStream);
+
+    if (rangeHeader) {
+      const source = await deviceForFiles.read(path);
+      const buffer = Buffer.from(source.slice(start, end + 1));
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    }
+
+    if (size > APP_STORAGE_READ_BUFFER) {
+      const totalChunks = Math.ceil(size / MAX_OUTPUT_CHUNK_SIZE);
+      const chunks: Buffer[] = [];
+
+      for (let i = 0; i < totalChunks; i++) {
+        const offset = i * MAX_OUTPUT_CHUNK_SIZE;
+        const chunkSize = Math.min(MAX_OUTPUT_CHUNK_SIZE, size - offset);
+        const chunkData = await deviceForFiles.read(path, offset, chunkSize);
+        chunks.push(Buffer.from(chunkData));
+      }
+
+      const buffer = Buffer.concat(chunks);
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    } else {
+      const source = await deviceForFiles.read(path);
+      const buffer = Buffer.from(source);
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
+      });
+    }
   }
 
   /**
@@ -1278,7 +1252,9 @@ export class StorageService {
     jwt: string,
     request: NuvixRequest,
     response: NuvixRes,
+    project: Document
   ) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId())
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1319,7 +1295,7 @@ export class StorageService {
     const path = file.getAttribute('path', '');
 
     try {
-      await fs.access(path);
+      await deviceForFiles.exists(path);
     } catch {
       throw new Exception(
         Exception.STORAGE_FILE_NOT_FOUND,
@@ -1358,27 +1334,23 @@ export class StorageService {
       response.header('Content-Length', finalEnd - start + 1);
       response.status(206);
 
-      const fileStream = createReadStream(path, { start, end: finalEnd });
-      fileStream.on('error', err => {
-        this.logger.error(`Error streaming file: ${err.message}`);
-        throw new Exception(
-          Exception.STORAGE_FILE_NOT_FOUND,
-          `Error accessing file: ${err.message}`,
-        );
+      const source = await deviceForFiles.read(path);
+      const buffer = Buffer.from(source.slice(start, end + 1));
+      return new StreamableFile(buffer, {
+        type: mimeType,
+        disposition: `attachment; filename="${fileName}"`,
+        length: buffer.length,
       });
-      return new StreamableFile(fileStream);
     }
 
     response.header('Content-Length', size);
-    const fileStream = createReadStream(path);
-    fileStream.on('error', err => {
-      this.logger.error(`Error streaming file: ${err.message}`);
-      throw new Exception(
-        Exception.STORAGE_FILE_NOT_FOUND,
-        `Error accessing file: ${err.message}`,
-      );
+    const source = await deviceForFiles.read(path);
+    const buffer = Buffer.from(source);
+    return new StreamableFile(buffer, {
+      type: mimeType,
+      disposition: `attachment; filename="${fileName}"`,
+      length: buffer.length,
     });
-    return new StreamableFile(fileStream);
   }
 
   /**
@@ -1468,7 +1440,8 @@ export class StorageService {
   /**
    * Delete a file.
    */
-  async deleteFile(db: Database, bucketId: string, fileId: string) {
+  async deleteFile(db: Database, bucketId: string, fileId: string, project: Document) {
+    const deviceForFiles = this.getDeviceForFiles(project.getId())
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1505,26 +1478,13 @@ export class StorageService {
     const filePath = file.getAttribute('path');
     let deviceDeleted = false;
 
-    try {
-      // First check if file exists
-      await fs.access(filePath);
-
-      // If file exists, try to delete it
-      try {
-        await fs.unlink(filePath);
-        deviceDeleted = true;
-      } catch (unlinkError) {
-        this.logger.error(
-          `Failed to delete file at ${filePath}: ${unlinkError.message}`,
-        );
-        deviceDeleted = false;
-      }
-    } catch (accessError) {
-      // File doesn't exist, consider it already deleted
-      this.logger.warn(
-        `File not found at ${filePath}, considering already deleted`,
+    if (file.getAttribute('chunksTotal') !== file.getAttribute('chunksUploaded')) {
+      deviceDeleted = await deviceForFiles.abort(
+        filePath,
+        (file.getAttribute('metadata', {})['uploadId'] ?? '')
       );
-      deviceDeleted = true;
+    } else {
+      deviceDeleted = await deviceForFiles.delete(filePath);
     }
 
     if (deviceDeleted) {
@@ -1532,12 +1492,12 @@ export class StorageService {
         fileSecurity && !valid
           ? await db.deleteDocument('bucket_' + bucket.getInternalId(), fileId)
           : await Authorization.skip(
-              async () =>
-                await db.deleteDocument(
-                  'bucket_' + bucket.getInternalId(),
-                  fileId,
-                ),
-            );
+            async () =>
+              await db.deleteDocument(
+                'bucket_' + bucket.getInternalId(),
+                fileId,
+              ),
+          );
 
       if (!deleted) {
         throw new Exception(
@@ -1691,25 +1651,6 @@ export class StorageService {
       storage: usage[metrics[1]]?.data,
     };
   }
-}
-
-/**
- * Calculate file hash.
- */
-async function calculateFileHash(filePath: string): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha256');
-    const stream = createReadStream(filePath);
-
-    stream.on('error', err => {
-      reject(
-        new Error(`Failed to calculate hash for ${filePath}: ${err.message}`),
-      );
-    });
-
-    stream.on('data', data => hash.update(data));
-    stream.on('end', () => resolve(hash.digest('hex')));
-  });
 }
 
 interface PreviewParams {

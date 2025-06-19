@@ -271,6 +271,7 @@ export const APP_STORAGE_BUILDS = 'storage/builds';
 export const APP_STORAGE_CACHE = 'storage/cache';
 export const APP_STORAGE_CERTIFICATES = 'storage/certificates';
 export const APP_STORAGE_CONFIG = 'storage/config';
+export const APP_STORAGE_TEMP = path.join(PROJECT_ROOT, 'storage/tmp');
 export const APP_STORAGE_READ_BUFFER = 20 * (1000 * 1000); //20MB other names `APP_STORAGE_MEMORY_LIMIT`, `APP_STORAGE_MEMORY_BUFFER`, `APP_STORAGE_READ_LIMIT`, `APP_STORAGE_BUFFER_LIMIT`
 export const APP_STORAGE_MAX_SIZE = 5 * (1000 * 1000 * 1000); // 5GB
 export const APP_STORAGE_LIMIT = 10 * (1000 * 1000 * 1000); // 10GB
