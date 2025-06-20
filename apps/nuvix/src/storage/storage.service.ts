@@ -911,15 +911,16 @@ export class StorageService {
     // Unsupported file types or files larger then 10 MB
     if (!mimeType.startsWith('image/') || size / 1024 > 10 * 1024) {
       let path = logos[mimeType] ?? logos.default;
-      const buffer = Buffer.from(await deviceForFiles.read(path));
+      const buffer = await deviceForFiles.read(path);
       return new StreamableFile(buffer, {
         type: `image/png`,
         disposition: `inline; filename="${fileName}"`,
         length: buffer.length,
       });
     }
-
-    let image = sharp(path);
+    
+    const fileBuffer = await deviceForFiles.read(path);
+    let image = sharp(fileBuffer);
 
     if (width || height) {
       image = image.resize(width, height, {
@@ -1075,7 +1076,7 @@ export class StorageService {
 
     if (rangeHeader) {
       const source = await deviceForFiles.read(path);
-      const buffer = Buffer.from(source.slice(start, end + 1));
+      const buffer = source.subarray(start, end + 1);
       return new StreamableFile(buffer, {
         type: mimeType,
         disposition: `attachment; filename="${fileName}"`,
@@ -1091,7 +1092,7 @@ export class StorageService {
         const offset = i * MAX_OUTPUT_CHUNK_SIZE;
         const chunkSize = Math.min(MAX_OUTPUT_CHUNK_SIZE, size - offset);
         const chunkData = await deviceForFiles.read(path, offset, chunkSize);
-        chunks.push(Buffer.from(chunkData));
+        chunks.push(chunkData);
       }
 
       const buffer = Buffer.concat(chunks);
@@ -1101,8 +1102,7 @@ export class StorageService {
         length: buffer.length,
       });
     } else {
-      const source = await deviceForFiles.read(path);
-      const buffer = Buffer.from(source);
+      const buffer = await deviceForFiles.read(path);
       return new StreamableFile(buffer, {
         type: mimeType,
         disposition: `attachment; filename="${fileName}"`,
@@ -1206,7 +1206,7 @@ export class StorageService {
 
     if (rangeHeader) {
       const source = await deviceForFiles.read(path);
-      const buffer = Buffer.from(source.slice(start, end + 1));
+      const buffer = source.subarray(start, end + 1);
       return new StreamableFile(buffer, {
         type: mimeType,
         disposition: `attachment; filename="${fileName}"`,
@@ -1222,7 +1222,7 @@ export class StorageService {
         const offset = i * MAX_OUTPUT_CHUNK_SIZE;
         const chunkSize = Math.min(MAX_OUTPUT_CHUNK_SIZE, size - offset);
         const chunkData = await deviceForFiles.read(path, offset, chunkSize);
-        chunks.push(Buffer.from(chunkData));
+        chunks.push(chunkData);
       }
 
       const buffer = Buffer.concat(chunks);
@@ -1232,8 +1232,7 @@ export class StorageService {
         length: buffer.length,
       });
     } else {
-      const source = await deviceForFiles.read(path);
-      const buffer = Buffer.from(source);
+      const buffer = await deviceForFiles.read(path);
       return new StreamableFile(buffer, {
         type: mimeType,
         disposition: `attachment; filename="${fileName}"`,
@@ -1335,7 +1334,7 @@ export class StorageService {
       response.status(206);
 
       const source = await deviceForFiles.read(path);
-      const buffer = Buffer.from(source.slice(start, end + 1));
+      const buffer = source.subarray(start, end + 1);
       return new StreamableFile(buffer, {
         type: mimeType,
         disposition: `attachment; filename="${fileName}"`,
@@ -1344,8 +1343,7 @@ export class StorageService {
     }
 
     response.header('Content-Length', size);
-    const source = await deviceForFiles.read(path);
-    const buffer = Buffer.from(source);
+    const buffer = await deviceForFiles.read(path);
     return new StreamableFile(buffer, {
       type: mimeType,
       disposition: `attachment; filename="${fileName}"`,
