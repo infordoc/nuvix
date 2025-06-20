@@ -940,10 +940,14 @@ export class StorageService {
     }
 
     if (borderRadius) {
+      const metadata = await image.metadata();
+      const imageWidth = width || metadata.width || 0;
+      const imageHeight = height || metadata.height || 0;
+      
       image = image.composite([
         {
           input: Buffer.from(
-            `<svg><rect x="0" y="0" width="${width}" height="${height}" rx="${borderRadius}" ry="${borderRadius}"/></svg>`,
+            `<svg><rect x="0" y="0" width="${imageWidth}" height="${imageHeight}" rx="${borderRadius}" ry="${borderRadius}"/></svg>`,
           ),
           blend: 'dest-in',
         },
@@ -951,10 +955,14 @@ export class StorageService {
     }
 
     if (opacity !== undefined) {
+      const metadata = await image.metadata();
+      const imageWidth = width || metadata.width || 0;
+      const imageHeight = height || metadata.height || 0;
+      
       image = image.composite([
         {
           input: Buffer.from(
-            `<svg><rect x="0" y="0" width="${width}" height="${height}" fill="rgba(255, 255, 255, ${opacity})"/></svg>`,
+            `<svg><rect x="0" y="0" width="${imageWidth}" height="${imageHeight}" fill="rgba(255, 255, 255, ${opacity})"/></svg>`,
           ),
           blend: 'dest-in',
         },

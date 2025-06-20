@@ -19,6 +19,7 @@ import {
 import {
   APP_DEBUG_COLORS,
   APP_DEBUG_FORMAT,
+  APP_STORAGE_TEMP,
   IS_PRODUCTION,
   LOG_LEVELS,
   PROJECT_ROOT,
@@ -31,6 +32,7 @@ import fastifyMultipart from '@fastify/multipart';
 import { openApiSetup } from '@nuvix/core/helper';
 import QueryString from 'qs';
 import path from 'path';
+import fs from 'fs/promises';
 
 config({
   path: [
@@ -146,6 +148,14 @@ async function bootstrap() {
 
   app.useGlobalFilters(new HttpExceptionFilter(), new ErrorFilter());
   openApiSetup(app);
+
+  // TODO: create a separate function to handle setup
+  await fs.mkdir(APP_STORAGE_TEMP, { recursive: true }).catch((err) => {
+    if (err.code !== 'EEXIST') {
+      Logger.error(`Failed to create temp storage directory: ${err.message}`, 'Bootstrap');
+      process.exit(1);
+    }
+  });
 
   const port = parseInt(process.env.APP_API_PORT, 10) || 4000;
   const host = '0.0.0.0';
