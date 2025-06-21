@@ -3,9 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -26,6 +28,7 @@ import {
 } from '@nuvix/core/decorators';
 import { Document, ID } from '@nuvix/database';
 import { DataSource } from '@nuvix/pg';
+import { parser } from '@nuvix/utils/query/parser';
 
 // DTO's
 
@@ -35,7 +38,8 @@ import { DataSource } from '@nuvix/pg';
 @Namespace() // TODO: --->
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
-  constructor(private readonly schemaService: SchemaService) {}
+  private readonly logger = new Logger(SchemaController.name)
+  constructor(private readonly schemaService: SchemaService) { }
 
   @Get(':schemaId/table/:tableId')
   @Scope('schema.read')
@@ -89,5 +93,22 @@ export class SchemaController {
       .from(table)
       .where(body)
       .returning('*');
+  }
+
+  // its time to add a powerful route, THE MAIN QUERY ROUTE
+  @Get('/query')
+  async query(
+    @Query() queries: string | any,
+    @Req() request: NuvixRequest
+  ): Promise<any> {
+    this.logger.debug(queries, '<========================[Queries]')
+    const queryString = request.raw.url.split('?')[1];
+    this.logger.debug(queryString, '<========================[Query String]')
+
+    // here we have to do the main thing with queries, i mean the parsing time
+    // we have to parse very complex query structure, i mean the powerful parser
+
+    const parsedQuery = parser.parse(queries.filters)
+    return parsedQuery;
   }
 }
