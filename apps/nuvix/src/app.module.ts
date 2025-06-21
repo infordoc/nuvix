@@ -67,7 +67,7 @@ import { MessagingController } from './messaging/messaging.controller';
       },
       defaultJobOptions: {
         priority: 1,
-        attempts: 3, 
+        attempts: 3,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: true,
         removeOnFail: true,

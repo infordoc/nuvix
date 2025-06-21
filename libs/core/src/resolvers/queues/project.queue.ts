@@ -42,7 +42,7 @@ export class ProjectQueue extends Queue {
       case 'init':
         const project = new Document(job.data.project as object);
         await this.initProject(project);
-        return; // Add explicit return to prevent fall-through
+        return;
       default: // noop
     }
   }

@@ -81,16 +81,19 @@ export class MessagingQueue extends Queue {
         } finally {
           await this.releaseClient(pool);
         }
+        return {
+          status: 'processed',
+          messageId: message.getId(),
+          projectId: project.getId(),
+        };
       default:
-      // TODO: ---
+        return;
     }
   }
 
   @OnWorkerEvent('active')
   onActive(job: Job) {
-    this.logger.verbose(
-      `Processing job ${job.id} of type ${job.name}`,
-    );
+    this.logger.verbose(`Processing job ${job.id} of type ${job.name}`);
   }
 
   @OnWorkerEvent('failed')

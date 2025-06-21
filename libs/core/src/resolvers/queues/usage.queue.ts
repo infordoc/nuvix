@@ -26,6 +26,8 @@ export class UsageQueue extends Queue {
 
     this.logger.debug(job.data);
 
+    return;
+
     // this.metrics.incrementBandwidth
 
     // const redisKey = `stats:${projectId}:${metric}:${region}`;

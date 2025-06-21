@@ -59,6 +59,7 @@ export class MailQueue extends Queue {
     },
   });
 
+  // TODO: better error handling
   async process(
     job: Job<MailQueueOptions | MailsQueueOptions, any, MailJobs>,
     token?: string,
@@ -121,7 +122,10 @@ export class MailQueue extends Queue {
             body: renderedBody,
           });
         }
-        break;
+        return {
+          status: 'success',
+          message: `Email sent to ${emails.length} recipients with subject "${renderedSubject}"`,
+        };
       default:
         return null;
     }
