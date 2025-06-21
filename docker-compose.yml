@@ -6,23 +6,27 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${APP_DATABASE_PASSWORD}
-      MYSQL_DATABASE: ${APP_DATABASE_NAME}        
+      MYSQL_DATABASE: ${APP_DATABASE_NAME}
     volumes:
       - mariadb_data:/var/lib/mysql
     networks:
       - nuvix
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "--host=localhost", "--user=root", "--password=${APP_DATABASE_PASSWORD}"]
+      test: ["CMD", "mariadb-admin", "ping", "--silent", "--password=${APP_DATABASE_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
-  valkey:
-    image: valkey/valkey:latest
-    container_name: valkey
+  redis:
+    image: redis:7.2
+    container_name: redis
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     volumes:
-      - valkey-data:/data
+      - ./configs/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    ports:
+      - "6379:6379"
     restart: unless-stopped
     networks:
       - nuvix
@@ -45,13 +49,13 @@ services:
       - .env.api
     environment:
       APP_DATABASE_HOST: mariadb
-      APP_REDIS_HOST: valkey
+      APP_REDIS_HOST: redis
       NODE_ENV: production
     depends_on:
       mariadb:
-        condition: service_healthy # Waits for mariadb to be healthy
-      valkey:
-        condition: service_healthy # Waits for valkey to be healthy
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - nuvix
       - caddy
@@ -69,13 +73,13 @@ services:
       - .env.console
     environment:
       APP_DATABASE_HOST: mariadb
-      APP_REDIS_HOST: valkey
+      APP_REDIS_HOST: redis
       NODE_ENV: production
     depends_on:
       mariadb:
-        condition: service_healthy 
-      valkey:
-        condition: service_healthy 
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - nuvix
       - caddy
@@ -88,18 +92,18 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp" # For HTTP/3
+      - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data      # For Caddy's state, like ACME certificates
-      - caddy_config:/config  # For Caddy's configuration backups
+      - ./configs/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
     networks:
       - caddy
       - nuvix
 
 volumes:
   mariadb_data:
-  valkey-data:
+  redis_data:
   caddy_data:
   caddy_config:
 
