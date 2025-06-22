@@ -16,26 +16,26 @@ interface Config {
   };
 }
 
-interface Condition {
+export interface Condition {
   field: string;
   operator: string;
   value?: any;
   values?: any[];
 }
 
-interface NotExpression {
+export interface NotExpression {
   not: Expression;
 }
 
-interface OrExpression {
+export interface OrExpression {
   or: Expression[];
 }
 
-interface AndExpression {
+export interface AndExpression {
   and: Expression[];
 }
 
-type Expression =
+export type Expression =
   | Condition
   | NotExpression
   | OrExpression
@@ -83,9 +83,9 @@ export class Parser {
       );
     }
 
-    if (OPEN === CLOSE && OPEN !== '(' && OPEN !== ')') {
+    if (OPEN === CLOSE) {
       throw new Error(
-        'OPEN and CLOSE characters cannot be the same (except for parentheses)',
+        'OPEN and CLOSE characters cannot be the same',
       );
     }
 
@@ -98,9 +98,8 @@ export class Parser {
     const validPair = bracketPairs.find(
       ([open, close]) => open === OPEN && close === CLOSE,
     );
-    const isParenthesesBoth = OPEN === '(' && CLOSE === ')';
 
-    if (!validPair && !isParenthesesBoth && OPEN !== CLOSE) {
+    if (!validPair && OPEN !== CLOSE) {
       this.logger.warn(
         `Warning: OPEN '${OPEN}' and CLOSE '${CLOSE}' are not standard bracket pairs`,
       );
@@ -267,7 +266,6 @@ export class Parser {
         throw new Error('Invalid LIST_STYLE configuration');
       }
 
-      // Use a simpler approach to avoid regex escaping issues
       const openIndex = trimmed.lastIndexOf(openChar);
       const closeIndex = trimmed.lastIndexOf(closeChar);
 
@@ -663,11 +661,6 @@ export class Parser {
     }
 
     return false;
-  }
-
-  private _escapeRegexChar(char: string): string {
-    const specialChars = /[.*+?^${}()|[\]\\]/g;
-    return char.replace(specialChars, '\\$&');
   }
 
   private _isProperGroup(str: string): boolean {
