@@ -1,11 +1,11 @@
-interface ColumnNode {
+export interface ColumnNode {
     type: 'column';
     path: string;
     alias: string | null;
     cast: string | null;
 }
 
-interface EmbedNode {
+export interface EmbedNode {
     type: 'embed';
     resource: string;
     constraint: string | null;
@@ -23,7 +23,7 @@ export class SelectParser {
     private static readonly CONSTRAINT_DELIMITER = '!';
 
     static parse(selectStr: string): SelectNode[] {
-        if (!selectStr?.trim()) {
+        if (typeof selectStr !== 'string' || !selectStr.trim()) {
             throw new Error('Select string cannot be empty');
         }
 
@@ -50,33 +50,23 @@ export class SelectParser {
                 inParens += char === '(' ? 1 : -1;
                 current += char;
             } else if (this.isSeparator(char, inQuotes, inParens)) {
-                if (current.trim()) {
-                    tokens.push(current.trim());
-                }
+                if (current.trim()) tokens.push(current.trim());
                 current = '';
             } else {
                 current += char;
             }
         }
 
-        if (current.trim()) {
-            tokens.push(current.trim());
-        }
+        if (current.trim()) tokens.push(current.trim());
 
-        if (inQuotes) {
-            throw new Error('Unclosed quote in select string');
-        }
-
-        if (inParens !== 0) {
-            throw new Error('Unmatched parentheses in select string');
-        }
+        if (inQuotes) throw new Error('Unclosed quote in select string');
+        if (inParens !== 0) throw new Error('Unmatched parentheses in select string');
 
         return tokens;
     }
 
     private static handleQuotes(char: string, inQuotes: boolean, quoteChar: string | null): boolean {
-        return (this.QUOTE_CHARS.includes(char as any) && !inQuotes) ||
-            (inQuotes && char === quoteChar);
+        return (!inQuotes && this.QUOTE_CHARS.includes(char as any)) || (inQuotes && char === quoteChar);
     }
 
     private static updateQuoteState(char: string, inQuotes: boolean, quoteChar: string | null) {
@@ -99,13 +89,8 @@ export class SelectParser {
 
     private static parseTokens(tokens: string[]): SelectNode[] {
         return tokens.map(token => {
-            if (!token.trim()) {
-                throw new Error('Empty token in select string');
-            }
-
-            return this.isEmbedToken(token)
-                ? this.parseEmbed(token)
-                : this.parseColumn(token);
+            if (!token.trim()) throw new Error('Empty token in select string');
+            return this.isEmbedToken(token) ? this.parseEmbed(token) : this.parseColumn(token);
         });
     }
 
@@ -116,16 +101,12 @@ export class SelectParser {
     private static parseColumn(token: string): ColumnNode {
         let workingToken = token.trim();
 
-        // Extract cast
         const { value: tokenWithoutCast, cast } = this.extractCast(workingToken);
         workingToken = tokenWithoutCast;
 
-        // Extract alias
         const { value: path, alias } = this.extractAlias(workingToken);
 
-        if (!path) {
-            throw new Error(`Invalid column specification: ${token}`);
-        }
+        if (!path) throw new Error(`Invalid column specification: ${token}`);
 
         return {
             type: 'column',
@@ -136,51 +117,38 @@ export class SelectParser {
     }
 
     private static extractCast(token: string): { value: string; cast: string | null } {
-        const castIndex = token.indexOf(this.CAST_DELIMITER);
-        if (castIndex === -1) {
-            return { value: token, cast: null };
-        }
+        const castIndex = token.lastIndexOf(this.CAST_DELIMITER);
+        if (castIndex === -1) return { value: token, cast: null };
 
         const cast = token.substring(castIndex + this.CAST_DELIMITER.length).trim();
         const value = token.substring(0, castIndex).trim();
 
-        if (!cast) {
-            throw new Error(`Invalid cast specification: ${token}`);
-        }
+        if (!cast) throw new Error(`Invalid cast specification: ${token}`);
 
         return { value, cast };
     }
 
     private static extractAlias(token: string): { value: string; alias: string | null } {
-        const parts = token.split(this.ALIAS_DELIMITER);
-        if (parts.length === 2) {
-            const [alias, value] = parts.map(p => p.trim());
-            if (!alias || !value) {
-                throw new Error(`Invalid alias specification: ${token}`);
-            }
+        const aliasIndex = token.indexOf(this.ALIAS_DELIMITER);
+        if (aliasIndex !== -1) {
+            const alias = token.slice(0, aliasIndex).trim();
+            const value = token.slice(aliasIndex + 1).trim();
+
+            if (!alias || !value) throw new Error(`Invalid alias specification: ${token}`);
             return { value, alias };
         }
-        if (parts.length > 2) {
-            throw new Error(`Multiple alias delimiters in: ${token}`);
-        }
+
         return { value: token, alias: null };
     }
 
     private static parseEmbed(token: string): EmbedNode {
         const match = token.match(/^([\w!:]+)\((.*)\)$/);
-        if (!match) {
-            throw new Error(`Invalid embed syntax: ${token}`);
-        }
+        if (!match) throw new Error(`Invalid embed syntax: ${token}`);
 
         const [_, resourceSpec, innerSelect] = match;
-
-        // Parse resource specification
         const { resource, constraint, alias } = this.parseResourceSpec(resourceSpec);
 
-        // Parse inner select
-        if (!innerSelect.trim()) {
-            throw new Error(`Empty select in embed: ${token}`);
-        }
+        if (!innerSelect.trim()) throw new Error(`Empty select in embed: ${token}`);
 
         const innerTokens = this.tokenize(innerSelect);
         const select = this.parseTokens(innerTokens);
@@ -201,11 +169,9 @@ export class SelectParser {
     } {
         let workingSpec = resourceSpec.trim();
 
-        // Extract alias first
         const { value: specWithoutAlias, alias } = this.extractAlias(workingSpec);
         workingSpec = specWithoutAlias;
 
-        // Extract constraint
         const constraintIndex = workingSpec.indexOf(this.CONSTRAINT_DELIMITER);
         let resource: string;
         let constraint: string | null = null;
@@ -213,7 +179,6 @@ export class SelectParser {
         if (constraintIndex !== -1) {
             resource = workingSpec.substring(0, constraintIndex).trim();
             constraint = workingSpec.substring(constraintIndex + 1).trim();
-
             if (!resource || !constraint) {
                 throw new Error(`Invalid constraint specification: ${resourceSpec}`);
             }
@@ -221,9 +186,7 @@ export class SelectParser {
             resource = workingSpec;
         }
 
-        if (!resource) {
-            throw new Error(`Invalid resource specification: ${resourceSpec}`);
-        }
+        if (!resource) throw new Error(`Invalid resource specification: ${resourceSpec}`);
 
         return { resource, constraint, alias };
     }

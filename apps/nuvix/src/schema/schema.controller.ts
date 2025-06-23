@@ -42,8 +42,6 @@ import { OrderParser, ParsedOrdering } from '@nuvix/utils/query/order';
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);
-  private readonly astToQueryBuilder = new ASTToQueryBuilder();
-
   constructor(private readonly schemaService: SchemaService) { }
 
   @Get(':schemaId/table/:tableId')
@@ -113,12 +111,13 @@ export class SchemaController {
     @CurrentSchema() pg: DataSource,
     @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 100,
   ) {
-    const qb = pg.qb(table);
+    const qb = pg.qb(table).withSchema('public');
+    const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
 
     const { filter, select, order } = this.getParamsFromUrl(request.raw.url);
-    this.applySelectToQuery(qb, select);
-    this.applyFiltersToQuery(qb, filter);
-    this.applyOrderToQuery(qb, order);
+    astToQueryBuilder.applySelect(select)
+    astToQueryBuilder.applyFilters(filter)
+    astToQueryBuilder.applyOrder(order)
     qb.limit(limit)
 
     this.logger.debug(qb.toSQL())
@@ -126,27 +125,12 @@ export class SchemaController {
     return await qb;
   }
 
-  @Get('query')
-  test(
-    @Req() request: NuvixRequest,
-  ) {
-    const urlParams = new URLSearchParams(request.raw.url);
-
-    const the = SelectParser.parse(urlParams.get('select'))
-    this.logger.debug(the, '<======== the Select');
-
-    const the2 = OrderParser.parse(urlParams.get('order'))
-    this.logger.debug(the2, '<======== the order')
-
-    return urlParams;
-  }
-
   private getParamsFromUrl(url: string): {
     filter?: Expression;
     select?: SelectNode[];
     order?: ParsedOrdering[];
   } {
-    url = decodeURIComponent(url);
+
     const queryString = url.includes('?') ? url.split('?')[1] : '';
     const urlParams = new URLSearchParams(queryString);
 
@@ -160,35 +144,5 @@ export class SchemaController {
     const order = _order ? OrderParser.parse(_order) : undefined;
 
     return { filter, select, order };
-  }
-
-  private applyFiltersToQuery<T>(
-    qb: T,
-    filters: Expression | undefined,
-  ): T {
-    if (filters) {
-      this.astToQueryBuilder.applyFilters(filters, qb as any);
-    }
-    return qb;
-  }
-
-  private applySelectToQuery<T>(
-    qb: T,
-    select: SelectNode[] | undefined,
-  ): T {
-    if (select) {
-      this.astToQueryBuilder.applySelect(select, qb as any);
-    }
-    return qb;
-  }
-
-  private applyOrderToQuery<T>(
-    qb: T,
-    order: ParsedOrdering[] | undefined,
-  ): T {
-    if (order) {
-      this.astToQueryBuilder.applyOrder(order, qb as any);
-    }
-    return qb;
   }
 }

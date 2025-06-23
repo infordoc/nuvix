@@ -1,4 +1,4 @@
-import { type DataSource } from '@nuvix/pg';
+import { DataSource } from '@nuvix/pg';
 import { Logger } from '@nestjs/common';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
@@ -8,31 +8,11 @@ import {
   OrExpression,
   AndExpression,
 } from './parser';
+import { ParsedOrdering } from './order';
+import { ColumnNode, EmbedNode, SelectNode } from './select';
+import Raw from 'node_modules/@nuvix/pg/dist/raw';
 
 type QueryBuilder = ReturnType<DataSource['queryBuilder']>;
-
-interface ParsedOrdering {
-  path: string;
-  direction: 'asc' | 'desc';
-  nulls: 'nullsfirst' | 'nullslast' | null;
-}
-
-interface ColumnNode {
-  type: 'column';
-  path: string;
-  alias: string | null;
-  cast: string | null;
-}
-
-interface EmbedNode {
-  type: 'embed';
-  resource: string;
-  constraint: string | null;
-  alias: string | null;
-  select: SelectNode[];
-}
-
-type SelectNode = ColumnNode | EmbedNode;
 
 export interface ASTToQueryBuilderOptions {
   tableName?: string;
@@ -41,15 +21,19 @@ export interface ASTToQueryBuilderOptions {
   maxNestingDepth?: number;
 }
 
-export class ASTToQueryBuilder {
+export class ASTToQueryBuilder<T extends QueryBuilder> {
   private readonly logger = new Logger(ASTToQueryBuilder.name);
+  private qb: T;
+  private pg: DataSource;
   private nestingDepth = 0;
   private readonly maxNestingDepth: number;
   private readonly allowUnsafeOperators: boolean;
   private anyAllsupportedOperators = ['eq', 'like', 'ilike', 'gt', 'gte', 'lt', 'lte', 'match', 'imatch'];
 
 
-  constructor(options: ASTToQueryBuilderOptions = {}) {
+  constructor(qb: T, pg: DataSource, options: ASTToQueryBuilderOptions = {}) {
+    this.qb = qb;
+    this.pg = pg;
     this.maxNestingDepth = options.maxNestingDepth || 10;
     this.allowUnsafeOperators = options.allowUnsafeOperators || false;
   }
@@ -57,18 +41,17 @@ export class ASTToQueryBuilder {
   /**
    *apply AST expression to QueryBuilder conditions
    */
- applyFilters(
-    expression: Expression,
-    queryBuilder: QueryBuilder,
+  applyFilters(
+    expression?: Expression,
     options: ASTToQueryBuilderOptions = {},
   ): QueryBuilder {
     if (!expression) {
-      return queryBuilder;
+      return this.qb;
     }
 
     try {
       this.nestingDepth = 0;
-      return this._convertExpression(expression, queryBuilder);
+      return this._convertExpression(expression, this.qb);
     } catch (error) {
       if (error instanceof Error) {
         throw new Exception(
@@ -83,15 +66,15 @@ export class ASTToQueryBuilder {
   /**
    *apply select nodes to QueryBuilder select clauses
    */
- applySelect(
+  applySelect(
     selectNodes: SelectNode[],
-    queryBuilder: QueryBuilder,
+    queryBuilder = this.qb
   ): QueryBuilder {
     if (!selectNodes || selectNodes.length === 0) {
       return queryBuilder;
     }
 
-    const selectColumns: string[] = [];
+    const selectColumns: any[] = [];
     const embeds: EmbedNode[] = [];
 
     selectNodes.forEach(node => {
@@ -118,12 +101,11 @@ export class ASTToQueryBuilder {
   /**
    *apply ordering to QueryBuilder order clauses
    */
- applyOrder(
+  applyOrder(
     orderings: ParsedOrdering[],
-    queryBuilder: QueryBuilder,
-  ): QueryBuilder {
+  ): T {
     if (!orderings || orderings.length === 0) {
-      return queryBuilder;
+      return this.qb;
     }
 
     orderings.forEach(ordering => {
@@ -132,13 +114,13 @@ export class ASTToQueryBuilder {
       if (nulls) {
         // Handle NULLS FIRST/LAST
         const nullsClause = nulls === 'nullsfirst' ? 'NULLS FIRST' : 'NULLS LAST';
-        queryBuilder.orderByRaw(`?? ${direction.toUpperCase()} ${nullsClause}`, [path]);
+        this.qb.orderByRaw(`?? ${direction.toUpperCase()} ${nullsClause}`, [path]);
       } else {
-        queryBuilder.orderBy(path, direction);
+        this.qb.orderBy(path, direction);
       }
     });
 
-    return queryBuilder;
+    return this.qb;
   }
 
   private _convertExpression(
@@ -499,20 +481,10 @@ export class ASTToQueryBuilder {
   /**
    * Build column select string with alias and cast
    */
-  private _buildColumnSelect(node: ColumnNode): string {
-    let columnSelect = node.path;
+  private _buildColumnSelect(node: ColumnNode) {
+    const columnSelect = node.path;
 
-    // Apply cast if specified
-    if (node.cast) {
-      columnSelect = `${columnSelect}::${node.cast}`;
-    }
-
-    // Apply alias if specified
-    if (node.alias) {
-      columnSelect = `${columnSelect} as ${node.alias}`;
-    }
-
-    return columnSelect;
+    return this.pg.raw(`"${columnSelect}"${node.cast ? '::' + node.cast : ''}${node.alias ? ` as ${node.alias}` : ''}`);
   }
 
   /**
@@ -538,7 +510,7 @@ export class ASTToQueryBuilder {
       }
 
       // Apply select for the embed
-      this.applySelect(select, subQuery);
+      this.applySelect(select, subQuery as any);
 
       // Join or handle the embed based on your requirements
       // This is where you'd implement the actual join logic
