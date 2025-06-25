@@ -7,8 +7,10 @@ import type {
   NotExpression,
   OrExpression,
   AndExpression,
-  ColumnNode, EmbedNode, SelectNode,
-  ParsedOrdering
+  ColumnNode,
+  EmbedNode,
+  SelectNode,
+  ParsedOrdering,
 } from './types';
 import { PG } from '@nuvix/pg';
 import { JoinBuilder } from './join-builder';
@@ -29,8 +31,17 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   private nestingDepth = 0;
   private readonly maxNestingDepth: number;
   private readonly allowUnsafeOperators: boolean;
-  private anyAllsupportedOperators = ['eq', 'like', 'ilike', 'gt', 'gte', 'lt', 'lte', 'match', 'imatch'];
-
+  private anyAllsupportedOperators = [
+    'eq',
+    'like',
+    'ilike',
+    'gt',
+    'gte',
+    'lt',
+    'lte',
+    'match',
+    'imatch',
+  ];
 
   constructor(qb: T, pg: DataSource, options: ASTToQueryBuilderOptions = {}) {
     this.qb = qb;
@@ -68,10 +79,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   /**
    *apply select nodes to QueryBuilder select clauses
    */
-  applySelect(
-    selectNodes: SelectNode[],
-    queryBuilder = this.qb
-  ): QueryBuilder {
+  applySelect(selectNodes: SelectNode[], queryBuilder = this.qb): QueryBuilder {
     if (!selectNodes || selectNodes.length === 0) {
       return queryBuilder;
     }
@@ -103,9 +111,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   /**
    *apply ordering to QueryBuilder order clauses
    */
-  applyOrder(
-    orderings: ParsedOrdering[],
-  ): T {
+  applyOrder(orderings: ParsedOrdering[], table: string): T {
     if (!orderings || orderings.length === 0) {
       return this.qb;
     }
@@ -115,10 +121,13 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
 
       if (nulls) {
         // Handle NULLS FIRST/LAST
-        const nullsClause = nulls === 'nullsfirst' ? 'NULLS FIRST' : 'NULLS LAST';
-        this.qb.orderByRaw(`?? ${direction.toUpperCase()} ${nullsClause}`, [path]);
+        const nullsClause =
+          nulls === 'nullsfirst' ? 'NULLS FIRST' : 'NULLS LAST';
+        this.qb.orderByRaw(`?? ${direction.toUpperCase()} ${nullsClause}`, [
+          path,
+        ]);
       } else {
-        this.qb.orderBy(this._rawField(path).toSQL().sql, direction);
+        this.qb.orderBy(this._rawField(path, table).toSQL().sql, direction);
       }
     });
 
@@ -169,7 +178,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     condition: Condition,
     queryBuilder: QueryBuilder,
   ): QueryBuilder {
-    const { field: _field, operator, value, values } = condition;
+    const { field: _field, operator, value, values, tableName } = condition;
 
     if (!_field || !operator) {
       throw new Error('Condition must have both field and operator');
@@ -177,17 +186,32 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
 
     // Validate operator if safety is enabled
     if (!this.allowUnsafeOperators && !this._isKnownOperator(operator)) {
-      this.logger.warn(`Unknown operator: ${operator}, proceeding with caution`);
+      this.logger.warn(
+        `Unknown operator: ${operator}, proceeding with caution`,
+      );
     }
 
-    const field = this._rawField(_field) as unknown as ReturnType<PG['raw']>;
+    const field = this._rawField(_field, tableName) as unknown as ReturnType<
+      PG['raw']
+    >;
     const fieldSql = field.toSQL().sql;
 
     // Check for ANY/ALL pattern with 3 values
-    if (values && Array.isArray(values) && values.length >= 2 && this.anyAllsupportedOperators.includes(operator)) {
+    if (
+      values &&
+      Array.isArray(values) &&
+      values.length >= 2 &&
+      this.anyAllsupportedOperators.includes(operator)
+    ) {
       const [modifier, ...operatorValues] = values;
       if (modifier === 'any' || modifier === 'all') {
-        return this._applyAnyAllCondition(field, operator, modifier, operatorValues, queryBuilder);
+        return this._applyAnyAllCondition(
+          field,
+          operator,
+          modifier,
+          operatorValues,
+          queryBuilder,
+        );
       }
     }
 
@@ -241,45 +265,82 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
 
       // IS DISTINCT FROM
       case 'isdistinct':
-        return queryBuilder.whereRaw(`?? IS DISTINCT FROM ?`, [fieldSql, value]);
+        return queryBuilder.whereRaw(`?? IS DISTINCT FROM ?`, [
+          fieldSql,
+          value,
+        ]);
 
       // Full-Text Search operators
       case 'fts':
         if (Array.isArray(values) && values.length >= 2) {
           // Support language specification: [language, query] or [language, query, config]
           const [language, query, config] = values;
-          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ to_tsquery(?)`, [language, field, query]);
+          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ to_tsquery(?)`, [
+            language,
+            field,
+            query,
+          ]);
         }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ to_tsquery(?)`, [field, value]);
+        return queryBuilder.whereRaw(`to_tsvector(??) @@ to_tsquery(?)`, [
+          field,
+          value,
+        ]);
       case 'plfts':
         if (Array.isArray(values) && values.length >= 2) {
           // Support language specification: [language, query]
           const [language, query] = values;
-          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ plainto_tsquery(?, ?)`, [language, field, language, query]);
+          return queryBuilder.whereRaw(
+            `to_tsvector(?, ??) @@ plainto_tsquery(?, ?)`,
+            [language, field, language, query],
+          );
         }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ plainto_tsquery(?)`, [field, value]);
+        return queryBuilder.whereRaw(`to_tsvector(??) @@ plainto_tsquery(?)`, [
+          field,
+          value,
+        ]);
       case 'phfts':
         if (Array.isArray(values) && values.length >= 2) {
           // Support language specification: [language, query]
           const [language, query] = values;
-          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ phraseto_tsquery(?, ?)`, [language, field, language, query]);
+          return queryBuilder.whereRaw(
+            `to_tsvector(?, ??) @@ phraseto_tsquery(?, ?)`,
+            [language, field, language, query],
+          );
         }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ phraseto_tsquery(?)`, [field, value]);
+        return queryBuilder.whereRaw(`to_tsvector(??) @@ phraseto_tsquery(?)`, [
+          field,
+          value,
+        ]);
       case 'wfts':
         if (Array.isArray(values) && values.length >= 2) {
           // Support language specification: [language, query]
           const [language, query] = values;
-          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ websearch_to_tsquery(?, ?)`, [language, field, language, query]);
+          return queryBuilder.whereRaw(
+            `to_tsvector(?, ??) @@ websearch_to_tsquery(?, ?)`,
+            [language, field, language, query],
+          );
         }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ websearch_to_tsquery(?)`, [field, value]);
+        return queryBuilder.whereRaw(
+          `to_tsvector(??) @@ websearch_to_tsquery(?)`,
+          [field, value],
+        );
 
       // Array/JSON operators
       case 'cs': // contains
-        return queryBuilder.whereRaw(`?? @> ?`, [field, JSON.stringify(values || value)]);
+        return queryBuilder.whereRaw(`?? @> ?`, [
+          field,
+          JSON.stringify(values || value),
+        ]);
       case 'cd': // contained in
-        return queryBuilder.whereRaw(`?? <@ ?`, [field, JSON.stringify(values || value)]);
+        return queryBuilder.whereRaw(`?? <@ ?`, [
+          field,
+          JSON.stringify(values || value),
+        ]);
       case 'ov': // overlaps
-        return queryBuilder.whereRaw(`?? && ?`, [field, JSON.stringify(values || value)]);
+        return queryBuilder.whereRaw(`?? && ?`, [
+          field,
+          JSON.stringify(values || value),
+        ]);
 
       // Range operators
       case 'sl': // strictly left of
@@ -324,9 +385,12 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     }
   }
 
-  public _rawField(_field: Condition['field']): ReturnType<typeof this.pg['raw']> {
+  public _rawField(
+    _field: Condition['field'],
+    table: string,
+  ): ReturnType<(typeof this.pg)['raw']> {
     if (typeof _field === 'string') {
-      return this.pg.raw('??', [_field]);
+      return this.pg.raw('??.??', [table, _field]);
     } else if (Array.isArray(_field)) {
       // Handle complex field paths with JSON operators
       const sqlParts: string[] = [];
@@ -335,10 +399,16 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       for (let i = 0; i < _field.length; i++) {
         const part = _field[i];
         const isLastPart = i === _field.length - 1;
-        const hasObjectPartsBefore = _field.slice(0, i).some(p => typeof p === 'object' && 'operator' in p);
+        const hasObjectPartsBefore = _field
+          .slice(0, i)
+          .some(p => typeof p === 'object' && 'operator' in p);
 
         if (typeof part === 'string') {
-          const isAfterOperator = i > 0 && _field.slice(0, i).some(p => typeof p === 'object' && 'operator' in p);
+          const isAfterOperator =
+            i > 0 &&
+            _field
+              .slice(0, i)
+              .some(p => typeof p === 'object' && 'operator' in p);
 
           if (isAfterOperator) {
             // Try to convert to number if possible
@@ -383,7 +453,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     notExpression: NotExpression,
     queryBuilder: QueryBuilder,
   ): QueryBuilder {
-    return queryBuilder.whereNot((builder) => {
+    return queryBuilder.whereNot(builder => {
       this._convertExpression(notExpression.not, builder);
     });
   }
@@ -396,12 +466,12 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       return queryBuilder;
     }
 
-    return queryBuilder.where((builder) => {
+    return queryBuilder.where(builder => {
       orExpression.or.forEach((expr, index) => {
         if (index === 0) {
           this._convertExpression(expr, builder);
         } else {
-          builder.orWhere((subBuilder) => {
+          builder.orWhere(subBuilder => {
             this._convertExpression(expr, subBuilder);
           });
         }
@@ -417,7 +487,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       return queryBuilder;
     }
 
-    andExpression.and.forEach((expr) => {
+    andExpression.and.forEach(expr => {
       this._convertExpression(expr, queryBuilder);
     });
 
@@ -427,21 +497,47 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   private _isKnownOperator(operator: string): boolean {
     const knownOperators = [
       // Basic comparisons
-      'eq', 'gt', 'gte', 'lt', 'lte', 'neq', 'ne',
+      'eq',
+      'gt',
+      'gte',
+      'lt',
+      'lte',
+      'neq',
+      'ne',
       // Pattern matching
-      'like', 'ilike', 'match', 'imatch',
+      'like',
+      'ilike',
+      'match',
+      'imatch',
       // List operations
-      'in', 'is', 'isdistinct',
+      'in',
+      'is',
+      'isdistinct',
       // Full-text search
-      'fts', 'plfts', 'phfts', 'wfts',
+      'fts',
+      'plfts',
+      'phfts',
+      'wfts',
       // Array/JSON operations
-      'cs', 'cd', 'ov',
+      'cs',
+      'cd',
+      'ov',
       // Range operations
-      'sl', 'sr', 'nxr', 'nxl', 'adj',
+      'sl',
+      'sr',
+      'nxr',
+      'nxl',
+      'adj',
       // Logical operators
-      'not', 'or', 'and',
+      'not',
+      'or',
+      'and',
       // Legacy operators
-      'between', 'regex', 'iregex', 'not_regex', 'not_iregex',
+      'between',
+      'regex',
+      'iregex',
+      'not_regex',
+      'not_iregex',
     ];
     return knownOperators.includes(operator);
   }
@@ -459,21 +555,26 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   ): QueryBuilder {
     if (modifier === 'any') {
       // ANY creates OR conditions
-      return queryBuilder.where((builder) => {
+      return queryBuilder.where(builder => {
         operatorValues.forEach((val, index) => {
           if (index === 0) {
             this._applySingleOperatorCondition(field, operator, val, builder);
           } else {
-            builder.orWhere((subBuilder) => {
-              this._applySingleOperatorCondition(field, operator, val, subBuilder);
+            builder.orWhere(subBuilder => {
+              this._applySingleOperatorCondition(
+                field,
+                operator,
+                val,
+                subBuilder,
+              );
             });
           }
         });
       });
     } else {
       // ALL creates AND conditions
-      return queryBuilder.where((builder) => {
-        operatorValues.forEach((val) => {
+      return queryBuilder.where(builder => {
+        operatorValues.forEach(val => {
           this._applySingleOperatorCondition(field, operator, val, builder);
         });
       });
@@ -517,7 +618,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
    * Build column select string with alias and cast
    */
   private _buildColumnSelect(node: ColumnNode) {
-    const rawPath = this._rawField(node.path).toSQL().sql;
+    const rawPath = this._rawField(node.path, node.tableName).toSQL().sql;
     const casted = node.cast ? `CAST((${rawPath}) AS ${node.cast})` : rawPath;
     return this.pg.raw(`${casted}${node.alias ? ` as "${node.alias}"` : ''}`);
   }
@@ -526,15 +627,17 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
    * Handle embed node (subqueries/joins)
    */
   private _handleEmbedNode(embed: EmbedNode, qb: QueryBuilder): void {
-    const { resource, constraint, alias, select, joinType } = embed;
+    const { resource, constraint, alias, select, joinType, mainTable } = embed;
 
     switch (joinType) {
       case 'left':
-        const table = `"${resource}"`
-        qb.leftJoin(resource, (builder) => {
-          new JoinBuilder(builder, this).applyJoin(constraint)
+        qb.leftJoin(this.pg.alias(resource, alias || resource), builder => {
+          const raw = new JoinBuilder(this, resource, mainTable).buildJoinSQL(
+            constraint,
+          );
+          builder.on(raw);
         });
-        this.applySelect(select, qb as any)
+        this.applySelect(select, qb as any);
         break;
     }
   }
@@ -549,7 +652,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     );
   }
 
-  public static _isNotExpression(expression: Expression): expression is NotExpression {
+  public static _isNotExpression(
+    expression: Expression,
+  ): expression is NotExpression {
     return (
       expression !== null &&
       typeof expression === 'object' &&
@@ -557,7 +662,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     );
   }
 
-  public static _isOrExpression(expression: Expression): expression is OrExpression {
+  public static _isOrExpression(
+    expression: Expression,
+  ): expression is OrExpression {
     return (
       expression !== null &&
       typeof expression === 'object' &&
@@ -566,7 +673,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     );
   }
 
-  public static _isAndExpression(expression: Expression): expression is AndExpression {
+  public static _isAndExpression(
+    expression: Expression,
+  ): expression is AndExpression {
     return (
       expression !== null &&
       typeof expression === 'object' &&

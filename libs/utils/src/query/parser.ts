@@ -1,17 +1,28 @@
 import { Logger } from '@nestjs/common';
 import { Exception } from '@nuvix/core/extend/exception';
-import type { Condition, Expression, JsonFieldType, ParserConfig } from './types';
+import type {
+  Condition,
+  Expression,
+  JsonFieldType,
+  ParserConfig,
+} from './types';
 
 export class Parser {
   private readonly logger = new Logger(Parser.name);
 
   private config: ParserConfig;
   private escapeChar: string;
+  private tableName: string;
 
-  constructor(config: ParserConfig) {
+  constructor(config: ParserConfig, tableName: string) {
     this.config = config;
+    this.tableName = tableName;
     this.escapeChar = '\\';
     this._validateConfig();
+  }
+
+  static create({ tableName }: { tableName: string }) {
+    return new Parser(defaultConfig, tableName);
   }
 
   parse(str: string): Expression {
@@ -204,11 +215,7 @@ export class Parser {
       );
       if (match) {
         const [_, fieldPath, operator, args] = match;
-        return this._buildCondition(
-          fieldPath.trim(),
-          operator.trim(),
-          args,
-        );
+        return this._buildCondition(fieldPath.trim(), operator.trim(), args);
       }
     }
 
@@ -248,28 +255,33 @@ export class Parser {
     );
   }
 
-  private _buildCondition(_field: string | undefined, operator: string | undefined, args: string): Condition {
+  private _buildCondition(
+    _field: string | undefined,
+    operator: string | undefined,
+    args: string,
+  ): Condition {
     if (!_field || !operator) {
       throw new Error(
         `Both field and operator must be specified: "${_field}.${operator}"`,
       );
     }
 
-    const field = this._parseField(_field)
+    const field = this._parseField(_field);
+    const tableName = this.tableName;
 
     if (!args && args !== '') {
-      return { field, operator, value: null, };
+      return { field, operator, value: null, tableName };
     }
 
     const values = this._parseArgumentList(args);
 
     if (values.length === 0) {
-      return { field, operator, value: null, };
+      return { field, operator, value: null, tableName };
     }
 
     return values.length === 1
-      ? { field, operator, value: values[0] }
-      : { field, operator, values };
+      ? { field, operator, value: values[0], tableName }
+      : { field, operator, values, tableName };
   }
 
   public _parseField(field: string): Condition['field'] {
@@ -726,5 +738,3 @@ const defaultConfig: ParserConfig = {
     LIST_STYLE: '[]', // List format: '[]', '()', or '{}'
   },
 };
-
-export const parser = new Parser(defaultConfig);

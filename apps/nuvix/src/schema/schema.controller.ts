@@ -28,11 +28,15 @@ import {
 } from '@nuvix/core/decorators';
 import { Document, ID } from '@nuvix/database';
 import { DataSource } from '@nuvix/pg';
-import { parser } from '@nuvix/utils/query/parser';
+import { Parser } from '@nuvix/utils/query/parser';
 import { ASTToQueryBuilder } from '@nuvix/utils/query/builder';
 import { SelectParser } from '@nuvix/utils/query/select';
 import { OrderParser } from '@nuvix/utils/query/order';
-import { Expression, ParsedOrdering, SelectNode } from '@nuvix/utils/query/types';
+import {
+  Expression,
+  ParsedOrdering,
+  SelectNode,
+} from '@nuvix/utils/query/types';
 
 // DTO's
 
@@ -43,7 +47,7 @@ import { Expression, ParsedOrdering, SelectNode } from '@nuvix/utils/query/types
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);
-  constructor(private readonly schemaService: SchemaService) { }
+  constructor(private readonly schemaService: SchemaService) {}
 
   @Get(':schemaId/table/:tableId')
   @Scope('schema.read')
@@ -115,31 +119,40 @@ export class SchemaController {
     const qb = pg.qb(table).withSchema('public');
     const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
 
-    const { filter, select, order } = this.getParamsFromUrl(request.raw.url);
-    astToQueryBuilder.applySelect(select)
-    astToQueryBuilder.applyFilters(filter)
-    astToQueryBuilder.applyOrder(order)
-    qb.limit(limit)
+    const { filter, select, order } = this.getParamsFromUrl(
+      request.raw.url,
+      table,
+    );
+    astToQueryBuilder.applySelect(select);
+    astToQueryBuilder.applyFilters(filter);
+    astToQueryBuilder.applyOrder(order, table);
+    qb.limit(limit);
 
-    this.logger.debug(qb.toSQL())
+    this.logger.debug(qb.toSQL());
 
     return await qb;
   }
 
-  private getParamsFromUrl(url: string): {
+  private getParamsFromUrl(
+    url: string,
+    tableName: string,
+  ): {
     filter?: Expression;
     select?: SelectNode[];
     order?: ParsedOrdering[];
   } {
-
     const queryString = url.includes('?') ? url.split('?')[1] : '';
     const urlParams = new URLSearchParams(queryString);
 
     const _filter = urlParams.get('filter') || '';
-    const filter = _filter ? parser.parse(_filter) : undefined;
+    const filter = _filter
+      ? Parser.create({ tableName }).parse(_filter)
+      : undefined;
 
     const _select = urlParams.get('select') || '';
-    const select = _select ? SelectParser.parse(_select) : undefined;
+    const select = _select
+      ? new SelectParser({ tableName }).parse(_select)
+      : undefined;
 
     const _order = urlParams.get('order') || '';
     const order = _order ? OrderParser.parse(_order) : undefined;

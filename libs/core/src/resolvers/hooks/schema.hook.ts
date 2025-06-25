@@ -28,8 +28,8 @@ export class SchemaHook implements Hook {
     const pool = request[PROJECT_POOL];
     const pg = request[PROJECT_PG] as DataSource;
 
-    const schemaId = (request.params as { schemaId: string | undefined })
-      .schemaId ?? 'public';
+    const schemaId =
+      (request.params as { schemaId: string | undefined }).schemaId ?? 'public';
     if (schemaId === undefined) return;
     const schema = await pg.getSchema(schemaId);
     if (schema) {
