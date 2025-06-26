@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { DataSource, PG } from '@nuvix/pg';
+import { DataSource } from '@nuvix/pg';
 import { EmbedNode, Expression, Condition } from './types';
 import { ASTToQueryBuilder } from './builder';
 
@@ -25,7 +25,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       flatten,
       shape,
     } = embed;
-    this.logger.debug('Applying EmbedNode:', embed); // Use logger for better debug output
+
     const joinAlias = alias || resource;
     const conditionSQL = this._buildJoinConditionSQL(
       constraint,
@@ -34,7 +34,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     );
 
     if (flatten) {
-      // ➕ Flattened JOIN (leftJoin / innerJoin with direct field selections)
+      // TODO: --
+      //  Flattened JOIN (leftJoin / innerJoin with direct field selections)
       this.astBuilder.qb[joinType + 'Join'](
         this.astBuilder.pg.alias(resource, joinAlias),
         this.astBuilder.pg.raw(conditionSQL.sql, conditionSQL.bindings),
@@ -50,35 +51,29 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
 
       childAST.applySelect(select);
     } else {
-      // ⚠️ Safe nested result with array or object (LATERAL / subquery)
       // Build the subquery for the embedded resource
       const subQb = this.astBuilder.pg.qb(
         this.astBuilder.pg.alias(resource, joinAlias),
       );
 
-      // Apply select statements to the subquery
       const childAST = new ASTToQueryBuilder(subQb, this.astBuilder.pg, {
-        tableName: resource, // tableName for context in child AST, but subQb is aliased
+        tableName: resource,
       });
       childAST.applySelect(select);
 
-      // Apply WHERE condition to subquery
       subQb.where(
         this.astBuilder.pg.raw(conditionSQL.sql, conditionSQL.bindings),
       );
 
-      // Capture the SQL and bindings for the subquery before aggregation
       const subQuerySQL = subQb.toSQL();
 
       let wrapperSQL: string;
-      let finalBindings: readonly any[] = []; // Bindings for the final wrapped query
+      let finalBindings: readonly any[] = [];
 
       // Determine the final JSON output structure based on 'shape' and count
       // This is done via a nested SELECT within the main SELECT
       // For 'object' shape, we dynamically switch between object and array based on count
       if (shape === 'object') {
-        // Here's the core change: use a subquery to count and then conditionally aggregate
-        // We'll wrap the existing subQuerySQL
         wrapperSQL = `
           (SELECT
               CASE
@@ -90,19 +85,15 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
               FROM (${subQuerySQL.sql}) as q
           ) as agg_q)
         `;
-        finalBindings = subQuerySQL.bindings; // Bindings from the original subquery are passed to this new nested select
+        finalBindings = subQuerySQL.bindings;
       } else {
-        // Default to array (shape === 'array' or undefined)
-        // Ensure jsonb_agg returns an empty array if no results, not NULL
         wrapperSQL = `
           (SELECT COALESCE(jsonb_agg(row_to_json(q)), '[]'::jsonb)
           FROM (${subQuerySQL.sql}) as q)
         `;
-        finalBindings = subQuerySQL.bindings; // Bindings from the original subquery
+        finalBindings = subQuerySQL.bindings;
       }
 
-      // Final SELECT AS alias
-      // The wrapped SQL becomes a column in the main query's SELECT statement
       this.astBuilder.qb.select(
         this.astBuilder.pg.raw(
           `${wrapperSQL} as ${this.astBuilder.pg.wrapIdentifier(joinAlias, undefined)}`,
@@ -118,17 +109,13 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     rightTable: string,
   ): { sql: string; bindings: any[] } {
     const result = this._convertExpression(expr, leftTable, rightTable, 0);
-
     return result;
   }
 
   private _convertExpression(
     expr: Expression,
-
     leftTable: string,
-
     rightTable: string,
-
     depth: number,
   ): { sql: string; bindings: any[] } {
     if (depth > this.maxDepth)
@@ -180,11 +167,6 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     throw new Error(`Unknown join expression`);
   }
 
-  // Minor improvement in _conditionToSQL:
-  // Consider if `value` could genuinely be a non-string that includes '.' but isn't a field.
-  // The current logic `typeof value === 'string' && value.includes('.')` for `rightField`
-  // seems to correctly imply it's a field reference. Your removed comment hints at this.
-  // I've kept your current behavior.
   private _conditionToSQL(
     cond: Condition,
 
@@ -204,11 +186,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
 
     const bindings: any[] = [];
 
-    // if (typeof value === 'string' && value.includes('.')) {
-
+    // TODO: handle in better way
     rightField = this.astBuilder._rawField(value, rightTable).toSQL().sql;
-
-    // }
 
     switch (operator) {
       case 'eq':
@@ -251,9 +230,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
 
       case 'in':
         if (!Array.isArray(values)) throw new Error('IN requires array');
-
         const placeholders = values.map(() => '?').join(', ');
-
         return { sql: `${leftField} IN (${placeholders})`, bindings: values };
 
       case 'is':
