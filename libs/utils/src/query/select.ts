@@ -133,7 +133,7 @@ export class SelectParser {
 
   private extractEmbedToken(token: string): string[] {
     return token.match(
-      /^(?:(\.{3})?)?(?:([^${:({]+):)?([^${:({]+)(?:\.(one|many))?{([^}]*)}(?:\((.*?)\))?$/s,
+      /^(?:(\.{3})?)?(?:([^${:({]+):)?([^${:({]+){([^}]*)}(?:\((.*?)\))?$/s,
     );
   }
 
@@ -195,16 +195,39 @@ export class SelectParser {
       _,
       flatten,
       aliasRaw,
-      resourceBase,
-      cardinalityHint,
+      fullResourceString,
       constraintPart,
       selectPart,
     ] = match;
+    this.logger.debug({ match });
+    let resource: string;
+    let cardinalityHint: 'one' | 'many' | undefined;
+
+    const parts = fullResourceString.split('.');
+    const lastPart = parts[parts.length - 1].trim();
+
+    if (lastPart === 'one' || lastPart === 'many') {
+      cardinalityHint = lastPart;
+      // The actual table name is everything EXCEPT the last part
+      resource = parts.slice(0, -1).join('.').trim();
+      if (resource === '') {
+        // Handle case like ".one" or just "one"
+        throw new Error(
+          `Invalid resource name for cardinality hint: ${fullResourceString}`,
+        );
+      }
+    } else {
+      resource = fullResourceString.trim();
+      cardinalityHint = undefined;
+    }
+
+    if (!resource) {
+      throw new Error(`Invalid resource name: "${fullResourceString}"`);
+    }
 
     const flattenFlag = !!flatten;
-    const resource = resourceBase.trim();
     const alias = aliasRaw?.trim() || null;
-    let joinType = 'left' as EmbedParserResult['join'];
+    let joinType = 'left' as EmbedParserResult['joinType'];
     const shape = cardinalityHint === 'one' ? 'object' : 'array';
 
     // Constraints (required)
@@ -214,8 +237,10 @@ export class SelectParser {
       tableName: alias || resource,
     }).parse(constraintPart.trim());
 
-    if (constraint.join) {
-      joinType = constraint.join;
+    this.logger.debug({ constraint }, '<<------------------------!!');
+
+    if (constraint.joinType) {
+      joinType = constraint.joinType;
     }
 
     // Select (optional if shaping is indicated)
@@ -224,7 +249,13 @@ export class SelectParser {
           tableName: alias || resource,
           depth: ++this.depth,
         }).parse(selectPart.trim())
-      : [];
+      : [
+          {
+            type: 'column',
+            tableName: alias || resource,
+            path: '*',
+          } as SelectNode,
+        ];
     console.log({ select });
     return {
       type: 'embed',

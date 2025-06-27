@@ -26,9 +26,11 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       shape,
     } = embed;
 
+    const { limit, offset, ...restConstraint } = constraint;
+
     const joinAlias = alias || resource;
     const conditionSQL = this._buildJoinConditionSQL(
-      constraint,
+      restConstraint,
       joinAlias,
       mainTable,
     );
@@ -60,13 +62,21 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       childAST.applySelect(select);
 
       // Add constraint condition
+      if (shape === 'object') {
+        subQb.limit(1);
+      } else {
+        subQb.limit(limit);
+      }
+
+      subQb.offset(offset);
       subQb.where(
         this.astBuilder.pg.raw(conditionSQL.sql, conditionSQL.bindings),
       );
 
-      let lateralSelect;
+      let lateralSelect: string;
       const subQuerySQL = subQb.toSQL();
 
+      // TODO: improve the query to return only one object, to_jsonb & row_to_json dosen't return object as result
       if (shape === 'object') {
         lateralSelect = `
         SELECT
@@ -86,11 +96,17 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       `;
       }
 
-      const hh = this.astBuilder.pg.wrapIdentifier(joinAlias, undefined);
+      const wrappedJoinAlias = this.astBuilder.pg.wrapIdentifier(
+        joinAlias,
+        undefined,
+      );
 
       this.astBuilder.qb[joinType + 'Join'](
-        this.astBuilder.pg.raw(`LATERAL (${lateralSelect}) as ${hh} on true`),
-        subQuerySQL.bindings,
+        this.astBuilder.pg.raw(
+          `LATERAL (${lateralSelect}) as ${wrappedJoinAlias}`,
+          subQuerySQL.bindings,
+        ),
+        this.astBuilder.pg.raw('TRUE'),
       );
 
       this.astBuilder.qb.select(joinAlias);

@@ -33,8 +33,8 @@ export class Parser<T extends ParserResult = ParserResult> {
     }
     try {
       return {
-        ...(this.extraData as T),
         ...this._parseExpression(str.trim()),
+        ...(this.extraData as T),
       };
     } catch (error) {
       if (error instanceof Error) {
@@ -224,11 +224,8 @@ export class Parser<T extends ParserResult = ParserResult> {
         this.logger.debug({ match });
 
         if (_fieldPath === '$' || _fieldPath === 'this') {
-          return this._buidSpecialCase(
-            _fieldPath,
-            operator.trim(),
-            args,
-          ) as any;
+          this._buidSpecialCase(_fieldPath, operator.trim(), args);
+          return undefined as any;
         }
 
         return this._buildCondition(fieldPath.trim(), operator.trim(), args);
@@ -311,11 +308,6 @@ export class Parser<T extends ParserResult = ParserResult> {
         `Operator must be specified for special case function: "${_field}.${operator}"`,
       );
     }
-    this.logger.debug('Handling special case:', {
-      field: _field,
-      operator,
-      args,
-    });
 
     switch (operator) {
       case 'limit':
