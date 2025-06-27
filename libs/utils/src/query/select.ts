@@ -1,6 +1,12 @@
 import { Logger } from '@nestjs/common';
 import { Parser } from './parser';
-import type { ColumnNode, EmbedNode, Expression, SelectNode } from './types';
+import type {
+  ColumnNode,
+  EmbedNode,
+  EmbedParserResult,
+  Expression,
+  SelectNode,
+} from './types';
 
 export class SelectParser {
   private readonly QUOTE_CHARS = ['"', "'"] as const;
@@ -127,7 +133,7 @@ export class SelectParser {
 
   private extractEmbedToken(token: string): string[] {
     return token.match(
-      /^(?:(\.{3})?)?(?:([^${:({]+):)?([^${({]+)(?:\$([^{]+))?{([^}]*)}(\[\]|\{\})?(?:\((.*?)\))?$/s,
+      /^(?:(\.{3})?)?(?:([^${:({]+):)?([^${:({]+)(?:\.(one|many))?{([^}]*)}(?:\((.*?)\))?$/s,
     );
   }
 
@@ -181,7 +187,7 @@ export class SelectParser {
 
   private parseEmbed(token: string): EmbedNode {
     if (this.depth > this.maxDepth) {
-      throw new Error('Max depth limit reached.')
+      throw new Error('Max depth limit reached.');
     }
     const match = this.extractEmbedToken(token);
 
@@ -190,33 +196,34 @@ export class SelectParser {
       flatten,
       aliasRaw,
       resourceBase,
-      joinTypeRaw,
+      cardinalityHint,
       constraintPart,
-      shapeHint,
       selectPart,
     ] = match;
-    // Parse alias, join type, flatten, shape
+
     const flattenFlag = !!flatten;
     const resource = resourceBase.trim();
     const alias = aliasRaw?.trim() || null;
-    const joinType = (joinTypeRaw?.trim() || 'inner') as
-      | 'left'
-      | 'right'
-      | 'inner';
-    const shape = shapeHint === '{}' ? 'object' : 'array';
+    let joinType = 'left' as EmbedParserResult['join'];
+    const shape = cardinalityHint === 'one' ? 'object' : 'array';
 
     // Constraints (required)
     if (!constraintPart?.trim())
       throw new Error(`Missing constraint in embed: ${token}`);
-    const constraint = Parser.create({ tableName: alias || resource }).parse(
-      constraintPart.trim(),
-    );
+    const constraint = Parser.create<EmbedParserResult>({
+      tableName: alias || resource,
+    }).parse(constraintPart.trim());
+
+    if (constraint.join) {
+      joinType = constraint.join;
+    }
 
     // Select (optional if shaping is indicated)
     const select = selectPart?.trim()
-      ? new SelectParser({ tableName: alias || resource, depth: ++this.depth }).parse(
-        selectPart.trim(),
-      )
+      ? new SelectParser({
+          tableName: alias || resource,
+          depth: ++this.depth,
+        }).parse(selectPart.trim())
       : [];
     console.log({ select });
     return {

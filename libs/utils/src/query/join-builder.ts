@@ -27,7 +27,11 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     } = embed;
 
     const joinAlias = alias || resource;
-    const conditionSQL = this._buildJoinConditionSQL(constraint, joinAlias, mainTable);
+    const conditionSQL = this._buildJoinConditionSQL(
+      constraint,
+      joinAlias,
+      mainTable,
+    );
 
     if (flatten) {
       // Flattened JOIN (existing behavior)
@@ -82,14 +86,14 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       `;
       }
 
-      const hh = this.astBuilder.pg.wrapIdentifier(joinAlias, undefined)
+      const hh = this.astBuilder.pg.wrapIdentifier(joinAlias, undefined);
 
       this.astBuilder.qb[joinType + 'Join'](
         this.astBuilder.pg.raw(`LATERAL (${lateralSelect}) as ${hh} on true`),
         subQuerySQL.bindings,
       );
 
-      this.astBuilder.qb.select(joinAlias)
+      this.astBuilder.qb.select(joinAlias);
     }
   }
 

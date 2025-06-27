@@ -17,19 +17,19 @@ export interface ColumnNode {
   cast: string | null;
 }
 
-export interface EmbedNode {
+export interface EmbedNode<T extends {} = {}> {
   type: 'embed';
   resource: string;
   mainTable: string;
   joinType: 'left' | 'right' | 'inner' | 'full' | 'cross';
   alias?: string;
-  constraint: Expression;
-  select: SelectNode[];
+  constraint: Expression & T;
+  select: SelectNode<T>[];
   shape?: 'array' | 'object';
   flatten?: boolean;
 }
 
-export type SelectNode = ColumnNode | EmbedNode;
+export type SelectNode<T extends {} = {}> = ColumnNode | EmbedNode<T>;
 
 export interface ParserConfig {
   groups: {
@@ -71,5 +71,14 @@ export type Expression =
   | OrExpression
   | AndExpression
   | null;
+
+export interface ParserResult {
+  limit?: number;
+  offset?: number;
+}
+
+export interface EmbedParserResult extends ParserResult {
+  join?: 'left' | 'right' | 'inner' | 'full' | 'cross';
+}
 
 export type FieldPath = string | (string | JsonFieldType)[];

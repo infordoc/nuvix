@@ -5,14 +5,16 @@ import type {
   Expression,
   JsonFieldType,
   ParserConfig,
+  ParserResult,
 } from './types';
 
-export class Parser {
+export class Parser<T extends ParserResult = ParserResult> {
   private readonly logger = new Logger(Parser.name);
 
   private config: ParserConfig;
   private escapeChar: string;
   private tableName: string;
+  private extraData: Record<string, any> = {};
 
   constructor(config: ParserConfig, tableName: string) {
     this.config = config;
@@ -21,16 +23,19 @@ export class Parser {
     this._validateConfig();
   }
 
-  static create({ tableName }: { tableName: string }) {
-    return new Parser(defaultConfig, tableName);
+  static create<T>({ tableName }: { tableName: string }) {
+    return new Parser<T>(defaultConfig, tableName);
   }
 
-  parse(str: string): Expression {
+  parse(str: string): T & Expression {
     if (typeof str !== 'string') {
       throw new Error('Parser input must be a string');
     }
     try {
-      return this._parseExpression(str.trim());
+      return {
+        ...(this.extraData as T),
+        ...this._parseExpression(str.trim()),
+      };
     } catch (error) {
       if (error instanceof Error) {
         throw new Exception(
@@ -215,6 +220,17 @@ export class Parser {
       );
       if (match) {
         const [_, fieldPath, operator, args] = match;
+        const _fieldPath = fieldPath.trim();
+        this.logger.debug({ match });
+
+        if (_fieldPath === '$' || _fieldPath === 'this') {
+          return this._buidSpecialCase(
+            _fieldPath,
+            operator.trim(),
+            args,
+          ) as any;
+        }
+
         return this._buildCondition(fieldPath.trim(), operator.trim(), args);
       }
     }
@@ -282,6 +298,81 @@ export class Parser {
     return values.length === 1
       ? { field, operator, value: values[0], tableName }
       : { field, operator, values, tableName };
+  }
+
+  private _buidSpecialCase(
+    _field: string | undefined,
+    operator: string | undefined,
+    args: string,
+  ): void {
+    if (!operator) {
+      throw new Exception(
+        Exception.GENERAL_PARSER_ERROR,
+        `Operator must be specified for special case function: "${_field}.${operator}"`,
+      );
+    }
+    this.logger.debug('Handling special case:', {
+      field: _field,
+      operator,
+      args,
+    });
+
+    switch (operator) {
+      case 'limit':
+        this.extraData['limit'] = this.integerOrThrow(args, operator);
+        break;
+      case 'offset':
+        this.extraData['offset'] = this.integerOrThrow(args, operator);
+        break;
+      case 'join':
+        const parsedJoinType = args.toLowerCase();
+        if (['inner', 'left', 'right', 'full'].includes(parsedJoinType)) {
+          this.extraData['joinType'] = parsedJoinType;
+        } else {
+          throw new Exception(
+            Exception.GENERAL_PARSER_ERROR,
+            `Unsupported join type: "${args}". Must be one of: inner, left, right, full.`,
+          );
+        }
+        break;
+      case 'shape':
+        const parsedShape = args.toLowerCase();
+        if (['object', 'array', '{}', '[]', 'true'].includes(parsedShape)) {
+          // 'true' and '{}' map to 'object', '[]' maps to 'array'
+          this.extraData['shape'] =
+            parsedShape === 'object' ||
+            parsedShape === '{}' ||
+            parsedShape === 'true'
+              ? 'object'
+              : 'array';
+        } else {
+          throw new Exception(
+            Exception.GENERAL_PARSER_ERROR,
+            `Unsupported shape value: "${args}". Must be one of: object, array, {}, [], true.`,
+          );
+        }
+        break;
+      default:
+        throw new Exception(
+          Exception.GENERAL_PARSER_ERROR,
+          `Unsupported special function: $.${operator}`,
+        );
+    }
+  }
+
+  private integerOrThrow(value: string, field: string): number {
+    const _value = Number(value);
+    if (
+      typeof _value !== 'number' ||
+      isNaN(_value) ||
+      !Number.isInteger(_value)
+    ) {
+      throw new Exception(
+        Exception.GENERAL_PARSER_ERROR,
+        `${field} value should be an integer. Received: "${value}"`,
+      );
+    }
+    return _value;
   }
 
   public _parseField(field: string): Condition['field'] {
