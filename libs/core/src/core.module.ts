@@ -72,6 +72,8 @@ export function configurePgTypeParsers() {
   types.setTypeParser(1017 as any, x => x); // _point
 }
 
+configurePgTypeParsers();
+
 Object.keys(filters).forEach(key => {
   Database.addFilter(key, {
     encode: filters[key].serialize,
