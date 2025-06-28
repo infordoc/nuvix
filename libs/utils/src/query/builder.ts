@@ -112,7 +112,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
 
     // Handle embeds (subqueries/joins)
     embeds.forEach(embed => {
-      this._handleEmbedNode(embed, queryBuilder);
+      this._handleEmbedNode(embed);
     });
 
     return queryBuilder;
@@ -703,8 +703,8 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   /**
    * Handle embed node (subqueries/joins)
    */
-  private _handleEmbedNode(embed: EmbedNode, qb: QueryBuilder): void {
-    const { resource, alias, flatten } = embed;
+  private _handleEmbedNode(embed: EmbedNode): void {
+    const { resource } = embed;
 
     try {
       const joinBuilder = new JoinBuilder(this);

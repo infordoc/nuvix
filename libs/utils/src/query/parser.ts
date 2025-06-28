@@ -229,7 +229,6 @@ export class Parser<T extends ParserResult = ParserResult> {
       if (match) {
         const [_, fieldPath, operator, args] = match;
         const _fieldPath = fieldPath.trim();
-        this.logger.debug({ match });
 
         if (_fieldPath === '$' || _fieldPath === 'this') {
           this._buidSpecialCase(_fieldPath, operator.trim(), args);

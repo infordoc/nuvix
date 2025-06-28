@@ -69,7 +69,6 @@ export class SelectParser {
       throw new Error('Unmatched parentheses in select string');
     if (inBraces !== 0) throw new Error('Unmatched braces in select string');
 
-    this.logger.debug('TOKENS', tokens);
     return tokens;
   }
 
@@ -198,7 +197,7 @@ export class SelectParser {
       constraintPart,
       selectPart,
     ] = match;
-    this.logger.debug({ match });
+
     let resource: string;
     let cardinalityHint: 'one' | 'many' | undefined;
 
