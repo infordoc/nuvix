@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
   Param,
+  ParseArrayPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -47,7 +48,7 @@ import {
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);
-  constructor(private readonly schemaService: SchemaService) {}
+  constructor(private readonly schemaService: SchemaService) { }
 
   @Get(':schemaId/table/:tableId')
   @Scope('schema.read')
@@ -136,6 +137,21 @@ export class SchemaController {
     this.logger.debug(qb.toSQL());
 
     return await qb;
+  }
+
+  @Post(':tableId')
+  async insertIntoTable(
+    @Param('tableId') table: string,
+    @CurrentSchema() pg: DataSource,
+    @Body() input: Record<string, any> | Record<string, any>[],
+    @Query('columns', new ParseArrayPipe({ items: String, optional: true })) columns?: string[]
+  ) {
+    return await this.schemaService.insert({
+      pg,
+      table,
+      input,
+      columns,
+    });
   }
 
   private getParamsFromUrl(
