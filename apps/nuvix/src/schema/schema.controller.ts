@@ -31,7 +31,7 @@ import { DataSource } from '@nuvix/pg';
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 @Controller({ version: ['1'] })
 @UseGuards(ProjectGuard)
-@Namespace() // TODO: --->
+@Namespace() // TODO: This should be set to the actual namespace of the schema
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);

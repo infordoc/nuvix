@@ -8,11 +8,17 @@ class ParamsHelper {
     this.req = req;
   }
 
-  get(param: string, defaultValue: any | null = null): string | undefined {
+  /**
+   * Get a request parameter from headers or query
+   * the parameter name is prefixed with `x-nuvix-` in headers
+   * and can be accessed directly in query.
+   * If the parameter is not found, it returns the default value.
+   */
+  get<T extends null>(param: string, defaultValue: T = null): T | string | string[] | undefined {
     let value: string | string[] | undefined;
-
+    let headerParam = `x-nuvix-${param.toLowerCase()}`;
     // Check in headers
-    value = this.req.headers[param.toLowerCase()];
+    value = this.req.headers[headerParam];
     if (value) {
       return this.processValue(value);
     }
