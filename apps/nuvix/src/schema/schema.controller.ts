@@ -3,12 +3,15 @@ import {
   Controller,
   Delete,
   Get,
+  Head,
   HttpStatus,
   Logger,
   Param,
   ParseArrayPipe,
   ParseIntPipe,
+  Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -22,27 +25,16 @@ import {
 } from '@nuvix/core/resolvers/interceptors';
 import {
   CurrentSchema,
-  Label,
   Namespace,
   Scope,
   Sdk,
 } from '@nuvix/core/decorators';
-import { ID } from '@nuvix/database';
 import { DataSource } from '@nuvix/pg';
-import { Parser } from '@nuvix/utils/query/parser';
-import { ASTToQueryBuilder } from '@nuvix/utils/query/builder';
-import { SelectParser } from '@nuvix/utils/query/select';
-import { OrderParser } from '@nuvix/utils/query/order';
-import {
-  Expression,
-  ParsedOrdering,
-  SelectNode,
-} from '@nuvix/utils/query/types';
 
 // DTO's
 
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
-@Controller({ version: ['1'], path: ['schemas', 'db'] })
+@Controller({ version: ['1'], path: ['schemas'] })
 @UseGuards(ProjectGuard)
 @Namespace() // TODO: --->
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
@@ -50,62 +42,7 @@ export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);
   constructor(private readonly schemaService: SchemaService) { }
 
-  @Get(':schemaId/table/:tableId')
-  @Scope('schema.read')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'OK')
-  async getRows(
-    @Param('schemaId') schema: string,
-    @Param('tableId') table: string,
-    @CurrentSchema() pg: DataSource,
-    @Query() query: any,
-  ) {
-    const qb = pg.qb(table);
-    return await qb.select('*').withSchema(schema).from(table);
-  }
-
-  @Post(':schemaId/table/:tableId')
-  // @Scope('schema.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'OK')
-  async insertRow(
-    @Param('schemaId') schema: string,
-    @Param('tableId') table: string,
-    @CurrentSchema() pg: DataSource,
-    @Body() body: any,
-  ) {
-    const qb = pg.qb(table);
-    return await qb
-      .insert({
-        ...body,
-        _id: ID.unique(),
-      })
-      .withSchema(schema)
-      .into(table)
-      .returning('*');
-  }
-
-  @Delete(':schemaId/table/:tableId')
-  // @Scope('schema.delete')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'NO_CONTENT')
-  async deleteRow(
-    @Param('schemaId') schema: string,
-    @Param('tableId') table: string,
-    @CurrentSchema() pg: DataSource,
-    @Body() body: any,
-  ) {
-    const qb = pg.qb(table);
-    return await qb
-      .delete()
-      .withSchema(schema)
-      .from(table)
-      .where(body)
-      .returning('*');
-  }
-
-  @Get(':tableId')
-  // @Scope('schema.read')
+  @Get([':schemaId/:tableId', ':tableId'])
   @Sdk({
     name: 'queryTable',
     description: 'Query a table with optional filters',
@@ -115,31 +52,16 @@ export class SchemaController {
     @Param('tableId') table: string,
     @Req() request: NuvixRequest,
     @CurrentSchema() pg: DataSource,
+    @Param('schemaId') schema: string = 'public',
     @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 100,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
   ) {
-    const qb = pg.qb(table).withSchema('public');
-    const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
-
-    const { filter, select, order } = this.getParamsFromUrl(
-      request.raw.url,
-      table,
-    );
-    astToQueryBuilder.applySelect(select);
-    astToQueryBuilder.applyFilters(filter, {
-      applyExtra: true,
-      tableName: table,
-    });
-    astToQueryBuilder.applyOrder(order, table);
-    qb.limit(limit);
-    offset !== undefined && qb.offset(offset);
-
-    this.logger.debug(qb.toSQL());
-
-    return await qb;
+    return await this.schemaService.select({
+      table, pg, limit, offset, schema, url: request.raw.url
+    })
   }
 
-  @Post(':tableId')
+  @Post([':schemaId/:tableId', ':tableId'])
   async insertIntoTable(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
@@ -154,30 +76,24 @@ export class SchemaController {
     });
   }
 
-  private getParamsFromUrl(
-    url: string,
-    tableName: string,
-  ): {
-    filter?: Expression;
-    select?: SelectNode[];
-    order?: ParsedOrdering[];
-  } {
-    const queryString = url.includes('?') ? url.split('?')[1] : '';
-    const urlParams = new URLSearchParams(queryString);
+  @Patch([':schemaId/:tableId', ':tableId'])
+  async updateTables() {
 
-    const _filter = urlParams.get('filter') || '';
-    const filter = _filter
-      ? Parser.create({ tableName }).parse(_filter)
-      : undefined;
-
-    const _select = urlParams.get('select') || '';
-    const select = _select
-      ? new SelectParser({ tableName }).parse(_select)
-      : undefined;
-
-    const _order = urlParams.get('order') || '';
-    const order = _order ? OrderParser.parse(_order) : undefined;
-
-    return { filter, select, order };
   }
+
+  @Put([':schemaId/:tableId', ':tableId'])
+  async upsertTable() {
+
+  }
+
+  @Delete([':schemaId/:tableId', ':tableId'])
+  async deleteTables() {
+
+  }
+
+  @Head([':schemaId/:tableId', ':tableId'])
+  async tableMetadata() {
+
+  }
+
 }
