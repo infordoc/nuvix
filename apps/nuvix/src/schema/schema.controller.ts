@@ -35,7 +35,7 @@ import { DataSource } from '@nuvix/pg';
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemaController {
   private readonly logger = new Logger(SchemaController.name);
-  constructor(private readonly schemaService: SchemaService) {}
+  constructor(private readonly schemaService: SchemaService) { }
 
   @Get(['schemas/:schemaId/:tableId', 'schema/:tableId'])
   @Sdk({
@@ -48,7 +48,7 @@ export class SchemaController {
     @Req() request: NuvixRequest,
     @CurrentSchema() pg: DataSource,
     @Param('schemaId') schema: string = 'public',
-    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 100,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit: number = 500,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
   ) {
     return await this.schemaService.select({
@@ -65,26 +65,59 @@ export class SchemaController {
   async insertIntoTable(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
+    @Req() request: NuvixRequest,
+    @Param('schemaId') schema: string = 'public',
     @Body() input: Record<string, any> | Record<string, any>[],
     @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
     columns?: string[],
   ) {
     return await this.schemaService.insert({
       pg,
+      schema,
       table,
       input,
       columns,
+      url: request.raw.url,
     });
   }
 
   @Patch(['schemas/:schemaId/:tableId', 'schema/:tableId'])
-  async updateTables() {}
+  async updateTables(
+    @Param('tableId') table: string,
+    @CurrentSchema() pg: DataSource,
+    @Req() request: NuvixRequest,
+    @Param('schemaId') schema: string = 'public',
+    @Body() input: Record<string, any> | Record<string, any>[],
+    @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
+    columns?: string[],
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ) { }
 
   @Put(['schemas/:schemaId/:tableId', 'schema/:tableId'])
-  async upsertTable() {}
+  async upsertTable(
+    @Param('tableId') table: string,
+    @CurrentSchema() pg: DataSource,
+    @Req() request: NuvixRequest,
+    @Param('schemaId') schema: string = 'public',
+    @Body() input: Record<string, any> | Record<string, any>[],
+    @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
+    columns?: string[],
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ) { }
 
   @Delete(['schemas/:schemaId/:tableId', 'schema/:tableId'])
-  async deleteTables() {}
+  async deleteTables(
+    @Param('tableId') table: string,
+    @CurrentSchema() pg: DataSource,
+    @Req() request: NuvixRequest,
+    @Param('schemaId') schema: string = 'public',
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  ) {
+
+  }
 
   // @Head(['schemas/:schemaId/:tableId', 'schema/:tableId'])
   // async tableMetadata() {

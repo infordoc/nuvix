@@ -146,6 +146,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     return this.qb;
   }
 
+  /**
+   * Apply GROUP BY clauses to the QueryBuilder
+   */
   applyGroupBy(columns?: Condition['field'][], tableName?: string) {
     if (columns && columns.length) {
       const _columns = columns.map(
@@ -156,6 +159,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     return this.qb;
   }
 
+  /**
+   * Apply LIMIT and OFFSET to the QueryBuilder
+   */
   applyLimitOffset({
     limit,
     offset,
@@ -180,6 +186,35 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     if (Number.isInteger(offset)) this.qb.limit(offset);
 
     return this.qb;
+  }
+
+  /**
+   * Apply returning select nodes to QueryBuilder
+   */
+  applyReturning(selectNodes: SelectNode[], queryBuilder = this.qb): QueryBuilder {
+    if (!selectNodes || selectNodes.length === 0) {
+      return queryBuilder;
+    }
+
+    const selectColumns: any[] = [];
+
+    selectNodes.forEach(node => {
+      if (node.type === 'column') {
+        selectColumns.push(this._buildColumnSelect(node));
+      } else if (node.type === 'embed') {
+        // TODO: throw or skip
+      }
+    });
+
+    // Add column selections
+    if (selectColumns.length > 0) {
+      queryBuilder.returning(selectColumns);
+    } else {
+      // If no specific columns are selected, return all columns
+      queryBuilder.returning('*');
+    }
+
+    return queryBuilder;
   }
 
   private _convertExpression(
