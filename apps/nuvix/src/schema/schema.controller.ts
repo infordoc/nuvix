@@ -25,6 +25,7 @@ import {
 } from '@nuvix/core/resolvers/interceptors';
 import { CurrentSchema, Namespace, Scope, Sdk } from '@nuvix/core/decorators';
 import { DataSource } from '@nuvix/pg';
+import ParamsHelper from '@nuvix/core/helper/params.helper';
 
 // DTO's
 
@@ -87,12 +88,23 @@ export class SchemaController {
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
     @Param('schemaId') schema: string = 'public',
-    @Body() input: Record<string, any> | Record<string, any>[],
+    @Body() input: Record<string, any>,
     @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
     columns?: string[],
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
-  ) { }
+  ) {
+    return this.schemaService.update({
+      pg,
+      schema,
+      table,
+      input,
+      columns,
+      url: request.raw.url,
+      limit,
+      offset,
+    })
+  }
 
   @Put(['schemas/:schemaId/:tableId', 'schema/:tableId'])
   async upsertTable(
@@ -116,7 +128,14 @@ export class SchemaController {
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
   ) {
-
+    return await this.schemaService.delete({
+      pg,
+      schema,
+      table,
+      url: request.raw.url,
+      limit,
+      offset,
+    });
   }
 
   // @Head(['schemas/:schemaId/:tableId', 'schema/:tableId'])

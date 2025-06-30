@@ -18,4 +18,15 @@ export interface Insert {
   columns?: string[];
   schema: string;
   url: string;
+  // returnPref: 'minimal' | 'location' | 'full';
+}
+
+export interface Update extends Omit<Insert, 'input'> {
+  input: Record<string, string | number | null | boolean>;
+  limit?: number;
+  offset?: number;
+}
+
+export interface Delete extends Select {
+  
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Insert, Select } from './schema.types';
+import { Delete, Insert, Select, Update } from './schema.types';
 import {
     Expression,
     ParsedOrdering,
@@ -79,6 +79,62 @@ export class SchemaService {
         this.logger.debug(qb.toSQL());
 
         return await qb;
+    }
+
+    async update({ pg, table, input, columns, schema, url, limit, offset }: Update) {
+        if (!input) {
+            throw new Exception(Exception.INVALID_PARAMS, 'Input data is required for update operation')
+        }
+        let data: Record<string, any> | Record<string, any>[];
+
+        if (columns?.length) {
+            data = columns.reduce(
+                (acc, column) => {
+                    acc[column] = input[column];
+                    return acc;
+                },
+                {} as Record<string, any>,
+            );
+        } else {
+            data = input;
+        }
+
+        const qb = pg.qb(table).withSchema(schema);
+        const { select, filter, order } = this.getParamsFromUrl(url, table);
+        const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
+
+        astToQueryBuilder.applyReturning(select);
+        astToQueryBuilder.applyFilters(filter)
+        astToQueryBuilder.applyOrder(order, table);
+        astToQueryBuilder.applyLimitOffset({
+            limit, offset
+        })
+        qb.update(data);
+
+        this.logger.debug(qb.toSQL());
+
+        return await qb;
+    }
+
+    async delete({ pg, table, schema, url, limit, offset }: Delete) {
+        const qb = pg.qb(table).withSchema(schema);
+        const { select, filter, order } = this.getParamsFromUrl(url, table);
+        const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
+
+        astToQueryBuilder.applyReturning(select);
+        astToQueryBuilder.applyFilters(filter, {
+            applyExtra: true,
+            tableName: table,
+        });
+        astToQueryBuilder.applyOrder(order, table);
+        astToQueryBuilder.applyLimitOffset({
+            limit,
+            offset,
+        });
+
+        this.logger.debug(qb.toSQL());
+
+        return await qb.delete();
     }
 
     private getParamsFromUrl(
