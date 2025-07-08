@@ -4,10 +4,7 @@ import { Job } from 'bullmq';
 
 import { Inject, Logger } from '@nestjs/common';
 import { Database, Document, DuplicateException } from '@nuvix/database';
-import type {
-  GetClientFn,
-  GetProjectDbFn,
-} from '@nuvix/core/core.module';
+import type { GetClientFn, GetProjectDbFn } from '@nuvix/core/core.module';
 import {
   GET_PROJECT_DB_CLIENT,
   GET_PROJECT_DB,

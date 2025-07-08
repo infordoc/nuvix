@@ -102,10 +102,7 @@ export interface GetProjectDeviceFn {
 
 export type GetProjectDbFn = (pool: Client, projectId: string) => Database;
 
-export type GetProjectPG = (
-  client: Client,
-  context?: Context,
-) => DataSource;
+export type GetProjectPG = (client: Client, context?: Context) => DataSource;
 
 @Global()
 @Module({
@@ -114,7 +111,6 @@ export type GetProjectPG = (
       provide: GET_PROJECT_DB_CLIENT,
       useFactory: (): GetClientFn => {
         return async (name: string | 'root', options: PoolOptions) => {
-
           let databaseOptions = {};
           if (name === 'root') {
             databaseOptions = {
@@ -145,7 +141,7 @@ export type GetProjectPG = (
             keepAlive: true,
             keepAliveInitialDelayMillis: 10000, // 10 seconds
           });
-          await client.connect()
+          await client.connect();
 
           client.on('error', err => {
             const logger = new Logger('PoolManager');
@@ -285,4 +281,4 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
 })
-export class CoreModule { }
+export class CoreModule {}

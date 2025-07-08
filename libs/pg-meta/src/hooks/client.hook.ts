@@ -11,7 +11,9 @@ import { Document } from '@nuvix/database';
 export class ResolveClient implements Hook {
   private readonly logger = new Logger(ResolveClient.name);
 
-  constructor(@Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn) { }
+  constructor(
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,
+  ) {}
 
   async preHandler(req: NuvixRequest) {
     const project = req[PROJECT] as Document;
@@ -32,9 +34,12 @@ export class ResolveClient implements Hook {
   async onResponse(req: NuvixRequest) {
     const pgMeta = req[CLIENT] as PostgresMeta;
     try {
-      await pgMeta.end()
+      await pgMeta.end();
     } catch (e: any) {
-      this.logger.warn('An error occured while ending the client: ', e?.message)
+      this.logger.warn(
+        'An error occured while ending the client: ',
+        e?.message,
+      );
     }
   }
 }

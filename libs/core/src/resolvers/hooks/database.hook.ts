@@ -9,10 +9,10 @@ import {
   CURRENT_SCHEMA_DB,
   GET_PROJECT_DB,
   PROJECT,
+  PROJECT_DB_CLIENT,
   PROJECT_PG,
-  PROJECT_POOL_CLIENT,
 } from '@nuvix/utils/constants';
-import { PoolClient } from 'pg';
+import { Client } from 'pg';
 
 @Injectable()
 export class DatabaseHook implements Hook {
@@ -26,7 +26,7 @@ export class DatabaseHook implements Hook {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const client: PoolClient = request[PROJECT_POOL_CLIENT];
+    const client: Client = request[PROJECT_DB_CLIENT];
     const pg = request[PROJECT_PG] as DataSource;
 
     const schemaId = (request.params as { id: string | undefined }).id;

@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import { ServerConfig } from './types';
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
-import { Logger } from '@nestjs/common';
 
 config();
 
@@ -126,28 +125,28 @@ export const APP_INTERNAL_POOL_API = process.env.APP_POOL_API;
 export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
-/**@deprecated Pool system no longer available */
-export const POOLS = 'pools';
-/** Database instance for Platform */
-export const DB_FOR_PLATFORM = Symbol('dbForPlatform');
-/**@deprecated use {DB_FOR_PLATFORM} instead */
-export const DB_FOR_CONSOLE = DB_FOR_PLATFORM;
-/**@deprecated use {PROJECT_DB} and upgrade to new setup*/
-export const DB_FOR_PROJECT = 'dbForProject';
-export const GET_DEVICE_FOR_PROJECT = Symbol('getDeviceForProject');
-export const GET_PROJECT_DB = Symbol('getProjectDb');
-export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
-export const PROJECT_DB = Symbol('project-db');
-export const PROJECT_PG = Symbol('project-pg');
-/**@deprecated Pool system no longer available */
-export const PROJECT_POOL = Symbol('project-pool');
-/**@deprecated Pool system no longer available */
-export const PROJECT_POOL_CLIENT = Symbol('project-pool-client');
 
+/** Symbol used to identify the database connection for the platform. */
+export const DB_FOR_PLATFORM = Symbol('dbForPlatform');
+/** Symbol used to identify the operation for getting a project database client. */
 export const GET_PROJECT_DB_CLIENT = Symbol('get-db-client');
+/** Symbol used to identify the operation for getting a project database. */
+export const GET_PROJECT_DB = Symbol('getProjectDb');
+/** Symbol used to identify the operation for getting a project PostgreSQL database. */
+export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
+/** Symbol used to identify the project database client instance. */
 export const PROJECT_DB_CLIENT = Symbol('project-db-client');
-export const GEO_DB = Symbol('geoDb');
+/** Symbol used to identify the project database instance. */
+export const PROJECT_DB = Symbol('project-db');
+/** Symbol used to identify the project PostgreSQL database instance. */
+export const PROJECT_PG = Symbol('project-pg');
+/** Symbol used to identify the cache database instance. */
 export const CACHE_DB = Symbol('cacheDb');
+/** Symbol used to identify the geographic database instance. */
+export const GEO_DB = Symbol('geoDb');
+/** Symbol used to identify the operation for retrieving a device associated with a specific project. */
+export const GET_DEVICE_FOR_PROJECT = Symbol('getDeviceForProject');
+
 export const CACHE = 'cache';
 export const IS_PUBLIC_KEY = 'isPublic';
 export const LOCALE = 'locale';

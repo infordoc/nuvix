@@ -33,7 +33,7 @@ import { GetProjectDbFn, GetClientFn } from './core.module';
 export class ProjectUsageService {
   private readonly logger = new Logger(ProjectUsageService.name);
 
-  constructor(@Inject(CACHE_DB) private readonly cacheDb: Redis) { }
+  constructor(@Inject(CACHE_DB) private readonly cacheDb: Redis) {}
 
   async addMetric(
     metric: string,
@@ -139,7 +139,7 @@ export class ProjectUsageService {
     await this.cacheDb.hset('project_usage', 'lastUpdate', Date.now());
   }
 
-  private async _reduce(document: Document) { }
+  private async _reduce(document: Document) {}
 
   async databaseListener({
     event,

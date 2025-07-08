@@ -9,8 +9,8 @@ import {
   CURRENT_SCHEMA_PG,
   GET_PROJECT_PG,
   PROJECT,
+  PROJECT_DB_CLIENT,
   PROJECT_PG,
-  PROJECT_POOL,
 } from '@nuvix/utils/constants';
 
 @Injectable()
@@ -25,7 +25,7 @@ export class SchemaHook implements Hook {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const pool = request[PROJECT_POOL];
+    const client = request[PROJECT_DB_CLIENT];
     const pg = request[PROJECT_PG] as DataSource;
 
     const schemaId =
@@ -34,7 +34,7 @@ export class SchemaHook implements Hook {
     const schema = await pg.getSchema(schemaId);
     if (schema) {
       const db = this.getProjectPG(
-        pool,
+        client,
         new Context({
           schema: schema.name,
         }),
