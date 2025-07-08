@@ -67,7 +67,7 @@ export class MessagingQueue extends Queue {
         const data = job.data;
         const project = new Document(data.project as object);
         const message = new Document(data.message as object);
-        const { pool, dbForProject } = await this.getDatabase(project);
+        const { client, dbForProject } = await this.getDatabase(project);
         const deviceForFiles = this.getProjectDevice(project.getId());
 
         try {
@@ -79,7 +79,7 @@ export class MessagingQueue extends Queue {
             undefined as any,
           );
         } finally {
-          await this.releaseClient(pool);
+          await this.releaseClient(client);
         }
         return {
           status: 'processed',
@@ -617,26 +617,24 @@ export class MessagingQueue extends Queue {
 
   private async getDatabase(project: Document) {
     const dbOptions = project.getAttribute('database');
-    const pool = await this.getPool(project.getId(), {
+    const client = await this.getPool(project.getId(), {
       database: dbOptions.name,
       user: dbOptions.adminRole,
       password: APP_POSTGRES_PASSWORD,
       port: dbOptions.port,
       host: dbOptions.host,
-      max: 2,
     });
-    const client = await pool.connect();
     const dbForProject = this.getProjectDb(client, project.getId());
     dbForProject.setDatabase(CORE_SCHEMA);
-    return { pool, dbForProject };
+    return { client, dbForProject };
   }
 
   private async releaseClient(
-    pool: Awaited<ReturnType<typeof this.getDatabase>>['pool'],
+    client: Awaited<ReturnType<typeof this.getDatabase>>['client'],
   ) {
     try {
-      if (pool && !pool.ended) {
-        await pool.end();
+      if (client) {
+        await client.end();
       }
     } catch (error) {
       this.logger.error('Failed to release database client', error);

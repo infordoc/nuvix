@@ -27,7 +27,7 @@ export class ProjectQueue extends Queue {
   private readonly logger = new Logger(ProjectQueue.name);
 
   constructor(
-    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,
     @Inject(GET_PROJECT_DB) private readonly getProjectDb: GetProjectDbFn,
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
   ) {
@@ -68,8 +68,7 @@ export class ProjectQueue extends Queue {
       }
 
       // Get pool with retry mechanism
-      pool = await this.getPool('root', { max: 10 });
-      client = await pool.connect();
+      client = await this.getDbClient('root');
 
       // Update project document with database configuration (temporarily before collections)
       project = await this.db.updateDocument(
@@ -221,7 +220,7 @@ export class ProjectQueue extends Queue {
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
-        const pool = await this.getPool(project.getId(), config as any);
+        const pool = await this.getDbClient(project.getId(), config as any);
         return pool;
       } catch (error) {
         lastError = error as Error;

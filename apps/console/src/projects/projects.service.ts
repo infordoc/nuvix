@@ -10,10 +10,7 @@ import {
   API_KEY_STANDARD,
   APP_MAX_COUNT,
   APP_VERSION_STABLE,
-  CACHE,
   DB_FOR_PLATFORM,
-  GET_PROJECT_PG,
-  GET_PROJECT_DB_CLIENT,
 } from '@nuvix/utils/constants';
 import authMethods, {
   AuthMethod,
@@ -43,26 +40,17 @@ import {
   Query,
   Role,
 } from '@nuvix/database';
-import type {
-  GetProjectDbFn,
-  GetProjectPG,
-  GetClientFn,
-} from '@nuvix/core/core.module';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import {
   ProjectJobs,
   ProjectQueueOptions,
 } from '@nuvix/core/resolvers/queues/project.queue';
-import { Cache } from '@nuvix/cache';
 
 @Injectable()
 export class ProjectService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
-    @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
-    @Inject(CACHE) private readonly cache: Cache,
     @InjectQueue('projects')
     private readonly projectQueue: Queue<ProjectQueueOptions, any, ProjectJobs>,
     private readonly jwtService: JwtService,

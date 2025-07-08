@@ -39,10 +39,8 @@ import { Context, DataSource } from '@nuvix/pg';
 import { CountryResponse, Reader } from 'maxmind';
 import { Cache, Redis } from '@nuvix/cache';
 import { ProjectUsageService } from './project-usage.service';
-import { Adapter } from '@nuvix/database';
 import pg, { Client } from 'pg';
 import { parse as parseArray } from 'postgres-array';
-import { createHash } from 'crypto';
 import { filters, formats } from '@nuvix/utils/database';
 import { Device, Local } from '@nuvix/storage';
 
@@ -147,6 +145,7 @@ export type GetProjectPG = (
             keepAlive: true,
             keepAliveInitialDelayMillis: 10000, // 10 seconds
           });
+          await client.connect()
 
           client.on('error', err => {
             const logger = new Logger('PoolManager');

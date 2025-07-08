@@ -6,12 +6,10 @@ import { Inject, Logger } from '@nestjs/common';
 import { Database, Document, DuplicateException } from '@nuvix/database';
 import type {
   GetClientFn,
-  GetProjectPG,
   GetProjectDbFn,
 } from '@nuvix/core/core.module';
 import {
   GET_PROJECT_DB_CLIENT,
-  GET_PROJECT_PG,
   GET_PROJECT_DB,
   APP_POSTGRES_PASSWORD,
 } from '@nuvix/utils/constants';
@@ -22,8 +20,7 @@ export class SchemaQueue extends Queue {
   private readonly logger = new Logger(SchemaQueue.name);
 
   constructor(
-    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
-    @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,
     @Inject(GET_PROJECT_DB) private readonly getProjectDb: GetProjectDbFn,
   ) {
     super();
@@ -47,7 +44,7 @@ export class SchemaQueue extends Queue {
     project: Document,
     schema: string,
   ): Promise<void> {
-    const { pool, dbForProject } = await this.getDatabase(project, schema);
+    const { client, dbForProject } = await this.getDatabase(project, schema);
 
     try {
       await dbForProject.create(schema);
@@ -78,7 +75,7 @@ export class SchemaQueue extends Queue {
         }
       }
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
@@ -101,7 +98,7 @@ export class SchemaQueue extends Queue {
 
   private async getDatabase(project: Document, database: string) {
     const dbOptions = project.getAttribute('database');
-    const pool = await this.getPool(project.getId(), {
+    const client = await this.getDbClient(project.getId(), {
       database: dbOptions.name,
       user: dbOptions.adminRole,
       password: APP_POSTGRES_PASSWORD,
@@ -109,19 +106,16 @@ export class SchemaQueue extends Queue {
       host: dbOptions.host,
       max: 2,
     });
-    const client = await pool.connect();
     const dbForProject = this.getProjectDb(client, project.getId());
     dbForProject.setDatabase(database);
-    return { pool, dbForProject };
+    return { client, dbForProject };
   }
 
   private async releaseClient(
-    pool: Awaited<ReturnType<typeof this.getDatabase>>['pool'],
+    client: Awaited<ReturnType<typeof this.getDatabase>>['client'],
   ) {
     try {
-      if (pool && !pool.ended) {
-        await pool.end();
-      }
+      if (client) await client.end();
     } catch (error) {
       this.logger.error('Failed to release database client', error);
     }

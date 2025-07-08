@@ -30,7 +30,7 @@ export class DatabaseQueue extends Queue {
 
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
-    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
   ) {
@@ -82,7 +82,7 @@ export class DatabaseQueue extends Queue {
     this.logger.debug('createAttribute', collection, attribute, project);
 
     const dbForPlatform = this.dbForPlatform;
-    const { pool, dbForProject } = await this.getDatabase(
+    const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
     );
@@ -234,7 +234,7 @@ export class DatabaseQueue extends Queue {
         await dbForProject.purgeCachedDocument('collections', collectionId);
       });
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
@@ -243,7 +243,7 @@ export class DatabaseQueue extends Queue {
     const attribute = new Document(data.attribute);
     const project = new Document(data.project);
     const dbForPlatform = this.dbForPlatform;
-    const { pool, dbForProject } = await this.getDatabase(
+    const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
     );
@@ -431,7 +431,7 @@ export class DatabaseQueue extends Queue {
         }
       });
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
@@ -440,7 +440,7 @@ export class DatabaseQueue extends Queue {
     const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForPlatform = this.dbForPlatform;
-    const { pool, dbForProject } = await this.getDatabase(
+    const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
     );
@@ -509,7 +509,7 @@ export class DatabaseQueue extends Queue {
         await dbForProject.purgeCachedDocument('collections', collectionId);
       });
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
@@ -518,7 +518,7 @@ export class DatabaseQueue extends Queue {
     const index = new Document(data.index);
     const project = new Document(data.project);
     const dbForPlatform = this.dbForPlatform;
-    const { pool, dbForProject } = await this.getDatabase(
+    const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
     );
@@ -579,14 +579,14 @@ export class DatabaseQueue extends Queue {
         );
       });
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
   private async deleteCollection(data: any, token: any): Promise<void> {
     const project = new Document(data.project);
     const collection = new Document(data.collection);
-    const { pool, dbForProject } = await this.getDatabase(
+    const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
     );
@@ -644,7 +644,7 @@ export class DatabaseQueue extends Queue {
         );
       });
     } finally {
-      await this.releaseClient(pool);
+      await this.releaseClient(client);
     }
   }
 
@@ -713,7 +713,7 @@ export class DatabaseQueue extends Queue {
 
   private async getDatabase(project: Document, database: string) {
     const dbOptions = project.getAttribute('database');
-    const pool = await this.getPool(project.getId(), {
+    const client = await this.getDbClient(project.getId(), {
       database: dbOptions.name,
       user: dbOptions.adminRole,
       password: APP_POSTGRES_PASSWORD,
@@ -721,18 +721,17 @@ export class DatabaseQueue extends Queue {
       host: dbOptions.host,
       max: 2,
     });
-    const client = await pool.connect();
     const dbForProject = this.getProjectDb(client, project.getId());
     dbForProject.setDatabase(database);
-    return { pool, dbForProject };
+    return { client, dbForProject };
   }
 
   private async releaseClient(
-    pool: Awaited<ReturnType<typeof this.getDatabase>>['pool'],
+    client: Awaited<ReturnType<typeof this.getDatabase>>['client'],
   ) {
     try {
-      if (pool && !pool.ended) {
-        await pool.end();
+      if (client) {
+        await client.end();
       }
     } catch (error) {
       this.logger.error('Failed to release database client', error);
