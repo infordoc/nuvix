@@ -1,18 +1,18 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Hook } from '@nuvix/core/server';
-import { POOLS, PROJECT, PROJECT_POOL } from '@nuvix/utils/constants';
+import { GET_PROJECT_DB_CLIENT, PROJECT, PROJECT_POOL } from '@nuvix/utils/constants';
 
 import { CLIENT } from '../constants';
 import { PostgresMeta } from '../lib';
 import { Pool } from 'pg';
-import { PoolStoreFn } from '@nuvix/core';
+import { GetClientFn } from '@nuvix/core';
 import { Document } from '@nuvix/database';
 
 @Injectable()
 export class ResolveClient implements Hook {
   private readonly logger = new Logger(ResolveClient.name);
 
-  constructor(@Inject(POOLS) private readonly getPool: PoolStoreFn) {}
+  constructor(@Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn) { }
 
   async preHandler(req: NuvixRequest) {
     const project = req[PROJECT] as Document;

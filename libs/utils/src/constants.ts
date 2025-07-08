@@ -126,7 +126,9 @@ export const APP_INTERNAL_POOL_API = process.env.APP_POOL_API;
 export const PROJECT = 'project';
 export const USER = 'user';
 export const SESSION = 'session';
+/**@deprecated Pool system no longer available */
 export const POOLS = 'pools';
+/** Database instance for Platform */
 export const DB_FOR_PLATFORM = Symbol('dbForPlatform');
 /**@deprecated use {DB_FOR_PLATFORM} instead */
 export const DB_FOR_CONSOLE = DB_FOR_PLATFORM;
@@ -137,8 +139,13 @@ export const GET_PROJECT_DB = Symbol('getProjectDb');
 export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
 export const PROJECT_DB = Symbol('project-db');
 export const PROJECT_PG = Symbol('project-pg');
+/**@deprecated Pool system no longer available */
 export const PROJECT_POOL = Symbol('project-pool');
+/**@deprecated Pool system no longer available */
 export const PROJECT_POOL_CLIENT = Symbol('project-pool-client');
+
+export const GET_PROJECT_DB_CLIENT = Symbol('get-db-client');
+export const PROJECT_DB_CLIENT = Symbol('project-db-client');
 export const GEO_DB = Symbol('geoDb');
 export const CACHE_DB = Symbol('cacheDb');
 export const CACHE = 'cache';

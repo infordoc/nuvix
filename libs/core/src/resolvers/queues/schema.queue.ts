@@ -5,12 +5,12 @@ import { Job } from 'bullmq';
 import { Inject, Logger } from '@nestjs/common';
 import { Database, Document, DuplicateException } from '@nuvix/database';
 import type {
-  PoolStoreFn,
+  GetClientFn,
   GetProjectPG,
   GetProjectDbFn,
 } from '@nuvix/core/core.module';
 import {
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
   GET_PROJECT_PG,
   GET_PROJECT_DB,
   APP_POSTGRES_PASSWORD,
@@ -22,7 +22,7 @@ export class SchemaQueue extends Queue {
   private readonly logger = new Logger(SchemaQueue.name);
 
   constructor(
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
     @Inject(GET_PROJECT_DB) private readonly getProjectDb: GetProjectDbFn,
   ) {

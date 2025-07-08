@@ -4,9 +4,9 @@ import { Job } from 'bullmq';
 
 import { Inject, Logger } from '@nestjs/common';
 import { Database, Document, DuplicateException, ID } from '@nuvix/database';
-import type { PoolStoreFn, GetProjectDbFn } from '@nuvix/core/core.module';
+import type { GetClientFn, GetProjectDbFn } from '@nuvix/core/core.module';
 import {
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
   GET_PROJECT_DB,
   DB_FOR_PLATFORM,
   APP_POSTGRES_HOST,
@@ -27,7 +27,7 @@ export class ProjectQueue extends Queue {
   private readonly logger = new Logger(ProjectQueue.name);
 
   constructor(
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_DB) private readonly getProjectDb: GetProjectDbFn,
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
   ) {
@@ -212,7 +212,7 @@ export class ProjectQueue extends Queue {
 
   async getPoolWithRetries(
     project: Document,
-    config: Parameters<PoolStoreFn>['1'],
+    config: Parameters<GetClientFn>['1'],
   ) {
     const MAX_RETRIES = 3;
     const RETRY_DELAY_MS = 5000;

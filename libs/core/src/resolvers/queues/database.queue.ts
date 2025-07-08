@@ -19,10 +19,10 @@ import {
   DATABASE_TYPE_DELETE_INDEX,
   DB_FOR_PLATFORM,
   GET_PROJECT_DB,
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
 } from '@nuvix/utils/constants';
 import { Inject, Logger } from '@nestjs/common';
-import type { GetProjectDbFn, PoolStoreFn } from '@nuvix/core/core.module';
+import type { GetProjectDbFn, GetClientFn } from '@nuvix/core/core.module';
 
 @Processor('database')
 export class DatabaseQueue extends Queue {
@@ -30,7 +30,7 @@ export class DatabaseQueue extends Queue {
 
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
   ) {
@@ -161,8 +161,8 @@ export class DatabaseQueue extends Queue {
                   relatedAttribute = await dbForProject.getDocument(
                     'attributes',
                     relatedCollection.getInternalId() +
-                      '_' +
-                      options['twoWayKey'],
+                    '_' +
+                    options['twoWayKey'],
                   );
                   await dbForProject.updateDocument(
                     'attributes',
@@ -291,8 +291,8 @@ export class DatabaseQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                    '_' +
-                    options['twoWayKey'],
+                  '_' +
+                  options['twoWayKey'],
                 );
               }
 
@@ -378,9 +378,9 @@ export class DatabaseQueue extends Queue {
                 if (
                   existing.getAttribute('key') !== index.getAttribute('key') &&
                   existing.getAttribute('attributes').toString() ===
-                    index.getAttribute('attributes').toString() &&
+                  index.getAttribute('attributes').toString() &&
                   existing.getAttribute('orders').toString() ===
-                    index.getAttribute('orders').toString()
+                  index.getAttribute('orders').toString()
                 ) {
                   exists = true;
                   break;

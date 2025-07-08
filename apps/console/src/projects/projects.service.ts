@@ -13,7 +13,7 @@ import {
   CACHE,
   DB_FOR_PLATFORM,
   GET_PROJECT_PG,
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
 } from '@nuvix/utils/constants';
 import authMethods, {
   AuthMethod,
@@ -46,7 +46,7 @@ import {
 import type {
   GetProjectDbFn,
   GetProjectPG,
-  PoolStoreFn,
+  GetClientFn,
 } from '@nuvix/core/core.module';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -60,13 +60,13 @@ import { Cache } from '@nuvix/cache';
 export class ProjectService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
     @Inject(CACHE) private readonly cache: Cache,
     @InjectQueue('projects')
     private readonly projectQueue: Queue<ProjectQueueOptions, any, ProjectJobs>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(ProjectService.name);
 
@@ -1193,19 +1193,19 @@ export class ProjectService {
 
     const smtp = input.enabled
       ? {
-          enabled: input.enabled,
-          senderName: input.senderName,
-          senderEmail: input.senderEmail,
-          replyTo: input.replyTo,
-          host: input.host,
-          port: input.port,
-          username: input.username,
-          password: input.password,
-          secure: input.secure,
-        }
+        enabled: input.enabled,
+        senderName: input.senderName,
+        senderEmail: input.senderEmail,
+        replyTo: input.replyTo,
+        host: input.host,
+        port: input.port,
+        username: input.username,
+        password: input.password,
+        secure: input.secure,
+      }
       : {
-          enabled: false,
-        };
+        enabled: false,
+      };
 
     project = await this.db.updateDocument(
       'projects',

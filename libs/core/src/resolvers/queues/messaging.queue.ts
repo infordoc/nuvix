@@ -30,7 +30,7 @@ import {
   MESSAGE_TYPE_SMS,
   MESSAGE_SEND_TYPE_EXTERNAL,
   APP_POSTGRES_PASSWORD,
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
   GET_PROJECT_DB,
   CORE_SCHEMA,
   GET_DEVICE_FOR_PROJECT,
@@ -40,7 +40,7 @@ import { MessageStatus } from '@nuvix/core/messaging/status';
 import {
   GetProjectDbFn,
   GetProjectDeviceFn,
-  PoolStoreFn,
+  GetClientFn,
 } from '@nuvix/core/core.module';
 
 @Injectable()
@@ -49,7 +49,7 @@ export class MessagingQueue extends Queue {
   private readonly logger = new Logger(MessagingQueue.name);
 
   constructor(
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
     @Inject(GET_DEVICE_FOR_PROJECT)

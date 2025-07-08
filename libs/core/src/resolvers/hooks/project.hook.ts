@@ -9,18 +9,17 @@ import {
   DB_FOR_PLATFORM,
   GET_PROJECT_DB,
   GET_PROJECT_PG,
-  POOLS,
   PROJECT,
   PROJECT_DB,
+  PROJECT_DB_CLIENT,
   PROJECT_PG,
-  PROJECT_POOL,
-  PROJECT_POOL_CLIENT,
+  GET_PROJECT_DB_CLIENT,
 } from '@nuvix/utils/constants';
 import { Hook } from '../../server/hooks/interface';
 import type {
   GetProjectDbFn,
   GetProjectPG,
-  PoolStoreFn,
+  GetClientFn,
 } from '@nuvix/core/core.module';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Cache } from '@nuvix/cache';
@@ -32,11 +31,11 @@ export class ProjectHook implements Hook {
   private readonly logger = new Logger(ProjectHook.name);
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @Inject(POOLS) private readonly getPool: PoolStoreFn,
+    @Inject(GET_PROJECT_DB_CLIENT) private readonly getPool: GetClientFn,
     @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
-  ) {}
+  ) { }
 
   async onRequest(req: NuvixRequest) {
     const params = new ParamsHelper(req);
@@ -67,7 +66,7 @@ export class ProjectHook implements Hook {
       });
       try {
         const dbOptions = project.getAttribute('database');
-        const pool = await this.getPool(project.getId(), {
+        const client = await this.getPool(project.getId(), {
           database: dbOptions.name,
           user: dbOptions.adminRole,
           password: APP_POSTGRES_PASSWORD,
@@ -75,15 +74,14 @@ export class ProjectHook implements Hook {
           host: dbOptions.host,
           max: 10,
         });
-        const client = await pool.connect();
-        req[PROJECT_POOL] = pool;
-        req[PROJECT_POOL_CLIENT] = client;
+        req[PROJECT_DB_CLIENT] = client;
         req[PROJECT_DB] = this.getProjectDb(client, project.getId());
         req[PROJECT_PG] = this.getProjectPg(client);
         const coreDatabase = this.getProjectDb(client, project.getId());
         coreDatabase.setDatabase(CORE_SCHEMA);
         req[CORE_SCHEMA_DB] = coreDatabase;
       } catch (e) {
+        // TODO: improve the error handling
         this.logger.error('Something went wrong while connecting database.', e);
         throw new Exception(Exception.GENERAL_SERVER_ERROR);
       }

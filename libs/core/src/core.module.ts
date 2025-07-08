@@ -6,7 +6,6 @@ import IORedis from 'ioredis';
 // Services
 import {
   DB_FOR_PLATFORM,
-  DB_FOR_PROJECT,
   GEO_DB,
   CACHE_DB,
   CACHE,
@@ -17,7 +16,7 @@ import {
   APP_REDIS_DB,
   APP_REDIS_SECURE,
   GET_PROJECT_DB,
-  POOLS,
+  GET_PROJECT_DB_CLIENT,
   GET_PROJECT_PG,
   PROJECT_ROOT,
   LOG_LEVELS,
@@ -41,7 +40,7 @@ import { CountryResponse, Reader } from 'maxmind';
 import { Cache, Redis } from '@nuvix/cache';
 import { ProjectUsageService } from './project-usage.service';
 import { Adapter } from '@nuvix/database';
-import pg, { Pool as PgPool, PoolClient } from 'pg';
+import pg, { Client } from 'pg';
 import { parse as parseArray } from 'postgres-array';
 import { createHash } from 'crypto';
 import { filters, formats } from '@nuvix/utils/database';
@@ -91,21 +90,22 @@ interface PoolOptions {
   password: string;
   host: string;
   port?: number;
+  /**@deprecated No longer used */
   max?: number;
 }
-export interface PoolStoreFn {
-  (name: string, options: PoolOptions): Promise<PgPool>;
-  (name: 'root', options?: Partial<PoolOptions>): Promise<PgPool>;
+export interface GetClientFn {
+  (name: string, options: PoolOptions): Promise<Client>;
+  (name: 'root', options?: Partial<PoolOptions>): Promise<Client>;
 }
 
 export interface GetProjectDeviceFn {
   (projectId: string): Device;
 }
 
-export type GetProjectDbFn = (pool: PoolClient, projectId: string) => Database;
+export type GetProjectDbFn = (pool: Client, projectId: string) => Database;
 
 export type GetProjectPG = (
-  client: PoolClient,
+  client: Client,
   context?: Context,
 ) => DataSource;
 
@@ -113,23 +113,9 @@ export type GetProjectPG = (
 @Module({
   providers: [
     {
-      provide: POOLS,
-      useFactory: (): PoolStoreFn => {
-        const poolCache: Map<string, PgPool> = new Map();
-
+      provide: GET_PROJECT_DB_CLIENT,
+      useFactory: (): GetClientFn => {
         return async (name: string | 'root', options: PoolOptions) => {
-          const cacheHash = createHash('sha256');
-          cacheHash.update(JSON.stringify(options));
-          const hash = cacheHash.digest('hex');
-          const cacheKey = `${name}-${hash}`;
-
-          if (poolCache.has(cacheKey)) {
-            const existingPool = poolCache.get(cacheKey);
-            // Check if the pool is still valid and connected
-            if (existingPool && !existingPool.ended) {
-              return existingPool;
-            }
-          }
 
           let databaseOptions = {};
           if (name === 'root') {
@@ -153,29 +139,21 @@ export type GetProjectPG = (
             };
           }
 
-          const newPool = new PgPool({
+          const client = new Client({
             ...databaseOptions,
-            max: options.max ?? 10,
-            idleTimeoutMillis: 30000, // 30 seconds
             statement_timeout: 30000, // 30 seconds
             query_timeout: 30000, // 30 seconds
             application_name: name === 'root' ? 'nuvix' : `nuvix-${name}`,
             keepAlive: true,
             keepAliveInitialDelayMillis: 10000, // 10 seconds
-            allowExitOnIdle: false,
           });
 
-          poolCache.set(cacheKey, newPool);
-
-          newPool.on('error', err => {
+          client.on('error', err => {
             const logger = new Logger('PoolManager');
-            logger.error(`Pool error for ${cacheKey}:`, err);
-            if (err.name === 'ECONNREFUSED') {
-              poolCache.delete(cacheKey);
-            }
+            logger.error(`Client error for ${name}:`, err);
           });
 
-          return newPool;
+          return client;
         };
       },
     },
@@ -235,35 +213,11 @@ export type GetProjectPG = (
       inject: [CACHE],
     },
     {
-      // TODO: This is a temporary solution, we need to find a better way to handle this (request scope or hook)
-      provide: DB_FOR_PROJECT,
-      // scope: Scope.REQUEST,
-      /**@deprecated */
-      useFactory: async (cache: Cache, _pools: Map<string, Adapter>) => {
-        // const adapter = new MariaDB({
-        //   connection: {
-        //     host: APP_DATABASE_HOST,
-        //     user: APP_DATABASE_USER,
-        //     password: APP_DATABASE_PASSWORD,
-        //     database: APP_DATABASE_NAME,
-        //     port: APP_DATABASE_PORT,
-        //   },
-        //   maxVarCharLimit: 5000,
-        // });
-        // adapter.init();
-        // const connection = new Database(adapter, cache);
-        // connection.setSharedTables(true);
-        // await connection.ping();
-        // return connection;
-      },
-      inject: [CACHE, POOLS],
-    },
-    {
       provide: GET_PROJECT_DB,
       useFactory: (cache: Cache) => {
-        return (pool: PoolClient, projectId: string) => {
+        return (client: Client, projectId: string) => {
           const adapter = new PostgreDB({
-            connection: pool,
+            connection: client as any, // #<PoolClient> until lib update
           });
           adapter.init();
           adapter.setMetadata('projectId', projectId);
@@ -287,10 +241,10 @@ export type GetProjectPG = (
     {
       provide: GET_PROJECT_PG,
       useFactory: () => {
-        return (client: PoolClient, ctx?: Context) => {
+        return (client: Client, ctx?: Context) => {
           ctx = ctx ?? new Context();
           const connection = new DataSource(
-            client,
+            client as any, // #<PoolClient> until lib update
             {},
             { context: ctx, listenForUpdates: true },
           );
@@ -321,9 +275,8 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
   exports: [
-    POOLS,
+    GET_PROJECT_DB_CLIENT,
     DB_FOR_PLATFORM,
-    DB_FOR_PROJECT,
     GET_DEVICE_FOR_PROJECT,
     GET_PROJECT_DB,
     GET_PROJECT_PG,
@@ -333,4 +286,4 @@ export type GetProjectPG = (
     ProjectUsageService,
   ],
 })
-export class CoreModule {}
+export class CoreModule { }

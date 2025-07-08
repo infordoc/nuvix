@@ -42,7 +42,6 @@ export class UsersService {
   private logger: Logger = new Logger(UsersService.name);
 
   constructor(
-    // @Inject(DB_FOR_PROJECT) private readonly db: Database,
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
     private readonly jwtService: JwtService,
     private readonly event: EventEmitter2,
