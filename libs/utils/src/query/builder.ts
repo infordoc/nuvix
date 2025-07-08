@@ -343,7 +343,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
         if (!filterdValues || !Array.isArray(filterdValues)) {
           throw new Error('IN operator requires an array of values');
         }
-        return queryBuilder.whereIn(fieldSql, filterdValues);
+        return queryBuilder.whereRaw(`?? IN (?)`, [field, filterdValues]);
 
       // IS operator
       case 'is':

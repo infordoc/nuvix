@@ -22,8 +22,7 @@ import type {
   GetClientFn,
 } from '@nuvix/core/core.module';
 import { Exception } from '@nuvix/core/extend/exception';
-import { Cache } from '@nuvix/cache';
-import { PoolClient } from 'pg';
+import { Client } from 'pg';
 import { DataSource } from '@nuvix/pg';
 
 @Injectable()
@@ -35,7 +34,7 @@ export class ProjectHook implements Hook {
     @Inject(GET_PROJECT_PG) private readonly getProjectPg: GetProjectPG,
     @Inject(GET_PROJECT_DB)
     private readonly getProjectDb: GetProjectDbFn,
-  ) {}
+  ) { }
 
   async onRequest(req: NuvixRequest) {
     const params = new ParamsHelper(req);
@@ -92,18 +91,15 @@ export class ProjectHook implements Hook {
   }
 
   async onResponse(req: NuvixRequest) {
-    const dataSource: DataSource | undefined = req[PROJECT_PG];
-    if (dataSource && dataSource instanceof DataSource) {
+    const client: Client = req[PROJECT_DB_CLIENT];
+    if (client) {
       try {
-        const client: PoolClient | undefined = dataSource.getClient();
-        if (client) {
-          client.release();
-        }
+        await client.end();
 
         // Clear the reference to prevent potential memory leaks
         req[PROJECT_PG] = undefined;
       } catch (error) {
-        this.logger.error('Error releasing pool client', error);
+        this.logger.error('An error occured while ending the client: ', error);
       }
     }
   }

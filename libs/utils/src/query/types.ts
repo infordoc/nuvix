@@ -1,3 +1,18 @@
+// Enhanced error types for better error handling
+export interface ParsePosition {
+  line: number;
+  column: number;
+  offset: number;
+}
+
+export interface ParseError extends Error {
+  position: ParsePosition;
+  statement: string;
+  expected?: string;
+  received?: string;
+  context?: string;
+}
+
 export type JsonFieldType = {
   __type: 'json'; // TODO
   name: string;
