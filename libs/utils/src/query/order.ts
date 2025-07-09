@@ -7,10 +7,17 @@ class OrderParser {
     'nullslast',
   ] as const;
 
-  static parse(orderingString: string | null | undefined): ParsedOrdering[] {
-    if (!orderingString?.trim()) return [];
+  static parse(
+    orderingString: string | null | undefined | string[],
+  ): ParsedOrdering[] {
+    if (typeof orderingString === 'string' && !orderingString?.trim())
+      return [];
 
-    return orderingString.split(',').map(orderClause => {
+    return (
+      typeof orderingString === 'string'
+        ? orderingString.split(',')
+        : orderingString
+    ).map(orderClause => {
       const tokens = this.tokenize(orderClause.trim());
       return this.parseOrderingClause(tokens);
     });

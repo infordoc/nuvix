@@ -22,8 +22,7 @@ export class ParserErrorFilter implements ExceptionFilter {
       code: status,
       type: 'syntax_error',
       message: exception.message,
-      hint: exception.hint ?? 'Check the condition syntax and try again.',
-      detail: exception.detail,
+      detail: exception.toString(),
       version: '1.0.0',
     });
   }
