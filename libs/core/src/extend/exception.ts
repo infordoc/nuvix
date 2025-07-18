@@ -309,6 +309,7 @@ export class Exception extends HttpException {
 
   protected type: string = '';
   protected publish: boolean;
+  protected details: Record<string, any> = {};
 
   constructor(
     type: string = Exception.GENERAL_UNKNOWN,
@@ -361,7 +362,12 @@ export class Exception extends HttpException {
   }
 
   addDetails(values: Record<string, any>) {
+    this.details = values;
     return this;
+  }
+
+  getDetails() {
+    return this.details;
   }
 }
 

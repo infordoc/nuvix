@@ -138,7 +138,6 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
             statement_timeout: 30000, // 30 seconds
             query_timeout: 30000, // 30 seconds
             application_name: name === 'root' ? 'nuvix' : `nuvix-${name}`,
-            keepAlive: true,
             keepAliveInitialDelayMillis: 10000, // 10 seconds
           });
           await client.connect();

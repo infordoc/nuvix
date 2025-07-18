@@ -13,10 +13,10 @@ export function openApiSetup(app: NestFastifyApplication) {
     SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true,
     });
-  SwaggerModule.setup('api', app, documentFactory, {
-    swaggerUiEnabled: true,
-    raw: ['json'],
-  });
+  // SwaggerModule.setup('api', app, documentFactory, {
+  //   swaggerUiEnabled: true,
+  //   raw: ['json'],
+  // });
 
   // TODO: ---------
   app.getHttpAdapter().get('/reference', (req, res) => {
