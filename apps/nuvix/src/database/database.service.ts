@@ -261,8 +261,8 @@ export class DatabaseService {
 
     await this.databaseQueue.add(DATABASE_TYPE_DELETE_COLLECTION, {
       database: db.getDatabase(),
-      collection: collection.toObject(),
-      project: project.toObject(),
+      collection,
+      project,
     });
 
     await db.purgeCachedCollection(`collection_${collection.getInternalId()}`);
@@ -825,7 +825,7 @@ export class DatabaseService {
         continue;
       }
 
-      if (attribute.getId().toLowerCase() === key.toLowerCase()) {
+      if (attribute.getAttribute('key').toLowerCase() === key.toLowerCase()) {
         throw new Exception(Exception.ATTRIBUTE_ALREADY_EXISTS);
       }
 
@@ -1334,12 +1334,14 @@ export class DatabaseService {
       );
     }
 
-    await this.databaseQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
+    this.logger.debug('ADDING TO QUEUE ------>', {collection: collection.getAttribute('name'), attribute})
+    let _res = await this.databaseQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
       database: db.getDatabase(),
-      collection: collection.toObject(),
-      attribute: attribute.toObject(),
-      project: project.toObject(),
+      collection,
+      attribute,
+      project,
     });
+    this.logger.debug(_res.id, '<--------- AFTER QUEUEU!!!!!!!!!!!!!!!!!!\n\n\n\n')
 
     return attribute;
   }
@@ -1664,9 +1666,9 @@ export class DatabaseService {
 
     await this.databaseQueue.add(DATABASE_TYPE_DELETE_ATTRIBUTE, {
       database: db.getDatabase(),
-      collection: collection.toObject(),
-      attribute: attribute.toObject(),
-      project: project.toObject(),
+      collection,
+      attribute,
+      project,
     });
 
     return null;
@@ -1821,9 +1823,9 @@ export class DatabaseService {
 
     await this.databaseQueue.add(DATABASE_TYPE_CREATE_INDEX, {
       database: db.getDatabase(),
-      collection: collection.toObject(),
+      collection,
       index: index.toObject(),
-      project: project.toObject(),
+      project,
     });
 
     return index;
@@ -1936,9 +1938,9 @@ export class DatabaseService {
 
     await this.databaseQueue.add(DATABASE_TYPE_DELETE_INDEX, {
       database: db.getDatabase(),
-      collection: collection.toObject(),
+      collection,
       index: index.toObject(),
-      project: project.toObject(),
+      project,
     });
 
     return null;

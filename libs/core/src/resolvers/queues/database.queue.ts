@@ -40,7 +40,9 @@ export class DatabaseQueue extends Queue {
   async process(job: Job, token?: string): Promise<any> {
     switch (job.name) {
       case DATABASE_TYPE_CREATE_ATTRIBUTE:
+        this.logger.verbose('YES WE GOT THE JOB')
         await this.createAttribute(job.data, token);
+        this.logger.verbose('AFTER THE JOB!!')
         break;
       case DATABASE_TYPE_DELETE_ATTRIBUTE:
         await this.deleteAttribute(job.data, token);
@@ -68,7 +70,7 @@ export class DatabaseQueue extends Queue {
   @OnWorkerEvent('active')
   onActive(job: Job) {
     this.logger.verbose(
-      `Processing job ${job.id} of type ${job.name} with data ${job.data}...`,
+      `Processing job ${job.id} of type ${job.name}...`,
     );
   }
 
@@ -84,9 +86,8 @@ export class DatabaseQueue extends Queue {
     let attribute = new Document(data.attribute);
     const project = new Document(data.project);
 
-    this.logger.debug('createAttribute', collection, attribute, project);
+    this.logger.debug('createAttribute', { collection: collection.getAttribute('name'), attribute });
 
-    const dbForPlatform = this.dbForPlatform;
     const { client, dbForProject } = await this.getDatabase(
       project,
       data.database,
@@ -129,10 +130,6 @@ export class DatabaseQueue extends Queue {
         const formatOptions = attribute.getAttribute('formatOptions', {});
         const filters = attribute.getAttribute('filters', []);
         const options = attribute.getAttribute('options', {});
-        const projectDoc = await dbForPlatform.getDocument(
-          'projects',
-          projectId,
-        );
 
         let relatedAttribute: Document;
         let relatedCollection: Document;
@@ -147,35 +144,31 @@ export class DatabaseQueue extends Queue {
               if (relatedCollection.isEmpty()) {
                 throw new DatabaseError('Collection not found');
               }
-              await Authorization.skip(async () => {
-                if (
-                  !(await dbForProject.createRelationship(
-                    'collection_' + collection.getInternalId(),
-                    'collection_' + relatedCollection.getInternalId(),
-                    options['relationType'],
-                    options['twoWay'],
-                    key,
-                    options['twoWayKey'],
-                    options['onDelete'],
-                  ))
-                ) {
-                  throw new DatabaseError('Failed to create Attribute');
-                }
+              if (
+                !(await dbForProject.createRelationship(
+                  'collection_' + collection.getInternalId(),
+                  'collection_' + relatedCollection.getInternalId(),
+                  options['relationType'],
+                  options['twoWay'],
+                  key,
+                  options['twoWayKey'],
+                  options['onDelete'],
+                ))
+              ) {
+                throw new DatabaseError('Failed to create Attribute');
+              }
 
-                if (options['twoWay']) {
-                  relatedAttribute = await dbForProject.getDocument(
-                    'attributes',
-                    relatedCollection.getInternalId() +
-                      '_' +
-                      options['twoWayKey'],
-                  );
-                  await dbForProject.updateDocument(
-                    'attributes',
-                    relatedAttribute.getId(),
-                    relatedAttribute.setAttribute('status', 'available'),
-                  );
-                }
-              });
+              if (options['twoWay']) {
+                relatedAttribute = await dbForProject.getDocument(
+                  'attributes',
+                  `related_${relatedCollection.getInternalId()}_${options['twoWayKey']}`
+                );
+                await dbForProject.updateDocument(
+                  'attributes',
+                  relatedAttribute.getId(),
+                  relatedAttribute.setAttribute('status', 'available'),
+                );
+              };
               break;
             default:
               if (
@@ -296,8 +289,8 @@ export class DatabaseQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                    '_' +
-                    options['twoWayKey'],
+                  '_' +
+                  options['twoWayKey'],
                 );
               }
 
@@ -383,9 +376,9 @@ export class DatabaseQueue extends Queue {
                 if (
                   existing.getAttribute('key') !== index.getAttribute('key') &&
                   existing.getAttribute('attributes').toString() ===
-                    index.getAttribute('attributes').toString() &&
+                  index.getAttribute('attributes').toString() &&
                   existing.getAttribute('orders').toString() ===
-                    index.getAttribute('orders').toString()
+                  index.getAttribute('orders').toString()
                 ) {
                   exists = true;
                   break;

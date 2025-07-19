@@ -17,15 +17,14 @@ export class CreateStringAttributeDTO {
   @IsKey()
   key: string;
 
-  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH)
-  size?: number = null;
+  size?: number = 0;
 
   @IsOptional()
   @IsBoolean()
-  required?: boolean = null;
+  required?: boolean = false;
 
   @IsOptional()
   @IsString()

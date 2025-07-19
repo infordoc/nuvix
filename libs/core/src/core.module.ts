@@ -217,7 +217,7 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
           adapter.setMetadata('projectId', projectId);
           const connection = new Database(adapter, cache, {
             logger: LOG_LEVELS,
-          });
+          }).setCacheName(projectId); // TODO: will use any other constraint instead of `projectId`
           return connection;
         };
       },
