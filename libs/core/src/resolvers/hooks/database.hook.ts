@@ -34,10 +34,10 @@ export class DatabaseHook implements Hook {
 
     const schema = await pg.getSchema(schemaId);
     if (!schema || schema.type !== 'document')
-      throw new Exception(Exception.DATABASE_NOT_FOUND);
+      throw new Exception(Exception.SCHEMA_NOT_FOUND);
 
     const db = this.getProjectDB(client, project.getId());
-    db.setDatabase(schema.name);
+    db.setDatabase(schema.name).setCacheName(`${project.getId()}:${schemaId}`);
     request[CURRENT_SCHEMA_DB] = db;
 
     return null;

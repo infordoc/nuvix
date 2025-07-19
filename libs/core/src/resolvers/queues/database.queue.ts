@@ -67,9 +67,7 @@ export class DatabaseQueue extends Queue {
 
   @OnWorkerEvent('active')
   onActive(job: Job) {
-    this.logger.verbose(
-      `Processing job ${job.id} of type ${job.name}...`,
-    );
+    this.logger.verbose(`Processing job ${job.id} of type ${job.name}...`);
   }
 
   @OnWorkerEvent('failed')
@@ -84,7 +82,10 @@ export class DatabaseQueue extends Queue {
     let attribute = new Document(data.attribute);
     const project = new Document(data.project);
 
-    this.logger.debug('createAttribute', { collection: collection.getAttribute('name'), attribute });
+    this.logger.debug('createAttribute', {
+      collection: collection.getAttribute('name'),
+      attribute,
+    });
 
     const { client, dbForProject } = await this.getDatabase(
       project,
@@ -159,14 +160,14 @@ export class DatabaseQueue extends Queue {
               if (options['twoWay']) {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
-                  `related_${relatedCollection.getInternalId()}_${options['twoWayKey']}`
+                  `related_${relatedCollection.getInternalId()}_${options['twoWayKey']}`,
                 );
                 await dbForProject.updateDocument(
                   'attributes',
                   relatedAttribute.getId(),
                   relatedAttribute.setAttribute('status', 'available'),
                 );
-              };
+              }
               break;
             default:
               if (
@@ -287,8 +288,8 @@ export class DatabaseQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                  '_' +
-                  options['twoWayKey'],
+                    '_' +
+                    options['twoWayKey'],
                 );
               }
 
@@ -374,9 +375,9 @@ export class DatabaseQueue extends Queue {
                 if (
                   existing.getAttribute('key') !== index.getAttribute('key') &&
                   existing.getAttribute('attributes').toString() ===
-                  index.getAttribute('attributes').toString() &&
+                    index.getAttribute('attributes').toString() &&
                   existing.getAttribute('orders').toString() ===
-                  index.getAttribute('orders').toString()
+                    index.getAttribute('orders').toString()
                 ) {
                   exists = true;
                   break;

@@ -199,11 +199,10 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
           },
           maxVarCharLimit: 5000,
         });
-
         adapter.init();
         const connection = new Database(adapter, cache, {
           logger: LOG_LEVELS,
-        });
+        }).setCacheName('console');
         return connection;
       },
       inject: [CACHE],
@@ -226,7 +225,7 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
           adapter.setMetadata('projectId', projectId);
           const connection = new Database(adapter, cache, {
             logger: LOG_LEVELS,
-          }).setCacheName(projectId); // TODO: will use any other constraint instead of `projectId`
+          }).setCacheName(`${projectId}:core`); // TODO: ------------
           return connection;
         };
       },

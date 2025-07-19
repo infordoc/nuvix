@@ -107,7 +107,9 @@ export class SchemaQueue extends Queue {
       max: 2,
     });
     const dbForProject = this.getProjectDb(client, project.getId());
-    dbForProject.setDatabase(database);
+    dbForProject
+      .setDatabase(database)
+      .setCacheName(`${project.getId()}:${database}`);
     return { client, dbForProject };
   }
 

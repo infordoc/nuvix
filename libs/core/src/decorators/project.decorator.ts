@@ -36,7 +36,6 @@ export const ProjectDatabase = createParamDecorator<any, Database>(
 export const CurrentDatabase = createParamDecorator<any, Database>(
   (data: unknown, ctx: ExecutionContext) => {
     const request: Request = ctx.switchToHttp().getRequest();
-    const project = request[PROJECT] as Document;
     const database = request[CURRENT_SCHEMA_DB] as Database;
     return database;
   },
