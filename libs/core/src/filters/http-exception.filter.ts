@@ -34,7 +34,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           ? exception.getType()
           : 'general_server_error',
       version: '1.0.0',
-      ...exception.getDetails(),
+      ...exception?.getDetails?.(),
     });
   }
 }
