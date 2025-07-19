@@ -40,9 +40,7 @@ export class DatabaseQueue extends Queue {
   async process(job: Job, token?: string): Promise<any> {
     switch (job.name) {
       case DATABASE_TYPE_CREATE_ATTRIBUTE:
-        this.logger.verbose('YES WE GOT THE JOB')
         await this.createAttribute(job.data, token);
-        this.logger.verbose('AFTER THE JOB!!')
         break;
       case DATABASE_TYPE_DELETE_ATTRIBUTE:
         await this.deleteAttribute(job.data, token);
@@ -196,7 +194,7 @@ export class DatabaseQueue extends Queue {
             attribute.setAttribute('status', 'available'),
           );
         } catch (e) {
-          console.error(e.message);
+          this.logger.error(e.message);
 
           if (e instanceof DatabaseError) {
             attribute.setAttribute('error', e.message);
@@ -326,7 +324,7 @@ export class DatabaseQueue extends Queue {
             );
           }
         } catch (e) {
-          console.error(e.message);
+          this.logger.error(e.message);
 
           if (e instanceof DatabaseError) {
             attribute.setAttribute('error', e.message);

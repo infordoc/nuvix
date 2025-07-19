@@ -21,6 +21,7 @@ import {
 import collections from '@nuvix/core/collections';
 import { DataSource } from '@nuvix/pg';
 import { Exception } from '@nuvix/core/extend/exception';
+import { Audit } from '@nuvix/audit';
 
 @Processor('projects')
 export class ProjectQueue extends Queue {
@@ -166,6 +167,7 @@ export class ProjectQueue extends Queue {
           }
         }
       }
+      await new Audit(db).setup();
 
       this.logger.log(
         `Collection creation completed: ${successfulCollections} successful, ${failedCollections} failed for project ${project.getId()}`,

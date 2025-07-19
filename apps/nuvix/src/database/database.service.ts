@@ -1334,14 +1334,12 @@ export class DatabaseService {
       );
     }
 
-    this.logger.debug('ADDING TO QUEUE ------>', {collection: collection.getAttribute('name'), attribute})
     let _res = await this.databaseQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
       database: db.getDatabase(),
       collection,
       attribute,
       project,
     });
-    this.logger.debug(_res.id, '<--------- AFTER QUEUEU!!!!!!!!!!!!!!!!!!\n\n\n\n')
 
     return attribute;
   }
@@ -1642,7 +1640,7 @@ export class DatabaseService {
 
         const relatedAttribute = await db.getDocument(
           'attributes',
-          `${relatedCollection.getInternalId()}_${options['twoWayKey']}`,
+          `related_${relatedCollection.getInternalId()}_${options['twoWayKey']}`,
         );
 
         if (relatedAttribute.isEmpty()) {
@@ -1671,7 +1669,7 @@ export class DatabaseService {
       project,
     });
 
-    return null;
+    return {};
   }
 
   /**
