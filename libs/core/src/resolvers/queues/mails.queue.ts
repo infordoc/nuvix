@@ -34,17 +34,17 @@ export class MailsQueue extends Queue {
     auth:
       APP_SMTP_USER || APP_SMTP_PASSWORD
         ? {
-          user: APP_SMTP_USER,
-          pass: APP_SMTP_PASSWORD,
-        }
+            user: APP_SMTP_USER,
+            pass: APP_SMTP_PASSWORD,
+          }
         : undefined,
     dkim:
       APP_SMTP_DKIM_DOMAIN && APP_SMTP_DKIM_KEY && APP_SMTP_DKIM_PRIVATE_KEY
         ? {
-          domainName: APP_SMTP_DKIM_DOMAIN,
-          keySelector: APP_SMTP_DKIM_KEY,
-          privateKey: APP_SMTP_DKIM_PRIVATE_KEY,
-        }
+            domainName: APP_SMTP_DKIM_DOMAIN,
+            keySelector: APP_SMTP_DKIM_KEY,
+            privateKey: APP_SMTP_DKIM_PRIVATE_KEY,
+          }
         : undefined,
     from: {
       name: APP_SMTP_SENDER,
@@ -191,9 +191,9 @@ export class MailsQueue extends Queue {
       auth:
         options.username || options.password
           ? {
-            user: options.username,
-            pass: options.password,
-          }
+              user: options.username,
+              pass: options.password,
+            }
           : undefined,
       replyTo: options.replyTo,
       sender: {

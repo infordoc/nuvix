@@ -74,7 +74,7 @@ export class MessagingService {
     @InjectQueue(QueueFor.MESSAGING)
     private readonly queue: Queue<MessagingJobData, any, MessagingJob>,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   /**
    * Common method to create a provider.

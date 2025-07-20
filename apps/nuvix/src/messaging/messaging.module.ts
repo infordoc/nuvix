@@ -14,4 +14,4 @@ import { QueueFor } from '@nuvix/utils/constants';
   controllers: [MessagingController],
   providers: [MessagingService, MessagingQueue],
 })
-export class MessagingModule { }
+export class MessagingModule {}

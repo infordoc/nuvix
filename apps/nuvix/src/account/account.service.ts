@@ -83,10 +83,11 @@ import {
 export class AccountService {
   constructor(
     @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
-    @InjectQueue(QueueFor.MAILS) private readonly mailsQueue: Queue<MailQueueOptions>,
+    @InjectQueue(QueueFor.MAILS)
+    private readonly mailsQueue: Queue<MailQueueOptions>,
     private eventEmitter: EventEmitter2,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   private readonly oauthDefaultSuccess = '/auth/oauth2/success';
   private readonly oauthDefaultFailure = '/auth/oauth2/failure';
@@ -352,9 +353,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     for (const session of sessions) {
@@ -456,9 +457,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-          user.getAttribute('sessions'),
-          Auth.secret,
-        ) as string)
+            user.getAttribute('sessions'),
+            Auth.secret,
+          ) as string)
         : sessionId;
 
     const sessions = user.getAttribute('sessions', []);
@@ -876,7 +877,7 @@ export class AccountService {
 
     const countryName = locale.getText(
       'countries.' +
-      createdSession.getAttribute('countryCode', '').toLowerCase(),
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -1666,7 +1667,7 @@ export class AccountService {
     let subject = locale.getText('emails.magicSession.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.magicSession-${locale.default}`
+        `email.magicSession-${locale.default}`
       ] ?? {};
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
@@ -1873,7 +1874,7 @@ export class AccountService {
     let subject = locale.getText('emails.otpSession.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.otpSession-${locale.default}`
+        `email.otpSession-${locale.default}`
       ] ?? {};
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
@@ -2155,7 +2156,7 @@ export class AccountService {
     let subject: string = locale.getText('emails.sessionAlert.subject');
     const customTemplate =
       project.getAttribute('templates', {})?.[
-      'email.sessionAlert-' + locale.default
+        'email.sessionAlert-' + locale.default
       ] ?? {};
     const templatePath = path.join(ASSETS.TEMPLATES, 'email-session-alert.tpl');
     const templateSource = await fs.readFile(templatePath, 'utf8');
@@ -2672,7 +2673,7 @@ export class AccountService {
 
     const countryName = locale.getText(
       'countries.' +
-      createdSession.getAttribute('countryCode', '').toLowerCase(),
+        createdSession.getAttribute('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -2759,7 +2760,7 @@ export class AccountService {
     let subject = locale.getText('emails.recovery.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.recovery-${locale.default}`
+        `email.recovery-${locale.default}`
       ] ?? {};
 
     const templatePath = path.join(ASSETS.TEMPLATES, 'email-inner-base.tpl');
@@ -2997,7 +2998,7 @@ export class AccountService {
     let subject = locale.getText('emails.verification.subject');
     const customTemplate =
       project.getAttribute('templates', {})[
-      `email.verification-${locale.default}`
+        `email.verification-${locale.default}`
       ] ?? {};
 
     const templatePath = path.join(ASSETS.TEMPLATES, 'email-inner-base.tpl');
@@ -3205,7 +3206,7 @@ export class AccountService {
     if (sendSMS) {
       const customTemplate =
         project.getAttribute('templates', {})[
-        `sms.verification-${locale.default}`
+          `sms.verification-${locale.default}`
         ] ?? {};
 
       let message = locale.getText('sms.verification.body');
@@ -3622,7 +3623,7 @@ export class AccountService {
 
         const customSmsTemplate =
           project.getAttribute('templates', {})[
-          `sms.mfaChallenge-${locale.default}`
+            `sms.mfaChallenge-${locale.default}`
           ] ?? {};
 
         let smsMessage = locale.getText('sms.verification.body');
@@ -3656,7 +3657,7 @@ export class AccountService {
         let subject = locale.getText('emails.mfaChallenge.subject');
         const customEmailTemplate =
           project.getAttribute('templates', {})[
-          `email.mfaChallenge-${locale.default}`
+            `email.mfaChallenge-${locale.default}`
           ] ?? {};
 
         const detector = new Detector(

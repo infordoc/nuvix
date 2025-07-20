@@ -12,8 +12,9 @@ import { AuditsQueueJobData } from '../queues/audits.queue';
 export class AuditHook implements Hook {
   private readonly logger = new Logger(AuditHook.name);
   constructor(
-    @InjectQueue(QueueFor.AUDITS) private readonly auditsQueue: Queue<AuditsQueueJobData>,
-  ) { }
+    @InjectQueue(QueueFor.AUDITS)
+    private readonly auditsQueue: Queue<AuditsQueueJobData>,
+  ) {}
 
   async onSend(
     req: NuvixRequest,
@@ -46,11 +47,15 @@ export class AuditHook implements Hook {
   async handleAudit(
     req: NuvixRequest,
     res: string | any,
-    { audit, user, project }: {
+    {
+      audit,
+      user,
+      project,
+    }: {
       audit: AuditEventType;
       user: Document;
       project: Document;
-    }
+    },
   ) {
     const { event, meta } = audit;
 
@@ -69,31 +74,28 @@ export class AuditHook implements Hook {
     if (meta.userId && this.isMappingPart(meta.userId)) {
       meta.userId = this.mapValue(req, res, meta.userId);
     }
-    const mode = req[AppMode._REQUEST]
+    const mode = req[AppMode._REQUEST];
     this.logger.debug(`Mapped resource: ${resource}`, { userId: meta.userId });
     if (!user || user.isEmpty()) {
       user = new Document({
-        '$id': '',
-        'status': true,
+        $id: '',
+        status: true,
         // 'type': Auth.ACTIVITY_TYPE_GUEST, // TODO: Use a constant for guest type
-        'email': 'guest.' + project.getId() + '@service.' + req.hostname,
-        'password': '',
-        'name': 'Guest',
+        email: 'guest.' + project.getId() + '@service.' + req.hostname,
+        password: '',
+        name: 'Guest',
       });
     }
 
-    await this.auditsQueue.add(
-      event,
-      {
-        project,
-        mode,
-        ip: req.ip,
-        userAgent: req.headers['user-agent'] || '',
-        resource,
-        user,
-        data: res
-      }
-    )
+    await this.auditsQueue.add(event, {
+      project,
+      mode,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'] || '',
+      resource,
+      user,
+      data: res,
+    });
   }
 
   private mapResource(

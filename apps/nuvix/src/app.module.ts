@@ -132,6 +132,6 @@ export class AppModule implements NestModule {
         SchemaController,
         StorageController,
         MessagingController,
-      )
+      );
   }
 }

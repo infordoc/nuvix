@@ -49,7 +49,7 @@ export class TeamsService {
   constructor(
     @InjectQueue(QueueFor.MAILS)
     private readonly mailsQueue: Queue<MailQueueOptions, any, MailJobs>,
-  ) { }
+  ) {}
 
   /**
    * Find all teams
@@ -485,7 +485,7 @@ export class TeamsService {
         );
         const customTemplate =
           project.getAttribute('templates', {})?.[
-          'email.invitation-' + locale.default
+            'email.invitation-' + locale.default
           ] ?? {};
         const templatePath =
           PROJECT_ROOT + 'assets/locale/templates/email-inner-base.tpl';

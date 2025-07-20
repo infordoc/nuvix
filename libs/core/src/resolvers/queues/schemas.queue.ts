@@ -289,8 +289,8 @@ export class SchemasQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                  '_' +
-                  options['twoWayKey'],
+                    '_' +
+                    options['twoWayKey'],
                 );
               }
 
@@ -376,9 +376,9 @@ export class SchemasQueue extends Queue {
                 if (
                   existing.getAttribute('key') !== index.getAttribute('key') &&
                   existing.getAttribute('attributes').toString() ===
-                  index.getAttribute('attributes').toString() &&
+                    index.getAttribute('attributes').toString() &&
                   existing.getAttribute('orders').toString() ===
-                  index.getAttribute('orders').toString()
+                    index.getAttribute('orders').toString()
                 ) {
                   exists = true;
                   break;
@@ -720,7 +720,9 @@ export class SchemasQueue extends Queue {
       max: 2,
     });
     const dbForProject = this.getProjectDb(client, project.getId());
-    dbForProject.setDatabase(database).setCacheName(`${project.getId()}:${database}`);
+    dbForProject
+      .setDatabase(database)
+      .setCacheName(`${project.getId()}:${database}`);
     return { client, dbForProject };
   }
 

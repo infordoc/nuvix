@@ -8,7 +8,11 @@ import {
   SchemaJobs,
   SchemaQueueOptions,
 } from '@nuvix/core/resolvers/queues/databases.queue';
-import { INTERNAL_SCHEMAS, SYSTEM_SCHEMA, QueueFor } from '@nuvix/utils/constants';
+import {
+  INTERNAL_SCHEMAS,
+  SYSTEM_SCHEMA,
+  QueueFor,
+} from '@nuvix/utils/constants';
 
 // DTO's
 import { CreateDocumentSchema, CreateSchema } from './DTO/create-schema.dto';
@@ -21,7 +25,7 @@ export class DatabaseService {
   constructor(
     @InjectQueue(QueueFor.DATABASES)
     private readonly databasesQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
-  ) { }
+  ) {}
 
   public async createDocumentSchema(
     db: DataSource,
