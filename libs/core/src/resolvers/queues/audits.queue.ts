@@ -105,7 +105,10 @@ export class AuditsQueue extends Queue implements OnModuleInit, OnModuleDestroy 
         };
 
         if (!this.buffer.has(projectId)) {
-            this.buffer.set(projectId, { project, logs: [] });
+            this.buffer.set(projectId, {
+                project: new Document({ $id: projectId, $internalId: projectId, database: project.getAttribute('database') }),
+                logs: []
+            });
         }
 
         this.buffer.get(projectId)!.logs.push(log);

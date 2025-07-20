@@ -476,6 +476,7 @@ export const GOOGLE_CLOUD_API = process.env.GOOGLE_CLOUD_API;
 export enum AppMode {
   ADMIN = 'admin',
   DEFAULT = 'default',
+  _REQUEST = 'mode',
 }
 
 export enum QueueFor {

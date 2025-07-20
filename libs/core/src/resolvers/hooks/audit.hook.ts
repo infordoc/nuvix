@@ -1,16 +1,18 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Audit } from '@nuvix/audit';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Injectable, Logger } from '@nestjs/common';
 import { AuditEventType } from '@nuvix/core/decorators';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
 import { Document } from '@nuvix/database';
-import { AUDITS_FOR_PLATFORM, AUDITS_FOR_PROJECT, GEO_DB, PROJECT, USER } from '@nuvix/utils/constants';
+import { QueueFor, PROJECT, USER, AppMode } from '@nuvix/utils/constants';
+import { Queue } from 'bullmq';
+import { AuditsQueueJobData } from '../queues/audits.queue';
 
 @Injectable()
 export class AuditHook implements Hook {
   private readonly logger = new Logger(AuditHook.name);
   constructor(
-    @Inject(AUDITS_FOR_PLATFORM) private readonly audit: Audit,
+    @InjectQueue(QueueFor.AUDITS) private readonly auditsQueue: Queue<AuditsQueueJobData>,
   ) { }
 
   async onSend(
@@ -26,16 +28,10 @@ export class AuditHook implements Hook {
 
     const project = req[PROJECT] as Document;
     const user = req[USER] as Document;
-    let auditLib: Audit;
-    if (!project.isEmpty() && project.getId() !== 'console') {
-      auditLib = req[AUDITS_FOR_PROJECT];
-    } else {
-      auditLib = this.audit;
-    }
 
     try {
       const res = req['hooks_args']?.['onSend']?.['args']?.[0];
-      await this.handleAudit(req, res, { audit, user, lib: auditLib });
+      await this.handleAudit(req, res, { audit, user, project });
     } catch (e) {
       if (e instanceof Exception) {
         return next(e);
@@ -50,35 +46,54 @@ export class AuditHook implements Hook {
   async handleAudit(
     req: NuvixRequest,
     res: string | any,
-    { audit, lib, user }: {
+    { audit, user, project }: {
       audit: AuditEventType;
-      lib: Audit;
       user: Document;
+      project: Document;
     }
   ) {
     const { event, meta } = audit;
 
     this.logger.debug(`Handling audit event: ${event}`, { meta });
-    if (meta.resource.includes('res.') || meta.userId?.includes?.('res.')) {
-      try {
-        res = typeof res === 'string' ? JSON.parse(res) : res;
-      } catch {
-        this.logger.error(
-          `Failed to parse response for resource mapping: ${meta.resource}`,
-          { res },
-        );
-        throw new Exception(Exception.GENERAL_SERVER_ERROR);
-      }
+    try {
+      res = typeof res === 'string' ? JSON.parse(res) : res;
+    } catch {
+      this.logger.error(
+        `Failed to parse response for resource mapping: ${meta.resource}`,
+        { res },
+      );
+      throw new Exception(Exception.GENERAL_SERVER_ERROR);
     }
 
     const resource = this.mapResource(meta.resource, req, res);
     if (meta.userId && this.isMappingPart(meta.userId)) {
       meta.userId = this.mapValue(req, res, meta.userId);
     }
-
-    // we have to do all stuff here...
-
+    const mode = req[AppMode._REQUEST]
     this.logger.debug(`Mapped resource: ${resource}`, { userId: meta.userId });
+    if (!user || user.isEmpty()) {
+      user = new Document({
+        '$id': '',
+        'status': true,
+        // 'type': Auth.ACTIVITY_TYPE_GUEST, // TODO: Use a constant for guest type
+        'email': 'guest.' + project.getId() + '@service.' + req.hostname,
+        'password': '',
+        'name': 'Guest',
+      });
+    }
+
+    await this.auditsQueue.add(
+      event,
+      {
+        project,
+        mode,
+        ip: req.ip,
+        userAgent: req.headers['user-agent'] || '',
+        resource,
+        user,
+        data: res
+      }
+    )
   }
 
   private mapResource(

@@ -15,6 +15,7 @@ import {
   PROJECT_PG,
   GET_PROJECT_DB_CLIENT,
   AUDITS_FOR_PROJECT,
+  AppMode,
 } from '@nuvix/utils/constants';
 import { Hook } from '../../server/hooks/interface';
 import type {
@@ -99,6 +100,7 @@ export class ProjectHook implements Hook {
     }
 
     req[PROJECT] = project;
+    req[AppMode._REQUEST] = params.get('mode') || AppMode.DEFAULT;
     return null;
   }
 
