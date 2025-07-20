@@ -5,8 +5,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
 import {
-  APP_MODE_ADMIN,
-  APP_MODE_DEFAULT,
+  AppMode,
   CORE_SCHEMA_DB,
   DB_FOR_PLATFORM,
   PROJECT,
@@ -22,7 +21,7 @@ export class AuthHook implements Hook {
   constructor(
     @Inject(DB_FOR_PLATFORM) readonly db: Database,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
@@ -30,7 +29,7 @@ export class AuthHook implements Hook {
     this.projectDb = req[CORE_SCHEMA_DB];
     const mode =
       params.getFromHeaders('x-nuvix-mode') ||
-      params.getFromQuery('mode', APP_MODE_DEFAULT);
+      params.getFromQuery('mode', AppMode.DEFAULT);
 
     Authorization.setDefaultStatus(true);
 
@@ -38,11 +37,11 @@ export class AuthHook implements Hook {
       `session${project.getId() === 'console' ? '' : `_${project.getId()}`}`,
     );
 
-    if (mode === APP_MODE_ADMIN) {
+    if (mode === AppMode.ADMIN) {
       Auth.setCookieName(`session`);
     }
 
-    let session: any = {};
+    let session: { id: string | null; secret: string; } = { id: null, secret: '', };
     const cookie = req.cookies[Auth.cookieName] || null;
     if (cookie) session = Auth.decodeSession(cookie);
 
@@ -81,7 +80,7 @@ export class AuthHook implements Hook {
     this.logger.debug(`Auth: ${Auth.unique}`);
 
     let user: Document;
-    if (mode !== APP_MODE_ADMIN) {
+    if (mode !== AppMode.ADMIN) {
       if (project.isEmpty()) {
         user = new Document();
       } else {
@@ -104,19 +103,20 @@ export class AuthHook implements Hook {
       user = new Document();
     }
 
-    if (APP_MODE_ADMIN === mode) {
-      if (
-        user.find(
-          'teamInternalId',
-          project.getAttribute('teamInternalId'),
-          'memberships',
-        )
-      ) {
-        Authorization.setDefaultStatus(false);
-      } else {
-        user = new Document();
-      }
-    }
+    // TODO: Uncomment after verify logic for admin mode
+    // if (APP_MODE_ADMIN === mode) {
+    //   if (
+    //     user.find(
+    //       'teamInternalId',
+    //       project.getAttribute('teamInternalId'),
+    //       'memberships',
+    //     )
+    //   ) {
+    //     Authorization.setDefaultStatus(false);
+    //   } else {
+    //     user = new Document();
+    //   }
+    // }
 
     const authJWT = params.getFromHeaders('x-nuvix-jwt');
 

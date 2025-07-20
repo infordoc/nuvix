@@ -1,3 +1,4 @@
+// TODO: use enums for constants where applicable
 import * as path from 'path';
 import * as fs from 'fs';
 import { ServerConfig } from './types';
@@ -240,7 +241,9 @@ export const APP_EMAIL_TEAM = 'team@localhost.test'; // Default email address
 export const APP_EMAIL_SECURITY = ''; // Default security email address
 export const APP_USERAGENT =
   APP_NAME + '-Server v%s. Please report abuse at %s';
+/**@deprecated use `AppMode.DEFAULT` instead */
 export const APP_MODE_DEFAULT = 'default';
+/**@deprecated use `AppMode.ADMIN` instead */
 export const APP_MODE_ADMIN = 'admin';
 export const APP_PAGING_LIMIT = 12;
 export const APP_MAX_COUNT = 1000;
@@ -469,3 +472,8 @@ export const EVENT_SESSION_UPDATE = 'session' + EVENT_DELIMITER + 'update';
 
 // CLOUD
 export const GOOGLE_CLOUD_API = process.env.GOOGLE_CLOUD_API;
+
+export enum AppMode {
+  ADMIN = 'admin',
+  DEFAULT = 'default',
+}

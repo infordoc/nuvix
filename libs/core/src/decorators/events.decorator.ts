@@ -25,11 +25,11 @@ const auditEvents = [
 export type AuditEventKey = (typeof auditEvents)[number];
 
 type ParameterKey = 'user' | 'req' | 'res' | 'params' | 'body' | 'query';
-type ResourceSegment = string | `{${ParameterKey}.${string}}`;
+type ResourceSegment = `{${ParameterKey}.${string}}`;
 export type ResourcePath =
-  | `${ResourceSegment}/${ResourceSegment}`
-  | `${ResourceSegment}/${ResourceSegment}/${ResourceSegment}`
-  | `${ResourceSegment}/${ResourceSegment}/${ResourceSegment}/${ResourceSegment}`
+  | `${string}/${ResourceSegment}`
+  | `${string}/${string | ResourceSegment}/${ResourceSegment}`
+  | `${ResourceSegment}/${string | ResourceSegment}/${string | ResourceSegment}/${ResourceSegment}`
   | ResourceSegment;
 
 export type _AuditEvent = {

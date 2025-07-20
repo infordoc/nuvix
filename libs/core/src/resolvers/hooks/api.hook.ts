@@ -4,7 +4,7 @@ import {
   API_KEY_DYNAMIC,
   API_KEY_STANDARD,
   APP_KEY_ACCESS,
-  APP_MODE_DEFAULT,
+  AppMode,
   DB_FOR_PLATFORM,
   PROJECT,
   PROJECT_DB_CLIENT,
@@ -35,9 +35,13 @@ export class ApiHook implements Hook {
     let user: Document = req[USER];
     const mode: string =
       params.getFromHeaders('x-nuvix-mode') ||
-      params.getFromQuery('mode', APP_MODE_DEFAULT);
+      params.getFromQuery('mode', AppMode.DEFAULT);
 
     if (project.isEmpty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
+
+    if (mode === AppMode.ADMIN && project.getId() === 'console') {
+      throw new Exception(Exception.GENERAL_ACCESS_FORBIDDEN, 'Nuvix Console cannot be accessed in admin mode.');
+    }
 
     // ACL Check
     let role = user.isEmpty()

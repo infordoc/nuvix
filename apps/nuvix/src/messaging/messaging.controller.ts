@@ -539,7 +539,7 @@ export class MessagingController {
 
   @Delete('providers/:providerId')
   @Scope('providers.delete')
-  @AuditEvent('provider.delete', 'provider/{req.providerId}')
+  @AuditEvent('provider.delete', 'provider/{params.providerId}')
   @ResModel(Models.NONE)
   @Sdk({
     name: 'deleteProvider',
@@ -635,7 +635,7 @@ export class MessagingController {
 
   @Delete('topics/:topicId')
   @Scope('topics.delete')
-  @AuditEvent('topic.delete', 'topic/{req.topicId}')
+  @AuditEvent('topic.delete', 'topic/{params.topicId}')
   @ResModel(Models.NONE)
   @Sdk({
     name: 'deleteTopic',
@@ -714,7 +714,7 @@ export class MessagingController {
 
   @Delete('topics/:topicId/subscribers/:subscriberId')
   @Scope('subscribers.delete')
-  @AuditEvent('subscriber.delete', 'subscriber/{req.subscriberId}')
+  @AuditEvent('subscriber.delete', 'subscriber/{params.subscriberId}')
   @ResModel(Models.NONE)
   @Sdk({
     name: 'deleteSubscriber',
@@ -932,7 +932,7 @@ export class MessagingController {
 
   @Delete('messages/:messageId')
   @Scope('messages.delete')
-  @AuditEvent('message.delete', 'message/{req.messageId}')
+  @AuditEvent('message.delete', 'message/{params.messageId}')
   @ResModel(Models.NONE)
   @Sdk({
     name: 'deleteMessage',
