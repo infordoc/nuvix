@@ -15,6 +15,7 @@ import {
   APP_SMTP_USER,
   PROJECT_ROOT,
   SEND_TYPE_EMAIL,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { Exception } from '@nuvix/core/extend/exception';
@@ -23,9 +24,9 @@ import { Logger } from '@nestjs/common';
 import path from 'path';
 import * as Template from 'handlebars';
 
-@Processor('mails', { concurrency: 10000 })
-export class MailQueue extends Queue {
-  private readonly logger = new Logger(MailQueue.name);
+@Processor(QueueFor.MAILS, { concurrency: 10000 })
+export class MailsQueue extends Queue {
+  private readonly logger = new Logger(MailsQueue.name);
   private readonly transporter = createTransport({
     host: APP_SMTP_HOST,
     port: APP_SMTP_PORT,
@@ -33,17 +34,17 @@ export class MailQueue extends Queue {
     auth:
       APP_SMTP_USER || APP_SMTP_PASSWORD
         ? {
-            user: APP_SMTP_USER,
-            pass: APP_SMTP_PASSWORD,
-          }
+          user: APP_SMTP_USER,
+          pass: APP_SMTP_PASSWORD,
+        }
         : undefined,
     dkim:
       APP_SMTP_DKIM_DOMAIN && APP_SMTP_DKIM_KEY && APP_SMTP_DKIM_PRIVATE_KEY
         ? {
-            domainName: APP_SMTP_DKIM_DOMAIN,
-            keySelector: APP_SMTP_DKIM_KEY,
-            privateKey: APP_SMTP_DKIM_PRIVATE_KEY,
-          }
+          domainName: APP_SMTP_DKIM_DOMAIN,
+          keySelector: APP_SMTP_DKIM_KEY,
+          privateKey: APP_SMTP_DKIM_PRIVATE_KEY,
+        }
         : undefined,
     from: {
       name: APP_SMTP_SENDER,
@@ -190,9 +191,9 @@ export class MailQueue extends Queue {
       auth:
         options.username || options.password
           ? {
-              user: options.username,
-              pass: options.password,
-            }
+            user: options.username,
+            pass: options.password,
+          }
           : undefined,
       replyTo: options.replyTo,
       sender: {

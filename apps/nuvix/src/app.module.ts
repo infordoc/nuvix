@@ -1,7 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MailQueue } from '@nuvix/core/resolvers/queues/mail.queue';
+import { MailsQueue } from '@nuvix/core/resolvers/queues/mails.queue';
 // Constants
 import {
   APP_REDIS_DB,
@@ -101,7 +101,7 @@ import { AuditHook } from '@nuvix/core/resolvers/hooks/audit.hook';
     MessagingModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MailQueue],
+  providers: [AppService, MailsQueue],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

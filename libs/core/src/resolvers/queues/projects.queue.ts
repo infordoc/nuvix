@@ -17,15 +17,16 @@ import {
   SYSTEM_SCHEMA,
   APP_INTERNAL_POOL_API,
   CORE_SCHEMA,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import collections from '@nuvix/core/collections';
 import { DataSource } from '@nuvix/pg';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Audit } from '@nuvix/audit';
 
-@Processor('projects', {concurrency: 1000})
-export class ProjectQueue extends Queue {
-  private readonly logger = new Logger(ProjectQueue.name);
+@Processor(QueueFor.PROJECTS, { concurrency: 1000 })
+export class ProjectsQueue extends Queue {
+  private readonly logger = new Logger(ProjectsQueue.name);
 
   constructor(
     @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,

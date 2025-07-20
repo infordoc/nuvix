@@ -34,7 +34,7 @@ import {
   GET_PROJECT_DB,
   CORE_SCHEMA,
   GET_DEVICE_FOR_PROJECT,
-  WORKER_TYPE_MESSAGING,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import {
@@ -44,7 +44,7 @@ import {
 } from '@nuvix/core/core.module';
 
 @Injectable()
-  @Processor(WORKER_TYPE_MESSAGING, { concurrency: 10000 })
+@Processor(QueueFor.MESSAGING, { concurrency: 10000 })
 export class MessagingQueue extends Queue {
   private readonly logger = new Logger(MessagingQueue.name);
 

@@ -56,7 +56,7 @@ import {
   MESSAGE_TYPE_EMAIL,
   MESSAGE_TYPE_PUSH,
   MESSAGE_TYPE_SMS,
-  WORKER_TYPE_MESSAGING,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
@@ -71,10 +71,10 @@ import {
 export class MessagingService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
-    @InjectQueue(WORKER_TYPE_MESSAGING)
+    @InjectQueue(QueueFor.MESSAGING)
     private readonly queue: Queue<MessagingJobData, any, MessagingJob>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   /**
    * Common method to create a provider.

@@ -20,13 +20,14 @@ import {
   DB_FOR_PLATFORM,
   GET_PROJECT_DB,
   GET_PROJECT_DB_CLIENT,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import { Inject, Logger } from '@nestjs/common';
 import type { GetProjectDbFn, GetClientFn } from '@nuvix/core/core.module';
 
-@Processor('database', {concurrency: 10000})
-export class DatabaseQueue extends Queue {
-  private readonly logger = new Logger(DatabaseQueue.name);
+@Processor(QueueFor.SCHEMAS, { concurrency: 10000 })
+export class SchemasQueue extends Queue {
+  private readonly logger = new Logger(SchemasQueue.name);
 
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly dbForPlatform: Database,
@@ -288,8 +289,8 @@ export class DatabaseQueue extends Queue {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
                   relatedCollection.getInternalId() +
-                    '_' +
-                    options['twoWayKey'],
+                  '_' +
+                  options['twoWayKey'],
                 );
               }
 
@@ -375,9 +376,9 @@ export class DatabaseQueue extends Queue {
                 if (
                   existing.getAttribute('key') !== index.getAttribute('key') &&
                   existing.getAttribute('attributes').toString() ===
-                    index.getAttribute('attributes').toString() &&
+                  index.getAttribute('attributes').toString() &&
                   existing.getAttribute('orders').toString() ===
-                    index.getAttribute('orders').toString()
+                  index.getAttribute('orders').toString()
                 ) {
                   exists = true;
                   break;

@@ -31,6 +31,7 @@ import {
   DATABASE_TYPE_DELETE_COLLECTION,
   DATABASE_TYPE_DELETE_INDEX,
   GEO_DB,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -73,10 +74,10 @@ export class DatabaseService {
 
   constructor(
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
-    @InjectQueue('database')
-    private readonly databaseQueue: Queue<DatabaseJobData, any, DatabaseJobs>,
+    @InjectQueue(QueueFor.SCHEMAS)
+    private readonly schemasQueue: Queue<DatabaseJobData, any, DatabaseJobs>,
     private readonly event: EventEmitter2,
-  ) {}
+  ) { }
 
   /**
    * Create a new collection.
@@ -259,7 +260,7 @@ export class DatabaseService {
       );
     }
 
-    await this.databaseQueue.add(DATABASE_TYPE_DELETE_COLLECTION, {
+    await this.schemasQueue.add(DATABASE_TYPE_DELETE_COLLECTION, {
       database: db.getDatabase(),
       collection,
       project,
@@ -831,9 +832,9 @@ export class DatabaseService {
 
       if (
         attribute.getAttribute('options')?.['twoWayKey']?.toLowerCase() ===
-          twoWayKey.toLowerCase() &&
+        twoWayKey.toLowerCase() &&
         attribute.getAttribute('options')?.['relatedCollection'] ===
-          relatedCollection.getId()
+        relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -844,9 +845,9 @@ export class DatabaseService {
       if (
         type === Database.RELATION_MANY_TO_MANY &&
         attribute.getAttribute('options')?.['relationType'] ===
-          Database.RELATION_MANY_TO_MANY &&
+        Database.RELATION_MANY_TO_MANY &&
         attribute.getAttribute('options')?.['relatedCollection'] ===
-          relatedCollection.getId()
+        relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -1334,7 +1335,7 @@ export class DatabaseService {
       );
     }
 
-    let _res = await this.databaseQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
+    let _res = await this.schemasQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
       database: db.getDatabase(),
       collection,
       attribute,
@@ -1449,7 +1450,7 @@ export class DatabaseService {
 
           const validator =
             attribute.getAttribute('format') ===
-            APP_DATABASE_ATTRIBUTE_INT_RANGE
+              APP_DATABASE_ATTRIBUTE_INT_RANGE
               ? new RangeValidator(min, max, 'integer')
               : new RangeValidator(min, max, 'float');
 
@@ -1662,7 +1663,7 @@ export class DatabaseService {
       }
     }
 
-    await this.databaseQueue.add(DATABASE_TYPE_DELETE_ATTRIBUTE, {
+    await this.schemasQueue.add(DATABASE_TYPE_DELETE_ATTRIBUTE, {
       database: db.getDatabase(),
       collection,
       attribute,
@@ -1819,7 +1820,7 @@ export class DatabaseService {
 
     await db.purgeCachedDocument(`collections`, collectionId);
 
-    await this.databaseQueue.add(DATABASE_TYPE_CREATE_INDEX, {
+    await this.schemasQueue.add(DATABASE_TYPE_CREATE_INDEX, {
       database: db.getDatabase(),
       collection,
       index: index.toObject(),
@@ -1934,7 +1935,7 @@ export class DatabaseService {
 
     await db.purgeCachedDocument(`collections`, collectionId);
 
-    await this.databaseQueue.add(DATABASE_TYPE_DELETE_INDEX, {
+    await this.schemasQueue.add(DATABASE_TYPE_DELETE_INDEX, {
       database: db.getDatabase(),
       collection,
       index: index.toObject(),

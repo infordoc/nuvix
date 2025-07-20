@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { ProjectService } from './projects.service';
 import { ProjectsController } from './projects.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { JWT_SECRET } from '@nuvix/utils/constants';
+import { JWT_SECRET, QueueFor } from '@nuvix/utils/constants';
 import { ProjectController } from './project.controller';
 import { BullModule } from '@nestjs/bullmq';
-import { ProjectQueue } from '@nuvix/core/resolvers/queues/project.queue';
+import { ProjectsQueue } from '@nuvix/core/resolvers/queues/projects.queue';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
@@ -16,7 +16,7 @@ import { HttpModule } from '@nestjs/axios';
       signOptions: { expiresIn: '15m' },
     }),
     BullModule.registerQueue({
-      name: 'projects',
+      name: QueueFor.PROJECTS,
       defaultJobOptions: {
         removeOnComplete: true,
         removeOnFail: true,
@@ -28,7 +28,7 @@ import { HttpModule } from '@nestjs/axios';
       },
     }),
   ],
-  providers: [ProjectService, ProjectQueue],
+  providers: [ProjectService, ProjectsQueue],
   controllers: [ProjectsController, ProjectController],
 })
-export class ProjectModule {}
+export class ProjectModule { }

@@ -5,14 +5,12 @@ import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
 import { Document } from '@nuvix/database';
 import { AUDITS_FOR_PLATFORM, AUDITS_FOR_PROJECT, GEO_DB, PROJECT, USER } from '@nuvix/utils/constants';
-import { CountryResponse, Reader } from 'maxmind';
 
 @Injectable()
 export class AuditHook implements Hook {
   private readonly logger = new Logger(AuditHook.name);
   constructor(
     @Inject(AUDITS_FOR_PLATFORM) private readonly audit: Audit,
-    @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
   ) { }
 
   async onSend(
@@ -77,6 +75,8 @@ export class AuditHook implements Hook {
     if (meta.userId && this.isMappingPart(meta.userId)) {
       meta.userId = this.mapValue(req, res, meta.userId);
     }
+
+    // we have to do all stuff here...
 
     this.logger.debug(`Mapped resource: ${resource}`, { userId: meta.userId });
   }

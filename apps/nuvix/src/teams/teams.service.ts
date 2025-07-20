@@ -18,6 +18,7 @@ import {
   APP_SMTP_HOST,
   PROJECT_ROOT,
   SEND_TYPE_EMAIL,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import {
   Authorization,
@@ -35,7 +36,7 @@ import type { Queue } from 'bullmq';
 import {
   MailJobs,
   MailQueueOptions,
-} from '@nuvix/core/resolvers/queues/mail.queue';
+} from '@nuvix/core/resolvers/queues/mails.queue';
 import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
 import { sprintf } from 'sprintf-js';
 import * as fs from 'fs';
@@ -46,9 +47,9 @@ export class TeamsService {
   private logger: Logger = new Logger(TeamsService.name);
 
   constructor(
-    @InjectQueue('mails')
-    private readonly mailQueue: Queue<MailQueueOptions, any, MailJobs>,
-  ) {}
+    @InjectQueue(QueueFor.MAILS)
+    private readonly mailsQueue: Queue<MailQueueOptions, any, MailJobs>,
+  ) { }
 
   /**
    * Find all teams
@@ -484,7 +485,7 @@ export class TeamsService {
         );
         const customTemplate =
           project.getAttribute('templates', {})?.[
-            'email.invitation-' + locale.default
+          'email.invitation-' + locale.default
           ] ?? {};
         const templatePath =
           PROJECT_ROOT + 'assets/locale/templates/email-inner-base.tpl';
@@ -536,7 +537,7 @@ export class TeamsService {
           project: projectName,
         };
 
-        await this.mailQueue.add(SEND_TYPE_EMAIL, {
+        await this.mailsQueue.add(SEND_TYPE_EMAIL, {
           email,
           subject,
           body,

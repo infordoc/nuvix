@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { AccountController } from './account.controller';
 import { BullModule } from '@nestjs/bullmq';
+import { QueueFor } from '@nuvix/utils/constants';
 
 @Module({
-  imports: [BullModule.registerQueue({ name: 'mails' })],
+  imports: [BullModule.registerQueue({ name: QueueFor.MAILS })],
   controllers: [AccountController],
   providers: [AccountService],
 })
-export class AccountModule {}
+export class AccountModule { }

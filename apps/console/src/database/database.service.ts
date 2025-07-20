@@ -7,8 +7,8 @@ import { Queue } from 'bullmq';
 import {
   SchemaJobs,
   SchemaQueueOptions,
-} from '@nuvix/core/resolvers/queues/schema.queue';
-import { INTERNAL_SCHEMAS, SYSTEM_SCHEMA } from '@nuvix/utils/constants';
+} from '@nuvix/core/resolvers/queues/databases.queue';
+import { INTERNAL_SCHEMAS, SYSTEM_SCHEMA, QueueFor } from '@nuvix/utils/constants';
 
 // DTO's
 import { CreateDocumentSchema, CreateSchema } from './DTO/create-schema.dto';
@@ -19,9 +19,9 @@ export class DatabaseService {
   private readonly logger = new Logger(DatabaseService.name);
 
   constructor(
-    @InjectQueue('schema')
-    private readonly schemasQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
-  ) {}
+    @InjectQueue(QueueFor.DATABASES)
+    private readonly databasesQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
+  ) { }
 
   public async createDocumentSchema(
     db: DataSource,
@@ -40,7 +40,7 @@ export class DatabaseService {
       data.description,
     );
 
-    await this.schemasQueue.add('init_doc', {
+    await this.databasesQueue.add('init_doc', {
       project: project,
       schema: schema.name,
     });

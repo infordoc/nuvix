@@ -477,3 +477,13 @@ export enum AppMode {
   ADMIN = 'admin',
   DEFAULT = 'default',
 }
+
+export enum QueueFor {
+  AUDITS = 'audits',
+  PROJECTS = 'projects',
+  FUNCTIONS = 'functions',
+  MESSAGING = 'messaging',
+  DATABASES = 'databases',
+  MAILS = 'mails',
+  SCHEMAS = 'schemas',
+}

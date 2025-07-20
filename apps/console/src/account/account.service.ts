@@ -22,6 +22,7 @@ import {
   GEO_DB,
   SEND_TYPE_EMAIL,
   WORKER_TYPE_MAILS,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import {
@@ -40,7 +41,7 @@ import * as fs from 'fs/promises';
 import {
   MailJobs,
   MailQueueOptions,
-} from '@nuvix/core/resolvers/queues/mail.queue';
+} from '@nuvix/core/resolvers/queues/mails.queue';
 import path from 'path';
 
 @Injectable()
@@ -49,9 +50,9 @@ export class AccountService {
   constructor(
     @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @InjectQueue(WORKER_TYPE_MAILS)
-    private readonly mailQueue: Queue<MailQueueOptions, MailJobs>,
-  ) {}
+    @InjectQueue(QueueFor.MAILS)
+    private readonly mailsQueue: Queue<MailQueueOptions, MailJobs>,
+  ) { }
 
   /**
    * Create a new account
@@ -227,7 +228,7 @@ export class AccountService {
       year: new Date().getFullYear(),
     };
 
-    await this.mailQueue.add(SEND_TYPE_EMAIL, {
+    await this.mailsQueue.add(SEND_TYPE_EMAIL, {
       subject: 'Account Created! Start Exploring Nuvix Now ⚡',
       email: user.getAttribute('email'),
       body: body,
@@ -666,9 +667,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-            user.getAttribute('sessions'),
-            Auth.secret,
-          ) as string)
+          user.getAttribute('sessions'),
+          Auth.secret,
+        ) as string)
         : sessionId;
 
     for (const session of sessions) {
@@ -756,9 +757,9 @@ export class AccountService {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-            user.getAttribute('sessions'),
-            Auth.secret,
-          ) as string)
+          user.getAttribute('sessions'),
+          Auth.secret,
+        ) as string)
         : sessionId;
 
     const sessions = user.getAttribute('sessions', []);

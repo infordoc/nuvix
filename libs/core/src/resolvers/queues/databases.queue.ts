@@ -9,12 +9,13 @@ import {
   GET_PROJECT_DB_CLIENT,
   GET_PROJECT_DB,
   APP_POSTGRES_PASSWORD,
+  QueueFor,
 } from '@nuvix/utils/constants';
 import collections from '@nuvix/core/collections';
 
-@Processor('schema', { concurrency: 10000 })
-export class SchemaQueue extends Queue {
-  private readonly logger = new Logger(SchemaQueue.name);
+@Processor(QueueFor.DATABASES, { concurrency: 10000 })
+export class DatabasesQueue extends Queue {
+  private readonly logger = new Logger(DatabasesQueue.name);
 
   constructor(
     @Inject(GET_PROJECT_DB_CLIENT) private readonly getDbClient: GetClientFn,
