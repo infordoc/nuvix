@@ -33,6 +33,7 @@ import { AccountController } from './account/account.controller';
 import { OrganizationsController } from './organizations/organizations.controller';
 import { ProjectController } from './projects/project.controller';
 import { ProjectsController } from './projects/projects.controller';
+import { AuditHook } from '@nuvix/core/resolvers/hooks/audit.hook';
 
 @Module({
   imports: [
@@ -99,7 +100,7 @@ export class ConsoleModule implements NestModule {
         DatabaseController,
         PgMetaController,
       )
-      .apply(AuthHook, ApiHook)
+      .apply(AuthHook, ApiHook, AuditHook)
       .forRoutes(
         UsersController,
         AccountController,

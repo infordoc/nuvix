@@ -12,7 +12,7 @@ import {
 } from '@nuvix/utils/constants';
 import collections from '@nuvix/core/collections';
 
-@Processor('schema')
+@Processor('schema', { concurrency: 10000 })
 export class SchemaQueue extends Queue {
   private readonly logger = new Logger(SchemaQueue.name);
 

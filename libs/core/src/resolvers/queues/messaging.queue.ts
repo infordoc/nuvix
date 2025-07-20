@@ -44,7 +44,7 @@ import {
 } from '@nuvix/core/core.module';
 
 @Injectable()
-@Processor(WORKER_TYPE_MESSAGING)
+  @Processor(WORKER_TYPE_MESSAGING, { concurrency: 10000 })
 export class MessagingQueue extends Queue {
   private readonly logger = new Logger(MessagingQueue.name);
 

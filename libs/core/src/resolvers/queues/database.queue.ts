@@ -24,7 +24,7 @@ import {
 import { Inject, Logger } from '@nestjs/common';
 import type { GetProjectDbFn, GetClientFn } from '@nuvix/core/core.module';
 
-@Processor('database')
+@Processor('database', {concurrency: 10000})
 export class DatabaseQueue extends Queue {
   private readonly logger = new Logger(DatabaseQueue.name);
 

@@ -1,27 +1,43 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Audit } from '@nuvix/audit';
 import { AuditEventType } from '@nuvix/core/decorators';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
+import { Document } from '@nuvix/database';
+import { AUDITS_FOR_PLATFORM, AUDITS_FOR_PROJECT, GEO_DB, PROJECT, USER } from '@nuvix/utils/constants';
+import { CountryResponse, Reader } from 'maxmind';
 
 @Injectable()
 export class AuditHook implements Hook {
   private readonly logger = new Logger(AuditHook.name);
+  constructor(
+    @Inject(AUDITS_FOR_PLATFORM) private readonly audit: Audit,
+    @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
+  ) { }
 
   async onSend(
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
   ) {
-    this.logger.debug(req['hooks_args']?.['onSend']?.['args']);
     const audit: AuditEventType | undefined =
       req.routeOptions?.config?.['audit'];
     if (!audit) {
       return next();
     }
 
+    const project = req[PROJECT] as Document;
+    const user = req[USER] as Document;
+    let auditLib: Audit;
+    if (!project.isEmpty() && project.getId() !== 'console') {
+      auditLib = req[AUDITS_FOR_PROJECT];
+    } else {
+      auditLib = this.audit;
+    }
+
     try {
       const res = req['hooks_args']?.['onSend']?.['args']?.[0];
-      await this.handleAudit(req, res, audit);
+      await this.handleAudit(req, res, { audit, user, lib: auditLib });
     } catch (e) {
       if (e instanceof Exception) {
         return next(e);
@@ -36,7 +52,11 @@ export class AuditHook implements Hook {
   async handleAudit(
     req: NuvixRequest,
     res: string | any,
-    audit: AuditEventType,
+    { audit, lib, user }: {
+      audit: AuditEventType;
+      lib: Audit;
+      user: Document;
+    }
   ) {
     const { event, meta } = audit;
 

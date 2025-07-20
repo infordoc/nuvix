@@ -23,7 +23,7 @@ import { Logger } from '@nestjs/common';
 import path from 'path';
 import * as Template from 'handlebars';
 
-@Processor('mails')
+@Processor('mails', { concurrency: 10000 })
 export class MailQueue extends Queue {
   private readonly logger = new Logger(MailQueue.name);
   private readonly transporter = createTransport({

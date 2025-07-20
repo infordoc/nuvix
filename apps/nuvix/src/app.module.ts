@@ -119,7 +119,7 @@ export class AppModule implements NestModule {
         StorageController,
         MessagingController,
       )
-      .apply(AuthHook, ApiHook, ProjectUsageHook)
+      .apply(AuthHook, ApiHook, ProjectUsageHook, AuditHook)
       .forRoutes(
         BaseController,
         UsersController,
@@ -132,7 +132,5 @@ export class AppModule implements NestModule {
         StorageController,
         MessagingController,
       )
-      .apply(AuditHook)
-      .forRoutes('*');
   }
 }

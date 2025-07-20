@@ -23,7 +23,7 @@ import { DataSource } from '@nuvix/pg';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Audit } from '@nuvix/audit';
 
-@Processor('projects')
+@Processor('projects', {concurrency: 1000})
 export class ProjectQueue extends Queue {
   private readonly logger = new Logger(ProjectQueue.name);
 
