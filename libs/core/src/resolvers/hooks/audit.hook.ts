@@ -16,32 +16,23 @@ export class AuditHook implements Hook {
     private readonly auditsQueue: Queue<AuditsQueueJobData>,
   ) {}
 
-  async onSend(
-    req: NuvixRequest,
-    reply: NuvixRes,
-    next: (err?: Error) => void,
-  ) {
+  async onSend(req: NuvixRequest) {
     const audit: AuditEventType | undefined =
       req.routeOptions?.config?.['audit'];
-    if (!audit) {
-      return next();
+    if (!audit || !audit.event) {
+      return;
     }
 
-    const project = req[PROJECT] as Document;
-    const user = req[USER] as Document;
-
     try {
+      const project = req[PROJECT] as Document;
+      const user = req[USER] as Document;
       const res = req['hooks_args']?.['onSend']?.['args']?.[0];
       await this.handleAudit(req, res, { audit, user, project });
     } catch (e) {
-      if (e instanceof Exception) {
-        return next(e);
-      }
       this.logger.error('Unexpected error during audit handling', { error: e });
-      return next(new Exception(Exception.GENERAL_SERVER_ERROR));
     }
 
-    return next();
+    return;
   }
 
   async handleAudit(
