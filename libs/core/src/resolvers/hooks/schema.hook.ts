@@ -20,7 +20,7 @@ export class SchemaHook implements Hook {
   constructor(
     @Inject(GET_PROJECT_PG) private readonly getProjectPG: GetProjectPG,
     @Inject(GET_PROJECT_DB) private readonly getProjectDB: GetProjectDbFn,
-  ) { }
+  ) {}
 
   async preHandler(request: NuvixRequest) {
     const project = request[PROJECT] as Document;
@@ -45,7 +45,9 @@ export class SchemaHook implements Hook {
       request[CURRENT_SCHEMA_PG] = pg;
       if (schema.type === 'document') {
         const db = this.getProjectDB(client, project.getId());
-        db.setDatabase(schema.name).setCacheName(`${project.getId()}:${schemaId}`);
+        db.setDatabase(schema.name).setCacheName(
+          `${project.getId()}:${schemaId}`,
+        );
         request[CURRENT_SCHEMA_DB] = db;
       }
     } else {

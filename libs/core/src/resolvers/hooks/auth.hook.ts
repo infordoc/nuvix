@@ -24,7 +24,7 @@ export class AuthHook implements Hook {
   constructor(
     @Inject(DB_FOR_PLATFORM) readonly dbForPlatform: Database,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
@@ -137,7 +137,8 @@ export class AuthHook implements Hook {
         .find((s: Document) => s.getId() === sessionId) ?? new Document();
 
     if (!project.isEmpty()) {
-      const apiKey = params.getFromHeaders('x-nuvix-key') || params.getFromQuery('apiKey');
+      const apiKey =
+        params.getFromHeaders('x-nuvix-key') || params.getFromQuery('apiKey');
       req[ApiKey._REQUEST] = apiKey ? await Key.decode(project, apiKey) : null;
 
       let teamInternalId: string;
@@ -145,19 +146,33 @@ export class AuthHook implements Hook {
         teamInternalId = project.getAttribute('teamInternalId');
       } // TODO: we have to use another approch, or we should pass teamId in headers
       else if (req.url.startsWith('/v1/projects/') && req.params['projectId']) {
-        const p = await Authorization.skip(async () => await this.dbForPlatform.getDocument('projects', req.params['projectId']));
+        const p = await Authorization.skip(
+          async () =>
+            await this.dbForPlatform.getDocument(
+              'projects',
+              req.params['projectId'],
+            ),
+        );
         teamInternalId = p.getAttribute('teamInternalId');
-      } else if (req.url.startsWith('/v1/projects') && params.getFromQuery('teamId')) {
+      } else if (
+        req.url.startsWith('/v1/projects') &&
+        params.getFromQuery('teamId')
+      ) {
         const teamId = params.getFromQuery('teamId');
-        const team = await Authorization.skip(async () => await this.dbForPlatform.getDocument('teams', teamId));
+        const team = await Authorization.skip(
+          async () => await this.dbForPlatform.getDocument('teams', teamId),
+        );
         req[TEAM] = team;
       } else {
         req[TEAM] = new Document();
       }
 
       if (teamInternalId) {
-        const team = await Authorization.skip(async () =>
-          await this.dbForPlatform.findOne('teams', [Query.equal('$internalId', [teamInternalId])])
+        const team = await Authorization.skip(
+          async () =>
+            await this.dbForPlatform.findOne('teams', [
+              Query.equal('$internalId', [teamInternalId]),
+            ]),
         );
         req[TEAM] = team;
       }

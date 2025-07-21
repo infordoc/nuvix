@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, OnModuleInit } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  OnModuleInit,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailsQueue } from '@nuvix/core/resolvers/queues/mails.queue';
@@ -107,7 +112,7 @@ import { Key } from '@nuvix/core/helper/key.helper';
   providers: [AppService, MailsQueue, AuditsQueue],
 })
 export class AppModule implements NestModule, OnModuleInit {
-  constructor(private readonly jwtService: JwtService) { }
+  constructor(private readonly jwtService: JwtService) {}
 
   onModuleInit() {
     Key.setJwtService(this.jwtService);
@@ -140,7 +145,9 @@ export class AppModule implements NestModule, OnModuleInit {
         SchemasController,
         StorageController,
         MessagingController,
-      ).apply(AuditHook).forRoutes(
+      )
+      .apply(AuditHook)
+      .forRoutes(
         UsersController,
         TeamsController,
         AccountController,

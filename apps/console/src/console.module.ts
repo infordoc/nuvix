@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, OnModuleInit } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConsoleService } from './console.service';
 import { ConsoleController } from './console.controller';
 import { AccountModule } from './account/account.module';
@@ -75,7 +80,7 @@ import { Key } from '@nuvix/core/helper/key.helper';
   providers: [ConsoleService, MailsQueue, AuditsQueue],
 })
 export class ConsoleModule implements NestModule, OnModuleInit {
-  constructor(private readonly jwtService: JwtService) { }
+  constructor(private readonly jwtService: JwtService) {}
 
   onModuleInit() {
     Key.setJwtService(this.jwtService);

@@ -29,7 +29,8 @@ interface AuditLogsBuffer {
 @Processor(QueueFor.AUDITS, { concurrency: 50000 })
 export class AuditsQueue
   extends Queue
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   private static readonly BATCH_SIZE = 1000; // Number of logs to process in one batch
   private static readonly BATCH_INTERVAL_MS = 1000; // Interval in milliseconds to flush
   private readonly logger = new Logger(AuditsQueue.name);

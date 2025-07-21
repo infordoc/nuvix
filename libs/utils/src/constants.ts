@@ -496,8 +496,6 @@ export enum QueueFor {
   MESSAGING = 'messaging',
   DATABASES = 'databases',
   MAILS = 'mails',
-  /**@deprecated use `SCHEMAS` */
-  SCHEMAS = 'schemas',
   COLLECTIONS = 'collections',
   USAGE = 'usage',
 }

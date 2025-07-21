@@ -12,6 +12,8 @@ import { CollectionsController } from './collections/collections.controller';
 })
 export class SchemasModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(SchemaHook).forRoutes(SchemasController, CollectionsController);
+    consumer
+      .apply(SchemaHook)
+      .forRoutes(SchemasController, CollectionsController);
   }
 }

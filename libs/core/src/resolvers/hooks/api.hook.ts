@@ -25,9 +25,7 @@ import { Key } from '@nuvix/core/helper/key.helper';
 @Injectable()
 export class ApiHook implements Hook {
   private readonly logger = new Logger(ApiHook.name);
-  constructor(
-    @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-  ) { }
+  constructor(@Inject(DB_FOR_PLATFORM) private readonly db: Database) {}
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
@@ -82,7 +80,7 @@ export class ApiHook implements Hook {
         const dbKey = project.find(
           'secret',
           params.getFromHeaders('x-nuvix-key') || params.getFromQuery('apiKey'),
-          'keys'
+          'keys',
         );
 
         if (!dbKey || dbKey?.isEmpty?.()) {
@@ -91,13 +89,17 @@ export class ApiHook implements Hook {
 
         const accessedAt = dbKey.getAttribute('accessedAt', 0);
 
-        if (new Date(Date.now() - APP_KEY_ACCESS * 1000) > new Date(accessedAt)) {
+        if (
+          new Date(Date.now() - APP_KEY_ACCESS * 1000) > new Date(accessedAt)
+        ) {
           dbKey.setAttribute('accessedAt', new Date());
           await this.db.updateDocument('keys', dbKey.getId(), dbKey);
           await this.db.purgeCachedDocument('projects', project.getId());
         }
 
-        const sdksList = platforms[APP_PLATFORM_SERVER].sdks.map(sdk => sdk.name);
+        const sdksList = platforms[APP_PLATFORM_SERVER].sdks.map(
+          sdk => sdk.name,
+        );
         const sdk = params.getFromHeaders('x-sdk-name') || 'UNKNOWN';
 
         if (sdk !== 'UNKNOWN' && sdksList.includes(sdk)) {
@@ -114,10 +116,11 @@ export class ApiHook implements Hook {
           }
         }
       }
-    }
-    else if (
+    } else if (
       (project.getId() === 'console' && !team.isEmpty() && !user.isEmpty()) ||
-      (project.getId() !== 'console' && !user.isEmpty() && mode === AppMode.ADMIN)
+      (project.getId() !== 'console' &&
+        !user.isEmpty() &&
+        mode === AppMode.ADMIN)
     ) {
       const teamId = team.getId();
       let adminRoles: string[] = [];
@@ -172,10 +175,10 @@ export class ApiHook implements Hook {
           user:
             user && !user.isEmpty()
               ? JSON.stringify({
-                $id: user.getId(),
-                name: user.getAttribute('name'),
-                email: user.getAttribute('email'),
-              })
+                  $id: user.getId(),
+                  name: user.getAttribute('name'),
+                  email: user.getAttribute('email'),
+                })
               : undefined,
           session: session ? JSON.stringify(session) : undefined,
           roles: JSON.stringify(Authorization.getRoles()),

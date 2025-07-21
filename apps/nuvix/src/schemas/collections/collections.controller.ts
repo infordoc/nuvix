@@ -57,7 +57,7 @@ import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
 @UseGuards(ProjectGuard, DocSchemaGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class CollectionsController {
-  constructor(private readonly collectionsService: CollectionsService) { }
+  constructor(private readonly collectionsService: CollectionsService) {}
 
   @Get()
   @ResModel({ type: Models.COLLECTION, list: true })
@@ -75,7 +75,10 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Body() createCollectionDTO: CreateCollectionDTO,
   ) {
-    return await this.collectionsService.createCollection(db, createCollectionDTO);
+    return await this.collectionsService.createCollection(
+      db,
+      createCollectionDTO,
+    );
   }
 
   @Get(':collectionId/usage')
@@ -150,7 +153,11 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Query('queries', ParseQueryPipe) queries: Queries[],
   ) {
-    return await this.collectionsService.getDocuments(db, collectionId, queries);
+    return await this.collectionsService.getDocuments(
+      db,
+      collectionId,
+      queries,
+    );
   }
 
   @Get(':collectionId/attributes')
@@ -160,7 +167,11 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Query('queries', ParseQueryPipe) queries: Queries[],
   ) {
-    return await this.collectionsService.getAttributes(db, collectionId, queries);
+    return await this.collectionsService.getAttributes(
+      db,
+      collectionId,
+      queries,
+    );
   }
 
   @Post(':collectionId/attributes/string')
