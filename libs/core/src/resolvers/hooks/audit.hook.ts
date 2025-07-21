@@ -17,10 +17,10 @@ export class AuditHook implements Hook {
     private readonly auditsQueue: Queue<AuditsQueueJobData>,
   ) {}
 
-  async onSend(req: NuvixRequest) {
+  async onSend(req: NuvixRequest, reply: NuvixRes) {
     const audit: AuditEventType | undefined =
       req.routeOptions?.config?.['audit'];
-    if (!audit || !audit.event) {
+    if (!audit || !audit.event || reply.statusCode >= 400) {
       return;
     }
 
