@@ -106,20 +106,19 @@ export class AuthHook implements Hook {
       user = new Document();
     }
 
-    // TODO: Uncomment after verify logic for admin mode
-    // if (APP_MODE_ADMIN === mode) {
-    //   if (
-    //     user.find(
-    //       'teamInternalId',
-    //       project.getAttribute('teamInternalId'),
-    //       'memberships',
-    //     )
-    //   ) {
-    //     Authorization.setDefaultStatus(false);
-    //   } else {
-    //     user = new Document();
-    //   }
-    // }
+    if (AppMode.ADMIN === mode) {
+      if (
+        user.find(
+          'teamInternalId',
+          project.getAttribute('teamInternalId'),
+          'memberships',
+        )
+      ) {
+        Authorization.setDefaultStatus(false);
+      } else {
+        user = new Document();
+      }
+    }
 
     const authJWT = params.getFromHeaders('x-nuvix-jwt');
 

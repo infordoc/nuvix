@@ -10,6 +10,7 @@ import { Queue } from './queue';
 import {
   APP_POSTGRES_PASSWORD,
   AppMode,
+  CORE_SCHEMA,
   GET_PROJECT_DB,
   GET_PROJECT_DB_CLIENT,
   QueueFor,
@@ -28,8 +29,7 @@ interface AuditLogsBuffer {
 @Processor(QueueFor.AUDITS, { concurrency: 50000 })
 export class AuditsQueue
   extends Queue
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   private static readonly BATCH_SIZE = 1000; // Number of logs to process in one batch
   private static readonly BATCH_INTERVAL_MS = 1000; // Interval in milliseconds to flush
   private readonly logger = new Logger(AuditsQueue.name);
@@ -80,7 +80,7 @@ export class AuditsQueue
       try {
         const { project, logs } = data;
         const database = project.getAttribute('database');
-        const db = await this.getDatabase(project, database.name);
+        const db = await this.getDatabase(project);
         client = db.client;
         const { audits } = db;
 
@@ -153,7 +153,7 @@ export class AuditsQueue
     }
   }
 
-  private async getDatabase(project: Document, database: string) {
+  private async getDatabase(project: Document) {
     const dbOptions = project.getAttribute('database');
     const client = await this.getDbClient(project.getId(), {
       database: dbOptions.name,
@@ -163,6 +163,9 @@ export class AuditsQueue
       host: dbOptions.host,
     });
     const dbForProject = this.getProjectDb(client, project.getId());
+    dbForProject
+      .setDatabase(CORE_SCHEMA)
+      .setCacheName(`${project.getId()}:core`);
     const audits = new Audit(dbForProject);
     return { client, audits };
   }
