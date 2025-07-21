@@ -51,9 +51,10 @@ import {
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
 import { CreateIndexDTO } from './DTO/indexes.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
+import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
 
 @Controller({ version: ['1'], path: 'schemas/:schemaId/collections' })
-@UseGuards(ProjectGuard)
+@UseGuards(ProjectGuard, DocSchemaGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) { }

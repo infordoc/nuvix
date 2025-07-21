@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule, OnModuleInit } from '@nestjs/co
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailsQueue } from '@nuvix/core/resolvers/queues/mails.queue';
+import { AuditsQueue } from '@nuvix/core/resolvers/queues/audits.queue';
 // Constants
 import {
   APP_REDIS_DB,
@@ -21,6 +22,7 @@ import {
   HostHook,
   ProjectHook,
   ProjectUsageHook,
+  AuditHook,
 } from '@nuvix/core/resolvers/hooks';
 // Modules
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -29,7 +31,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { CoreModule } from '@nuvix/core/core.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BaseModule } from './base/base.module';
-import { DatabaseModule } from './databases/databases.module';
+import { DatabasesModule } from './databases/databases.module';
 import { AvatarsModule } from './avatars/avatars.module';
 import { UsersModule } from './users/users.module';
 import { AccountModule } from './account/account.module';
@@ -38,20 +40,19 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { FunctionsModule } from './functions/functions.module';
 import { StorageModule } from './storage/storage.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { SchemasModule } from './schemas/schemas.module';
 // Controllers
-import { SchemaModule } from './schemas/schemas.module';
 import { BaseController } from './base/base.controller';
 import { UsersController } from './users/users.controller';
 import { TeamsController } from './teams/teams.controller';
 import { AccountController } from './account/account.controller';
-import { DatabaseController } from './schemas/collections/collections.controller';
 import { AvatarsController } from './avatars/avatars.controller';
 import { FunctionsController } from './functions/functions.controller';
-import { SchemaController } from './schemas/schemas.controller';
+import { SchemasController } from './schemas/schemas.controller';
 import { StorageController } from './storage/storage.controller';
 import { MessagingController } from './messaging/messaging.controller';
-import { AuditHook } from '@nuvix/core/resolvers/hooks/audit.hook';
-import { AuditsQueue } from '@nuvix/core/resolvers/queues/audits.queue';
+import { DatabasesController } from './databases/databases.controller';
+
 import { Key } from '@nuvix/core/helper/key.helper';
 
 @Module({
@@ -65,11 +66,11 @@ import { Key } from '@nuvix/core/helper/key.helper';
         db: APP_REDIS_DB,
         tls: APP_REDIS_SECURE ? {} : undefined,
         enableOfflineQueue: false, // Disable offline queue to avoid job accumulation when Redis is down
-        enableReadyCheck: true, // Ensure the connection is ready before processing jobs
+        enableReadyCheck: true,
       },
       defaultJobOptions: {
         priority: 1,
-        attempts: 3,
+        attempts: 2,
         backoff: { type: 'exponential', delay: 5000 },
         removeOnComplete: true,
         removeOnFail: true,
@@ -94,12 +95,12 @@ import { Key } from '@nuvix/core/helper/key.helper';
     UsersModule,
     TeamsModule,
     AccountModule,
-    DatabaseModule,
+    DatabasesModule,
     AvatarsModule,
     RealtimeModule,
     FunctionsModule,
     StorageModule,
-    SchemaModule,
+    SchemasModule,
     MessagingModule,
   ],
   controllers: [AppController],
@@ -120,23 +121,32 @@ export class AppModule implements NestModule, OnModuleInit {
         UsersController,
         TeamsController,
         AccountController,
-        DatabaseController,
+        DatabasesController,
         AvatarsController,
         FunctionsController,
-        SchemaController,
+        SchemasController,
         StorageController,
         MessagingController,
       )
-      .apply(AuthHook, ApiHook, ProjectUsageHook, AuditHook)
+      .apply(AuthHook, ApiHook, ProjectUsageHook)
       .forRoutes(
         BaseController,
         UsersController,
         TeamsController,
         AccountController,
-        DatabaseController,
+        DatabasesController,
         AvatarsController,
         FunctionsController,
-        SchemaController,
+        SchemasController,
+        StorageController,
+        MessagingController,
+      ).apply(AuditHook).forRoutes(
+        UsersController,
+        TeamsController,
+        AccountController,
+        DatabasesController,
+        FunctionsController,
+        SchemasController,
         StorageController,
         MessagingController,
       );
