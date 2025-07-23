@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Delete, Insert, Select, Update } from './schemas.types';
+import { CallFunction, Delete, Insert, Select, Update } from './schemas.types';
 import {
   Expression,
   ParsedOrdering,
@@ -167,6 +167,34 @@ export class SchemasService {
     this.logger.debug(qb.toSQL());
 
     return pg.withTransaction(async () => await qb);
+  }
+
+  async callFunction({ pg, functionName, schema, url, limit, offset, args }: CallFunction) {
+    const _argNames = Object.keys(args || {});
+    const _values = Object.values(args || {});
+
+    const placeholder = _argNames.map(n => `${n}:= ?`).join(', ')
+    const _raw = pg.raw(
+      `??.??(${placeholder})`,
+      [schema, functionName, ..._values]
+    );
+    const qb = pg.queryBuilder().table(_raw as any);
+
+    const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);
+
+    const { select, filter, order } = this.getParamsFromUrl(url, functionName);
+
+    astToQueryBuilder.applySelect(select);
+    astToQueryBuilder.applyFilters(filter);
+    astToQueryBuilder.applyOrder(order, functionName);
+    astToQueryBuilder.applyLimitOffset({
+      limit,
+      offset,
+    });
+
+    this.logger.debug(qb.toSQL());
+
+    return await qb;
   }
 
   private getParamsFromUrl(

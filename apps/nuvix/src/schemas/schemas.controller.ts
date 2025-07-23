@@ -36,9 +36,9 @@ import { ParserErrorFilter } from '@nuvix/core/filters/parser-error.filter';
 @UseFilters(ParserErrorFilter)
 export class SchemasController {
   private readonly logger = new Logger(SchemasController.name);
-  constructor(private readonly schemasService: SchemasService) {}
+  constructor(private readonly schemasService: SchemasService) { }
 
-  @Get(':tableId')
+  @Get([':tableId', 'tables/:tableId'])
   @Sdk({
     name: 'queryTable',
     description: 'Query a table with optional filters',
@@ -62,7 +62,7 @@ export class SchemasController {
     });
   }
 
-  @Post(':tableId')
+  @Post([':tableId', 'tables/:tableId'])
   async insertIntoTable(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
@@ -82,7 +82,7 @@ export class SchemasController {
     });
   }
 
-  @Patch(':tableId')
+  @Patch([':tableId', 'tables/:tableId'])
   async updateTables(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
@@ -106,7 +106,7 @@ export class SchemasController {
     });
   }
 
-  @Put(':tableId')
+  @Put([':tableId', 'tables/:tableId'])
   async upsertTable(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
@@ -117,9 +117,9 @@ export class SchemasController {
     columns?: string[],
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
-  ) {}
+  ) { }
 
-  @Delete(':tableId')
+  @Delete([':tableId', 'tables/:tableId'])
   async deleteTables(
     @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
@@ -142,4 +142,21 @@ export class SchemasController {
   // async tableMetadata() {
 
   // }
+
+  @Post(['fn/:functionId', 'functions/:functionId'])
+  async callFunction(
+    @Param('functionId') functionName: string,
+    @CurrentSchema() pg: DataSource,
+    @Req() request: NuvixRequest,
+    @Param('schemaId') schema: string = 'public',
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+    @Body() args: Record<string, any> = {},
+  ) {
+    return await this.schemasService.callFunction({
+      pg, schema, functionName,
+      url: request.raw.url,
+      limit, offset, args
+    })
+  }
 }
