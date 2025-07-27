@@ -1,4 +1,4 @@
-import { Global, Logger, Module } from '@nestjs/common';
+import { Global, Inject, Logger, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs';
 import path from 'path';
 import IORedis from 'ioredis';
@@ -289,4 +289,18 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
     ProjectUsageService,
   ],
 })
-export class CoreModule {}
+export class CoreModule implements OnModuleDestroy, OnModuleInit {
+  private readonly logger = new Logger(CoreModule.name);
+  constructor(@Inject(CACHE) private readonly cache: Cache) { }
+
+  async onModuleInit() {
+    await this.cache.flush();
+  }
+
+  async onModuleDestroy() {
+    this.logger.log('Initiating cache flush during module shutdown...');
+    await this.cache.flush();
+    this.logger.log('Cache successfully flushed on module shutdown.');
+  }
+}
+

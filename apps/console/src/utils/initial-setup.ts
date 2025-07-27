@@ -40,6 +40,7 @@ export async function initSetup() {
     const cache = new Cache(cacheAdapter);
 
     const dbForPlatform = new Database(adapter, cache);
+    await dbForPlatform.create();
 
     logger.log(`[Setup] - Starting...`);
     const consoleCollections = collections.console;
