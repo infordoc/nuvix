@@ -5,7 +5,7 @@
  * @beta
  */
 import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server';
-import { ConsoleModule } from './console.module';
+import { AppModule } from './app.module';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { config } from 'dotenv';
 import { HttpExceptionFilter } from '@nuvix/core/filters/http-exception.filter';
@@ -76,7 +76,7 @@ async function bootstrap() {
   });
 
   const app = await NuvixFactory.create<NestFastifyApplication>(
-    ConsoleModule,
+    AppModule,
     adapter,
     {
       abortOnError: false,

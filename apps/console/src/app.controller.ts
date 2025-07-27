@@ -1,12 +1,11 @@
 import {
-  Body,
   Controller,
   Get,
   Post,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConsoleService } from './console.service';
+import { AppService } from './app.service';
 import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { Models } from '@nuvix/core/helper/response.helper';
@@ -16,14 +15,14 @@ import { ResModel } from '@nuvix/core/decorators';
 @Controller()
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
-export class ConsoleController {
-  constructor(private readonly consoleService: ConsoleService) {}
+export class AppController {
+  constructor(private readonly consoleService: AppService) {}
 
   @Get()
   @Public()
   getMain() {
     return {
-      message: 'Welcome to Nuvix Console API!',
+      message: 'Welcome to Nuvix Platform API!',
       version: '1.0.0',
       status: 'ok',
       uptime: process.uptime(),
@@ -141,29 +140,5 @@ export class ConsoleController {
         },
       ],
     };
-  }
-
-  @Public()
-  @Post('sources')
-  async getSources(@Body() input) {
-    return {};
-  }
-
-  @Get('init')
-  @Public()
-  async init() {
-    return await this.consoleService.initConsole();
-  }
-
-  @Get('reset')
-  @Public()
-  async reset() {
-    return await this.consoleService.resetConsole();
-  }
-
-  @Get('smtp')
-  @Public()
-  async getSmtp() {
-    return await this.consoleService.testSmtp();
   }
 }

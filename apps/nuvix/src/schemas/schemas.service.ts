@@ -169,15 +169,24 @@ export class SchemasService {
     return pg.withTransaction(async () => await qb);
   }
 
-  async callFunction({ pg, functionName, schema, url, limit, offset, args }: CallFunction) {
+  async callFunction({
+    pg,
+    functionName,
+    schema,
+    url,
+    limit,
+    offset,
+    args,
+  }: CallFunction) {
     const _argNames = Object.keys(args || {});
     const _values = Object.values(args || {});
 
-    const placeholder = _argNames.map(n => `${n}:= ?`).join(', ')
-    const _raw = pg.raw(
-      `??.??(${placeholder})`,
-      [schema, functionName, ..._values]
-    );
+    const placeholder = _argNames.map(n => `${n}:= ?`).join(', ');
+    const _raw = pg.raw(`??.??(${placeholder})`, [
+      schema,
+      functionName,
+      ..._values,
+    ]);
     const qb = pg.queryBuilder().table(_raw as any);
 
     const astToQueryBuilder = new ASTToQueryBuilder(qb, pg);

@@ -4,8 +4,8 @@ import {
   NestModule,
   OnModuleInit,
 } from '@nestjs/common';
-import { ConsoleService } from './console.service';
-import { ConsoleController } from './console.controller';
+import { AppService } from './app.service';
+import { AppController } from './app.controller';
 import { AccountModule } from './account/account.module';
 import { UsersModule } from './users/users.module';
 import { OrganizationsModule } from './organizations/organizations.module';
@@ -76,10 +76,10 @@ import { Key } from '@nuvix/core/helper/key.helper';
     ProjectModule,
     PgMetaModule,
   ],
-  controllers: [ConsoleController],
-  providers: [ConsoleService, MailsQueue, AuditsQueue],
+  controllers: [AppController],
+  providers: [AppService, MailsQueue, AuditsQueue],
 })
-export class ConsoleModule implements NestModule, OnModuleInit {
+export class AppModule implements NestModule, OnModuleInit {
   constructor(private readonly jwtService: JwtService) {}
 
   onModuleInit() {

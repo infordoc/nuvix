@@ -36,7 +36,7 @@ import { ParserErrorFilter } from '@nuvix/core/filters/parser-error.filter';
 @UseFilters(ParserErrorFilter)
 export class SchemasController {
   private readonly logger = new Logger(SchemasController.name);
-  constructor(private readonly schemasService: SchemasService) { }
+  constructor(private readonly schemasService: SchemasService) {}
 
   @Get([':tableId', 'tables/:tableId'])
   @Sdk({
@@ -117,7 +117,7 @@ export class SchemasController {
     columns?: string[],
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
-  ) { }
+  ) {}
 
   @Delete([':tableId', 'tables/:tableId'])
   async deleteTables(
@@ -154,9 +154,13 @@ export class SchemasController {
     @Body() args: Record<string, any> = {},
   ) {
     return await this.schemasService.callFunction({
-      pg, schema, functionName,
+      pg,
+      schema,
+      functionName,
       url: request.raw.url,
-      limit, offset, args
-    })
+      limit,
+      offset,
+      args,
+    });
   }
 }

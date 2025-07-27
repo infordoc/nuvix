@@ -21,7 +21,7 @@ import * as fs from 'fs/promises';
 import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
-export class ConsoleService {
+export class AppService {
   private readonly logger = new Logger('CONSOLE');
 
   constructor(
