@@ -1,7 +1,9 @@
 import {
+  Body,
   Controller,
   Get,
   Post,
+  Request,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -11,12 +13,13 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { Models } from '@nuvix/core/helper/response.helper';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 import { ResModel } from '@nuvix/core/decorators';
+import { CreateWaitlistDTO } from './users/DTO/waitlist.dto';
 
 @Controller()
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class AppController {
-  constructor(private readonly consoleService: AppService) {}
+  constructor(private readonly appService: AppService) {}
 
   @Get()
   @Public()
@@ -48,18 +51,17 @@ export class AppController {
   @Get('plans')
   @ResModel({ type: Models.BILLING_PLAN, list: true })
   async getPlans() {
-    const plans = await this.consoleService.getPlans();
+    const plans = await this.appService.getPlans();
     return {
       total: plans.length,
       plans: plans,
     };
   }
 
-  @Public()
   @Post('plans')
   @ResModel(Models.BILLING_PLAN)
   async createPlan() {
-    return await this.consoleService.createPlan();
+    return await this.appService.createPlan();
   }
 
   @Public()
@@ -140,5 +142,14 @@ export class AppController {
         },
       ],
     };
+  }
+
+  @Public()
+  @Post('waitlist')
+  async joinWaitlist(
+    @Request() req: NuvixRequest,
+    @Body() body: CreateWaitlistDTO,
+  ) {
+    return await this.appService.joinWaitlist(req, body);
   }
 }

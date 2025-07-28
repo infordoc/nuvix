@@ -6,13 +6,4 @@ import { CreateWaitlistDTO } from './DTO/waitlist.dto';
 @Controller({ version: ['1'], path: 'users' })
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @Public()
-  @Post('waitlist')
-  async joinWaitlist(
-    @Request() req: NuvixRequest,
-    @Body() body: CreateWaitlistDTO,
-  ) {
-    return await this.usersService.joinWaitlist(req, body);
-  }
 }

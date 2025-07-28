@@ -1,5 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Database, Document, Permission, Query, Role } from '@nuvix/database';
+import {
+  Database,
+  Document,
+  DuplicateException,
+  Permission,
+  Query,
+  Role,
+} from '@nuvix/database';
 import collections from '@nuvix/core/collections';
 import {
   DB_FOR_PLATFORM,
@@ -19,6 +26,8 @@ import path from 'path';
 import * as Template from 'handlebars';
 import * as fs from 'fs/promises';
 import { InjectQueue } from '@nestjs/bullmq';
+import { CreateWaitlistDTO } from './users/DTO/waitlist.dto';
+import { Exception } from '@nuvix/core/extend/exception';
 
 @Injectable()
 export class AppService {
@@ -442,5 +451,33 @@ export class AppService {
       body: body,
       variables: vars,
     });
+  }
+
+  async joinWaitlist(request: NuvixRequest, body: CreateWaitlistDTO) {
+    const doc = new Document({
+      ...body,
+      metadata: {
+        ...(body.metadata || {}),
+        userAgent: request.headers['user-agent'] ?? null,
+        ip: request.ip ?? null,
+      },
+    });
+
+    try {
+      await this.dbForPlatform.createDocument('waitlist', doc);
+      return {
+        message: "You've successfully joined the waitlist.",
+      };
+    } catch (e) {
+      if (e instanceof DuplicateException) {
+        throw new Exception(
+          'DUPLICATE_WAITLIST_ENTRY',
+          'This email is already on the waitlist.',
+          409,
+        );
+      }
+      console.log(e);
+      throw new Exception(Exception.GENERAL_SERVER_ERROR);
+    }
   }
 }

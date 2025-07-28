@@ -1,6 +1,13 @@
 import { Logger } from '@nestjs/common';
 import { Cache, Memory } from '@nuvix/cache';
-import { Database, Document, MariaDB, Permission, Role, DuplicateException } from '@nuvix/database';
+import {
+  Database,
+  Document,
+  MariaDB,
+  Permission,
+  Role,
+  DuplicateException,
+} from '@nuvix/database';
 import collections from '@nuvix/utils/collections';
 import {
   APP_DATABASE_HOST,
@@ -43,7 +50,7 @@ export async function initSetup() {
     try {
       await dbForPlatform.create();
     } catch (e) {
-      if (!e instanceof DuplicateException) throw e;
+      if (!(e instanceof DuplicateException)) throw e;
     }
 
     logger.log(`[Setup] - Starting...`);
@@ -168,6 +175,8 @@ export async function initSetup() {
       await new Audit(dbForPlatform).setup();
     }
     logger.log('[Setup] - Successfully complete the server setup.');
+
+    await cache.flush();
   } catch (error) {
     logger.error(`[Setup] - Error while setting up server: ${error.message}`);
     throw new Error('Something went worng in server setup process.');

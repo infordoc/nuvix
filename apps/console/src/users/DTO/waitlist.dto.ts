@@ -9,7 +9,7 @@ import {
 
 export class CreateWaitlistDTO {
   @IsEmail()
-  @MaxLength(256)
+  @MaxLength(2000)
   email: string;
 
   @IsOptional()
