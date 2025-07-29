@@ -9,7 +9,7 @@ import type {
 import { OrderParser } from './order';
 import { ParserError } from './error';
 import { Tokenizer, TokenType } from './tokenizer';
-import { BaseParser, specialOperators } from './base';
+import { AllowedOperators, BaseParser, specialOperators } from './base';
 
 export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
   private readonly logger = new Logger(Parser.name);
@@ -175,6 +175,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
   private parseCondition(): Condition {
     // Handle special fields: $
     if (this.check(TokenType.SPECIAL_FIELD)) {
+      this.advance(); // consume '$'
       this.consume(TokenType.DOT, "Expected '.' after special field");
       const operator = this.consume(
         TokenType.IDENTIFIER,
@@ -227,7 +228,8 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
       this.consume(TokenType.RPAREN, "Expected ')' after arguments");
     }
 
-    return this.buildCondition(this.fieldToString(field), operator, args);
+    this.validateOperator(operator, args);
+    return this.buildCondition(this.fieldToString(field), operator as AllowedOperators, args);
   }
 
   private parseArgumentList(): any[] {
@@ -326,34 +328,18 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
 
   private buildCondition(
     field: string,
-    operator: string,
+    operator: AllowedOperators,
     args: any[],
   ): Condition {
     const parsedField =
       typeof field === 'string' ? this.parseFieldString(field) : field;
 
-    if (args.length === 0) {
-      return {
-        field: parsedField,
-        operator,
-        value: null,
-        tableName: this.tableName,
-      };
-    } else if (args.length === 1) {
-      return {
-        field: parsedField,
-        operator,
-        value: args[0],
-        tableName: this.tableName,
-      };
-    } else {
-      return {
-        field: parsedField,
-        operator,
-        values: args,
-        tableName: this.tableName,
-      };
-    }
+    return {
+      field: parsedField,
+      operator,
+      values: args,
+      tableName: this.tableName,
+    };
   }
 
   private handleSpecialCase(
@@ -419,6 +405,106 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
       );
     }
     return num;
+  }
+
+  private validateOperator(
+    operator: string,
+    args: any[]
+  ) {
+    const count = args.length;
+
+    const expect = (expected: string, condition: boolean) => {
+      if (!condition) {
+        throw new Error(
+          `Operator "${operator}" expects ${expected}, but got ${count} value${count !== 1 ? 's' : ''}.`
+        );
+      }
+    };
+
+    switch (operator as AllowedOperators) {
+      // Simple binary comparison
+      case 'eq':
+      case 'neq':
+      case 'gt':
+      case 'gte':
+      case 'lt':
+      case 'lte':
+      case 'like':
+      case 'ilike':
+      case 'match':
+      case 'imatch':
+        expect(
+          'a single value (unless using `any` or `all`)',
+          count === 1 || (count > 1 && ['any', 'all'].includes(args[0]))
+        );
+        break;
+
+      // Multi-value conditions
+      case 'in':
+      case 'notin':
+      case 'ov':  // overlap
+      case 'cs':  // contains
+      case 'cd':  // contained in
+      case 'all':
+      case 'any':
+        expect('at least one value', count >= 1);
+        break;
+
+      // Between range
+      case 'between':
+        expect('exactly two values', count === 2);
+        break;
+
+      // IS / IS NOT comparisons
+      case 'is':
+      case 'isnot':
+        expect('exactly one value', count === 1);
+        break;
+
+      // NULL check (no values)
+      case 'null':
+      case 'notnull':
+        expect('no values', count === 0);
+        break;
+
+      // Range and adjacency (PostgreSQL-specific range operators)
+      case 'sl':   // strictly left
+      case 'sr':   // strictly right
+      case 'nxl':  // not extend left
+      case 'nxr':  // not extend right
+      case 'adj':  // adjacent
+        expect('exactly two values', count === 2);
+        break;
+
+      // Logical operators
+      case 'and':
+      case 'or':
+        expect('at least two values', count >= 2);
+        break;
+
+      case 'not':
+        expect('exactly one value', count === 1);
+        break;
+
+      // Full-text search operators
+      case 'fts':
+      case 'plfts':
+      case 'phfts':
+      case 'wfts':
+        expect(
+          'one or two values: (search term) or (language, search term)',
+          count === 1 || count === 2
+        );
+        break;
+
+      // Distinct check
+      case 'isdistinct':
+        expect('zero or one value', count === 0 || count === 1);
+        break;
+
+      default:
+        throw new Error(`Unknown or unsupported operator "${operator}".`);
+    }
   }
 
   private _validateConfig(): void {

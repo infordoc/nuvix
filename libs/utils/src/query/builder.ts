@@ -35,6 +35,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   private nestingDepth = 0;
   private readonly maxNestingDepth: number;
   private readonly allowUnsafeOperators: boolean;
+  private allowedSchemas: string[] = [];
   private anyAllsupportedOperators = [
     'eq',
     'like',
@@ -266,8 +267,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     const {
       field: _field,
       operator,
-      value: _value,
-      values,
+      values = [],
       tableName,
     } = condition;
 
@@ -275,216 +275,102 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       throw new Error('Condition must have both field and operator');
     }
 
-    // Validate operator if safety is enabled
-    if (!this.allowUnsafeOperators && !this._isKnownOperator(operator)) {
-      this.logger.warn(
-        `Unknown operator: ${operator}, proceeding with caution`,
-      );
-    }
+    const field = this._rawField(_field, tableName) as unknown as ReturnType<PG['raw']>;
 
-    const field = this._rawField(_field, tableName) as unknown as ReturnType<
-      PG['raw']
-    >;
-    const fieldSql = field.toSQL().sql;
-
-    // Check for ANY/ALL pattern with 3 values
+    // ANY/ALL modifiers
     if (
-      values &&
       Array.isArray(values) &&
       values.length >= 2 &&
       this.anyAllsupportedOperators.includes(operator)
     ) {
-      const [modifier, ...operatorValues] = values;
+      const [modifier, ...restValues] = values;
       if (modifier === 'any' || modifier === 'all') {
-        return this._applyAnyAllCondition(
-          field,
-          operator,
-          modifier,
-          operatorValues,
-          queryBuilder,
-        );
+        return this._applyAnyAllCondition(field, operator, modifier, restValues, queryBuilder);
       }
     }
 
-    const right = this._valueTypeToPlaceholder(_value);
-    const value = this._isValueColumnName(_value) ? _value.name : _value;
-    const filterdValues = values?.filter(v => !this._isValueColumnName(v));
+    const value = values[0];
+    const filteredValues = values.filter(v => !this._isValueColumnName(v));
+    const right = this._valueTypeToPlaceholder(values);
 
     switch (operator) {
-      // Basic comparisons
-      case 'eq':
-        return queryBuilder.whereRaw(`?? = ${right}`, [field, value]);
-      case 'gt':
-        return queryBuilder.whereRaw(`?? > ${right}`, [field, value]);
-      case 'gte':
-        return queryBuilder.whereRaw(`?? >= ${right}`, [field, value]);
-      case 'lt':
-        return queryBuilder.whereRaw(`?? < ${right}`, [field, value]);
-      case 'lte':
-        return queryBuilder.whereRaw(`?? <= ${right}`, [field, value]);
-      case 'ne':
-      case 'neq':
-        return queryBuilder.whereRaw(`?? <> ${right}`, [field, value]);
+      case 'eq': return queryBuilder.whereRaw(`?? = ${right}`, [field, value]);
+      case 'gt': return queryBuilder.whereRaw(`?? > ${right}`, [field, value]);
+      case 'gte': return queryBuilder.whereRaw(`?? >= ${right}`, [field, value]);
+      case 'lt': return queryBuilder.whereRaw(`?? < ${right}`, [field, value]);
+      case 'lte': return queryBuilder.whereRaw(`?? <= ${right}`, [field, value]);
+      case 'neq': return queryBuilder.whereRaw(`?? <> ${right}`, [field, value]);
+      case 'like': return queryBuilder.whereRaw(`?? LIKE ${right}`, [field, value]);
+      case 'ilike': return queryBuilder.whereRaw(`?? ILIKE ${right}`, [field, value]);
+      case 'match': return queryBuilder.whereRaw(`?? ~ ${right}`, [field, value]);
+      case 'imatch': return queryBuilder.whereRaw(`?? ~* ${right}`, [field, value]);
+      case 'in': return queryBuilder.whereRaw(`?? IN (?)`, [field, filteredValues]);
+      case 'notin': return queryBuilder.whereRaw(`?? NOT IN (?)`, [field, filteredValues]);
 
-      // Pattern matching
-      case 'like':
-        return queryBuilder.whereRaw(`?? like ${right}`, [field, value]);
-      case 'ilike':
-        return queryBuilder.whereRaw(`?? ilike ${right}`, [field, value]);
-      case 'match':
-        return queryBuilder.whereRaw(`?? ~ ${right}`, [field, value]);
-      case 'imatch':
-        return queryBuilder.whereRaw(`?? ~* ${right}`, [field, value]);
-
-      // IN operator
-      case 'in':
-        if (!filterdValues || !Array.isArray(filterdValues)) {
-          throw new Error('IN operator requires an array of values');
-        }
-        return queryBuilder.whereRaw(`?? IN (?)`, [field, filterdValues]);
-
-      // IS operator
       case 'is':
-        if (value === null || value === 'null') {
-          return queryBuilder.whereRaw('?? is null', [field]);
-        } else if (value === 'not_null') {
-          return queryBuilder.whereRaw('?? is not null', [field]);
-        } else if (value === true || value === 'true') {
-          return queryBuilder.whereRaw('?? is true', [field]);
-        } else if (value === false || value === 'false') {
-          return queryBuilder.whereRaw('?? is false', [field]);
-        } else if (value === 'unknown') {
-          return queryBuilder.whereRaw(`?? IS UNKNOWN`, [field]);
+      case 'isnot':
+        switch (String(value)) {
+          case 'null': return queryBuilder.whereRaw(`?? IS NULL`, [field]);
+          case 'not_null': return queryBuilder.whereRaw(`?? IS NOT NULL`, [field]);
+          case 'true': return queryBuilder.whereRaw(`?? IS TRUE`, [field]);
+          case 'false': return queryBuilder.whereRaw(`?? IS FALSE`, [field]);
+          case 'unknown': return queryBuilder.whereRaw(`?? IS UNKNOWN`, [field]);
+          default: throw new Error(`Unsupported IS condition: ${value}`);
         }
-        throw Error(); // TODO: --------------
 
-      // IS DISTINCT FROM
-      case 'isdistinct':
-        return queryBuilder.whereRaw(`?? IS DISTINCT FROM ${right}`, [
-          field,
-          value,
-        ]);
+      case 'null': return queryBuilder.whereRaw(`?? IS NULL`, [field]);
+      case 'notnull': return queryBuilder.whereRaw(`?? IS NOT NULL`, [field]);
+      case 'isdistinct': return queryBuilder.whereRaw(`?? IS DISTINCT FROM ${right}`, [field, value]);
 
-      // Full-Text Search operators
-      case 'fts':
-        if (Array.isArray(values) && values.length >= 2) {
-          // Support language specification: [language, query] or [language, query, config]
-          const [language, query, config] = values;
-          return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ to_tsquery(?)`, [
-            language,
-            field,
-            query,
-          ]);
-        }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ to_tsquery(?)`, [
-          field,
-          value,
-        ]);
-      case 'plfts':
-        if (Array.isArray(values) && values.length >= 2) {
-          // Support language specification: [language, query]
-          const [language, query] = values;
-          return queryBuilder.whereRaw(
-            `to_tsvector(?, ??) @@ plainto_tsquery(?, ?)`,
-            [language, field, language, query],
-          );
-        }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ plainto_tsquery(?)`, [
-          field,
-          value,
-        ]);
-      case 'phfts':
-        if (Array.isArray(values) && values.length >= 2) {
-          // Support language specification: [language, query]
-          const [language, query] = values;
-          return queryBuilder.whereRaw(
-            `to_tsvector(?, ??) @@ phraseto_tsquery(?, ?)`,
-            [language, field, language, query],
-          );
-        }
-        return queryBuilder.whereRaw(`to_tsvector(??) @@ phraseto_tsquery(?)`, [
-          field,
-          value,
-        ]);
-      case 'wfts':
-        if (Array.isArray(values) && values.length >= 2) {
-          // Support language specification: [language, query]
-          const [language, query] = values;
-          return queryBuilder.whereRaw(
-            `to_tsvector(?, ??) @@ websearch_to_tsquery(?, ?)`,
-            [language, field, language, query],
-          );
-        }
-        return queryBuilder.whereRaw(
-          `to_tsvector(??) @@ websearch_to_tsquery(?)`,
-          [field, value],
-        );
+      // Full-text search
+      case 'fts': return this._applyFts(field, values, 'to_tsquery', queryBuilder);
+      case 'plfts': return this._applyFts(field, values, 'plainto_tsquery', queryBuilder);
+      case 'phfts': return this._applyFts(field, values, 'phraseto_tsquery', queryBuilder);
+      case 'wfts': return this._applyFts(field, values, 'websearch_to_tsquery', queryBuilder);
 
-      // Array/JSON operators
-      case 'cs': // contains
-        return queryBuilder.whereRaw(`?? @> ?`, [
-          field,
-          JSON.stringify(values || value),
-        ]);
-      case 'cd': // contained in
-        return queryBuilder.whereRaw(`?? <@ ?`, [
-          field,
-          JSON.stringify(values || value),
-        ]);
-      case 'ov': // overlaps
-        return queryBuilder.whereRaw(`?? && ?`, [
-          field,
-          JSON.stringify(values || value),
-        ]);
+      // Array/JSON
+      case 'cs': return queryBuilder.whereRaw(`?? @> ?`, [field, JSON.stringify(values)]);
+      case 'cd': return queryBuilder.whereRaw(`?? <@ ?`, [field, JSON.stringify(values)]);
+      case 'ov': return queryBuilder.whereRaw(`?? && ?`, [field, JSON.stringify(values)]);
 
-      // Range operators
-      case 'sl': // strictly left of
-        return queryBuilder.whereRaw(`?? << ?`, [field, value]);
-      case 'sr': // strictly right of
-        return queryBuilder.whereRaw(`?? >> ?`, [field, value]);
-      case 'nxr': // does not extend to the right of
-        return queryBuilder.whereRaw(`?? &< ?`, [field, value]);
-      case 'nxl': // does not extend to the left of
-        return queryBuilder.whereRaw(`?? &> ?`, [field, value]);
-      case 'adj': // is adjacent to
-        return queryBuilder.whereRaw(`?? -|- ?`, [field, value]);
+      // Range
+      case 'sl': return queryBuilder.whereRaw(`?? << ?`, [field, filteredValues]);
+      case 'sr': return queryBuilder.whereRaw(`?? >> ?`, [field, filteredValues]);
+      case 'nxl': return queryBuilder.whereRaw(`?? &> ?`, [field, filteredValues]);
+      case 'nxr': return queryBuilder.whereRaw(`?? &< ?`, [field, filteredValues]);
+      case 'adj': return queryBuilder.whereRaw(`?? -|- ?`, [field, filteredValues]);
 
-      // Operator modifiers
-      case 'all':
-        if (!values || !Array.isArray(values)) {
-          throw new Error('ALL operator requires an array of values');
-        }
-        return queryBuilder.whereRaw(`?? = ALL(?)`, [field, values]);
-      case 'any':
-        if (!values || !Array.isArray(values)) {
-          throw new Error('ANY operator requires an array of values');
-        }
-        return queryBuilder.whereRaw(`?? = ANY(?)`, [field, values]);
+      // Modifiers
+      case 'all': return queryBuilder.whereRaw(`?? = ALL(?)`, [field, filteredValues]);
+      case 'any': return queryBuilder.whereRaw(`?? = ANY(?)`, [field, filteredValues]);
 
       case 'between':
-        if (!values || !Array.isArray(values) || values.length !== 2) {
-          throw new Error('BETWEEN operator requires exactly 2 values');
+        if (values.length !== 2) {
+          throw new Error(`'between' operator expects exactly two values.`);
         }
-        return queryBuilder.whereRaw(`?? BETWEEN ? AND ?`, [
-          field,
-          values[0],
-          values[1],
-        ]);
-      case 'regex':
-        return queryBuilder.whereRaw(`?? ~ ${right}`, [field, value]);
-      case 'iregex':
-        return queryBuilder.whereRaw(`?? ~* ${right}`, [field, value]);
-      case 'not_regex':
-        return queryBuilder.whereRaw(`?? !~ ${right}`, [field, value]);
-      case 'not_iregex':
-        return queryBuilder.whereRaw(`?? !~* ${right}`, [field, value]);
+        return queryBuilder.whereRaw(`?? BETWEEN ? AND ?`, [field, values[0], values[1]]);
 
       default:
         throw new Error(`Unsupported operator: ${operator}`);
     }
   }
 
-  private _isValueColumnName(value: Condition['value']): value is ValueType {
+  private _applyFts(
+    field: ReturnType<PG['raw']>,
+    values: any[],
+    tsFunction: 'to_tsquery' | 'plainto_tsquery' | 'phraseto_tsquery' | 'websearch_to_tsquery',
+    queryBuilder: QueryBuilder
+  ): QueryBuilder {
+    if (values.length >= 2) {
+      const [language, query] = values;
+      return queryBuilder.whereRaw(`to_tsvector(?, ??) @@ ${tsFunction}(?, ?)`, [language, field, language, query]);
+    } else {
+      return queryBuilder.whereRaw(`to_tsvector(??) @@ ${tsFunction}(?)`, [field, values[0]]);
+    }
+  }
+
+
+  private _isValueColumnName(value: Condition['values'][number]): value is ValueType {
     if (
       value !== null &&
       typeof value === 'object' &&
@@ -495,8 +381,8 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     else false;
   }
 
-  private _valueTypeToPlaceholder(value: Condition['value']): '?' | '??' {
-    if (this._isValueColumnName(value)) {
+  private _valueTypeToPlaceholder(values: Condition['values']): '?' | '??' {
+    if (this._isValueColumnName(values[0])) {
       return '??';
     } else {
       return '?';

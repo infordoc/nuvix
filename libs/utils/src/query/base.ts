@@ -187,61 +187,58 @@ export abstract class BaseParser {
 
 export const allowedOperators = [
     // Comparison operators
-    'eq',
-    'neq',
-    'gt',
-    'gte',
-    'lt',
-    'lte',
+    'eq',      // =
+    'neq',     // <> or !=
+    'gt',      // >
+    'gte',     // >=
+    'lt',      // <
+    'lte',     // <=
 
     // String operators
-    'like',
-    'ilike',
-    'match',
-    'imatch',
-    'startswith',
-    'endswith',
-    'contains',
-    'icontains',
-    'istartswith',
-    'iendswith',
+    'like',      // LIKE
+    'ilike',     // ILIKE
+    'match',     // ~
+    'imatch',    // ~*
 
     // Array/List operators
-    'in',
-    'notin',
-    'overlap',
-    'contains',
-    'containedby',
+    'in',        // IN
+    'notin',     // NOT IN
+    'ov',        // &&
+    'cs',        // @>
+    'cd',        // <@
 
     // Range operators
-    'between',
-    'notbetween',
+    'between',     // BETWEEN
+    'sl',          // <<
+    'sr',          // >>
+    'nxr',         // &<
+    'nxl',         // &>
+    'adj',         // -|-
 
     // Null operators
-    'is',
-    'isnot',
-    'null',
-    'notnull',
+    'is',      // IS
+    'isnot',   // IS NOT
+    'null',    // IS NULL
+    'notnull', // IS NOT NULL
+    'isdistinct', // IS DISTINCT FROM
 
-    // JSON operators
-    'cs',
-    'cd',
-    'sl',
-    'sr',
-    'nxr',
-    'nxl',
+    // Full-Text Search
+    'fts',    // @@ (to_tsquery)
+    'plfts',  // @@ (plainto_tsquery)
+    'phfts',  // @@ (phraseto_tsquery)
+    'wfts',   // @@ (websearch_to_tsquery)
 
     // Logical operators
-    'and',
-    'or',
-    'not',
+    'and',    // AND
+    'or',     // OR
+    'not',    // NOT
 
-    // misc operators
-    'all',
-    'any',
-    'exists',
-    'notexists',
+    // Misc operators
+    'all',        // ALL
+    'any',        // ANY
 ] as const;
+
+export type AllowedOperators = typeof allowedOperators[number];
 
 export const specialOperators = [
     'limit',

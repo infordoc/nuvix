@@ -1,3 +1,5 @@
+import { AllowedOperators } from "./base";
+
 // Enhanced error types for better error handling
 export interface ParsePosition {
   line: number;
@@ -73,9 +75,8 @@ export interface ParserConfig {
 export interface Condition {
   tableName: string;
   field: string | (string | JsonFieldType)[];
-  operator: string;
-  value?: string | number | null | boolean | undefined | ValueType; // TODO: --
-  values?: (string | number | null | undefined | boolean | ValueType)[];
+  operator: AllowedOperators;
+  values: (string | number | null | undefined | boolean | ValueType)[];
 }
 
 export interface NotExpression {
