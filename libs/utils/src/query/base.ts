@@ -2,8 +2,8 @@ import type {
     Condition,
     JsonFieldType,
 } from './types';
-import { ParserError } from './error';
 import { Token, TokenType } from './tokenizer';
+import { Exception } from '@nuvix/core/extend/exception';
 
 
 export abstract class BaseParser {
@@ -55,11 +55,19 @@ export abstract class BaseParser {
         this.throwError(message, this.peek());
     }
 
-    protected throwError(message: string, token: Token): never {
-        throw new ParserError(message, token.position, token.value, {
-            expected: 'valid syntax',
-            received: token.value,
-        });
+    protected throwError(message: string, token?: Token): never {
+        token = token ?? { type: TokenType.IDENTIFIER, value: undefined, position: { line: 0, offset: 0, column: 0 }, length: 0 }
+        const { line, column, offset } = token.position;
+        const contextRadius = 20;
+        const snippetStart = Math.max(0, offset - contextRadius);
+        const snippetEnd = offset + token.length + contextRadius;
+
+        const context = this.tokens.slice(snippetStart, snippetEnd).map(t => t.value).join('');
+
+        throw new Exception(Exception.GENERAL_PARSER_ERROR, message).addDetails({
+            detail: `Unexpected token "${token.value}" of type ${TokenType[token.type]}.\nContext: ${context}`,
+            hint: `Check syntax near line ${line}, column ${column}`
+        })
     }
 
     protected parseFieldPath(): string | (string | JsonFieldType)[] {
@@ -94,18 +102,18 @@ export abstract class BaseParser {
                 parts.push(part);
             } else if (this.match(TokenType.JSON_EXTRACT)) {
                 // -> operator
-                const part = this.consume(
-                    TokenType.IDENTIFIER,
-                    "Expected field name after '->'",
-                ).value;
-                parts.push({ name: part, operator: '->', __type: 'json' });
+                if (!(this.check(TokenType.IDENTIFIER) || this.check(TokenType.NUMBER))) {
+                    this.throwError("Expected field name or index after '->'", this.peek());
+                }
+                const partToken = this.advance()
+                parts.push({ name: partToken.value, operator: '->', __type: 'json' });
             } else if (this.match(TokenType.JSON_EXTRACT_TEXT)) {
                 // ->> operator
-                const part = this.consume(
-                    TokenType.IDENTIFIER,
-                    "Expected field name after '->>'",
-                ).value;
-                parts.push({ name: part, operator: '->>', __type: 'json' });
+                if (!(this.check(TokenType.IDENTIFIER) || this.check(TokenType.NUMBER))) {
+                    this.throwError("Expected field name or index after '->>'", this.peek());
+                }
+                const partToken = this.advance()
+                parts.push({ name: partToken.value, operator: '->>', __type: 'json' });
             }
         }
 
@@ -113,7 +121,6 @@ export abstract class BaseParser {
             ? parts[0]
             : parts;
     }
-
 
     public parseFieldString(field: string): Condition['field'] {
         // Parse regular field paths with JSON operators
@@ -183,6 +190,69 @@ export abstract class BaseParser {
         return result;
     }
 
+}
+
+export class GroupParser extends BaseParser {
+
+    constructor(tokens: Token[]) {
+        super();
+        this.tokens = tokens;
+    }
+
+    override parseFieldPath(): string | (string | JsonFieldType)[] {
+        const parts: (string | JsonFieldType)[] = [];
+
+        // First part must be an identifier
+        const firstPart = this.consume(
+            TokenType.IDENTIFIER,
+            'Expected field name',
+        ).value;
+        parts.push(firstPart);
+
+        while (
+            this.check(TokenType.DOT) ||
+            this.check(TokenType.JSON_EXTRACT) ||
+            this.check(TokenType.JSON_EXTRACT_TEXT)
+        ) {
+            if (this.match(TokenType.DOT)) {
+                const part = this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expected field name after '.'",
+                ).value;
+                parts.push(part);
+            } else if (this.match(TokenType.JSON_EXTRACT)) {
+                const part = this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expected field name after '->'",
+                ).value;
+                parts.push({ name: part, operator: '->', __type: 'json' });
+            } else if (this.match(TokenType.JSON_EXTRACT_TEXT)) {
+                const part = this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expected field name after '->>'",
+                ).value;
+                parts.push({ name: part, operator: '->>', __type: 'json' });
+            }
+        }
+
+        return parts.length === 1 && typeof parts[0] === 'string'
+            ? parts[0]
+            : parts;
+    }
+
+    parse(): Condition['field'][] {
+        const fields: Condition['field'][] = [];
+        while (!this.isAtEnd()) {
+            const field = this.fieldToString(this.parseFieldPath());
+            fields.push(this.parseFieldString(field));
+            if (this.match(TokenType.COMMA)) {
+                continue;
+            } else {
+                break;
+            }
+        }
+        return fields;
+    }
 }
 
 export const allowedOperators = [

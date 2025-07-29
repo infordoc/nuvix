@@ -7,9 +7,8 @@ import type {
   ParserResult,
 } from './types';
 import { OrderParser } from './order';
-import { ParserError } from './error';
 import { Tokenizer, TokenType } from './tokenizer';
-import { AllowedOperators, BaseParser, specialOperators } from './base';
+import { AllowedOperators, BaseParser, GroupParser, specialOperators } from './base';
 
 export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
   private readonly logger = new Logger(Parser.name);
@@ -37,39 +36,24 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
 
   parse(str: string): T & Expression {
     if (typeof str !== 'string') {
-      throw new ParserError(
-        'Parser input must be a string',
-        { line: 1, column: 1, offset: 0 },
-        String(str),
-        { expected: 'string', received: typeof str },
-      );
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Input must be a string');
     }
 
     try {
       const tokenizer = new Tokenizer(str.trim());
-      const start = performance.now()
       this.tokens = tokenizer.tokenize();
-      const end = performance.now()
 
-      this.logger.debug('THIS IS TIME', end - start, { tokens: this.tokens })
       this.current = 0;
-      const _start = performance.now()
       const result = {
         ...this.parseExpression(true),
         ...(this.extraData as T),
       };
-      const _end = performance.now()
-      this.logger.debug('Parser taken time', _end - _start, { result })
       return result;
     } catch (error) {
-      if (error instanceof ParserError) {
+      if (error instanceof Exception) {
         throw error;
-      } else if (error instanceof Error) {
-        throw new Exception(
-          Exception.GENERAL_PARSER_ERROR,
-          `Parse error: ${error.message}`,
-        );
       }
+      this.logger.debug(error)
       throw new Exception(
         Exception.GENERAL_PARSER_ERROR,
         'Unknown parsing error occurred',
@@ -141,6 +125,12 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
         this.consume(TokenType.LPAREN, "Expected '(' after 'or'");
         const expressions = this.parseCommaSeparatedExpressions();
         this.consume(TokenType.RPAREN, "Expected ')' after or arguments");
+        if (expressions.length < 2) {
+          this.throwError(
+            "Logical 'or' requires at least two expressions",
+            this.peek(),
+          );
+        }
         return { or: expressions };
       }
 
@@ -183,11 +173,11 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
       ).value;
 
       if (!specialOperators.includes(operator as typeof specialOperators[number])) {
-        throw new Error(`Unknown operator "${operator}" found.`)
+        this.throwError(`Unknown operator "${operator}" found.`, this.peek())
       }
 
       let args: any[] = [];
-      if (operator === 'order') {
+      if (operator === 'order' || operator === 'group') {
         // Collect tokens between '(' and ')'
         if (this.match(TokenType.LPAREN)) {
           const orderTokens: any[] = [];
@@ -203,6 +193,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
             length: 0,
           })
           args = orderTokens;
+          this.logger.debug({ args })
         }
       } else if (this.match(TokenType.LPAREN)) {
         args = this.parseArgumentList();
@@ -229,6 +220,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
     }
 
     this.validateOperator(operator, args);
+    // TODO: we have to direct pass the field to the buildCondition method
     return this.buildCondition(this.fieldToString(field), operator as AllowedOperators, args);
   }
 
@@ -308,14 +300,14 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
       case TokenType.IDENTIFIER:
         this.advance();
         // Check for date-like patterns or cast expressions
-        if (
-          /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?Z?)?$/.test(token.value)
-        ) {
-          return token.value;
-        }
-        if (token.value.includes('::')) {
-          return { __type: 'raw', value: token.value };
-        }
+        // if (
+        //   /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?Z?)?$/.test(token.value)
+        // ) {
+        //   return token.value;
+        // }
+        // if (token.value.includes('::')) {
+        //   return { __type: 'raw', value: token.value };
+        // }
         return token.value;
 
       default:
@@ -331,11 +323,10 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
     operator: AllowedOperators,
     args: any[],
   ): Condition {
-    const parsedField =
-      typeof field === 'string' ? this.parseFieldString(field) : field;
+    let _field = typeof field === 'string' ? this.parseFieldString(field) : field;
 
     return {
-      field: parsedField,
+      field: _field,
       operator,
       values: args,
       tableName: this.tableName,
@@ -374,14 +365,12 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
         break;
       case 'group':
         if (args.length > 0) {
-          this.extraData['group'] = (args[0] as string)
-            .split(',')
-            .map(arg => this.parseFieldString(String(arg)));
+          const parser = new GroupParser(args);
+          this.extraData['group'] = parser.parse();
         }
         break;
       case 'order':
         if (args.length > 0) {
-          this.logger.debug({ args })
           const orders = OrderParser.parse(args, this.tableName, this.mainTable);
           if (orders && orders.length > 0) {
             this.extraData['order'] = orders;
@@ -415,8 +404,9 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
 
     const expect = (expected: string, condition: boolean) => {
       if (!condition) {
-        throw new Error(
-          `Operator "${operator}" expects ${expected}, but got ${count} value${count !== 1 ? 's' : ''}.`
+        this.throwError(
+          `Operator "${operator}" expects ${expected}, but got ${count} value${count !== 1 ? 's' : ''}.`,
+          this.peek()
         );
       }
     };
@@ -503,33 +493,21 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
         break;
 
       default:
-        throw new Error(`Unknown or unsupported operator "${operator}".`);
+        this.throwError(`Unknown or unsupported operator "${operator}".`, this.peek());
     }
   }
 
   private _validateConfig(): void {
     if (!this.config?.groups) {
-      throw new ParserError(
+      throw new Error(
         'Config must include groups configuration',
-        { line: 1, column: 1, offset: 0 },
-        'config validation',
-        {
-          expected: 'valid ParserConfig with groups',
-          received: 'invalid config',
-        },
       );
     }
 
     const { OPEN, CLOSE, SEP, OR, NOT } = this.config.groups;
     if (!OPEN || !CLOSE || !SEP || !OR || !NOT) {
-      throw new ParserError(
+      throw new Error(
         'All group characters (OPEN, CLOSE, SEP, OR, NOT) must be defined',
-        { line: 1, column: 1, offset: 0 },
-        JSON.stringify(this.config.groups),
-        {
-          expected: 'all group characters defined',
-          received: `OPEN: ${OPEN}, CLOSE: ${CLOSE}, SEP: ${SEP}, OR: ${OR}, NOT: ${NOT}`,
-        },
       );
     }
   }

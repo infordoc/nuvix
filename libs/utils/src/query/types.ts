@@ -1,6 +1,5 @@
 import { AllowedOperators } from "./base";
 
-// Enhanced error types for better error handling
 export interface ParsePosition {
   line: number;
   column: number;
@@ -38,6 +37,10 @@ export interface ColumnNode {
   path: string | (string | JsonFieldType)[];
   alias: string | null;
   cast: string | null;
+  aggregate?: {
+    fn: 'sum' | 'count' | 'min' | 'max' | 'avg';
+    cast: string;
+  };
 }
 
 export interface EmbedNode {
@@ -102,6 +105,8 @@ export interface ParserResult {
   limit?: number;
   offset?: number;
   group?: Condition['field'][];
+  order?: ParsedOrdering[];
+  shape?: 'array' | 'object';
 }
 
 export interface EmbedParserResult extends ParserResult {

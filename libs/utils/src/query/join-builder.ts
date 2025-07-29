@@ -7,6 +7,8 @@ import {
   SelectNode,
 } from './types';
 import { ASTToQueryBuilder } from './builder';
+import { Exception } from '@nuvix/core/extend/exception';
+import { flatten } from '@nestjs/common';
 
 type QueryBuilder = ReturnType<DataSource['queryBuilder']>;
 
@@ -28,9 +30,30 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       flatten: shouldFlatten,
       shape: resultShape,
     } = embedNode;
+    let joinAlias = tableAlias || tableName;
+
+    if (tableName.includes('.')) {
+      const [_schema, _table] = tableName.split('.', 2);
+      if (!this.astBuilder.allowedSchemas.includes(_schema)) {
+        throw new Exception(
+          Exception.GENERAL_QUERY_BUILDER_ERROR,
+          `Schema "${_schema}" is not allowed for join: ${tableName}`,
+        );
+      }
+      if (!tableAlias) { joinAlias = _table };
+    }
 
     const { limit, offset, order, group, ...filterConstraints } = constraint;
-    const joinAlias = tableAlias || tableName;
+
+    if (!flatten && !['left', 'inner'].includes(joinType)) {
+      throw new Exception(
+        Exception.GENERAL_QUERY_BUILDER_ERROR,
+        `Unsupported join type "${joinType}" for non-flattened embed: ${tableName}`,
+      ).addDetails({
+        hint: 'Use "left" or "inner" join for non-flattened embeds.',
+        detail: `Invalid join type "${joinType}" for embed: ${tableName}`,
+      });
+    }
 
     if (shouldFlatten) {
       this._applyFlattenedJoin(
@@ -131,10 +154,10 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
 
     this.astBuilder.qb[joinType + 'Join'](
       this.astBuilder.pg.raw(
-        `LATERAL (${lateralSelectContent})`,
+        `lateral (${lateralSelectContent})`,
         subQuerySQL.bindings,
       ),
-      this.astBuilder.pg.raw('TRUE'),
+      this.astBuilder.pg.raw('true'),
     );
 
     this.astBuilder.qb.select(joinAlias);
@@ -167,13 +190,13 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
 
     if (resultShape === 'object') {
       return `
-        SELECT to_jsonb(${aliasedSubqueryResult}) AS ${wrappedAlias}
-        FROM (${subQuerySQL}) AS ${wrappedAlias}
+        select to_jsonb(${aliasedSubqueryResult}) as ${wrappedAlias}
+        from (${subQuerySQL}) as ${wrappedAlias}
       `;
     } else {
       return `
-        SELECT COALESCE(jsonb_agg(to_jsonb(${aliasedSubqueryResult})), '[]'::jsonb) AS ${wrappedAlias}
-        FROM (${subQuerySQL}) AS ${wrappedAlias}
+        select coalesce(jsonb_agg(to_jsonb(${aliasedSubqueryResult})), '[]'::jsonb) as ${wrappedAlias}
+        from (${subQuerySQL}) as ${wrappedAlias}
       `;
     }
   }

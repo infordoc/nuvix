@@ -88,20 +88,8 @@ class OrderParser extends BaseParser {
       if (this.isAtEnd()) break;
 
       // Parse path (column or json path)
-      let fieldPath = this.parseFieldPath();
-      let path: string;
-      if (typeof fieldPath === 'string') {
-        path = fieldPath;
-      } else {
-        // Join string parts and serialize JSON field accesses
-        path = fieldPath
-          .map(part =>
-            typeof part === 'string'
-              ? part
-              : `${part.operator}${part.name}`
-          )
-          .join('');
-      }
+      let fieldPath = this.fieldToString(this.parseFieldPath());
+      console.log({ fieldPath })
 
       let direction: 'asc' | 'desc' = 'asc';
       let nulls: 'nullsfirst' | 'nullslast' | null = null;
@@ -137,7 +125,7 @@ class OrderParser extends BaseParser {
       }
 
       results.push({
-        path,
+        path: this.parseFieldString(fieldPath),
         direction,
         nulls,
       });
@@ -170,11 +158,13 @@ class OrderParser extends BaseParser {
       this.check(TokenType.JSON_EXTRACT_TEXT)
     ) {
       if (this.match(TokenType.DOT)) {
-        const token = this.peek()
-        if (this.check(TokenType.IDENTIFIER) && (
-          OrderParser.SORT_DIRECTIONS.includes(token.value as any) ||
-          OrderParser.NULL_HANDLING_OPTIONS.includes(token.value as any)
-        )) {
+        const token = this.peek();
+        if (
+          this.check(TokenType.IDENTIFIER) && (
+            OrderParser.SORT_DIRECTIONS.includes(token.value as any) ||
+            OrderParser.NULL_HANDLING_OPTIONS.includes(token.value as any)
+          )
+        ) {
           break;
         }
 
@@ -185,18 +175,18 @@ class OrderParser extends BaseParser {
         parts.push(part);
       } else if (this.match(TokenType.JSON_EXTRACT)) {
         // -> operator
-        const part = this.consume(
-          TokenType.IDENTIFIER,
-          "Expected field name after '->'",
-        ).value;
-        parts.push({ name: part, operator: '->', __type: 'json' });
+        if (!(this.check(TokenType.IDENTIFIER) || this.check(TokenType.NUMBER))) {
+          this.throwError("Expected field name or index after '->'", this.peek());
+        }
+        const partToken = this.advance()
+        parts.push({ name: partToken.value, operator: '->', __type: 'json' });
       } else if (this.match(TokenType.JSON_EXTRACT_TEXT)) {
         // ->> operator
-        const part = this.consume(
-          TokenType.IDENTIFIER,
-          "Expected field name after '->>'",
-        ).value;
-        parts.push({ name: part, operator: '->>', __type: 'json' });
+        if (!(this.check(TokenType.IDENTIFIER) || this.check(TokenType.NUMBER))) {
+          this.throwError("Expected field name or index after '->>'", this.peek());
+        }
+        const partToken = this.advance()
+        parts.push({ name: partToken.value, operator: '->>', __type: 'json' });
       }
     }
 

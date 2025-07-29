@@ -16,7 +16,6 @@ import type {
 } from './types';
 import { PG } from '@nuvix/pg';
 import { JoinBuilder } from './join-builder';
-import { ParserError } from './error';
 
 type QueryBuilder = ReturnType<DataSource['queryBuilder']>;
 
@@ -30,13 +29,10 @@ export interface ASTToQueryBuilderOptions {
 
 export class ASTToQueryBuilder<T extends QueryBuilder> {
   private readonly logger = new Logger(ASTToQueryBuilder.name);
-  public qb: T;
-  public pg: DataSource;
-  private nestingDepth = 0;
-  private readonly maxNestingDepth: number;
-  private readonly allowUnsafeOperators: boolean;
-  private allowedSchemas: string[] = [];
-  private anyAllsupportedOperators = [
+  public readonly qb: T;
+  public readonly pg: DataSource;
+  public readonly allowedSchemas: string[] = [];
+  private readonly anyAllsupportedOperators = [
     'eq',
     'like',
     'ilike',
@@ -51,36 +47,35 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   constructor(qb: T, pg: DataSource, options: ASTToQueryBuilderOptions = {}) {
     this.qb = qb;
     this.pg = pg;
-    this.maxNestingDepth = options.maxNestingDepth || 10;
-    this.allowUnsafeOperators = options.allowUnsafeOperators || false;
   }
 
   /**
    *apply AST expression to QueryBuilder conditions
    */
   applyFilters(
-    expression?: Expression & ParserResult,
+    { limit, offset, group, order, shape, ...expression }: Expression & ParserResult = {} as any,
     options: ASTToQueryBuilderOptions = {},
   ): QueryBuilder {
-    if (!expression) {
-      return this.qb;
-    }
-
     try {
-      this.nestingDepth = 0;
       if (options.applyExtra) {
-        const { limit, offset, group } = expression;
         this.applyLimitOffset({
           limit,
           offset,
         });
+        this.applyOrder(order, options.tableName);
         this.applyGroupBy(group, options.tableName);
       }
+
+      if (!expression || Object.keys(expression).length === 0) {
+        return this.qb;
+      }
+
       return this._convertExpression(expression, this.qb);
     } catch (error) {
-      if (error instanceof ParserError) {
+      if (error instanceof Exception) {
         throw error;
       }
+      this.logger.debug(error)
       throw new Error('Unknown query builder conversion error');
     }
   }
@@ -131,12 +126,12 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       if (nulls) {
         // Handle NULLS FIRST/LAST
         const nullsClause =
-          nulls === 'nullsfirst' ? 'NULLS FIRST' : 'NULLS LAST';
-        this.qb.orderByRaw(`?? ${direction.toUpperCase()} ${nullsClause}`, [
-          path,
+          nulls === 'nullsfirst' ? 'nulls first' : 'nulls last';
+        this.qb.orderByRaw(`?? ${direction.toLowerCase()} ${nullsClause}`, [
+          this._rawField(path, table),
         ]);
       } else {
-        this.qb.orderByRaw(`?? ${direction.toUpperCase()}`, [
+        this.qb.orderByRaw(`?? ${direction.toLowerCase()}`, [
           this._rawField(path, table),
         ]);
       }
@@ -205,15 +200,13 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       if (node.type === 'column') {
         selectColumns.push(this._buildColumnSelect(node));
       } else if (node.type === 'embed') {
-        // TODO: throw or skip
+        throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Embeds are not supported in returning clause');
       }
     });
 
-    // Add column selections
     if (selectColumns.length > 0) {
       queryBuilder.returning(selectColumns);
     } else {
-      // If no specific columns are selected, return all columns
       queryBuilder.returning('*');
     }
 
@@ -228,36 +221,23 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       return queryBuilder;
     }
 
-    // Check nesting depth to prevent stack overflow
-    if (this.nestingDepth > this.maxNestingDepth) {
-      throw new Error(
-        `Maximum nesting depth of ${this.maxNestingDepth} exceeded`,
-      );
+    if (ASTToQueryBuilder._isCondition(expression)) {
+      return this._applyCondition(expression, queryBuilder);
     }
 
-    this.nestingDepth++;
-
-    try {
-      if (ASTToQueryBuilder._isCondition(expression)) {
-        return this._applyCondition(expression, queryBuilder);
-      }
-
-      if (ASTToQueryBuilder._isNotExpression(expression)) {
-        return this._applyNotExpression(expression, queryBuilder);
-      }
-
-      if (ASTToQueryBuilder._isOrExpression(expression)) {
-        return this._applyOrExpression(expression, queryBuilder);
-      }
-
-      if (ASTToQueryBuilder._isAndExpression(expression)) {
-        return this._applyAndExpression(expression, queryBuilder);
-      }
-
-      throw new Error(`Unknown expression type: ${JSON.stringify(expression)}`);
-    } finally {
-      this.nestingDepth--;
+    if (ASTToQueryBuilder._isNotExpression(expression)) {
+      return this._applyNotExpression(expression, queryBuilder);
     }
+
+    if (ASTToQueryBuilder._isOrExpression(expression)) {
+      return this._applyOrExpression(expression, queryBuilder);
+    }
+
+    if (ASTToQueryBuilder._isAndExpression(expression)) {
+      return this._applyAndExpression(expression, queryBuilder);
+    }
+
+    throw new Error(`Unsupported expression type: ${JSON.stringify(expression)}`);
   }
 
   private _applyCondition(
@@ -272,7 +252,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     } = condition;
 
     if (!_field || !operator) {
-      throw new Error('Condition must have both field and operator');
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Condition must have both column and operator');
     }
 
     const field = this._rawField(_field, tableName) as unknown as ReturnType<PG['raw']>;
@@ -300,27 +280,27 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       case 'lt': return queryBuilder.whereRaw(`?? < ${right}`, [field, value]);
       case 'lte': return queryBuilder.whereRaw(`?? <= ${right}`, [field, value]);
       case 'neq': return queryBuilder.whereRaw(`?? <> ${right}`, [field, value]);
-      case 'like': return queryBuilder.whereRaw(`?? LIKE ${right}`, [field, value]);
-      case 'ilike': return queryBuilder.whereRaw(`?? ILIKE ${right}`, [field, value]);
-      case 'match': return queryBuilder.whereRaw(`?? ~ ${right}`, [field, value]);
-      case 'imatch': return queryBuilder.whereRaw(`?? ~* ${right}`, [field, value]);
-      case 'in': return queryBuilder.whereRaw(`?? IN (?)`, [field, filteredValues]);
-      case 'notin': return queryBuilder.whereRaw(`?? NOT IN (?)`, [field, filteredValues]);
+      case 'like': return queryBuilder.whereRaw(`?? like ${right}`, [field, this._valueToPattern(value)]);
+      case 'ilike': return queryBuilder.whereRaw(`?? ilike ${right}`, [field, this._valueToPattern(value)]);
+      case 'match': return queryBuilder.whereRaw(`?? ~ ${right}`, [field, this._valueToPattern(value)]);
+      case 'imatch': return queryBuilder.whereRaw(`?? ~* ${right}`, [field, this._valueToPattern(value)]);
+      case 'in': return queryBuilder.whereRaw(`?? in (?)`, [field, filteredValues]);
+      case 'notin': return queryBuilder.whereRaw(`?? not in (?)`, [field, filteredValues]);
 
       case 'is':
       case 'isnot':
         switch (String(value)) {
-          case 'null': return queryBuilder.whereRaw(`?? IS NULL`, [field]);
-          case 'not_null': return queryBuilder.whereRaw(`?? IS NOT NULL`, [field]);
-          case 'true': return queryBuilder.whereRaw(`?? IS TRUE`, [field]);
-          case 'false': return queryBuilder.whereRaw(`?? IS FALSE`, [field]);
-          case 'unknown': return queryBuilder.whereRaw(`?? IS UNKNOWN`, [field]);
-          default: throw new Error(`Unsupported IS condition: ${value}`);
+          case 'null': return queryBuilder.whereRaw(`?? is null`, [field]);
+          case 'not_null': return queryBuilder.whereRaw(`?? is not null`, [field]);
+          case 'true': return queryBuilder.whereRaw(`?? is true`, [field]);
+          case 'false': return queryBuilder.whereRaw(`?? is false`, [field]);
+          case 'unknown': return queryBuilder.whereRaw(`?? is unknown`, [field]);
+          default: throw new Exception(Exception.GENERAL_PARSER_ERROR, `Unsupported IS condition: ${value}`);
         }
 
-      case 'null': return queryBuilder.whereRaw(`?? IS NULL`, [field]);
-      case 'notnull': return queryBuilder.whereRaw(`?? IS NOT NULL`, [field]);
-      case 'isdistinct': return queryBuilder.whereRaw(`?? IS DISTINCT FROM ${right}`, [field, value]);
+      case 'null': return queryBuilder.whereRaw(`?? is null`, [field]);
+      case 'notnull': return queryBuilder.whereRaw(`?? is not null`, [field]);
+      case 'isdistinct': return queryBuilder.whereRaw(`?? is distinct from ${right}`, [field, value]);
 
       // Full-text search
       case 'fts': return this._applyFts(field, values, 'to_tsquery', queryBuilder);
@@ -341,14 +321,14 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       case 'adj': return queryBuilder.whereRaw(`?? -|- ?`, [field, filteredValues]);
 
       // Modifiers
-      case 'all': return queryBuilder.whereRaw(`?? = ALL(?)`, [field, filteredValues]);
-      case 'any': return queryBuilder.whereRaw(`?? = ANY(?)`, [field, filteredValues]);
+      case 'all': return queryBuilder.whereRaw(`?? = all(?)`, [field, filteredValues]);
+      case 'any': return queryBuilder.whereRaw(`?? = any(?)`, [field, filteredValues]);
 
       case 'between':
         if (values.length !== 2) {
-          throw new Error(`'between' operator expects exactly two values.`);
+          throw new Exception(Exception.GENERAL_PARSER_ERROR, `'between' operator expects exactly two values.`);
         }
-        return queryBuilder.whereRaw(`?? BETWEEN ? AND ?`, [field, values[0], values[1]]);
+        return queryBuilder.whereRaw(`?? between ? and ?`, [field, values[0], values[1]]);
 
       default:
         throw new Error(`Unsupported operator: ${operator}`);
@@ -369,6 +349,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     }
   }
 
+  private _valueToPattern(value: any): string {
+    return String(value).replaceAll('*', '%')
+  }
 
   private _isValueColumnName(value: Condition['values'][number]): value is ValueType {
     if (
@@ -407,7 +390,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
           .slice(0, i)
           .some(p => typeof p === 'object' && 'operator' in p);
 
-        if (typeof part === 'string') {
+        if (typeof part === 'string' || typeof part === 'number') {
           const isAfterOperator =
             i > 0 &&
             _field
@@ -433,9 +416,10 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
         } else if (typeof part === 'object' && 'operator' in part) {
           // Handle JSON operators (->, ->>)
           if (isLastPart)
-            throw new Error(
-              'Invalid syntax, should be string after `->` or `->>`',
-            ); // TODO: $error
+            throw new Exception(
+              Exception.GENERAL_PARSER_ERROR,
+              'Invalid syntax, should be string or number after `->` or `->>`',
+            );
           if (!hasObjectPartsBefore) {
             sqlParts.push(`"${part.name}"`);
           } else {
@@ -502,57 +486,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     return queryBuilder;
   }
 
-  private _isKnownOperator(operator: string): boolean {
-    const knownOperators = [
-      // Basic comparisons
-      'eq',
-      'gt',
-      'gte',
-      'lt',
-      'lte',
-      'neq',
-      'ne',
-      // Pattern matching
-      'like',
-      'ilike',
-      'match',
-      'imatch',
-      // List operations
-      'in',
-      'is',
-      'isdistinct',
-      // Full-text search
-      'fts',
-      'plfts',
-      'phfts',
-      'wfts',
-      // Array/JSON operations
-      'cs',
-      'cd',
-      'ov',
-      // Range operations
-      'sl',
-      'sr',
-      'nxr',
-      'nxl',
-      'adj',
-      // Logical operators
-      'not',
-      'or',
-      'and',
-      // Legacy operators
-      'between',
-      'regex',
-      'iregex',
-      'not_regex',
-      'not_iregex',
-    ];
-    return knownOperators.includes(operator);
-  }
-
   /**
-   * Handle ANY/ALL conditions for specific operators
-   * Creates OR conditions for 'any' and AND conditions for 'all'
+   * Applies ANY/ALL conditions using supported operators.
+   * Wraps the expression in the appropriate Postgres `any()` or `all()` syntax.
    */
   private _applyAnyAllCondition(
     field: ReturnType<PG['raw']>,
@@ -561,90 +497,73 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     operatorValues: any[],
     queryBuilder: QueryBuilder,
   ): QueryBuilder {
-    modifier = modifier.toUpperCase() as typeof modifier;
-    switch (operator) {
-      case 'eq':
-        return queryBuilder.whereRaw(`?? = ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'like':
-        return queryBuilder.whereRaw(`?? LIKE ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'ilike':
-        return queryBuilder.whereRaw(`?? ILIKE ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'gt':
-        return queryBuilder.whereRaw(`?? > ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'gte':
-        return queryBuilder.whereRaw(`?? >= ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'lt':
-        return queryBuilder.whereRaw(`?? < ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'lte':
-        return queryBuilder.whereRaw(`?? <= ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'match':
-        return queryBuilder.whereRaw(`?? ~ ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      case 'imatch':
-        return queryBuilder.whereRaw(`?? ~* ${modifier}(?)`, [
-          field,
-          operatorValues,
-        ]);
-      default:
-        throw new Error(`Unsupported operator for ANY/ALL: ${operator}`);
+    modifier = modifier.toLowerCase() as typeof modifier;
+
+    const operatorMap: Record<string, string> = {
+      eq: '=',
+      like: 'like',
+      ilike: 'ilike',
+      gt: '>',
+      gte: '>=',
+      lt: '<',
+      lte: '<=',
+      match: '~',
+      imatch: '~*',
+    };
+
+    const sqlOperator = operatorMap[operator];
+    if (!sqlOperator) {
+      throw new Error(`Unsupported operator for ANY/ALL: ${operator}`);
     }
+    if (operator === 'like' || operator === 'ilike') {
+      operatorValues.map(v => this._valueToPattern(v));
+    }
+
+    return queryBuilder.whereRaw(`?? ${sqlOperator} ${modifier}(?)`, [
+      field,
+      operatorValues,
+    ]);
   }
 
   /**
-   * Build column select string with alias and cast
+   * Build column select string with alias and cast, supporting aggregates and JSON paths.
    */
-  private _buildColumnSelect({ path, tableName, alias, cast }: ColumnNode) {
+  private _buildColumnSelect({ path, tableName, alias, cast, aggregate }: ColumnNode) {
+    // Auto-generate alias for JSON paths if not provided
     if (!alias && Array.isArray(path)) {
       const firstJsonPartIndex = path.findIndex(
-        p => typeof p === 'object' && p.__type === 'json',
+        p => typeof p === 'object' && (p.__type === 'json' || p.operator)
       );
-
       if (firstJsonPartIndex !== -1) {
-        const aliasParts = path
-          .map((p, i) => {
-            if (i >= firstJsonPartIndex) {
-              if (typeof p === 'string') {
-                return p;
-              } else if (typeof p === 'object' && p.name) {
-                return p.name;
-              }
-            }
-            return '';
-          })
-          .filter(Boolean);
-
-        if (aliasParts.length > 0) {
-          alias = aliasParts.join('_');
-        }
+        alias = path
+          .slice(firstJsonPartIndex)
+          .map(p =>
+            typeof p === 'string'
+              ? p
+              : typeof p === 'object' && p.name
+                ? p.name
+                : ''
+          )
+          .filter(Boolean)
+          .join('_');
       }
     }
 
     const rawPath = this._rawField(path, tableName).toSQL().sql;
-    const casted = cast ? `CAST((${rawPath}) AS ${cast})` : rawPath;
-    return this.pg.raw(`${casted}${alias ? ` as "${alias}"` : ''}`);
+    let sql = cast ? `cast((${rawPath}) as ${cast})` : rawPath;
+
+    // Apply aggregate function if present
+    if (aggregate) {
+      sql = `${aggregate.fn}(${sql})`;
+      if (aggregate.cast) {
+        sql = `cast((${sql}) as ${aggregate.cast})`;
+      }
+    }
+
+    if (alias) {
+      return this.pg.raw(`${sql} as ??`, [alias]);
+    }
+    return this.pg.raw(sql);
   }
 
   /**
@@ -657,6 +576,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       const joinBuilder = new JoinBuilder(this);
       joinBuilder.applyEmbedNode(embed);
     } catch (error) {
+      if (error instanceof Exception) {
+        throw error;
+      }
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
@@ -664,7 +586,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       );
       throw new Exception(
         Exception.GENERAL_QUERY_BUILDER_ERROR,
-        `Embed node processing failed: ${errorMessage}`,
+        `Failed to handle embed node for ${resource}`,
       );
     }
   }

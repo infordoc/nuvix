@@ -1,3 +1,4 @@
+import { Exception } from '@nuvix/core/extend/exception';
 import type { ParsePosition } from './types';
 
 export enum TokenType {
@@ -73,9 +74,23 @@ export class Tokenizer {
       if (token.type !== TokenType.INVALID) {
         tokens.push(token);
       } else {
-        throw new Error(
-          `Invalid token at ${this.line}:${this.column}: "${token.value}"`,
-        );
+        const contextRadius = 20;
+        const errorStart = Math.max(0, this.position - contextRadius);
+        const errorEnd = Math.min(this.input.length, this.position + contextRadius);
+        const context = this.input.slice(errorStart, errorEnd);
+
+        const pointer = ' '.repeat(this.position - errorStart) + '^';
+        const message = `Invalid token at line ${this.line}, column ${this.column}`;
+
+        const detail = `${context}\n${pointer}`;
+        const hint = `Unexpected token "${token.value}". Check for typos or unsupported characters.`;
+
+        const error = new Exception(Exception.GENERAL_PARSER_ERROR, message).addDetails({
+          detail,
+          hint
+        });
+
+        throw error;
       }
     }
 
@@ -227,7 +242,7 @@ export class Tokenizer {
     }
 
     // Read decimal part
-    if (this.current() === '.') {
+    if (this.current() === '.' && this.isDigit(this.peek(1))) {
       value += '.';
       this.advance();
 
@@ -287,10 +302,10 @@ export class Tokenizer {
       case 'true':
       case 'false':
         return TokenType.BOOLEAN;
-      case 'null':
-        return TokenType.NULL;
-      case 'undefined':
-        return TokenType.UNDEFINED;
+      // case 'null':
+      //   return TokenType.NULL;
+      // case 'undefined':
+      //   return TokenType.UNDEFINED;
       default:
         return TokenType.IDENTIFIER;
     }

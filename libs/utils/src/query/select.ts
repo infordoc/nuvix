@@ -6,26 +6,37 @@ import type {
   EmbedParserResult,
   SelectNode,
 } from './types';
+import { Exception } from '@nuvix/core/extend/exception';
 
 export class SelectParser {
   private readonly QUOTE_CHARS = ['"', "'"] as const;
   private readonly SEPARATOR = ',';
   private readonly CAST_DELIMITER = '::';
   private readonly ALIAS_DELIMITER = ':';
-  private logger = new Logger(SelectParser.name);
   private depth: number = 0;
-  private maxDepth: number = 3;
+  private readonly maxDepth: number = 2;
+  private readonly allowedAggregations = [
+    'sum', 'count', 'min', 'max', 'avg',
+  ]
 
   private tableName: string;
 
-  constructor({ tableName, depth = 0 }: { tableName: string; depth?: number }) {
+  constructor({ tableName, depth = 0, maxDepth }: { tableName: string; depth?: number, maxDepth?: number }) {
     this.tableName = tableName;
+    if (depth < 0) {
+      throw new Error('Depth cannot be negative');
+    }
+    this.maxDepth = maxDepth;
     this.depth = depth;
   }
 
-  parse(selectStr: string): SelectNode[] {
+  parse(selectStr?: string): SelectNode[] {
+    if (selectStr === null || selectStr === undefined) {
+      return [];
+    }
+
     if (typeof selectStr !== 'string' || !selectStr.trim()) {
-      throw new Error('Select string cannot be empty');
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Select string must be a non-empty string');
     }
 
     const tokens = this.tokenize(selectStr);
@@ -64,10 +75,19 @@ export class SelectParser {
 
     if (current.trim()) tokens.push(current.trim());
 
-    if (inQuotes) throw new Error('Unclosed quote in select string');
+    if (inQuotes) throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Unmatched quotes in select string').addDetails({
+      hint: 'Ensure all quotes are properly closed.',
+      detail: `Unmatched quote at position ${str.length - current.length}, context: "${current}"`,
+    });
     if (inParens !== 0)
-      throw new Error('Unmatched parentheses in select string');
-    if (inBraces !== 0) throw new Error('Unmatched braces in select string');
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Unmatched parentheses in select string').addDetails({
+        hint: 'Ensure all parentheses are properly closed.',
+        detail: `Unmatched parenthesis at position ${str.length - current.length}, context: "${current}"`,
+      });
+    if (inBraces !== 0) throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Unmatched braces in select string').addDetails({
+      hint: 'Ensure all braces are properly closed.',
+      detail: `Unmatched brace at position ${str.length - current.length}, context: "${current}"`,
+    });
 
     return tokens;
   }
@@ -118,7 +138,11 @@ export class SelectParser {
 
   private parseTokens(tokens: string[]): SelectNode[] {
     return tokens.map(token => {
-      if (!token.trim()) throw new Error('Empty token in select string');
+      if (!token.trim())
+        throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Empty token found in select string').addDetails({
+          hint: 'Ensure all tokens are properly defined.',
+          detail: `Empty token at position ${tokens.indexOf(token) + 1}`,
+        });
       return this.isEmbedToken(token)
         ? this.parseEmbed(token)
         : this.parseColumn(token);
@@ -138,54 +162,106 @@ export class SelectParser {
   private parseColumn(token: string): ColumnNode {
     let workingToken = token.trim();
 
-    const { value: tokenWithoutCast, cast } = this.extractCast(workingToken);
+    // Extract alias (e.g., alias:col), but only if not inside function parentheses
+    const { value: tokenWithoutAlias, alias } = this.extractAlias(workingToken);
+    workingToken = tokenWithoutAlias;
+
+    // Extract cast (e.g., col::int or sum(col)::int)
+    const { value: tokenWithoutCast, cast: outerCast } = this.extractCast(workingToken);
     workingToken = tokenWithoutCast;
 
-    const { value: _path, alias } = this.extractAlias(workingToken);
+    // Check for aggregation function (e.g., sum(col))
+    // Allow aggregation functions with optional cast, e.g., avg(Stock::int)
+    const fnMatch = workingToken.match(/^(\w+)\(([^()]*(?:\([^()]*\)[^()]*)*)\)$/);
+    let aggregate: { fn: string; cast?: string | null } | undefined;
+    let pathStr = workingToken;
+    let finalAlias: string | null = null;
+    let cast = outerCast;
 
-    if (!_path) throw new Error(`Invalid column specification: ${token}`);
-    const path = Parser.create({ tableName: this.tableName }).parseFieldString(
-      _path,
-    );
+    if (fnMatch) {
+      const fn = fnMatch[1];
+      if (!this.allowedAggregations.includes(fn)) {
+        throw new Exception(
+          Exception.GENERAL_PARSER_ERROR,
+          `Unsupported aggregation function: ${fn}. Allowed functions are: ${this.allowedAggregations.join(', ')}`,
+        );
+      }
+      let arg = fnMatch[2].trim();
+
+      // Support cast inside aggregation, e.g., sum(col::int)
+      const { value: columnArg, cast: innerCast } = this.extractCast(arg);
+      aggregate = { fn, cast: outerCast };
+      cast = innerCast;
+      pathStr = fn === 'count' ? columnArg || '*' : columnArg;
+    } else {
+      pathStr = workingToken;
+    }
+
+    if (!pathStr) throw new Exception(Exception.GENERAL_PARSER_ERROR, 'Column path cannot be empty').addDetails({
+      hint: 'Ensure the column path is correctly specified.',
+      detail: `Invalid column path in token: "${token}"`,
+    });
+    finalAlias = alias ?? finalAlias;
+
+    const path = Parser.create({ tableName: this.tableName }).parseFieldString(pathStr);
 
     return {
       type: 'column',
       path,
-      alias,
+      alias: finalAlias,
       tableName: this.tableName,
       cast,
+      aggregate: aggregate as any,
     };
   }
 
-  private extractCast(token: string): { value: string; cast: string | null } {
-    const castIndex = token.lastIndexOf(this.CAST_DELIMITER);
-    if (castIndex === -1) return { value: token, cast: null };
-
-    const cast = token.substring(castIndex + this.CAST_DELIMITER.length).trim();
-    const value = token.substring(0, castIndex).trim();
-
-    if (!cast) throw new Error(`Invalid cast specification: ${token}`);
-
-    return { value, cast };
+  // Only extract alias if ':' is not inside parentheses
+  private extractAlias(token: string): { value: string; alias: string | null } {
+    let parenDepth = 0;
+    for (let i = 0; i < token.length; i++) {
+      const char = token[i];
+      if (char === '(') parenDepth++;
+      else if (char === ')') parenDepth--;
+      else if (char === this.ALIAS_DELIMITER && parenDepth === 0) {
+        const alias = token.slice(0, i).trim();
+        const value = token.slice(i + 1).trim();
+        if (!alias || !value)
+          throw new Exception(Exception.GENERAL_PARSER_ERROR, `Invalid alias syntax: ${token}`).addDetails({
+            hint: 'Ensure alias and value are properly defined.',
+            detail: `Invalid alias in token: "${token}"`,
+          });
+        return { value, alias };
+      }
+    }
+    return { value: token, alias: null };
   }
 
-  private extractAlias(token: string): { value: string; alias: string | null } {
-    const aliasIndex = token.indexOf(this.ALIAS_DELIMITER);
-    if (aliasIndex !== -1) {
-      const alias = token.slice(0, aliasIndex).trim();
-      const value = token.slice(aliasIndex + 1).trim();
-
-      if (!alias || !value)
-        throw new Error(`Invalid alias specification: ${token}`);
-      return { value, alias };
+  private extractCast(token: string): { value: string; cast: string | null } {
+    // Only extract cast if '::' is not inside parentheses
+    let parenDepth = 0;
+    for (let i = token.length - 1; i >= 0; i--) {
+      const char = token[i];
+      if (char === ')') parenDepth++;
+      else if (char === '(') parenDepth--;
+      else if (
+        token.slice(i - this.CAST_DELIMITER.length + 1, i + 1) === this.CAST_DELIMITER &&
+        parenDepth === 0
+      ) {
+        const cast = token.substring(i + 1).trim();
+        const value = token.substring(0, i - this.CAST_DELIMITER.length + 1).trim();
+        if (!cast) throw new Exception(Exception.GENERAL_PARSER_ERROR, `Invalid cast syntax: ${token}`).addDetails({
+          hint: 'Ensure cast is properly defined.',
+          detail: `Invalid cast in token: "${token}"`,
+        });
+        return { value, cast };
+      }
     }
-
-    return { value: token, alias: null };
+    return { value: token, cast: null };
   }
 
   private parseEmbed(token: string): EmbedNode {
     if (this.depth > this.maxDepth) {
-      throw new Error('Max depth limit reached.');
+      throw new Error(`Max depth limit reached. ${this.depth}`);
     }
     const match = this.extractEmbedToken(token);
 
@@ -204,23 +280,32 @@ export class SelectParser {
     const parts = fullResourceString.split('.');
     const lastPart = parts[parts.length - 1].trim();
 
-    if (parts.length > 1 && (lastPart === 'one' || lastPart === 'many')) {
+    if (parts.length > 1 && parts.length <= 3 && (lastPart === 'one' || lastPart === 'many')) {
       cardinalityHint = lastPart;
       // The actual table name is everything EXCEPT the last part
       resource = parts.slice(0, -1).join('.').trim();
       if (resource === '') {
         // Handle case like ".one" or just "one"
-        throw new Error(
-          `Invalid resource name for cardinality hint: ${fullResourceString}`,
-        );
+        throw new Exception(Exception.GENERAL_PARSER_ERROR, `Invalid resource name: "${fullResourceString}"`).addDetails({
+          hint: 'Ensure the resource name is properly defined.',
+          detail: `Invalid resource name in token: "${token}"`,
+        });
       }
+    } else if (parts.length > 2) {
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, `Invalid resource name: "${fullResourceString}"`).addDetails({
+        hint: 'Resource name should not contain more than two dots.',
+        detail: `Invalid resource name in token: "${token}"`,
+      });
     } else {
       resource = fullResourceString.trim();
       cardinalityHint = undefined;
     }
 
     if (!resource) {
-      throw new Error(`Invalid resource name: "${fullResourceString}"`);
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, `Resource name cannot be empty in embed: ${token}`).addDetails({
+        hint: 'Ensure the resource name is properly defined.',
+        detail: `Invalid resource name in token: "${token}"`,
+      });
     }
 
     const flattenFlag = !!flatten;
@@ -228,9 +313,11 @@ export class SelectParser {
     let joinType = 'left' as EmbedParserResult['joinType'];
     const shape = cardinalityHint === 'one' ? 'object' : 'array';
 
-    // Constraints (required)
     if (!constraintPart?.trim())
-      throw new Error(`Missing constraint in embed: ${token}`);
+      throw new Exception(Exception.GENERAL_PARSER_ERROR, `Filter constraint cannot be empty in embed: ${token}`).addDetails({
+        hint: 'Ensure the constraint part is properly defined.',
+        detail: `Invalid constraint in token: "${token}"`,
+      });
     const constraint = Parser.create<EmbedParserResult>({
       tableName: alias || resource,
       mainTable: this.tableName,
@@ -240,7 +327,6 @@ export class SelectParser {
       joinType = constraint.joinType;
     }
 
-    // Select (optional if shaping is indicated)
     const select = selectPart?.trim()
       ? new SelectParser({
         tableName: alias || resource,
