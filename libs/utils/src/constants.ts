@@ -399,9 +399,8 @@ export enum QueueFor {
   DATABASES = 'databases',
   MAILS = 'mails',
   COLLECTIONS = 'collections',
-  /**@deprecated */
-  USAGE = 'usage',
-  STATS = 'stats'
+  STATS = 'stats',
+  LOGS = 'logs',
 }
 
 export enum Events {

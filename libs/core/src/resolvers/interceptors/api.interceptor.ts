@@ -22,7 +22,6 @@ import { Auth } from '../../helper/auth.helper';
 import { Exception } from '../../extend/exception';
 import { TOTP } from '../../validators/MFA.validator';
 import { Redis } from 'ioredis';
-import { ProjectUsageService } from '@nuvix/core/project-usage.service';
 import { Namespace, Scope } from '@nuvix/core/decorators';
 import { Scopes } from '@nuvix/core/config/roles';
 
@@ -31,8 +30,7 @@ export class ApiInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     @Inject(CACHE_DB) private readonly cacheDb: Redis,
-    private readonly projectUsage: ProjectUsageService,
-  ) {}
+  ) { }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest<NuvixRequest>();
@@ -115,29 +113,29 @@ export class ApiInterceptor implements NestInterceptor {
 
     request[USER] = user;
     const dbForProject = request[CORE_SCHEMA_DB] as Database;
-    dbForProject
-      .on(
-        Database.EVENT_DOCUMENT_CREATE,
-        'calculate-usage',
-        async (event, document) =>
-          await this.projectUsage.databaseListener({
-            event,
-            document,
-            project,
-            dbForProject,
-          }),
-      )
-      .on(
-        Database.EVENT_DOCUMENT_DELETE,
-        'calculate-usage',
-        async (event, document) =>
-          await this.projectUsage.databaseListener({
-            event,
-            document,
-            project,
-            dbForProject,
-          }),
-      );
+    // dbForProject
+    //   .on(
+    //     Database.EVENT_DOCUMENT_CREATE,
+    //     'calculate-usage',
+    //     async (event, document) =>
+    //       await this.projectUsage.databaseListener({
+    //         event,
+    //         document,
+    //         project,
+    //         dbForProject,
+    //       }),
+    //   )
+    //   .on(
+    //     Database.EVENT_DOCUMENT_DELETE,
+    //     'calculate-usage',
+    //     async (event, document) =>
+    //       await this.projectUsage.databaseListener({
+    //         event,
+    //         document,
+    //         project,
+    //         dbForProject,
+    //       }),
+    //   );
 
     return next.handle();
   }

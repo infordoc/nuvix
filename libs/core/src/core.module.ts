@@ -46,7 +46,6 @@ import { Database, MariaDB, Structure, PostgreDB } from '@nuvix/database';
 import { Context, DataSource } from '@nuvix/pg';
 import { CountryResponse, Reader } from 'maxmind';
 import { Cache, Redis } from '@nuvix/cache';
-import { ProjectUsageService } from './project-usage.service';
 import pg, { Client } from 'pg';
 import { parse as parseArray } from 'postgres-array';
 import { filters, formats } from '@nuvix/utils/database';
@@ -281,7 +280,6 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
         }
       },
     },
-    ProjectUsageService,
   ],
   exports: [
     GET_PROJECT_DB_CLIENT,
@@ -293,12 +291,11 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
     GEO_DB,
     CACHE_DB,
     CACHE,
-    ProjectUsageService,
   ],
 })
 export class CoreModule implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(CoreModule.name);
-  constructor(@Inject(CACHE) private readonly cache: Cache) {}
+  constructor(@Inject(CACHE) private readonly cache: Cache) { }
 
   async onModuleInit() {
     await this.cache.flush();

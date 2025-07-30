@@ -49,7 +49,7 @@ export class AuditsQueue
   }
 
   async onModuleDestroy() {
-    Logger.log('Module destroying. Flushing remaining logs...');
+    this.logger.log('Module destroying. Flushing remaining logs...');
     clearInterval(this.interval);
     await this.flushBuffer();
   }

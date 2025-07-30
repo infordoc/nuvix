@@ -84,7 +84,7 @@ import { Key } from '@nuvix/core/helper/key.helper';
     }),
     BullModule.registerQueue(
       { name: QueueFor.MAILS },
-      { name: QueueFor.USAGE },
+      { name: QueueFor.STATS },
       { name: QueueFor.AUDITS },
     ),
     EventEmitterModule.forRoot({

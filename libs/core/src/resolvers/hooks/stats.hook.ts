@@ -1,26 +1,41 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable } from "@nestjs/common";
 import { Hook } from "@nuvix/core/server";
+import { MetricFor, PROJECT, QueueFor } from "@nuvix/utils/constants";
+import { Queue } from "bullmq"
+import { StatsQueueOptions } from "../queues";
+import { Document } from "@nuvix/database";
 
 @Injectable()
 export class StatsHook implements Hook {
-    private readonly logger = new Logger(StatsHook.name)
+    constructor(
+        @InjectQueue(QueueFor.STATS) private readonly statsQueue: Queue<StatsQueueOptions, any, MetricFor>,
+    ) { }
+
+    async onRequest(req: NuvixRequest, reply: NuvixRes, next: (err?: Error) => void): Promise<unknown> {
+        const project: Document = req[PROJECT];
+        if (project.isEmpty() || project.getId() === 'console') return;
+
+        await this.statsQueue.add(MetricFor.REQUESTS, {
+            value: 1,
+            project,
+        })
+
+        return;
+    }
 
     async onResponse(req: NuvixRequest, reply: NuvixRes, next: (err?: Error) => void): Promise<unknown> {
-        const reqBodySize = req['hooks_args']['onRequest']?.size || 0;
-        const resBodySize = reply.getHeader('Content-Length') || 0;
+        const project: Document = req[PROJECT];
+        const reqBodySize: number = req['hooks_args']['onRequest']?.size || 0;
+        const resBodySize: number = Number(reply.getHeader('Content-Length')) || 0;
 
+        if (project.isEmpty() || project.getId() === 'console') return;
 
-        this.logger.verbose(
-            `<---------- [RESPONSE] ------------>`,
-            {
-                method: req.method,
-                url: req.url,
-                statusCode: reply.statusCode,
-                reqBodySize,
-                resBodySize,
-            },
-            `<=========== [RESPONSE] ===========>`,
-        )
+        await this.statsQueue.addBulk([
+            { name: MetricFor.INBOUND, data: { value: reqBodySize, project } },
+            { name: MetricFor.OUTBOUND, data: { value: resBodySize, project } }
+        ]);
+
         return;
     }
 }
