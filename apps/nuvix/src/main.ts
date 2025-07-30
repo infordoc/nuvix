@@ -122,7 +122,7 @@ async function bootstrap() {
   fastify.decorateRequest('hooks_args', null);
   fastify.addHook('onRequest', (req, res, done) => {
     let size: number = 0;
-    req.raw.on('data', (chunk) => {
+    req.raw.on('data', chunk => {
       size += chunk.length;
     });
     req.raw.on('end', () => {

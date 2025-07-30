@@ -75,10 +75,9 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
         );
 
         for (const [key, value] of entries as [MetricFor, number][]) {
-          this.logger.debug(`${key} processing with value ${value}`)
-          // TODO: handle 
+          this.logger.debug(`${key} processing with value ${value}`);
+          // TODO: handle
         }
-
       } catch (error) {
         this.logger.error(
           `Error flushing stats logs for project ${projectId}:`,
@@ -124,7 +123,10 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
       meta.keys[matric] = value;
     }
 
-    if (Object.keys(this.buffer.get(projectId)!.keys).length >= StatsQueue.BATCH_SIZE) {
+    if (
+      Object.keys(this.buffer.get(projectId)!.keys).length >=
+      StatsQueue.BATCH_SIZE
+    ) {
       // Temporarily stop the timer to avoid a race condition where the timer
       // and a full buffer try to flush at the same exact time.
       clearInterval(this.interval);

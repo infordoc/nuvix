@@ -36,7 +36,7 @@ import { ParseDuplicatePipe } from '@nuvix/core/pipes';
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemasController {
   private readonly logger = new Logger(SchemasController.name);
-  constructor(private readonly schemasService: SchemasService) { }
+  constructor(private readonly schemasService: SchemasService) {}
 
   @Get([':tableId', 'tables/:tableId'])
   @Sdk({
@@ -132,7 +132,7 @@ export class SchemasController {
     columns?: string[],
     @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
-  ) { }
+  ) {}
 
   @Delete([':tableId', 'tables/:tableId'])
   async deleteTables(

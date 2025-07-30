@@ -295,7 +295,7 @@ export type GetProjectPG = (client: Client, context?: Context) => DataSource;
 })
 export class CoreModule implements OnModuleDestroy, OnModuleInit {
   private readonly logger = new Logger(CoreModule.name);
-  constructor(@Inject(CACHE) private readonly cache: Cache) { }
+  constructor(@Inject(CACHE) private readonly cache: Cache) {}
 
   async onModuleInit() {
     await this.cache.flush();

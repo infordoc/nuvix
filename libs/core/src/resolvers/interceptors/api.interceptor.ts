@@ -30,7 +30,7 @@ export class ApiInterceptor implements NestInterceptor {
   constructor(
     private readonly reflector: Reflector,
     @Inject(CACHE_DB) private readonly cacheDb: Redis,
-  ) { }
+  ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest<NuvixRequest>();

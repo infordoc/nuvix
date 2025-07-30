@@ -470,7 +470,7 @@ export enum MetricFor {
 export enum MessageType {
   EMAIL = 'email',
   PUSH = 'push',
-  SMS = 'sms'
+  SMS = 'sms',
 }
 
 export enum DeleteType {
