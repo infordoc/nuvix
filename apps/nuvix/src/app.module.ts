@@ -8,14 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MailsQueue } from '@nuvix/core/resolvers/queues/mails.queue';
 import { AuditsQueue } from '@nuvix/core/resolvers/queues/audits.queue';
-// Constants
 import {
-  APP_REDIS_DB,
-  APP_REDIS_HOST,
-  APP_REDIS_PASSWORD,
-  APP_REDIS_PORT,
-  APP_REDIS_SECURE,
-  APP_REDIS_USER,
   JWT_SECRET,
   QueueFor,
 } from '@nuvix/utils';
@@ -60,28 +53,36 @@ import { DatabasesController } from './databases/databases.controller';
 
 import { Key } from '@nuvix/core/helper/key.helper';
 import { StatsQueue } from '@nuvix/core/resolvers/queues';
+import { AppConfigService } from '@nuvix/core';
 
 @Module({
   imports: [
-    BullModule.forRoot({
-      connection: {
-        port: APP_REDIS_PORT,
-        host: APP_REDIS_HOST,
-        username: APP_REDIS_USER,
-        password: APP_REDIS_PASSWORD,
-        db: APP_REDIS_DB,
-        tls: APP_REDIS_SECURE ? {} : undefined,
-        enableOfflineQueue: false, // Disable offline queue to avoid job accumulation when Redis is down
-        enableReadyCheck: true,
+    CoreModule,
+    BullModule.forRootAsync({
+      useFactory(config: AppConfigService) {
+        const redisConfig = config.getRedisConfig();
+        return {
+          connection: {
+            ...redisConfig,
+            tls: redisConfig.secure
+              ? {
+                rejectUnauthorized: false,
+              }
+              : undefined,
+            enableOfflineQueue: false, // Disable offline queue to avoid job accumulation when Redis is down
+            enableReadyCheck: true,
+          },
+          defaultJobOptions: {
+            priority: 1,
+            attempts: 2,
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+          prefix: 'nuvix', // TODO: we have to include a instance key that should be unique per app instance
+        };
       },
-      defaultJobOptions: {
-        priority: 1,
-        attempts: 2,
-        backoff: { type: 'exponential', delay: 5000 },
-        removeOnComplete: true,
-        removeOnFail: true,
-      },
-      prefix: 'nuvix',
+      inject: [AppConfigService],
     }),
     BullModule.registerQueue(
       { name: QueueFor.MAILS },
@@ -96,7 +97,6 @@ import { StatsQueue } from '@nuvix/core/resolvers/queues';
       secret: JWT_SECRET,
       global: true,
     }),
-    CoreModule,
     BaseModule,
     UsersModule,
     TeamsModule,
@@ -113,7 +113,7 @@ import { StatsQueue } from '@nuvix/core/resolvers/queues';
   providers: [AppService, MailsQueue, AuditsQueue, StatsQueue],
 })
 export class AppModule implements NestModule, OnModuleInit {
-  constructor(private readonly jwtService: JwtService) { }
+  constructor(private readonly jwtService: JwtService) {}
 
   onModuleInit() {
     Key.setJwtService(this.jwtService);

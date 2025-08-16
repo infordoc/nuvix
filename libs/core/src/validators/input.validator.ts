@@ -22,7 +22,7 @@ export function IsUID(
           return typeof value === 'string' && regex.test(value);
         },
         defaultMessage() {
-          return `${propertyName} must be either "unique()" or alphanumeric and can include period, hyphen, and underscore. Cannot start with a special character. Max length is 36 chars.`;
+          return `${propertyName} must be alphanumeric and can include period, hyphen, and underscore. Cannot start with a special character. Max length is 36 chars.`;
         },
       },
     });

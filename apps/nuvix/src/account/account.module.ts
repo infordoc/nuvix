@@ -9,4 +9,4 @@ import { QueueFor } from '@nuvix/utils';
   controllers: [AccountController],
   providers: [AccountService],
 })
-export class AccountModule { }
+export class AccountModule {}

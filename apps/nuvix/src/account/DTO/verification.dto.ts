@@ -1,3 +1,4 @@
+import { IsUID } from '@nuvix/core/validators/input.validator.js';
 import { IsUrl, IsOptional, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateEmailVerificationDTO {
@@ -7,13 +8,12 @@ export class CreateEmailVerificationDTO {
 }
 
 export class UpdateEmailVerificationDTO {
-  @IsNotEmpty()
-  @IsString()
-  userId: string;
+  @IsUID()
+  userId!: string;
 
   @IsNotEmpty()
   @IsString()
-  secret: string;
+  secret!: string;
 }
 
 export class UpdatePhoneVerificationDTO extends UpdateEmailVerificationDTO {}

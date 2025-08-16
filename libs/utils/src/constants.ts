@@ -84,18 +84,18 @@ export const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 /**@deprecated */ export const APP_REDIS_PASSWORD =
   process.env['APP_REDIS_PASSWORD'];
 /**@deprecated */ export const APP_REDIS_DB = parseInt(
-  process.env['APP_REDIS_DB'] ?? '0',
-  10,
-);
+    process.env['APP_REDIS_DB'] ?? '0',
+    10,
+  );
 /**@deprecated */ export const APP_REDIS_SECURE =
   process.env['APP_REDIS_SECURE'] === 'true';
 
 // Email Config
 /**@deprecated */ export const APP_SMTP_HOST = process.env['APP_SMTP_HOST'];
 /**@deprecated */ export const APP_SMTP_PORT = parseInt(
-  process.env['APP_SMTP_PORT'] ?? '587',
-  10,
-);
+    process.env['APP_SMTP_PORT'] ?? '587',
+    10,
+  );
 /**@deprecated */ export const APP_SMTP_SECURE =
   process.env['APP_SMTP_SECURE'] === 'true';
 /**@deprecated */ export const APP_SMTP_USER = process.env['APP_SMTP_USER'];
@@ -129,9 +129,9 @@ export const APP_POSTGRES_PORT = parseInt(
 /**@deprecated */ export const APP_POSTGRES_SSL =
   process.env['APP_POSTGRES_SSL'] === 'true';
 /**@deprecated */ export const APP_POSTGRES_MAX_CONNECTIONS = parseInt(
-  process.env['APP_POSTGRES_MAX_CONNECTIONS'] ?? '100',
-  10,
-);
+    process.env['APP_POSTGRES_MAX_CONNECTIONS'] ?? '100',
+    10,
+  );
 /**@deprecated */ export const APP_SHARED_CLUSTER = true; // Multi-cluster mode not supported yet!
 // Console DB
 /**@deprecated */ export const APP_DATABASE_HOST =
@@ -143,9 +143,9 @@ export const APP_POSTGRES_PORT = parseInt(
 /**@deprecated */ export const APP_DATABASE_NAME =
   process.env['APP_DATABASE_NAME'];
 /**@deprecated */ export const APP_DATABASE_PORT = parseInt(
-  process.env['APP_DATABASE_PORT'] ?? '3306',
-  10,
-);
+    process.env['APP_DATABASE_PORT'] ?? '3306',
+    10,
+  );
 
 /**@deprecated */ export const APP_INTERNAL_POOL_API =
   process.env['APP_POOL_API'];
@@ -250,7 +250,7 @@ export const SERVER_CONFIG: ServerConfig = {
   cookieDomain: process.env['APP_COOKIE_DOMAIN'] ?? '',
 };
 
-export const LOG_LEVELS: { [key: string]: boolean } = (
+export const LOG_LEVELS: { [key: string]: boolean; } = (
   process.env['APP_LOG_LEVELS'] ?? ''
 )
   .split(',')
@@ -261,7 +261,7 @@ export const LOG_LEVELS: { [key: string]: boolean } = (
       acc[level.toLowerCase()] = true;
       return acc;
     },
-    {} as { [key: string]: boolean },
+    {} as { [key: string]: boolean; },
   );
 
 // APP
@@ -279,7 +279,7 @@ export const APP_MODE_DEFAULT = 'default';
 /**@deprecated */ export const APP_MODE_ADMIN = 'admin';
 /**@deprecated */ export const APP_PAGING_LIMIT = 12;
 export const APP_MAX_COUNT = 1000;
-/**@deprecated */ export const APP_LIMIT_COUNT = 5000;
+export const APP_LIMIT_COUNT = 5000;
 /**@deprecated */ export const APP_LIMIT_USERS = 10_000;
 /**@deprecated */ export const APP_LIMIT_USER_PASSWORD_HISTORY = 20;
 /**@deprecated */ export const APP_LIMIT_USER_SESSIONS_MAX = 100;
@@ -335,8 +335,8 @@ export const APP_DEBUG_FORMAT = process.env['APP_DEBUG_FORMAT'] === 'json';
 /**@deprecated */ export const WORKER_TYPE_MESSAGING = 'messaging';
 
 // Mails
-export const APP_SYSTEM_EMAIL_ADDRESS = 'app@nuvix.io';
-export const APP_SYSTEM_EMAIL_NAME = 'Nuvix';
+/**@deprecated */ export const APP_SYSTEM_EMAIL_ADDRESS = 'app@nuvix.io';
+/**@deprecated */ export const APP_SYSTEM_EMAIL_NAME = 'Nuvix';
 /**@deprecated */ export const SEND_TYPE_EMAIL = 'sendEmail';
 
 // Database Reconnect
@@ -403,7 +403,7 @@ export const API_KEY_DYNAMIC = 'dynamic';
 export const WORKER_TYPE_USAGE = 'usage';
 
 // Events
-/**@deprecated */ export const EVENT_DELIMITER = '.';
+export const EVENT_DELIMITER = '.';
 /**@deprecated */ export const EVENT_USER_CREATE =
   'user' + EVENT_DELIMITER + 'create';
 /**@deprecated */ export const EVENT_USER_DELETE =
@@ -452,9 +452,14 @@ export enum QueueFor {
   LOGS = 'logs',
 }
 
-export enum Events {
+export enum AppEvents {
+  USER_CREATE = 'user' + EVENT_DELIMITER + 'create',
+  USER_DELETE = 'user' + EVENT_DELIMITER + 'delete',
+  USER_UPDATE = 'user' + EVENT_DELIMITER + 'update',
   SESSION_CREATE = 'session' + EVENT_DELIMITER + 'create',
   SESSION_DELETE = 'session' + EVENT_DELIMITER + 'delete',
+  SESSIONS_DELETE = 'sessions' + EVENT_DELIMITER + 'delete',
+  SESSION_UPDATE = 'session' + EVENT_DELIMITER + 'update',
 }
 
 export enum MetricFor {

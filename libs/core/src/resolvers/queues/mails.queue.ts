@@ -9,6 +9,7 @@ import { Logger } from '@nestjs/common';
 import path from 'path';
 import * as Template from 'handlebars';
 import { AppConfigService } from '@nuvix/core/config.service.js';
+import type { SmtpConfig } from '@nuvix/core/config/smtp.js';
 
 @Processor(QueueFor.MAILS, { concurrency: 10000 })
 export class MailsQueue extends Queue {
@@ -175,7 +176,7 @@ export class MailsQueue extends Queue {
     );
   }
 
-  createTransport(options: ServerOptions) {
+  createTransport(options: SmtpConfig) {
     return createTransport({
       host: options.host,
       port: options.port,
@@ -200,17 +201,6 @@ export class MailsQueue extends Queue {
   }
 }
 
-interface ServerOptions {
-  host?: string | null;
-  port?: number | null;
-  username?: string | null;
-  password?: string | null;
-  secure?: boolean;
-  replyTo?: string;
-  senderEmail?: string;
-  senderName?: string;
-}
-
 interface Variables {
   [key: string]: string | number | boolean;
 }
@@ -220,7 +210,7 @@ export interface MailQueueOptions {
   subject: string;
   body: string;
   variables?: Variables;
-  server?: ServerOptions;
+  server?: SmtpConfig;
   bodyTemplate?: string;
 }
 

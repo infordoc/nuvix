@@ -34,6 +34,7 @@ import fs from 'fs/promises';
 import metadata from './metadata';
 import { SwaggerModule } from '@nestjs/swagger';
 import { ErrorFilter } from '@nuvix/core/filters';
+import { AppConfigService } from '@nuvix/core';
 
 config({
   path: [
@@ -42,7 +43,7 @@ config({
   ],
 });
 
-Authorization.enableStorage();
+Authorization.enableAsyncLocalStorage();
 
 async function bootstrap() {
   const app = await NuvixFactory.create<NestFastifyApplication>(
@@ -98,6 +99,7 @@ async function bootstrap() {
   );
 
   const fastify = app.getHttpAdapter().getInstance();
+  const config = app.get(AppConfigService);
 
   fastify.addHook('onRequest', (req, res, done) => {
     res.header('X-Powered-By', 'Nuvix-Server');
@@ -119,7 +121,7 @@ async function bootstrap() {
     credentials: SERVER_CONFIG.credentials,
   });
 
-  fastify.decorateRequest('hooks_args', null);
+  fastify.decorateRequest('hooks_args', null as any);
   fastify.addHook('onRequest', (req, res, done) => {
     let size: number = 0;
     req.raw.on('data', chunk => {
@@ -132,20 +134,12 @@ async function bootstrap() {
         },
       };
     });
-    if (Authorization['useStorage']) {
-      storage.run(new Map(), () => {
-        Authorization.setDefaultStatus(true); // Set per-request default status
-        Authorization.cleanRoles(); // Reset roles per request
-        Authorization.setRole(Role.any().toString());
-        done();
-      });
-    } else {
-      // Fallback to default static behavior
-      Authorization.setDefaultStatus(true);
-      Authorization.cleanRoles();
+    storage.run(new Map(), () => {
+      Authorization.setDefaultStatus(true); // Set per-request default status
+      Authorization.cleanRoles(); // Reset roles per request
       Authorization.setRole(Role.any().toString());
       done();
-    }
+    });
   });
 
   process.on('SIGINT', async () => {
@@ -170,7 +164,7 @@ async function bootstrap() {
     }
   });
 
-  const port = parseInt(process.env.APP_API_PORT, 10) || 4000;
+  const port = parseInt(config.root.get('APP_API_PORT', '4000'), 10);
   const host = '0.0.0.0';
   await app.listen(port, host);
 

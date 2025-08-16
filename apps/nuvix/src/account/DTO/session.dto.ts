@@ -2,6 +2,7 @@ import {
   OAuthProviders,
   oAuthProvidersList,
 } from '@nuvix/core/config/authProviders';
+import { IsUID } from '@nuvix/core/validators/input.validator.js';
 import {
   APP_LIMIT_ARRAY_ELEMENT_SIZE,
   APP_LIMIT_ARRAY_PARAMS_SIZE,
@@ -12,7 +13,6 @@ import {
   IsArray,
   IsEmail,
   IsIn,
-  IsNotEmpty,
   IsOptional,
   IsString,
   IsUrl,
@@ -23,20 +23,19 @@ import {
 
 export class CreateEmailSessionDTO {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 export class CreateSessionDTO {
-  @IsString()
-  @IsNotEmpty()
-  userId: string;
+  @IsUID()
+  userId!: string;
 
   @IsString()
   @Length(200, 256)
-  secret: string;
+  secret!: string;
 }
 
 export class CreateOAuth2SessionDTO {
@@ -82,5 +81,5 @@ export class OAuth2CallbackDTO {
 export class ProviderParamDTO {
   @IsString()
   @IsIn(oAuthProvidersList)
-  provider: OAuthProviders;
+  provider!: OAuthProviders;
 }

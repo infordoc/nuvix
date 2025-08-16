@@ -1,20 +1,18 @@
 import { OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
+import { IsCustomID, IsUID } from '@nuvix/core/validators';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePushTargetDTO {
-  @IsString()
-  @IsNotEmpty()
   @IsCustomID()
-  targetId: string;
+  targetId!: string;
 
   @IsString()
   @IsNotEmpty()
-  identifier: string;
+  identifier!: string;
 
   @IsOptional()
   @IsString()
-  @IsCustomID()
+  @IsUID()
   providerId?: string;
 }
 
@@ -23,8 +21,6 @@ export class UpdatePushTargetDTO extends OmitType(CreatePushTargetDTO, [
 ]) {}
 
 export class TargetIdParamDTO {
-  @IsString()
-  @IsNotEmpty()
-  @IsCustomID()
-  targetId: string;
+  @IsUID()
+  targetId!: string;
 }

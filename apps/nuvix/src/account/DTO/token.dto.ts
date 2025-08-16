@@ -1,3 +1,4 @@
+import { IsUID } from '@nuvix/core/validators/input.validator.js';
 import {
   APP_LIMIT_ARRAY_ELEMENT_SIZE,
   APP_LIMIT_ARRAY_PARAMS_SIZE,
@@ -33,13 +34,12 @@ export class CreateOAuth2TokenDTO {
 }
 
 export class CreateMagicURLTokenDTO {
-  @IsString()
-  @MaxLength(36)
-  userId: string;
+  @IsUID()
+  userId!: string;
 
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsUrl()
@@ -51,13 +51,12 @@ export class CreateMagicURLTokenDTO {
 }
 
 export class CreateEmailTokenDTO {
-  @IsString()
-  @MaxLength(36)
-  userId: string;
+  @IsUID()
+  userId!: string;
 
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsBoolean()
@@ -65,12 +64,11 @@ export class CreateEmailTokenDTO {
 }
 
 export class CreatePhoneTokenDTO {
-  @IsString()
-  @MaxLength(36)
-  userId: string;
+  @IsUID()
+  userId!: string;
 
   @IsNotEmpty()
   @IsPhoneNumber()
   @IsString()
-  phone: string;
+  phone!: string;
 }

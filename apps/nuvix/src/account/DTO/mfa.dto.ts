@@ -1,4 +1,4 @@
-import { IsCustomID, TOTP } from '@nuvix/core/validators';
+import { IsCustomID, IsUID, TOTP } from '@nuvix/core/validators';
 import {
   IsBoolean,
   IsNotEmpty,
@@ -10,41 +10,38 @@ import {
 export class UpdateAccountMfaDTO {
   @IsBoolean()
   @IsNotEmpty()
-  mfa: boolean;
+  mfa!: boolean;
 }
 
 export class MfaAuthenticatorTypeParamDTO {
   @IsString()
   @IsNotEmpty()
   @IsIn([TOTP.TOTP]) // TODO: Add other supported types
-  type: string;
+  type!: string;
 }
 
 export class VerifyMfaAuthenticatorDTO {
   @IsString()
   @IsNotEmpty()
-  otp: string;
+  otp!: string;
 }
 
 export class CreateMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
   @IsIn([TOTP.EMAIL, TOTP.PHONE, TOTP.TOTP, TOTP.RECOVERY_CODE])
-  factor: string;
+  factor!: string;
 
   @IsOptional()
-  @IsString()
-  @IsCustomID()
+  @IsUID()
   userId?: string;
 }
 
 export class VerifyMfaChallengeDTO {
-  @IsString()
-  @IsNotEmpty()
-  @IsCustomID()
-  challengeId: string;
+  @IsUID()
+  challengeId!: string;
 
   @IsString()
   @IsNotEmpty()
-  otp: string;
+  otp!: string;
 }

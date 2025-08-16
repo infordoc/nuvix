@@ -86,3 +86,4 @@ storage/uploads/*
 
 **/dist/*
 libs/utils/types/generated.ts
+apps/nuvix/src/metadata.ts

@@ -16,7 +16,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 import { PersonalDataValidator } from '@nuvix/core/validators/personal-data.validator';
-import { QueueFor, Events, APP_NAME, MessageType } from '@nuvix/utils';
+import { QueueFor, AppEvents, APP_NAME, MessageType } from '@nuvix/utils';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import {
   UpdateEmailDTO,
@@ -268,7 +268,7 @@ export class AccountService {
       variables: vars,
     });
 
-    // queueForEvents.setParam('userId', user.getId());
+    // queueForAppEvents.setParam('userId', user.getId());
 
     return user;
   }
@@ -652,7 +652,7 @@ export class AccountService {
     }
 
     await this.db.purgeCachedDocument('users', user.getId());
-    this.eventEmitter.emit(Events.SESSION_DELETE, {
+    this.eventEmitter.emit(AppEvents.SESSION_DELETE, {
       userId: user.getId(),
     });
   }
@@ -1463,7 +1463,7 @@ export class AccountService {
         }
       }
 
-      this.eventEmitter.emit(Events.SESSION_CREATE, {
+      this.eventEmitter.emit(AppEvents.SESSION_CREATE, {
         userId: user.getId(),
         sessionId: createdSession.getId(),
         payload: {
@@ -2118,7 +2118,7 @@ export class AccountService {
       await this.sendSessionAlert(locale, user, createdSession);
     }
 
-    // queueForEvents.setParam('userId', user.getId()).setParam('sessionId', createdSession.getId());
+    // queueForAppEvents.setParam('userId', user.getId()).setParam('sessionId', createdSession.getId());
 
     const expire = new Date(Date.now() + duration * 1000);
     const protocol = request.protocol;

@@ -26,7 +26,7 @@ export class AvatarsService {
       } else {
         this.logger.error(`Font file not found at: ${fontPath}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       this.logger.error(`Error registering font: ${error.message}`);
     }
   }
@@ -116,9 +116,9 @@ export class AvatarsService {
   }
 
   private getInitials(name: string): string {
-    const words = name.split(' ').filter(Boolean);
+    const words = name.split(' ').filter(Boolean) as [string, string?];
     return words.length > 1
-      ? words[0][0].toUpperCase() + words[1][0].toUpperCase()
+      ? words[0][0]!.toUpperCase() + words[1]![0]!.toUpperCase()
       : words[0].substring(0, 2).toUpperCase();
   }
 

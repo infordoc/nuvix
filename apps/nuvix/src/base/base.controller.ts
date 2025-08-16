@@ -1,12 +1,13 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { All, Controller, Query, Res } from '@nestjs/common';
 import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { SEND_TYPE_EMAIL } from '@nuvix/utils';
+import { MailJob, type MailQueueOptions } from '@nuvix/core/resolvers/index.js';
+import { QueueFor } from '@nuvix/utils';
 import { Queue } from 'bullmq';
 
 @Controller({ version: ['1'] })
 export class BaseController {
-  constructor(@InjectQueue('mails') private readonly mailQueue: Queue) { }
+  constructor(@InjectQueue(QueueFor.MAILS) private readonly mailQueue: Queue<MailQueueOptions, unknown, MailJob>) {}
 
   @All('health/version')
   @Public()
@@ -182,7 +183,7 @@ export class BaseController {
       project: 'Console',
     };
 
-    await this.mailQueue.add(SEND_TYPE_EMAIL, {
+    await this.mailQueue.add(MailJob.SEND_EMAIL, {
       email: email,
       subject: subject,
       body: body,
