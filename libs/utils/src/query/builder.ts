@@ -80,9 +80,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
           const error = options.throwOnEmptyError
             ? options.throwOnEmptyError
             : new Exception(
-              Exception.GENERAL_PARSER_EMPTY_ERROR,
-              'Empty expression provided',
-            );
+                Exception.GENERAL_PARSER_EMPTY_ERROR,
+                'Empty expression provided',
+              );
           throw error;
         }
         return this.qb;
@@ -302,7 +302,8 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     let value = values[0];
 
     if (
-      typeof value === 'object' && value !== null &&
+      typeof value === 'object' &&
+      value !== null &&
       '__type' in value &&
       value.__type === 'column' &&
       right === '??'

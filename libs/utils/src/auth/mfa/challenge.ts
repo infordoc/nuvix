@@ -1,4 +1,4 @@
-import {  UsersDoc, type ChallengesDoc } from 'libs/utils/types';
+import { UsersDoc, type ChallengesDoc } from 'libs/utils/types';
 
 export abstract class Challenge {
   public static verify(user: UsersDoc, otp: string): boolean {

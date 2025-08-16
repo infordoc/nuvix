@@ -9,7 +9,7 @@ import { ProjectsDoc } from '@nuvix/utils/types';
  *  ProjectGuard, check if the project exists.
  */
 export class ProjectGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext) {
     const request = context.switchToHttp().getRequest();

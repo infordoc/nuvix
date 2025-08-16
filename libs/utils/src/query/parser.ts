@@ -271,8 +271,10 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
 
     const filteredExpressions =
       expressions.length === 1 &&
-        ((expressions[0] as AndExpression)['and'] || (expressions[0] as OrExpression)['or'])
-        ? ((expressions[0] as AndExpression)['and'] ?? (expressions[0] as OrExpression)['or'])
+      ((expressions[0] as AndExpression)['and'] ||
+        (expressions[0] as OrExpression)['or'])
+        ? ((expressions[0] as AndExpression)['and'] ??
+          (expressions[0] as OrExpression)['or'])
         : expressions;
 
     return filteredExpressions;

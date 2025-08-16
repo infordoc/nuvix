@@ -15,9 +15,7 @@ import type { Client } from 'pg';
 
 @Injectable()
 export class SchemaHook implements Hook {
-  constructor(
-    private readonly coreService: CoreService,
-  ) {}
+  constructor(private readonly coreService: CoreService) {}
 
   async preHandler(request: NuvixRequest) {
     const project = request[Context.Project] as ProjectsDoc;
@@ -29,7 +27,7 @@ export class SchemaHook implements Hook {
     const pg = request[PROJECT_PG] as DataSource;
 
     const schemaId =
-      (request.params as { schemaId: string | undefined; }).schemaId ?? 'public';
+      (request.params as { schemaId: string | undefined }).schemaId ?? 'public';
     if (schemaId === undefined) return;
     const schema = await pg.getSchema(schemaId);
     if (schema) {

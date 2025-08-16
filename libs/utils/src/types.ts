@@ -1,4 +1,4 @@
-import type configuration from "./configuration.js";
+import type configuration from './configuration.js';
 
 export interface ServerConfig {
   host: string;

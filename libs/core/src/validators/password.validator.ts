@@ -1,4 +1,4 @@
-import type { Validator } from "@nuvix-tech/db";
+import type { Validator } from '@nuvix-tech/db';
 
 export class PasswordValidator implements Validator {
   private allowEmpty: boolean;

@@ -17,7 +17,9 @@ const { MicroservicesModule } = optionalRequire(
 // @ts-ignore
 export class NuvixApplication extends NestApplication {
   private readonly hooksModule: HooksModule;
-  private override readonly middlewareContainer = new HooksContainer(this.container);
+  private override readonly middlewareContainer = new HooksContainer(
+    this.container,
+  );
   private override readonly microservicesModule =
     MicroservicesModule && new MicroservicesModule();
 

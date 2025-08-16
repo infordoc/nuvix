@@ -12,9 +12,9 @@ export class CreateAccountDTO {
   @IsUID()
   declare userId: string;
 
-  @IsEmail({}, { message: 'Invalid email address.' }) 
+  @IsEmail({}, { message: 'Invalid email address.' })
   declare email: string;
-  
+
   @Length(8, 256, { message: 'Password must be between 8 and 256 characters.' })
   declare password: string;
 

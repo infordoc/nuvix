@@ -256,7 +256,10 @@ export class PgMetaController {
   ) {
     let tableId: number, ordinalPosition!: string;
     if (id.includes('.')) {
-      const [tableIdString, ordinalPositionString] = id.split('.') as [string, string];
+      const [tableIdString, ordinalPositionString] = id.split('.') as [
+        string,
+        string,
+      ];
       tableId = parseInt(tableIdString);
       ordinalPosition = ordinalPositionString;
     } else {

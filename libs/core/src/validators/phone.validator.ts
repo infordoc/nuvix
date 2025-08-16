@@ -1,4 +1,4 @@
-import type { Validator } from "@nuvix-tech/db";
+import type { Validator } from '@nuvix-tech/db';
 
 export class PhoneValidator implements Validator {
   private allowEmpty: boolean;
@@ -7,7 +7,8 @@ export class PhoneValidator implements Validator {
     this.allowEmpty = allowEmpty;
   }
 
-  $description: string = "Phone number must start with a '+' and can have a maximum of fifteen digits.";
+  $description: string =
+    "Phone number must start with a '+' and can have a maximum of fifteen digits.";
 
   /**
    * Is valid.

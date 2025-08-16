@@ -12,7 +12,8 @@ export class PersonalDataValidator extends PasswordValidator {
     super(allowEmpty);
   }
 
-  override $description: string = 'Password must not include any personal data like your name, email, phone number, etc.';
+  override $description: string =
+    'Password must not include any personal data like your name, email, phone number, etc.';
 
   /**
    * Is valid

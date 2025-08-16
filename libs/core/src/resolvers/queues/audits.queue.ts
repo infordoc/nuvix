@@ -6,11 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Queue } from './queue';
-import {
-  AppMode,
-  CORE_SCHEMA,
-  QueueFor,
-} from '@nuvix/utils';
+import { AppMode, CORE_SCHEMA, QueueFor } from '@nuvix/utils';
 import { Doc } from '@nuvix-tech/db';
 import { Audit } from '@nuvix/audit';
 import { Job } from 'bullmq';
@@ -26,16 +22,15 @@ interface AuditLogsBuffer {
 @Processor(QueueFor.AUDITS, { concurrency: 50000 })
 export class AuditsQueue
   extends Queue
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   private static readonly BATCH_SIZE = 1000; // Number of logs to process in one batch
   private static readonly BATCH_INTERVAL_MS = 1000; // Interval in milliseconds to flush
   private readonly logger = new Logger(AuditsQueue.name);
   private buffer = new Map<number, AuditLogsBuffer>();
   private interval!: NodeJS.Timeout;
 
-  constructor(
-    private readonly coreService: CoreService,
-  ) {
+  constructor(private readonly coreService: CoreService) {
     super();
   }
 
@@ -70,12 +65,10 @@ export class AuditsQueue
       }
       const { project, logs } = data;
 
-      const { client, dbForProject } = await this.coreService.createProjectDatabase(
-        project,
-        {
+      const { client, dbForProject } =
+        await this.coreService.createProjectDatabase(project, {
           schema: CORE_SCHEMA,
-        }
-      );
+        });
       try {
         const audits = new Audit(dbForProject);
 

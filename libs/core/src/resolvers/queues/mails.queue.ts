@@ -2,9 +2,7 @@ import { OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Queue } from './queue';
 import { Job } from 'bullmq';
 import { createTransport, Transporter } from 'nodemailer';
-import {
-  QueueFor,
-} from '@nuvix/utils';
+import { QueueFor } from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import * as fs from 'fs';
 import { Logger } from '@nestjs/common';
@@ -17,9 +15,7 @@ export class MailsQueue extends Queue {
   private readonly logger = new Logger(MailsQueue.name);
   private readonly transporter: Transporter;
 
-  constructor(
-    private readonly appConfig: AppConfigService,
-  ) {
+  constructor(private readonly appConfig: AppConfigService) {
     super();
     const config = this.appConfig.getSmtpConfig();
 
@@ -28,15 +24,21 @@ export class MailsQueue extends Queue {
       pool: true,
       port: config.port,
       secure: config.secure,
-      auth: config.user || config.password ? {
-        user: config.user,
-        pass: config.password,
-      } : undefined,
-      dkim: config.dkim.domain || config.dkim.key || config.dkim.privateKey ? {
-        domainName: config.dkim.domain,
-        keySelector: config.dkim.key,
-        privateKey: config.dkim.privateKey,
-      } : undefined,
+      auth:
+        config.user || config.password
+          ? {
+              user: config.user,
+              pass: config.password,
+            }
+          : undefined,
+      dkim:
+        config.dkim.domain || config.dkim.key || config.dkim.privateKey
+          ? {
+              domainName: config.dkim.domain,
+              keySelector: config.dkim.key,
+              privateKey: config.dkim.privateKey,
+            }
+          : undefined,
       from: {
         name: config.sender,
         address: config.emailFrom,
@@ -83,8 +85,9 @@ export class MailsQueue extends Queue {
           transporter = this.createTransport(server);
         }
 
-        const protocol =
-          this.appConfig.get('app').forceHttps ? 'https' : 'http';
+        const protocol = this.appConfig.get('app').forceHttps
+          ? 'https'
+          : 'http';
         const hostname = this.appConfig.get('app').domain;
         const templateVariables = {
           ...variables,
@@ -95,8 +98,9 @@ export class MailsQueue extends Queue {
         };
 
         if (!job.data.bodyTemplate) {
-          job.data.bodyTemplate = this.appConfig.assetConfig
-            .get('assets/locale/templates/email-base-styled.tpl');
+          job.data.bodyTemplate = this.appConfig.assetConfig.get(
+            'assets/locale/templates/email-base-styled.tpl',
+          );
         }
 
         const templateSource = fs.readFileSync(job.data.bodyTemplate, 'utf8');
@@ -179,9 +183,9 @@ export class MailsQueue extends Queue {
       auth:
         options.username || options.password
           ? {
-            user: options.username,
-            pass: options.password,
-          }
+              user: options.username,
+              pass: options.password,
+            }
           : undefined,
       replyTo: options.replyTo,
       sender: {

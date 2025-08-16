@@ -31,4 +31,4 @@ import { HttpModule } from '@nestjs/axios';
   providers: [ProjectService, ProjectsQueue],
   controllers: [ProjectsController, ProjectController],
 })
-export class ProjectModule { }
+export class ProjectModule {}

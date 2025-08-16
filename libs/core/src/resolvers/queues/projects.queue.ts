@@ -77,9 +77,7 @@ export class ProjectsQueue extends Queue {
       project = await this.db.updateDocument(
         'projects',
         project.getId(),
-        project
-          .set('database', databaseConfig)
-          .set('status', 'active'),
+        project.set('database', databaseConfig).set('status', 'active'),
       );
       await this.db.getCache().flush();
 
@@ -133,19 +131,20 @@ export class ProjectsQueue extends Queue {
 
         try {
           const attributes =
-            collection['attributes'].map(
-              (attribute) => new Doc(attribute),
-            ) || [];
+            collection['attributes'].map(attribute => new Doc(attribute)) || [];
 
           const indexes =
-            collection['indexes']?.map((index) => new Doc(index)) ||
-            [];
+            collection['indexes']?.map(index => new Doc(index)) || [];
 
           this.logger.log(
             `Creating collection ${collection.$id} in schema ${CORE_SCHEMA} for project ${project.getId()}`,
           );
 
-          await db.createCollection({ id: collection.$id, attributes, indexes });
+          await db.createCollection({
+            id: collection.$id,
+            attributes,
+            indexes,
+          });
           successfulCollections++;
         } catch (error: any) {
           if (error instanceof DuplicateException) {
@@ -202,4 +201,4 @@ export interface ProjectQueueOptions {
 
 export enum ProjectJob {
   INIT = 'init',
-};
+}

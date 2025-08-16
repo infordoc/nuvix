@@ -101,7 +101,7 @@ export interface GetProjectPGFnFn {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [configuration]
+      load: [configuration],
     }),
   ],
   providers: [
@@ -209,8 +209,8 @@ export interface GetProjectPGFnFn {
           const adapter = new Adapter(client);
           adapter.setMeta({
             metadata: {
-              'projectId': projectId
-            }
+              projectId: projectId,
+            },
           });
           const connection = new Database(adapter, cache);
           connection.setMeta({

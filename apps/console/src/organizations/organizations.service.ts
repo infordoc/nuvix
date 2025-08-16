@@ -20,7 +20,11 @@ import { Auth } from '@nuvix/core/helper/auth.helper';
 import { TOTP } from '@nuvix/core/validators/MFA.validator';
 import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './DTO/team.dto';
 import { AppConfigService, CoreService } from '@nuvix/core';
-import type { Organizations, OrganizationsDoc, UsersDoc } from '@nuvix/utils/types';
+import type {
+  Organizations,
+  OrganizationsDoc,
+  UsersDoc,
+} from '@nuvix/utils/types';
 
 @Injectable()
 export class OrganizationsService {
@@ -43,7 +47,10 @@ export class OrganizationsService {
     }
 
     const filterQueries = Query.groupByType(queries)['filters'];
-    const results = await this.db.find('teams', queries) as OrganizationsDoc[];
+    const results = (await this.db.find(
+      'teams',
+      queries,
+    )) as OrganizationsDoc[];
     const total = await this.db.count('teams', filterQueries);
 
     return {
@@ -393,11 +400,9 @@ export class OrganizationsService {
           const totp = TOTP.getAuthenticatorFromUser(user);
           const totpEnabled = totp && totp.get('verified', false);
           const emailEnabled =
-            user.get('email') &&
-            user.get('emailVerification');
+            user.get('email') && user.get('emailVerification');
           const phoneEnabled =
-            user.get('phone') &&
-            user.get('phoneVerification');
+            user.get('phone') && user.get('phoneVerification');
 
           if (!totpEnabled && !emailEnabled && !phoneEnabled) {
             mfa = false;
@@ -433,19 +438,14 @@ export class OrganizationsService {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
-    const user = await this.db.getDocument(
-      'users',
-      membership.get('userId'),
-    );
+    const user = await this.db.getDocument('users', membership.get('userId'));
 
     let mfa = user.get('mfa', false);
     if (mfa) {
       const totp = TOTP.getAuthenticatorFromUser(user);
       const totpEnabled = totp && totp.get('verified', false);
-      const emailEnabled =
-        user.get('email') && user.get('emailVerification');
-      const phoneEnabled =
-        user.get('phone') && user.get('phoneVerification');
+      const emailEnabled = user.get('email') && user.get('emailVerification');
+      const phoneEnabled = user.get('phone') && user.get('phoneVerification');
 
       if (!totpEnabled && !emailEnabled && !phoneEnabled) {
         mfa = false;
@@ -479,10 +479,7 @@ export class OrganizationsService {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
-    const user = await this.db.getDocument(
-      'users',
-      membership.get('userId'),
-    );
+    const user = await this.db.getDocument('users', membership.get('userId'));
     if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
@@ -541,10 +538,7 @@ export class OrganizationsService {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
-    const user = await this.db.getDocument(
-      'users',
-      membership.get('userId'),
-    );
+    const user = await this.db.getDocument('users', membership.get('userId'));
     if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }

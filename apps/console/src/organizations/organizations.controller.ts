@@ -32,7 +32,7 @@ import type { UsersDoc } from '@nuvix/utils/types';
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) { }
+  constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Get()
   @ResModel({ type: Models.ORGANIZATION, list: true })

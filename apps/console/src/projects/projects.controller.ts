@@ -60,7 +60,7 @@ import { ResModel, Scope } from '@nuvix/core/decorators';
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class ProjectsController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post()
   @Scope('project.create')

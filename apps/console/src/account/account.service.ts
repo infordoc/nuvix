@@ -16,12 +16,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 import { PersonalDataValidator } from '@nuvix/core/validators/personal-data.validator';
-import {
-  QueueFor,
-  Events,
-  APP_NAME,
-  MessageType,
-} from '@nuvix/utils';
+import { QueueFor, Events, APP_NAME, MessageType } from '@nuvix/utils';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import {
   UpdateEmailDTO,
@@ -65,7 +60,18 @@ import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 import { Audit } from '@nuvix/audit';
 import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto';
 import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto';
-import type { AuthenticatorsDoc, ChallengesDoc, IdentitiesDoc, MembershipsDoc, Sessions, SessionsDoc, TargetsDoc, Tokens, TokensDoc, UsersDoc } from '@nuvix/utils/types';
+import type {
+  AuthenticatorsDoc,
+  ChallengesDoc,
+  IdentitiesDoc,
+  MembershipsDoc,
+  Sessions,
+  SessionsDoc,
+  TargetsDoc,
+  Tokens,
+  TokensDoc,
+  UsersDoc,
+} from '@nuvix/utils/types';
 import { AppConfigService, CoreService, Platform } from '@nuvix/core';
 
 @Injectable()
@@ -152,11 +158,12 @@ export class AccountService {
     // hooks.trigger('passwordValidator', [db, project, password, user, true]);
 
     const passwordHistory = this.platform.get('auths').passwordHistory ?? 0;
-    const hashedPassword = await Auth.passwordHash(
-      password,
-      Auth.DEFAULT_ALGO,
-      Auth.DEFAULT_ALGO_OPTIONS,
-    ) ?? undefined;
+    const hashedPassword =
+      (await Auth.passwordHash(
+        password,
+        Auth.DEFAULT_ALGO,
+        Auth.DEFAULT_ALGO_OPTIONS,
+      )) ?? undefined;
 
     try {
       userId = userId === 'unique()' ? ID.unique() : userId;
@@ -171,7 +178,8 @@ export class AccountService {
         emailVerification: false,
         status: true,
         password: hashedPassword,
-        passwordHistory: (passwordHistory > 0 && hashedPassword) ? [hashedPassword] : [],
+        passwordHistory:
+          passwordHistory > 0 && hashedPassword ? [hashedPassword] : [],
         passwordUpdate: new Date(),
         hash: Auth.DEFAULT_ALGO,
         hashOptions: Auth.DEFAULT_ALGO_OPTIONS,
@@ -184,42 +192,35 @@ export class AccountService {
         accessedAt: new Date(),
       });
       user.delete('$sequence');
-      user = await Authorization.skip(
-        () => this.db.createDocument('users', user),
+      user = await Authorization.skip(() =>
+        this.db.createDocument('users', user),
       );
 
       try {
-        const target = await Authorization.skip(
-          () =>
-            this.db.createDocument(
-              'targets',
-              new Doc({
-                $permissions: [
-                  Permission.read(Role.user(user.getId())),
-                  Permission.update(Role.user(user.getId())),
-                  Permission.delete(Role.user(user.getId())),
-                ],
-                userId: user.getId(),
-                userInternalId: user.getSequence(),
-                providerType: 'email',
-                identifier: email,
-              }) as TargetsDoc,
-            ),
+        const target = await Authorization.skip(() =>
+          this.db.createDocument(
+            'targets',
+            new Doc({
+              $permissions: [
+                Permission.read(Role.user(user.getId())),
+                Permission.update(Role.user(user.getId())),
+                Permission.delete(Role.user(user.getId())),
+              ],
+              userId: user.getId(),
+              userInternalId: user.getSequence(),
+              providerType: 'email',
+              identifier: email,
+            }) as TargetsDoc,
+          ),
         );
-        user.set('targets', [
-          ...user.get('targets', []),
-          target,
-        ]);
+        user.set('targets', [...user.get('targets', []), target]);
       } catch (error) {
         if (error instanceof DuplicateException) {
           const existingTarget = await this.db.findOne('targets', [
             Query.equal('identifier', [email]),
           ]);
           if (existingTarget) {
-            user.append(
-              'targets',
-              existingTarget,
-            );
+            user.append('targets', existingTarget);
           }
         } else {
           throw error;
@@ -245,7 +246,7 @@ export class AccountService {
 
     const templatePath = path.join(
       this.appConfig.assetConfig.templates,
-      'email-account-create.tpl'
+      'email-account-create.tpl',
     );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
@@ -277,10 +278,7 @@ export class AccountService {
    */
   async updatePrefs(user: UsersDoc, prefs: Record<string, any>) {
     user.set('prefs', prefs);
-    user = await this.db.updateDocument(
-      'users', user.getId(),
-      user
-    );
+    user = await this.db.updateDocument('users', user.getId(), user);
 
     return user.get('prefs', {});
   }
@@ -301,8 +299,8 @@ export class AccountService {
       }
     }
 
-    await Authorization.skip(
-      () => this.db.deleteDocument('users', user.getId()),
+    await Authorization.skip(() =>
+      this.db.deleteDocument('users', user.getId()),
     );
     await this.db.purgeCachedDocument('users', user.getId());
 
@@ -330,9 +328,10 @@ export class AccountService {
     const oldEmail = user.get('email');
     const email = input.email.toLowerCase();
 
-    const identityWithMatchingEmail = await this.db.findOne('identities', (qb) =>
-      qb.equal('providerEmail', email)
-        .equal('userInternalId', user.getSequence())
+    const identityWithMatchingEmail = await this.db.findOne('identities', qb =>
+      qb
+        .equal('providerEmail', email)
+        .equal('userInternalId', user.getSequence()),
     );
 
     if (identityWithMatchingEmail && !identityWithMatchingEmail.empty()) {
@@ -354,9 +353,8 @@ export class AccountService {
         .set('passwordUpdate', new Date());
     }
 
-    const target = await Authorization.skip(
-      () =>
-        this.db.findOne('targets', [Query.equal('identifier', [email])]),
+    const target = await Authorization.skip(() =>
+      this.db.findOne('targets', [Query.equal('identifier', [email])]),
     );
 
     if (target && !target.empty()) {
@@ -367,17 +365,16 @@ export class AccountService {
       user = await this.db.updateDocument('users', user.getId(), user);
       const oldTarget = user.findWhere(
         'targets',
-        (target: TargetsDoc) => target.get('identifier') === oldEmail
+        (target: TargetsDoc) => target.get('identifier') === oldEmail,
       );
 
       if (oldTarget && !oldTarget.empty()) {
-        await Authorization.skip(
-          () =>
-            this.db.updateDocument(
-              'targets',
-              oldTarget.getId(),
-              oldTarget.set('identifier', email),
-            ),
+        await Authorization.skip(() =>
+          this.db.updateDocument(
+            'targets',
+            oldTarget.getId(),
+            oldTarget.set('identifier', email),
+          ),
         );
       }
       await this.db.purgeCachedDocument('users', user.getId());
@@ -395,10 +392,7 @@ export class AccountService {
    */
   async updateName(user: UsersDoc, name: string) {
     user.set('name', name);
-    user = await this.db.updateDocument(
-      'users', user.getId(),
-      user
-    );
+    user = await this.db.updateDocument('users', user.getId(), user);
 
     return user;
   }
@@ -406,7 +400,10 @@ export class AccountService {
   /**
    * Update User's Password
    */
-  async updatePassword(user: UsersDoc, { oldPassword, password: newPassword }: UpdatePasswordDTO) {
+  async updatePassword(
+    user: UsersDoc,
+    { oldPassword, password: newPassword }: UpdatePasswordDTO,
+  ) {
     // Check old password only if it's an existing user.
     if (
       user.get('passwordUpdate') &&
@@ -434,7 +431,7 @@ export class AccountService {
         user.get('hash'),
         user.get('hashOptions'),
       );
-      if (!await validator.$valid(newPassword)) {
+      if (!(await validator.$valid(newPassword))) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
       }
 
@@ -454,7 +451,8 @@ export class AccountService {
       }
     }
 
-    user.set('password', hashedNewPassword)
+    user
+      .set('password', hashedNewPassword)
       .set('passwordHistory', history)
       .set('passwordUpdate', new Date())
       .set('hash', Auth.DEFAULT_ALGO)
@@ -485,9 +483,8 @@ export class AccountService {
     }
 
     const oldPhone = user.get('phone');
-    const target = await Authorization.skip(
-      () =>
-        this.db.findOne('targets', [Query.equal('identifier', [phone])]),
+    const target = await Authorization.skip(() =>
+      this.db.findOne('targets', [Query.equal('identifier', [phone])]),
     );
 
     if (target && !target.empty()) {
@@ -513,17 +510,16 @@ export class AccountService {
       user = await this.db.updateDocument('users', user.getId(), user);
       const oldTarget = user.findWhere(
         'targets',
-        (target: TargetsDoc) => target.get('identifier') === oldPhone
+        (target: TargetsDoc) => target.get('identifier') === oldPhone,
       );
 
       if (oldTarget && !oldTarget.empty()) {
-        await Authorization.skip(
-          () =>
-            this.db.updateDocument(
-              'targets',
-              oldTarget.getId(),
-              oldTarget.set('identifier', phone),
-            ),
+        await Authorization.skip(() =>
+          this.db.updateDocument(
+            'targets',
+            oldTarget.getId(),
+            oldTarget.set('identifier', phone),
+          ),
         );
       }
       await this.db.purgeCachedDocument('users', user.getId());
@@ -566,10 +562,7 @@ export class AccountService {
       const record = this.geodb.get(log.get('ip'));
 
       if (record) {
-        logDocument.set(
-          'countryCode',
-          record.country?.iso_code.toLowerCase(),
-        );
+        logDocument.set('countryCode', record.country?.iso_code.toLowerCase());
         logDocument.set('countryName', record.country?.names.en);
       } else {
         logDocument.set('countryCode', '--');
@@ -645,15 +638,14 @@ export class AccountService {
         session.set('current', true);
 
         // If current session, delete the cookies too
-        response
-          .cookie(Auth.cookieName, '', {
-            expires: new Date(0),
-            path: '/',
-            domain: Auth.cookieDomain,
-            secure: protocol === 'https',
-            httpOnly: true,
-            sameSite: Auth.cookieSamesite,
-          });
+        response.cookie(Auth.cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          domain: Auth.cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: Auth.cookieSamesite,
+        });
 
         // queueForDeletes.setType(DELETE_TYPE_SESSION_TARGETS).setDocument(session).trigger();
       }
@@ -680,10 +672,7 @@ export class AccountService {
     const sessions = user.get('sessions', []) as SessionsDoc[];
     sessionId =
       sessionId === 'current'
-        ? (Auth.sessionVerify(
-          user.get('sessions'),
-          Auth.secret,
-        ) as string)
+        ? (Auth.sessionVerify(user.get('sessions'), Auth.secret) as string)
         : sessionId;
 
     for (const session of sessions) {
@@ -694,16 +683,11 @@ export class AccountService {
         );
 
         session
-          .set(
-            'current',
-            session.get('secret') === Auth.hash(Auth.secret),
-          )
+          .set('current', session.get('secret') === Auth.hash(Auth.secret))
           .set('countryName', countryName)
           .set(
             'secret',
-            isPrivilegedUser || isAppUser
-              ? session.get('secret', '')
-              : '',
+            isPrivilegedUser || isAppUser ? session.get('secret', '') : '',
           );
 
         return session;
@@ -736,15 +720,14 @@ export class AccountService {
       if (session.get('secret') === Auth.hash(Auth.secret)) {
         session.set('current', true);
 
-        response
-          .cookie(Auth.cookieName, '', {
-            expires: new Date(0),
-            path: '/',
-            domain: Auth.cookieDomain,
-            secure: protocol === 'https',
-            httpOnly: true,
-            sameSite: Auth.cookieSamesite,
-          });
+        response.cookie(Auth.cookieName, '', {
+          expires: new Date(0),
+          path: '/',
+          domain: Auth.cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: Auth.cookieSamesite,
+        });
       }
 
       await this.db.purgeCachedDocument('users', user.getId());
@@ -760,10 +743,7 @@ export class AccountService {
   async updateSession(user: UsersDoc, sessionId: string) {
     sessionId =
       sessionId === 'current'
-        ? (Auth.sessionVerify(
-          user.get('sessions'),
-          Auth.secret,
-        ) as string)
+        ? (Auth.sessionVerify(user.get('sessions'), Auth.secret) as string)
         : sessionId;
 
     const sessions = user.get('sessions', []) as SessionsDoc[];
@@ -789,7 +769,7 @@ export class AccountService {
 
     if (provider) {
       const AuthClass = await getOAuth2Class(provider);
-      const providerInfo = this.getOAuthProviderConfig(provider);;
+      const providerInfo = this.getOAuthProviderConfig(provider);
 
       if (!providerInfo) {
         throw new Exception(
@@ -801,13 +781,7 @@ export class AccountService {
       const appId = providerInfo['appId'];
       const appSecret = providerInfo['secret'];
 
-      const oauth2: OAuth2 = new AuthClass(
-        appId,
-        appSecret,
-        '',
-        [],
-        [],
-      );
+      const oauth2: OAuth2 = new AuthClass(appId, appSecret, '', [], []);
       await oauth2.refreshTokens(refreshToken);
       const accessToken = await oauth2.getAccessToken('');
 
@@ -839,8 +813,8 @@ export class AccountService {
     const email = input.email.toLowerCase();
     const protocol = request.protocol;
 
-    const profile = await this.db.findOne('users',
-      (qb) => qb.equal('email', email)
+    const profile = await this.db.findOne('users', qb =>
+      qb.equal('email', email),
     );
 
     if (
@@ -945,9 +919,8 @@ export class AccountService {
       );
 
     if (this.platform.get('auths').sessionAlerts ?? false) {
-      const sessionCount = await this.db.count('sessions',
-        (qb) => qb
-          .equal('userId', user.getSequence())
+      const sessionCount = await this.db.count('sessions', qb =>
+        qb.equal('userId', user.getSequence()),
       );
 
       if (sessionCount !== 1) {
@@ -1015,9 +988,11 @@ export class AccountService {
         ? `console.${request.hostname.split('.', 2)[1]}`
         : request.hostname;
     const finalSuccess =
-      success || `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
+      success ||
+      `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
     const finalFailure =
-      failure || `${protocol}://${consoleDomain}${AccountService.oauthDefaultFailure}`;
+      failure ||
+      `${protocol}://${consoleDomain}${AccountService.oauthDefaultFailure}`;
 
     const oauth2 = new AuthClass(
       appId,
@@ -1163,7 +1138,9 @@ export class AccountService {
 
     let name!: string;
     const nameOAuth = await oauth2.getUserName(accessToken);
-    const userParam = JSON.parse(((request.query as { user: string; })['user']) || '{}');
+    const userParam = JSON.parse(
+      (request.query as { user: string })['user'] || '{}',
+    );
     if (nameOAuth) {
       name = nameOAuth;
     } else if (Array.isArray(userParam) || typeof userParam === 'object') {
@@ -1192,9 +1169,8 @@ export class AccountService {
         failureRedirect(Exception.USER_ALREADY_EXISTS);
       }
 
-      const userWithMatchingEmail = await this.db.find('users',
-        (qb) => qb.equal('email', email)
-          .notEqual('$id', userId)
+      const userWithMatchingEmail = await this.db.find('users', qb =>
+        qb.equal('email', email).notEqual('$id', userId),
       );
       if (userWithMatchingEmail.length > 0) {
         failureRedirect(Exception.USER_ALREADY_EXISTS);
@@ -1215,10 +1191,8 @@ export class AccountService {
     }
 
     if (user.empty()) {
-      const session = await this.db.findOne('sessions',
-        qb => qb
-          .equal('provider', provider)
-          .equal('providerUid', oauth2ID)
+      const session = await this.db.findOne('sessions', qb =>
+        qb.equal('provider', provider).equal('providerUid', oauth2ID),
       );
       if (!session.empty()) {
         const foundUser = await this.db.getDocument(
@@ -1245,9 +1219,8 @@ export class AccountService {
       }
 
       if (user.empty()) {
-        const identity = await this.db.findOne('identities',
-          qb => qb.equal('provider', provider)
-            .equal('providerUid', oauth2ID)
+        const identity = await this.db.findOne('identities', qb =>
+          qb.equal('provider', provider).equal('providerUid', oauth2ID),
         );
 
         if (!identity.empty()) {
@@ -1270,8 +1243,9 @@ export class AccountService {
           }
         }
 
-        const identityWithMatchingEmail = await this.db.findOne('identities',
-          qb => qb.equal('providerEmail', email)
+        const identityWithMatchingEmail = await this.db.findOne(
+          'identities',
+          qb => qb.equal('providerEmail', email),
         );
         if (!identityWithMatchingEmail.empty()) {
           failureRedirect(Exception.GENERAL_BAD_REQUEST);
@@ -1301,8 +1275,8 @@ export class AccountService {
           });
           user.delete('$sequence');
 
-          const userDoc = await Authorization.skip(
-            () => this.db.createDocument('users', user),
+          const userDoc = await Authorization.skip(() =>
+            this.db.createDocument('users', user),
           );
 
           await this.db.createDocument(
@@ -1335,16 +1309,18 @@ export class AccountService {
       failureRedirect(Exception.USER_BLOCKED);
     }
 
-    let identity = await this.db.findOne('identities',
-      qb => qb.equal('userInternalId', user.getSequence())
+    let identity = await this.db.findOne('identities', qb =>
+      qb
+        .equal('userInternalId', user.getSequence())
         .equal('provider', provider)
-        .equal('providerUid', oauth2ID)
+        .equal('providerUid', oauth2ID),
     );
 
     if (identity.empty()) {
-      const identitiesWithMatchingEmail = await this.db.find('identities',
-        qb => qb.equal('providerEmail', email)
-          .notEqual('userInternalId', user.getSequence())
+      const identitiesWithMatchingEmail = await this.db.find('identities', qb =>
+        qb
+          .equal('providerEmail', email)
+          .notEqual('userInternalId', user.getSequence()),
       );
       if (identitiesWithMatchingEmail.length > 0) {
         failureRedirect(Exception.GENERAL_BAD_REQUEST);
@@ -1371,7 +1347,6 @@ export class AccountService {
           ),
         }) as IdentitiesDoc,
       );
-
     } else {
       identity
         .set('providerAccessToken', accessToken)
@@ -1389,7 +1364,8 @@ export class AccountService {
     await this.db.updateDocument('users', user.getId(), user);
 
     const duration =
-      this.platform.get('auths')['duration'] ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
+      this.platform.get('auths')['duration'] ??
+      Auth.TOKEN_EXPIRATION_LOGIN_LONG;
     const expire = new Date(Date.now() + duration * 1000);
 
     const parsedState = new URL(state.success);
@@ -1411,13 +1387,10 @@ export class AccountService {
           Permission.read(Role.user(user.getId())),
           Permission.update(Role.user(user.getId())),
           Permission.delete(Role.user(user.getId())),
-        ]
+        ],
       });
 
-      await this.db.createDocument(
-        'tokens',
-        token,
-      );
+      await this.db.createDocument('tokens', token);
 
       query.set('secret', secret);
       query.set('userId', user.getId());
@@ -1564,9 +1537,11 @@ export class AccountService {
         ? `console.${request.hostname.split('.', 2)[1]}`
         : request.hostname;
     const finalSuccess =
-      success || `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
+      success ||
+      `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
     const finalFailure =
-      failure || `${protocol}://${consoleDomain}${AccountService.oauthDefaultFailure}`;
+      failure ||
+      `${protocol}://${consoleDomain}${AccountService.oauthDefaultFailure}`;
 
     const oauth2 = new AuthClass(
       appId,
@@ -1667,9 +1642,7 @@ export class AccountService {
       });
 
       user.delete('$sequence');
-      await Authorization.skip(
-        () => this.db.createDocument('users', user),
-      );
+      await Authorization.skip(() => this.db.createDocument('users', user));
     }
 
     const tokenSecret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_MAGIC_URL);
@@ -1717,7 +1690,10 @@ export class AccountService {
     const agentClient = detector.getClient();
     const agentDevice = detector.getDevice();
 
-    const templatePath = path.join(this.appConfig.assetConfig.templates, 'email-magic-url.tpl');
+    const templatePath = path.join(
+      this.appConfig.assetConfig.templates,
+      'email-magic-url.tpl',
+    );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
@@ -1836,9 +1812,7 @@ export class AccountService {
       });
 
       user.delete('$sequence');
-      await Authorization.skip(
-        () => this.db.createDocument('users', user),
-      );
+      await Authorization.skip(() => this.db.createDocument('users', user));
     }
 
     const tokenSecret = Auth.codeGenerator(6);
@@ -1874,7 +1848,10 @@ export class AccountService {
     const agentClient = detector.getClient();
     const agentDevice = detector.getDevice();
 
-    const templatePath = path.join(this.appConfig.assetConfig.templates, 'email-otp.tpl');
+    const templatePath = path.join(
+      this.appConfig.assetConfig.templates,
+      'email-otp.tpl',
+    );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
@@ -1927,7 +1904,10 @@ export class AccountService {
     session: SessionsDoc,
   ) {
     let subject: string = locale.getText('emails.sessionAlert.subject');
-    const templatePath = path.join(this.appConfig.assetConfig.templates, 'email-session-alert.tpl');
+    const templatePath = path.join(
+      this.appConfig.assetConfig.templates,
+      'email-session-alert.tpl',
+    );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
@@ -2023,8 +2003,8 @@ export class AccountService {
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
     const isAppUser = Auth.isAppUser(roles);
 
-    const userFromRequest = await Authorization.skip(
-      () => this.db.getDocument('users', userId),
+    const userFromRequest = await Authorization.skip(() =>
+      this.db.getDocument('users', userId),
     );
 
     if (userFromRequest.empty()) {
@@ -2068,9 +2048,7 @@ export class AccountService {
       $id: ID.unique(),
       userId: user.getId(),
       userInternalId: user.getSequence(),
-      provider: Auth.getSessionProviderByTokenType(
-        verifiedToken.get('type'),
-      ),
+      provider: Auth.getSessionProviderByTokenType(verifiedToken.get('type')),
       secret: Auth.hash(sessionSecret),
       userAgent: request.headers['user-agent'] || 'UNKNOWN',
       ip: request.ip,
@@ -2093,8 +2071,8 @@ export class AccountService {
       ]),
     );
 
-    await Authorization.skip(
-      () => this.db.deleteDocument('tokens', verifiedToken.getId()),
+    await Authorization.skip(() =>
+      this.db.deleteDocument('tokens', verifiedToken.getId()),
     );
     await this.db.purgeCachedDocument('users', user.getId());
 
@@ -2124,7 +2102,8 @@ export class AccountService {
       Auth.TOKEN_TYPE_EMAIL,
     ].includes(verifiedToken.get('type'));
     const hasUserEmail = user.get('email', false) !== false;
-    const isSessionAlertsEnabled = this.platform.get('auths').sessionAlerts ?? false;
+    const isSessionAlertsEnabled =
+      this.platform.get('auths').sessionAlerts ?? false;
     const isNotFirstSession =
       (await this.db.count('sessions', [
         Query.equal('userId', [user.getId()]),
@@ -2160,8 +2139,7 @@ export class AccountService {
       .status(201);
 
     const countryName = locale.getText(
-      'countries.' +
-      createdSession.get('countryCode', '').toLowerCase(),
+      'countries.' + createdSession.get('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -2217,7 +2195,7 @@ export class AccountService {
     user,
     locale,
     input,
-  }: WithReqRes<WithUser<WithLocale<{ input: CreateRecoveryDTO; }>>>) {
+  }: WithReqRes<WithUser<WithLocale<{ input: CreateRecoveryDTO }>>>) {
     if (!this.appConfig.getSmtpConfig().host) {
       throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
     }
@@ -2277,7 +2255,10 @@ export class AccountService {
     let body = locale.getText('emails.recovery.body');
     let subject = locale.getText('emails.recovery.subject');
 
-    const templatePath = path.join(this.appConfig.assetConfig.templates, 'email-inner-base.tpl');
+    const templatePath = path.join(
+      this.appConfig.assetConfig.templates,
+      'email-inner-base.tpl',
+    );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
@@ -2318,7 +2299,7 @@ export class AccountService {
     user,
     response,
     input,
-  }: WithUser<{ response: NuvixRes; input: UpdateRecoveryDTO; }>) {
+  }: WithUser<{ response: NuvixRes; input: UpdateRecoveryDTO }>) {
     const profile = await this.db.getDocument('users', input.userId);
 
     if (profile.empty()) {
@@ -2353,7 +2334,7 @@ export class AccountService {
         profile.get('hash'),
         profile.get('hashOptions'),
       );
-      if (!await validator.$valid(input.password)) {
+      if (!(await validator.$valid(input.password))) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
       }
 
@@ -2402,7 +2383,7 @@ export class AccountService {
     response,
     locale,
     url,
-  }: WithReqRes<WithUser<WithLocale<{ url?: string; }>>>) {
+  }: WithReqRes<WithUser<WithLocale<{ url?: string }>>>) {
     if (!this.appConfig.getSmtpConfig().host) {
       throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP Disabled');
     }
@@ -2452,7 +2433,10 @@ export class AccountService {
     let body = locale.getText('emails.verification.body');
     let subject = locale.getText('emails.verification.subject');
 
-    const templatePath = path.join(this.appConfig.assetConfig.templates, 'email-inner-base.tpl');
+    const templatePath = path.join(
+      this.appConfig.assetConfig.templates,
+      'email-inner-base.tpl',
+    );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
@@ -2493,9 +2477,9 @@ export class AccountService {
     response,
     userId,
     secret,
-  }: WithUser<{ response: NuvixRes; userId: string; secret: string; }>) {
-    const profile = await Authorization.skip(
-      () => this.db.getDocument('users', userId),
+  }: WithUser<{ response: NuvixRes; userId: string; secret: string }>) {
+    const profile = await Authorization.skip(() =>
+      this.db.getDocument('users', userId),
     );
 
     if (profile.empty()) {
@@ -2545,7 +2529,7 @@ export class AccountService {
     user,
     mfa,
     session,
-  }: WithUser<{ mfa: boolean; session?: SessionsDoc; }>) {
+  }: WithUser<{ mfa: boolean; session?: SessionsDoc }>) {
     user.set('mfa', mfa);
 
     user = await this.db.updateDocument('users', user.getId(), user);
@@ -2558,17 +2542,11 @@ export class AccountService {
         factors.push('totp');
       }
 
-      if (
-        user.get('email', false) &&
-        user.get('emailVerification', false)
-      ) {
+      if (user.get('email', false) && user.get('emailVerification', false)) {
         factors.push('email');
       }
 
-      if (
-        user.get('phone', false) &&
-        user.get('phoneVerification', false)
-      ) {
+      if (user.get('phone', false) && user.get('phoneVerification', false)) {
         factors.push('phone');
       }
 
@@ -2593,12 +2571,8 @@ export class AccountService {
 
     const factors = new Doc({
       totp: totp !== null && totp.get('verified', false),
-      email:
-        user.get('email', false) &&
-        user.get('emailVerification', false),
-      phone:
-        user.get('phone', false) &&
-        user.get('phoneVerification', false),
+      email: user.get('email', false) && user.get('emailVerification', false),
+      phone: user.get('phone', false) && user.get('phoneVerification', false),
       recoveryCode: recoveryCodeEnabled,
     });
 
@@ -2608,7 +2582,7 @@ export class AccountService {
   /**
    * Create authenticator
    */
-  async createMfaAuthenticator({ user, type }: WithUser<{ type: string; }>) {
+  async createMfaAuthenticator({ user, type }: WithUser<{ type: string }>) {
     let otp: TOTP;
 
     switch (type) {
@@ -2669,7 +2643,7 @@ export class AccountService {
     otp,
     user,
     session,
-  }: WithUser<{ session: SessionsDoc; otp: string; type: string; }>) {
+  }: WithUser<{ session: SessionsDoc; otp: string; type: string }>) {
     let authenticator: AuthenticatorsDoc | null = null;
 
     switch (type) {
@@ -2765,7 +2739,7 @@ export class AccountService {
   /**
    * Delete Authenticator
    */
-  async deleteMfaAuthenticator({ user, type }: WithUser<{ type: string; }>) {
+  async deleteMfaAuthenticator({ user, type }: WithUser<{ type: string }>) {
     const authenticator = (() => {
       switch (type) {
         case MfaType.TOTP:
@@ -2913,7 +2887,7 @@ export class AccountService {
     session,
     otp,
     challengeId,
-  }: WithUser<VerifyMfaChallengeDTO & { session: SessionsDoc; }>) {
+  }: WithUser<VerifyMfaChallengeDTO & { session: SessionsDoc }>) {
     const challenge = await this.db.getDocument('challenges', challengeId);
 
     if (challenge.empty()) {
@@ -2953,14 +2927,12 @@ export class AccountService {
       case MfaType.PHONE:
         success = PhoneChallenge.challenge(challenge, user, otp);
         success =
-          challenge.get('code') === otp &&
-          new Date() < challenge.get('expire');
+          challenge.get('code') === otp && new Date() < challenge.get('expire');
         break;
       case MfaType.EMAIL:
         success = EmailChallenge.challenge(challenge, user, otp);
         success =
-          challenge.get('code') === otp &&
-          new Date() < challenge.get('expire');
+          challenge.get('code') === otp && new Date() < challenge.get('expire');
         break;
       case MfaType.RECOVERY_CODE.toLowerCase():
         success = await recoveryCodeChallenge(challenge, user, otp);
@@ -2980,9 +2952,7 @@ export class AccountService {
     factors.push(type);
     factors = [...new Set(factors)]; // Remove duplicates
 
-    session
-      .set('factors', factors)
-      .set('mfaUpdatedAt', new Date());
+    session.set('factors', factors).set('mfaUpdatedAt', new Date());
 
     await this.db.updateDocument('sessions', session.getId(), session);
 
@@ -2998,14 +2968,14 @@ export class AccountService {
     targetId,
     providerId,
     identifier,
-  }: WithUser<CreatePushTargetDTO & { request: NuvixRequest; }>) {
+  }: WithUser<CreatePushTargetDTO & { request: NuvixRequest }>) {
     const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId;
 
-    const provider = await Authorization.skip(
-      () => this.db.getDocument('providers', providerId!),
+    const provider = await Authorization.skip(() =>
+      this.db.getDocument('providers', providerId!),
     );
-    const target = await Authorization.skip(
-      () => this.db.getDocument('targets', finalTargetId),
+    const target = await Authorization.skip(() =>
+      this.db.getDocument('targets', finalTargetId),
     );
 
     if (!target.empty()) {
@@ -3015,10 +2985,7 @@ export class AccountService {
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
     const device = detector.getDevice();
 
-    const sessionId = Auth.sessionVerify(
-      user.get('sessions', []),
-      Auth.secret,
-    );
+    const sessionId = Auth.sessionVerify(user.get('sessions', []), Auth.secret);
     const session = await this.db.getDocument('sessions', sessionId.toString());
 
     try {
@@ -3063,10 +3030,10 @@ export class AccountService {
     targetId,
     identifier,
   }: WithUser<
-    UpdatePushTargetDTO & { request: NuvixRequest; targetId: string; }
+    UpdatePushTargetDTO & { request: NuvixRequest; targetId: string }
   >) {
-    const target = await Authorization.skip(
-      () => this.db.getDocument('targets', targetId),
+    const target = await Authorization.skip(() =>
+      this.db.getDocument('targets', targetId),
     );
 
     if (target.empty()) {
@@ -3078,18 +3045,13 @@ export class AccountService {
     }
 
     if (identifier) {
-      target
-        .set('identifier', identifier)
-        .set('expired', false);
+      target.set('identifier', identifier).set('expired', false);
     }
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
     const device = detector.getDevice();
 
-    target.set(
-      'name',
-      `${device['deviceBrand']} ${device['deviceModel']}`,
-    );
+    target.set('name', `${device['deviceBrand']} ${device['deviceModel']}`);
 
     const updatedTarget = await this.db.updateDocument(
       'targets',
@@ -3104,9 +3066,9 @@ export class AccountService {
   /**
    * Delete Push Target
    */
-  async deletePushTarget({ user, targetId }: WithUser<{ targetId: string; }>) {
-    const target = await Authorization.skip(
-      () => this.db.getDocument('targets', targetId),
+  async deletePushTarget({ user, targetId }: WithUser<{ targetId: string }>) {
+    const target = await Authorization.skip(() =>
+      this.db.getDocument('targets', targetId),
     );
 
     if (target.empty()) {
@@ -3131,7 +3093,7 @@ export class AccountService {
   /**
    * Get Identities
    */
-  async getIdentities({ user, queries }: WithUser<{ queries: Query[]; }>) {
+  async getIdentities({ user, queries }: WithUser<{ queries: Query[] }>) {
     queries.push(Query.equal('userInternalId', [user.getSequence()]));
 
     const filterQueries = Query.groupByType(queries)['filters'];
@@ -3161,7 +3123,7 @@ export class AccountService {
   /**
    * Delete Identity
    */
-  async deleteIdentity({ identityId }: { identityId: string; }) {
+  async deleteIdentity({ identityId }: { identityId: string }) {
     const identity = await this.db.getDocument('identities', identityId);
 
     if (identity.empty()) {
@@ -3174,12 +3136,13 @@ export class AccountService {
 
   private getOAuthProviderConfig(providerId: string) {
     const providers = this.platform.get('oAuthProviders', []);
-    const provider = providers.find(
-      (p) => p.key === providerId,
-    );
+    const provider = providers.find(p => p.key === providerId);
 
     if (!provider) {
-      throw new Exception(Exception.GENERAL_SERVER_ERROR, `Provider '${providerId}' not found.`);
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        `Provider '${providerId}' not found.`,
+      );
     }
 
     return provider;
@@ -3190,5 +3153,5 @@ type WithReqRes<T = unknown> = {
   request: NuvixRequest;
   response: NuvixRes;
 } & T;
-type WithUser<T = unknown> = { user: UsersDoc; } & T;
-type WithLocale<T = unknown> = { locale: LocaleTranslator; } & T;
+type WithUser<T = unknown> = { user: UsersDoc } & T;
+type WithLocale<T = unknown> = { locale: LocaleTranslator } & T;

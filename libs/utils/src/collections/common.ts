@@ -1,5 +1,12 @@
 import { Auth } from '@nuvix/core/helper';
-import { ID, Database, AttributeType, Collection, IndexType, Order } from '@nuvix-tech/db';
+import {
+  ID,
+  Database,
+  AttributeType,
+  Collection,
+  IndexType,
+  Order,
+} from '@nuvix-tech/db';
 
 export const commonCollections: Record<string, Collection> = {
   cache: {

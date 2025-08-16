@@ -5,10 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import {
-  Context,
-  CORE_SCHEMA_DB,
-} from '@nuvix/utils';
+import { Context, CORE_SCHEMA_DB } from '@nuvix/utils';
 import { Authorization, Database } from '@nuvix-tech/db';
 import { Reflector } from '@nestjs/core';
 import { Auth } from '../../helper/auth.helper';
@@ -20,9 +17,7 @@ import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types';
 
 @Injectable()
 export class ApiInterceptor implements NestInterceptor {
-  constructor(
-    private readonly reflector: Reflector,
-  ) {}
+  constructor(private readonly reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest<NuvixRequest>();

@@ -14,7 +14,7 @@ import { UsersDoc } from '@nuvix/utils/types';
  * Guard to check if the user is authenticated
  */
 export class AuthGuard implements CanActivate {
-  constructor(private reflector: Reflector) { }
+  constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [

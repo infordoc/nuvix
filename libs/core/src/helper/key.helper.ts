@@ -27,7 +27,7 @@ export class Key {
     protected name: string,
     protected readonly key: string,
     protected readonly expired: boolean = false,
-  ) { }
+  ) {}
 
   public getProjectId(): string {
     return this.projectId;
@@ -114,21 +114,35 @@ export class Key {
         return new Key(projectId, type, role, scopes, name, key, expired);
 
       case ApiKey.STANDARD:
-        const keyDoc = project.findWhere('keys', (item: Doc) => item.get('secret') === key) as KeysDoc | null;
+        const keyDoc = project.findWhere(
+          'keys',
+          (item: Doc) => item.get('secret') === key,
+        ) as KeysDoc | null;
 
         if (!keyDoc) {
           return guestKey;
         }
 
         const expire = keyDoc.get('expire');
-        if (expire && new Date(expire as string).getMilliseconds() < Date.now()) {
+        if (
+          expire &&
+          new Date(expire as string).getMilliseconds() < Date.now()
+        ) {
           expired = true;
         }
 
         const keyName = keyDoc.get('name', 'UNKNOWN');
         scopes = [...keyDoc.get('scopes', []), ...scopes];
 
-        return new Key(project.getId(), type, role, scopes, keyName, key, expired);
+        return new Key(
+          project.getId(),
+          type,
+          role,
+          scopes,
+          keyName,
+          key,
+          expired,
+        );
 
       default:
         return guestKey;

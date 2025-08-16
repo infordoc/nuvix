@@ -1,6 +1,18 @@
-import { AttributeType, RangeValidator, Format, Attribute, DatetimeValidator, NumericType } from '@nuvix-tech/db';
-import { EmailValidator, IPValidator, URLValidator, WhiteList } from '@nuvix/core/validators';
-import { AttributeFormat, } from '@nuvix/utils';
+import {
+  AttributeType,
+  RangeValidator,
+  Format,
+  Attribute,
+  DatetimeValidator,
+  NumericType,
+} from '@nuvix-tech/db';
+import {
+  EmailValidator,
+  IPValidator,
+  URLValidator,
+  WhiteList,
+} from '@nuvix/core/validators';
+import { AttributeFormat } from '@nuvix/utils';
 
 export const formats: Record<string, Format> = {
   [AttributeFormat.EMAIL]: {
@@ -12,7 +24,7 @@ export const formats: Record<string, Format> = {
     type: AttributeType.Timestamptz,
   },
   [AttributeFormat.ENUM]: {
-    callback: (attribute) => {
+    callback: attribute => {
       const elements = (attribute as Attribute).formatOptions?.['elements'];
       return new WhiteList(elements, true);
     },

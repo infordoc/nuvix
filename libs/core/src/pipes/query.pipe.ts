@@ -2,10 +2,11 @@ import { ArgumentMetadata, PipeTransform } from '@nestjs/common';
 import { Exception } from '../extend/exception';
 import { Query, QueryException } from '@nuvix-tech/db';
 
-interface Options { }
+interface Options {}
 
 export class ParseQueryPipe
-  implements PipeTransform<string | string[], Query[]> {
+  implements PipeTransform<string | string[], Query[]>
+{
   private readonly options: Options;
   private readonly fields: string[];
 

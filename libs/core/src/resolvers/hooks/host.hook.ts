@@ -1,10 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Authorization, Database, Query } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
-import {
-  Context,
-  SERVER_CONFIG,
-} from '@nuvix/utils';
+import { Context, SERVER_CONFIG } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';
 import { ProjectsDoc } from '@nuvix/utils/types';
 import { CoreService } from '@nuvix/core/core.service.js';
@@ -13,9 +10,7 @@ import { CoreService } from '@nuvix/core/core.service.js';
 export class HostHook implements Hook {
   private readonly logger = new Logger(HostHook.name);
   private readonly dbForPlatform: Database;
-  constructor(
-    readonly coreService: CoreService,
-  ) {
+  constructor(readonly coreService: CoreService) {
     this.dbForPlatform = coreService.getPlatformDb();
   }
 
@@ -32,13 +27,12 @@ export class HostHook implements Hook {
     }
 
     const route =
-      await Authorization.skip(
-        () =>
-          this.dbForPlatform.findOne('rules', [
-            Query.equal('domain', [host]),
-            Query.limit(1),
-          ]),
-      ) ?? null;
+      (await Authorization.skip(() =>
+        this.dbForPlatform.findOne('rules', [
+          Query.equal('domain', [host]),
+          Query.limit(1),
+        ]),
+      )) ?? null;
 
     if (route === null) {
       if (host === SERVER_CONFIG.functionsDomain) {
@@ -48,7 +42,10 @@ export class HostHook implements Hook {
         );
       }
 
-      if (SERVER_CONFIG.functionsDomain && host.endsWith(SERVER_CONFIG.functionsDomain)) {
+      if (
+        SERVER_CONFIG.functionsDomain &&
+        host.endsWith(SERVER_CONFIG.functionsDomain)
+      ) {
         throw new Exception(
           Exception.GENERAL_ACCESS_FORBIDDEN,
           'This domain is not connected to any Nuvix resource yet. Please configure custom domain or function domain to allow this request.',

@@ -1,10 +1,11 @@
 import { ArgumentMetadata, PipeTransform } from '@nestjs/common';
 import { Exception } from '../extend/exception';
 
-interface Options { }
+interface Options {}
 
 export class ParseComaStringPipe
-  implements PipeTransform<string, string[] | undefined> {
+  implements PipeTransform<string, string[] | undefined>
+{
   private readonly options: Options;
 
   constructor(options: Options = {}) {

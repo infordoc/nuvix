@@ -1,4 +1,11 @@
-import { ID, Database, AttributeType, IndexType, Order, Collection } from '@nuvix-tech/db';
+import {
+  ID,
+  Database,
+  AttributeType,
+  IndexType,
+  Order,
+  Collection,
+} from '@nuvix-tech/db';
 import { APP_FUNCTION_SPECIFICATION_DEFAULT } from '../constants';
 import { commonCollections } from './common';
 

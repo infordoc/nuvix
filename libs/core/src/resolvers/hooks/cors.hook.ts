@@ -57,7 +57,10 @@ export class CorsHook implements Hook {
     }
   }
 
-  private determineOrigin(origin: string | undefined, isConsole: boolean): string | false {
+  private determineOrigin(
+    origin: string | undefined,
+    isConsole: boolean,
+  ): string | false {
     if (!origin) {
       this.logger.warn('CORS: No origin provided');
       return false; // No origin provided

@@ -421,4 +421,4 @@ export type OAuthProviderType = {
   enabled: boolean;
   appId: string;
   secret: string;
-}
+};

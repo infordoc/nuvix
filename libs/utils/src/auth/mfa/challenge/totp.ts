@@ -14,7 +14,11 @@ export class TOTP extends Challenge {
     });
   }
 
-  public static override challenge(challenge: ChallengesDoc, user: UsersDoc, otp: string): boolean {
+  public static override challenge(
+    challenge: ChallengesDoc,
+    user: UsersDoc,
+    otp: string,
+  ): boolean {
     if (challenge.has('type') && challenge.get('type') === MfaType.TOTP) {
       return this.verify(user, otp);
     }

@@ -1,11 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Authorization, Database, Doc, Role } from '@nuvix-tech/db';
-import {
-  ApiKey,
-  AppMode,
-  Context,
-  PROJECT_DB_CLIENT,
-} from '@nuvix/utils';
+import { ApiKey, AppMode, Context, PROJECT_DB_CLIENT } from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { roles } from '@nuvix/core/config/roles';
@@ -14,7 +9,14 @@ import { APP_PLATFORM_SERVER, platforms } from '@nuvix/core/config/platforms';
 import { Hook } from '../../server/hooks/interface';
 import { setupDatabaseMeta } from '@nuvix/core/helper/db-meta.helper';
 import { Key } from '@nuvix/core/helper/key.helper';
-import { KeysDoc, MembershipsDoc, ProjectsDoc, SessionsDoc, TeamsDoc, UsersDoc } from '@nuvix/utils/types';
+import {
+  KeysDoc,
+  MembershipsDoc,
+  ProjectsDoc,
+  SessionsDoc,
+  TeamsDoc,
+  UsersDoc,
+} from '@nuvix/utils/types';
 import { CoreService } from '@nuvix/core/core.service.js';
 import { AppConfigService } from '@nuvix/core/config.service.js';
 
@@ -81,7 +83,9 @@ export class ApiHook implements Hook {
       if (apiKey.getType() === ApiKey.STANDARD) {
         const dbKey = project.findWhere(
           'keys',
-          (key: KeysDoc) => key.get('key') === apiKey.getKey() && key.get('type') === ApiKey.STANDARD,
+          (key: KeysDoc) =>
+            key.get('key') === apiKey.getKey() &&
+            key.get('type') === ApiKey.STANDARD,
         );
         if (!dbKey || dbKey.empty()) {
           throw new Exception(Exception.USER_UNAUTHORIZED);
@@ -90,7 +94,8 @@ export class ApiHook implements Hook {
         const accessedAt = dbKey.get('accessedAt', 0);
 
         if (
-          new Date(Date.now() - this.appConfig.get('access').key * 1000) > new Date(accessedAt as string)
+          new Date(Date.now() - this.appConfig.get('access').key * 1000) >
+          new Date(accessedAt as string)
         ) {
           dbKey.set('accessedAt', new Date());
           await this.db.updateDocument('keys', dbKey.getId(), dbKey);
@@ -118,9 +123,7 @@ export class ApiHook implements Hook {
       }
     } else if (
       (project.getId() === 'console' && !team.empty() && !user.empty()) ||
-      (project.getId() !== 'console' &&
-        !user.empty() &&
-        mode === AppMode.ADMIN)
+      (project.getId() !== 'console' && !user.empty() && mode === AppMode.ADMIN)
     ) {
       const teamId = team.getId();
       let adminRoles: string[] = [];
@@ -157,7 +160,10 @@ export class ApiHook implements Hook {
     // Update project last activity
     if (!project.empty() && project.getId() !== 'console') {
       const accessedAt = project.get('accessedAt', 0);
-      if (new Date(Date.now() - this.appConfig.get('access').key * 1000) > new Date(accessedAt as string)) {
+      if (
+        new Date(Date.now() - this.appConfig.get('access').key * 1000) >
+        new Date(accessedAt as string)
+      ) {
         project.set('accessedAt', new Date());
         await Authorization.skip(async () => {
           await this.db.updateDocument('projects', project.getId(), project);
@@ -175,10 +181,10 @@ export class ApiHook implements Hook {
           user:
             user && !user.empty()
               ? JSON.stringify({
-                $id: user.getId(),
-                name: user.get('name'),
-                email: user.get('email'),
-              })
+                  $id: user.getId(),
+                  name: user.get('name'),
+                  email: user.get('email'),
+                })
               : undefined,
           session: session ? JSON.stringify(session) : undefined,
           roles: JSON.stringify(Authorization.getRoles()),

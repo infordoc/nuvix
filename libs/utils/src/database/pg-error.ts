@@ -32,14 +32,14 @@ function safeMessage(defaultMessage: string, detail?: string): string {
 
 type ErrorMapEntry =
   | {
-    status: number;
-    type: PgErrorType;
-    message: string | ((err: DatabaseError) => string);
-  }
+      status: number;
+      type: PgErrorType;
+      message: string | ((err: DatabaseError) => string);
+    }
   | ((
-    err: DatabaseError,
-    authed: boolean,
-  ) => Omit<PgTransformedError, 'code' | 'details'>);
+      err: DatabaseError,
+      authed: boolean,
+    ) => Omit<PgTransformedError, 'code' | 'details'>);
 
 const errorMapArray: [string, ErrorMapEntry][] = [
   // Class 23 — Integrity Constraint Violation
@@ -82,15 +82,15 @@ const errorMapArray: [string, ErrorMapEntry][] = [
     (err: DatabaseError, authed: boolean) =>
       authed
         ? {
-          status: 403,
-          type: 'DATABASE_FORBIDDEN',
-          message: 'You do not have permission to perform this action.',
-        }
+            status: 403,
+            type: 'DATABASE_FORBIDDEN',
+            message: 'You do not have permission to perform this action.',
+          }
         : {
-          status: 401,
-          type: 'DATABASE_AUTH',
-          message: 'Authentication is required to perform this action.',
-        },
+            status: 401,
+            type: 'DATABASE_AUTH',
+            message: 'Authentication is required to perform this action.',
+          },
   ], // insufficient_privilege
 
   // Other specific codes

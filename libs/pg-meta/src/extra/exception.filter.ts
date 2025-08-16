@@ -36,7 +36,8 @@ export class PgMetaExceptionFilter implements ExceptionFilter {
         responseBody['position'] = exception.extra['position'];
       if (exception.extra['routine'])
         responseBody['routine'] = exception.extra['routine'];
-      if (exception.extra['hint']) responseBody['hint'] = exception.extra['hint'];
+      if (exception.extra['hint'])
+        responseBody['hint'] = exception.extra['hint'];
     }
 
     // Add stack trace in non-production environments

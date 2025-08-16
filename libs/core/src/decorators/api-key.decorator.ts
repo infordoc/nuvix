@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Context} from '@nuvix/utils';
+import { Context } from '@nuvix/utils';
 import { Key } from '../helper';
 
 export const ApiKey = createParamDecorator<any, Key>(

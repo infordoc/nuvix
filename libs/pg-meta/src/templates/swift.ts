@@ -69,7 +69,7 @@ function pgTypeToSwiftStruct(
     types,
     views,
     tables,
-  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[]; },
+  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[] },
 ): SwiftStruct {
   const columnEntries: SwiftAttribute[] =
     columns?.map(column => {
@@ -112,15 +112,15 @@ function generateCodingKeysEnumFromAttributes(
 ): SwiftEnum | undefined {
   return attributes.length > 0
     ? {
-      formattedEnumName: 'CodingKeys',
-      protocolConformances: ['String', 'CodingKey'],
-      cases: attributes.map(attribute => {
-        return {
-          formattedName: attribute.formattedAttributeName,
-          rawValue: attribute.rawName,
-        };
-      }),
-    }
+        formattedEnumName: 'CodingKeys',
+        protocolConformances: ['String', 'CodingKey'],
+        cases: attributes.map(attribute => {
+          return {
+            formattedName: attribute.formattedAttributeName,
+            rawValue: attribute.rawName,
+          };
+        }),
+      }
     : undefined;
 }
 
@@ -130,7 +130,7 @@ function pgCompositeTypeToSwiftStruct(
     types,
     views,
     tables,
-  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[]; },
+  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[] },
 ): SwiftStruct {
   const typeWithRetrievedAttributes = {
     ...type,
@@ -171,7 +171,7 @@ function generateProtocolConformances(protocols: string[]): string {
 
 function generateEnum(
   enum_: SwiftEnum,
-  { accessControl, level }: SwiftGeneratorOptions & { level: number; },
+  { accessControl, level }: SwiftGeneratorOptions & { level: number },
 ): string[] {
   return [
     `${ident(level)}${accessControl} enum ${enum_.formattedEnumName}${generateProtocolConformances(enum_.protocolConformances)} {`,
@@ -185,7 +185,7 @@ function generateEnum(
 
 function generateStruct(
   struct: SwiftStruct,
-  { accessControl, level }: SwiftGeneratorOptions & { level: number; },
+  { accessControl, level }: SwiftGeneratorOptions & { level: number },
 ): string[] {
   const identity = struct.attributes.find(column => column.isIdentity);
 
@@ -330,7 +330,7 @@ const pgTypeToSwiftType = (
     types,
     views,
     tables,
-  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[]; },
+  }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[] },
 ): string => {
   let swiftType: string;
 
@@ -396,7 +396,7 @@ const pgTypeToSwiftType = (
 
 function ident(
   level: number,
-  options: { width: number; } = { width: 2 },
+  options: { width: number } = { width: 2 },
 ): string {
   return ' '.repeat(level * options.width);
 }

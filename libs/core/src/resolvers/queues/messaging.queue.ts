@@ -24,13 +24,16 @@ import {
 import { Device } from '@nuvix/storage';
 import { Database, Doc, Query } from '@nuvix-tech/db';
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  CORE_SCHEMA,
-  QueueFor,
-  MessageType,
-} from '@nuvix/utils';
+import { CORE_SCHEMA, QueueFor, MessageType } from '@nuvix/utils';
 import { MessageStatus } from '@nuvix/core/messaging/status';
-import type { Messages, MessagesDoc, Projects, ProjectsDoc, ProvidersDoc, TargetsDoc } from '@nuvix/utils/types';
+import type {
+  Messages,
+  MessagesDoc,
+  Projects,
+  ProjectsDoc,
+  ProvidersDoc,
+  TargetsDoc,
+} from '@nuvix/utils/types';
 import { CoreService } from '@nuvix/core/core.service.js';
 
 @Injectable()
@@ -38,9 +41,7 @@ import { CoreService } from '@nuvix/core/core.service.js';
 export class MessagingQueue extends Queue {
   private readonly logger = new Logger(MessagingQueue.name);
 
-  constructor(
-    private readonly coreService: CoreService,
-  ) {
+  constructor(private readonly coreService: CoreService) {
     super();
   }
 
@@ -53,9 +54,13 @@ export class MessagingQueue extends Queue {
         const data = job.data;
         const project = new Doc(data.project as Projects);
         const message = new Doc(data.message as Messages);
-        const { client, dbForProject } = await this.coreService
-          .createProjectDatabase(project, { schema: CORE_SCHEMA });
-        const deviceForFiles = this.coreService.getProjectDevice(project.getId());
+        const { client, dbForProject } =
+          await this.coreService.createProjectDatabase(project, {
+            schema: CORE_SCHEMA,
+          });
+        const deviceForFiles = this.coreService.getProjectDevice(
+          project.getId(),
+        );
 
         try {
           await this.sendExternalMessage(
@@ -190,8 +195,8 @@ export class MessagingQueue extends Queue {
     const data = message.get('data') || {};
     const ccTargets = data['cc'] || [];
     const bccTargets = data['bcc'] || [];
-    let cc: Array<{ email: string; }> = [];
-    let bcc: Array<{ email: string; }> = [];
+    let cc: Array<{ email: string }> = [];
+    let bcc: Array<{ email: string }> = [];
     let attachments = data['attachments'] || [];
 
     if (ccTargets.length > 0) {
@@ -357,12 +362,9 @@ export class MessagingQueue extends Queue {
         Query.limit(topicIds.length),
       ]);
       for (const topic of topics) {
-        const targets = (topic
-          .get('targets') as TargetsDoc[])
-          .filter(
-            (target) =>
-              target.get('providerType') === providerType,
-          );
+        const targets = (topic.get('targets') as TargetsDoc[]).filter(
+          target => target.get('providerType') === providerType,
+        );
         allTargets.push(...targets);
       }
     }
@@ -373,12 +375,9 @@ export class MessagingQueue extends Queue {
         Query.limit(userIds.length),
       ]);
       for (const user of users) {
-        const targets = (user
-          .get('targets') as TargetsDoc[])
-          .filter(
-            (target) =>
-              target.get('providerType') === providerType,
-          );
+        const targets = (user.get('targets') as TargetsDoc[]).filter(
+          target => target.get('providerType') === providerType,
+        );
         allTargets.push(...targets);
       }
     }
@@ -484,7 +483,7 @@ export class MessagingQueue extends Queue {
       const batchPromises = batches.map(async batch => {
         let deliveredTotal = 0;
         const deliveryErrors: string[] = [];
-        const messageData: Doc<Messages & { to?: string; }> = message; // TODO: ----
+        const messageData: Doc<Messages & { to?: string }> = message; // TODO: ----
         messageData.set('to', batch);
 
         let data: SMS | Push | Email;
@@ -603,7 +602,7 @@ export class MessagingQueue extends Queue {
 
 export enum MessagingJob {
   EXTERNAL = 'external',
-};
+}
 
 export interface MessagingJobData {
   message: MessagesDoc | Object;

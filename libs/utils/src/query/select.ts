@@ -280,7 +280,7 @@ export class SelectParser {
       else if (char === '(') parenDepth--;
       else if (
         token.slice(i - this.CAST_DELIMITER.length + 1, i + 1) ===
-        this.CAST_DELIMITER &&
+          this.CAST_DELIMITER &&
         parenDepth === 0
       ) {
         const cast = token.substring(i + 1).trim();
@@ -397,16 +397,16 @@ export class SelectParser {
 
     const select = selectPart?.trim()
       ? new SelectParser({
-        tableName: alias || resource,
-        depth: ++this.depth,
-      }).parse(selectPart.trim())
-      : [
-        {
-          type: 'column',
           tableName: alias || resource,
-          path: '*',
-        } as SelectNode,
-      ];
+          depth: ++this.depth,
+        }).parse(selectPart.trim())
+      : [
+          {
+            type: 'column',
+            tableName: alias || resource,
+            path: '*',
+          } as SelectNode,
+        ];
 
     return {
       type: 'embed',

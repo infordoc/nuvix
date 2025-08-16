@@ -16,10 +16,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule, JwtService } from '@nestjs/jwt';
-import {
-  JWT_SECRET,
-  QueueFor,
-} from '@nuvix/utils';
+import { JWT_SECRET, QueueFor } from '@nuvix/utils';
 import { HostHook, AuthHook, ApiHook } from '@nuvix/core/resolvers/hooks';
 import { ProjectHook } from './resolvers/hooks/project.hook';
 import { ProjectHook as RequestProjectHook } from '@nuvix/core/resolvers/hooks';
@@ -40,13 +37,14 @@ import { AppConfigService } from '@nuvix/core';
     BullModule.forRootAsync({
       useFactory(config: AppConfigService) {
         const redisConfig = config.getRedisConfig();
-        console.log('Redis Config:', redisConfig);
         return {
           connection: {
             ...redisConfig,
-            tls: redisConfig.secure ? {
-              rejectUnauthorized: false
-            } : undefined,
+            tls: redisConfig.secure
+              ? {
+                  rejectUnauthorized: false,
+                }
+              : undefined,
           },
           defaultJobOptions: {
             removeOnComplete: true,
@@ -55,7 +53,7 @@ import { AppConfigService } from '@nuvix/core';
           prefix: 'nuvix', // TODO: we have to include a instance key that should be unique per app instance
         };
       },
-      inject: [AppConfigService]
+      inject: [AppConfigService],
     }),
     BullModule.registerQueue(
       { name: QueueFor.MAILS },

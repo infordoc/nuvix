@@ -14,9 +14,7 @@ import {
   AttributeStringModel,
   AttributeURLModel,
 } from './Attributes.model';
-import {
-  AttributeFormat,
-} from '@nuvix/utils';
+import { AttributeFormat } from '@nuvix/utils';
 
 @Exclude()
 export class CollectionModel extends BaseModel {

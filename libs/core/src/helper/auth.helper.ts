@@ -3,7 +3,12 @@ import { createHash, randomBytes, createHmac, scryptSync } from 'crypto';
 import { Exception } from '../extend/exception';
 import { ENCRYPTION_KEY, SERVER_CONFIG } from '@nuvix/utils';
 import { Authorization, Role, UserDimension } from '@nuvix-tech/db';
-import { MembershipsDoc, SessionsDoc, TokensDoc, UsersDoc } from '@nuvix/utils/types';
+import {
+  MembershipsDoc,
+  SessionsDoc,
+  TokensDoc,
+  UsersDoc,
+} from '@nuvix/utils/types';
 
 const algorithm = 'aes-256-cbc';
 const key = ENCRYPTION_KEY ? Buffer.from(ENCRYPTION_KEY, 'hex') : undefined;
@@ -350,9 +355,7 @@ export class Auth {
 
         if (node.get('roles')) {
           for (const nodeRole of node.get('roles')) {
-            roles.push(
-              Role.team(node.get('teamId'), nodeRole).toString(),
-            );
+            roles.push(Role.team(node.get('teamId'), nodeRole).toString());
           }
         }
       }
@@ -366,9 +369,7 @@ export class Auth {
   }
 
   public static isAnonymousUser(user: UsersDoc): boolean {
-    return (
-      user.get('email') === null && user.get('phone') === null
-    );
+    return user.get('email') === null && user.get('phone') === null;
   }
 
   private static getBcrypt(): any {

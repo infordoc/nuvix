@@ -16,11 +16,12 @@ export class AuditHook implements Hook {
   constructor(
     @InjectQueue(QueueFor.AUDITS)
     private readonly auditsQueue: Queue<AuditsQueueJobData>,
-  ) { }
+  ) {}
 
   async preSerialization(req: NuvixRequest, reply: NuvixRes) {
-    const audit: AuditEventType | undefined =
-      (req.routeOptions?.config as any)?.['audit']; // TODO: Improve type safety
+    const audit: AuditEventType | undefined = (
+      req.routeOptions?.config as any
+    )?.['audit']; // TODO: Improve type safety
     if (!audit || !audit.event || reply.statusCode >= 400) {
       return;
     }

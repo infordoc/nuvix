@@ -27,7 +27,8 @@ interface AuditLog extends AuditCreateInput {
 @Processor(QueueFor.AUDITS, { concurrency: 50000 })
 export class AuditsQueue
   extends Queue
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   private static readonly BATCH_SIZE = 1000; // Number of logs to process in one batch
   private static readonly BATCH_INTERVAL_MS = 1000; // Interval in milliseconds to flush
   private readonly logger = new Logger(AuditsQueue.name);
@@ -109,8 +110,8 @@ export class AuditsQueue
 }
 
 export type AuditsQueueJobData = {
-  project?: any,
-  user: Users & { type: string; };
+  project?: any;
+  user: Users & { type: string };
   resource: string;
   mode: string;
   userAgent?: string;

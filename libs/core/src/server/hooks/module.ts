@@ -36,21 +36,21 @@ import { Hook, HookMethods } from './interface';
 
 export class HooksModule<
   TAppOptions extends
-  NestApplicationContextOptions = NestApplicationContextOptions,
+    NestApplicationContextOptions = NestApplicationContextOptions,
 > {
   private readonly routerProxy = new RouterProxy();
   private readonly exceptionFiltersCache = new WeakMap();
   private readonly logger = new Logger(HooksModule.name);
 
-  private declare injector: Injector;
-  private declare routerExceptionFilter: RouterExceptionFilters;
-  private declare routesMapper: RoutesMapper;
-  private declare resolver: MiddlewareResolver;
-  private declare container: NestContainer;
-  private declare httpAdapter: HttpServer;
-  private declare graphInspector: GraphInspector;
-  private declare appOptions: TAppOptions;
-  private declare routeInfoPathExtractor: RouteInfoPathExtractor;
+  declare private injector: Injector;
+  declare private routerExceptionFilter: RouterExceptionFilters;
+  declare private routesMapper: RoutesMapper;
+  declare private resolver: MiddlewareResolver;
+  declare private container: NestContainer;
+  declare private httpAdapter: HttpServer;
+  declare private graphInspector: GraphInspector;
+  declare private appOptions: TAppOptions;
+  declare private routeInfoPathExtractor: RouteInfoPathExtractor;
 
   public async register(
     HooksContainer: HooksContainer,
@@ -361,16 +361,16 @@ export class HooksModule<
     const middlewareFunction = isMethodAll
       ? proxy
       : async <TRequest, TResponse>(
-        req: TRequest,
-        res: TResponse,
-        next: VoidFunction,
-        ...rest: any
-      ) => {
-        if (applicationRef.getRequestMethod?.(req) === requestMethod) {
-          return await proxy(req, res, next, ...rest);
-        }
-        return Promise.resolve();
-      };
+          req: TRequest,
+          res: TResponse,
+          next: VoidFunction,
+          ...rest: any
+        ) => {
+          if (applicationRef.getRequestMethod?.(req) === requestMethod) {
+            return await proxy(req, res, next, ...rest);
+          }
+          return Promise.resolve();
+        };
     const pathsToApplyMiddleware = [] as string[];
     paths.some(path => path.match(/^\/?$/))
       ? pathsToApplyMiddleware.push('/')

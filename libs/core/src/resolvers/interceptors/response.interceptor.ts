@@ -96,11 +96,11 @@ export class ResponseInterceptor implements NestInterceptor {
 
     return Array.isArray(response)
       ? response.map(item => {
-        if (item instanceof Doc) {
-          item = item.toObject();
-        }
-        return this.transformToPlain(item, options);
-      })
+          if (item instanceof Doc) {
+            item = item.toObject();
+          }
+          return this.transformToPlain(item, options);
+        })
       : this.transformToPlain(response, options);
   }
 

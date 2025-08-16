@@ -5,16 +5,15 @@ import {
   UpdateProjectTeamDTO,
 } from './DTO/update-project.dto';
 import { Exception } from '@nuvix/core/extend/exception';
-import {
-  ApiKey,
-  APP_MAX_COUNT,
-  QueueFor,
-} from '@nuvix/utils';
+import { ApiKey, APP_MAX_COUNT, QueueFor } from '@nuvix/utils';
 import authMethods, {
   AuthMethod,
   defaultAuthConfig,
 } from '@nuvix/core/config/auth';
-import { oAuthProviders, type OAuthProviderType } from '@nuvix/core/config/authProviders';
+import {
+  oAuthProviders,
+  type OAuthProviderType,
+} from '@nuvix/core/config/authProviders';
 import { defaultSmtpConfig } from '@nuvix/core/config/smtp';
 import { services } from '@nuvix/core/config/services';
 import { UpdateProjectServiceDTO } from './DTO/project-service.dto';
@@ -56,7 +55,11 @@ export class ProjectService {
     private coreService: CoreService,
     private readonly appConfig: AppConfigService,
     @InjectQueue(QueueFor.PROJECTS)
-    private readonly projectQueue: Queue<ProjectQueueOptions, unknown, ProjectJob>,
+    private readonly projectQueue: Queue<
+      ProjectQueueOptions,
+      unknown,
+      ProjectJob
+    >,
     private readonly jwtService: JwtService,
   ) {
     this.db = coreService.getPlatformDb();
@@ -65,7 +68,13 @@ export class ProjectService {
   /**
    * Create a new project.
    */
-  async create({ projectId: _projectId, teamId, password, name, ...rest }: CreateProjectDTO): Promise<Doc<Projects>> {
+  async create({
+    projectId: _projectId,
+    teamId,
+    password,
+    name,
+    ...rest
+  }: CreateProjectDTO): Promise<Doc<Projects>> {
     const projectId = _projectId === 'unique()' ? ID.unique() : _projectId;
 
     try {
@@ -164,8 +173,7 @@ export class ProjectService {
   async findOne(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.empty())
-      throw new Exception(Exception.PROJECT_NOT_FOUND);
+    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
     return project;
   }
@@ -750,7 +758,10 @@ export class ProjectService {
   /**
    * Update service status of a project.
    */
-  async updateServiceStatus(id: string, { status, service }: UpdateProjectServiceDTO) {
+  async updateServiceStatus(
+    id: string,
+    { status, service }: UpdateProjectServiceDTO,
+  ) {
     let project = await this.db.getDocument('projects', id);
 
     if (project.empty()) {
@@ -844,7 +855,10 @@ export class ProjectService {
   /**
    * Update OAuth2 of a project.
    */
-  async updateOAuth2(id: string, { provider, appId, secret, enabled }: oAuth2DTO) {
+  async updateOAuth2(
+    id: string,
+    { provider, appId, secret, enabled }: oAuth2DTO,
+  ) {
     let project = await this.db.getDocument('projects', id);
 
     if (project.empty()) {
@@ -852,9 +866,7 @@ export class ProjectService {
     }
 
     const providers = project.get('oAuthProviders', []) as OAuthProviderType[];
-    const providerIndex = providers.findIndex(
-      (p) => p.key === provider,
-    );
+    const providerIndex = providers.findIndex(p => p.key === provider);
 
     if (providerIndex === -1) {
       throw new Exception(Exception.PROVIDER_NOT_FOUND);
@@ -1071,7 +1083,7 @@ export class ProjectService {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const uniqueNumbers: { [key: string]: string; } = {};
+    const uniqueNumbers: { [key: string]: string } = {};
     input.numbers.forEach(number => {
       if (uniqueNumbers[number.phone]) {
         throw new Exception(
@@ -1135,19 +1147,19 @@ export class ProjectService {
 
     const smtp = input.enabled
       ? {
-        enabled: input.enabled,
-        senderName: input.senderName,
-        senderEmail: input.senderEmail,
-        replyTo: input.replyTo,
-        host: input.host,
-        port: input.port,
-        username: input.username,
-        password: input.password,
-        secure: input.secure,
-      }
+          enabled: input.enabled,
+          senderName: input.senderName,
+          senderEmail: input.senderEmail,
+          replyTo: input.replyTo,
+          host: input.host,
+          port: input.port,
+          username: input.username,
+          password: input.password,
+          secure: input.secure,
+        }
       : {
-        enabled: false,
-      };
+          enabled: false,
+        };
 
     project = await this.db.updateDocument(
       'projects',

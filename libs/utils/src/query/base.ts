@@ -52,12 +52,14 @@ export abstract class BaseParser {
   }
 
   protected throwError(message: string, token?: Token): never {
-    token = token ?? {
-      type: TokenType.IDENTIFIER,
-      value: undefined,
-      position: { line: 0, offset: 0, column: 0 },
-      length: 0,
-    } as unknown as Token;
+    token =
+      token ??
+      ({
+        type: TokenType.IDENTIFIER,
+        value: undefined,
+        position: { line: 0, offset: 0, column: 0 },
+        length: 0,
+      } as unknown as Token);
     const { line, column, offset } = token.position;
     const contextRadius = 20;
     const snippetStart = Math.max(0, offset - contextRadius);

@@ -330,7 +330,7 @@ export class Exception extends HttpException {
     this.type = type;
     this.name = this.constructor.name;
 
-    super.message = message ?? errorCodes[type]?.description as string;
+    super.message = message ?? (errorCodes[type]?.description as string);
     this.publish = errorCodes[type]?.publish ?? this.getStatus() >= 500;
 
     if (previous) {

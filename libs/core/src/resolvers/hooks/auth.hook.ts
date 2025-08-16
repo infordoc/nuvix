@@ -4,11 +4,7 @@ import { Authorization, Database, Doc, Query } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
-import {
-  AppMode,
-  Context,
-  CORE_SCHEMA_DB,
-} from '@nuvix/utils';
+import { AppMode, Context, CORE_SCHEMA_DB } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';
 import { Key } from '@nuvix/core/helper/key.helper';
 import { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types';
@@ -41,7 +37,7 @@ export class AuthHook implements Hook {
       Auth.setCookieName(`session`);
     }
 
-    let session: { id: string | null; secret: string; } = {
+    let session: { id: string | null; secret: string } = {
       id: null,
       secret: '',
     };
@@ -97,10 +93,7 @@ export class AuthHook implements Hook {
       user = await this.dbForPlatform.getDocument('users', Auth.unique);
     }
 
-    const sessionId = Auth.sessionVerify(
-      user.get('sessions', []),
-      Auth.secret,
-    );
+    const sessionId = Auth.sessionVerify(user.get('sessions', []), Auth.secret);
 
     if (user.empty() || !sessionId) {
       user = new Doc();
@@ -125,7 +118,13 @@ export class AuthHook implements Hook {
       }
 
       const jwtSessionId = payload?.sessionId || null;
-      if (jwtSessionId && !user.findWhere('sessions', (s: SessionsDoc) => s.getId() === jwtSessionId)) {
+      if (
+        jwtSessionId &&
+        !user.findWhere(
+          'sessions',
+          (s: SessionsDoc) => s.getId() === jwtSessionId,
+        )
+      ) {
         user = new Doc();
       }
     }
@@ -144,7 +143,10 @@ export class AuthHook implements Hook {
       if (project.getId() !== 'console') {
         teamInternalId = project.get('teamInternalId');
       } // TODO: we have to use another approch, or we should pass teamId in headers
-      else if (req.url.startsWith('/v1/projects/') && (req.params as any)['projectId']) {
+      else if (
+        req.url.startsWith('/v1/projects/') &&
+        (req.params as any)['projectId']
+      ) {
         const p = await Authorization.skip(
           async () =>
             await this.dbForPlatform.getDocument(
@@ -158,8 +160,8 @@ export class AuthHook implements Hook {
         params.getFromQuery('teamId')
       ) {
         const teamId = params.getFromQuery('teamId') as string;
-        const team = await Authorization.skip(
-          () => this.dbForPlatform.getDocument('teams', teamId),
+        const team = await Authorization.skip(() =>
+          this.dbForPlatform.getDocument('teams', teamId),
         );
         req[Context.Team] = team;
       } else {

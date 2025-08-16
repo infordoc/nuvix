@@ -1,11 +1,8 @@
 import { Database, Doc } from '@nuvix-tech/db';
-import {
-
-} from '@nuvix/utils';
+import {} from '@nuvix/utils';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CoreService } from './core.service.js';
-
 
 // TODO: we have to fully refactor this service to use the new database client and Queue system
 
@@ -13,15 +10,9 @@ import { CoreService } from './core.service.js';
 export class ProjectUsageService {
   private readonly logger = new Logger(ProjectUsageService.name);
 
-  constructor(
-    private readonly coreService: CoreService,
-  ) {}
+  constructor(private readonly coreService: CoreService) {}
 
-  async addMetric(
-    metric: string,
-    value: number,
-    project?: Doc,
-  ): Promise<this> {
+  async addMetric(metric: string, value: number, project?: Doc): Promise<this> {
     this.logger.log(`Adding metric ${metric} with value ${value}`);
     const projectId = project?.getSequence() ?? 'global';
     const key = `project_usage:${projectId}`;

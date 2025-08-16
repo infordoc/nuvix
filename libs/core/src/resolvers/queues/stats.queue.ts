@@ -1,10 +1,6 @@
 import { Processor } from '@nestjs/bullmq';
 import { Queue } from './queue';
-import {
-  CORE_SCHEMA,
-  MetricFor,
-  QueueFor,
-} from '@nuvix/utils';
+import { CORE_SCHEMA, MetricFor, QueueFor } from '@nuvix/utils';
 import { Job } from 'bullmq';
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Doc } from '@nuvix-tech/db';
@@ -21,9 +17,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
   private buffer = new Map<number, StatsBuffer>();
   private interval!: NodeJS.Timeout;
 
-  constructor(
-    private readonly coreService: CoreService,
-  ) {
+  constructor(private readonly coreService: CoreService) {
     super();
   }
 
@@ -58,7 +52,10 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
       }
 
       const { project, keys } = data;
-      const { client, dbForProject } = await this.coreService.createProjectDatabase(project, { schema: CORE_SCHEMA });
+      const { client, dbForProject } =
+        await this.coreService.createProjectDatabase(project, {
+          schema: CORE_SCHEMA,
+        });
 
       try {
         const entries = Object.entries(keys);
@@ -126,7 +123,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
 
     return;
   }
-};
+}
 
 export interface StatsQueueOptions {
   project: object;

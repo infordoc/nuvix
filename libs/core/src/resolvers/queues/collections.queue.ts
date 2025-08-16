@@ -12,7 +12,16 @@ import { OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { QueueFor } from '@nuvix/utils';
 import { Logger } from '@nestjs/common';
-import type { Attributes, AttributesDoc, Collections, CollectionsDoc, Indexes, IndexesDoc, Projects, ProjectsDoc } from '@nuvix/utils/types';
+import type {
+  Attributes,
+  AttributesDoc,
+  Collections,
+  CollectionsDoc,
+  Indexes,
+  IndexesDoc,
+  Projects,
+  ProjectsDoc,
+} from '@nuvix/utils/types';
 import { CoreService } from '@nuvix/core/core.service.js';
 import { Audit } from '@nuvix/audit';
 
@@ -20,14 +29,15 @@ import { Audit } from '@nuvix/audit';
 export class CollectionsQueue extends Queue {
   private readonly logger = new Logger(CollectionsQueue.name);
   private readonly dbForPlatform: Database;
-  constructor(
-    private readonly coreService: CoreService,
-  ) {
+  constructor(private readonly coreService: CoreService) {
     super();
     this.dbForPlatform = coreService.getPlatformDb();
   }
 
-  async process(job: Job<JobData, unknown, CollectionsJob>, token?: string): Promise<void> {
+  async process(
+    job: Job<JobData, unknown, CollectionsJob>,
+    token?: string,
+  ): Promise<void> {
     switch (job.name) {
       case CollectionsJob.CREATE_ATTRIBUTE:
         await this.createAttribute(job.data);
@@ -60,7 +70,9 @@ export class CollectionsQueue extends Queue {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job, err: any) {
-    this.logger.error(`Job ${job.id} of type ${job.name} failed with error: ${err.message}`);
+    this.logger.error(
+      `Job ${job.id} of type ${job.name} failed with error: ${err.message}`,
+    );
   }
 
   /** @see collectionService */
@@ -86,10 +98,10 @@ export class CollectionsQueue extends Queue {
     let attribute = new Doc(data.attribute);
     const project = new Doc(data.project);
 
-    const { client, dbForProject } = await this.coreService.createProjectDatabase(
-      project,
-      { schema: database },
-    );
+    const { client, dbForProject } =
+      await this.coreService.createProjectDatabase(project, {
+        schema: database,
+      });
 
     if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
@@ -139,12 +151,18 @@ export class CollectionsQueue extends Queue {
                 options['relatedCollection'],
               );
               if (relatedCollection.empty()) {
-                throw new DatabaseException(`Collection '${options['relatedCollection']}' not found`);
+                throw new DatabaseException(
+                  `Collection '${options['relatedCollection']}' not found`,
+                );
               }
               if (
                 !(await dbForProject.createRelationship({
-                  collectionId: this.getCollectionName(collection.getSequence()),
-                  relatedCollectionId: this.getCollectionName(relatedCollection.getSequence()),
+                  collectionId: this.getCollectionName(
+                    collection.getSequence(),
+                  ),
+                  relatedCollectionId: this.getCollectionName(
+                    relatedCollection.getSequence(),
+                  ),
                   type: options['relationType'],
                   twoWay: options['twoWay'],
                   id: key,
@@ -158,7 +176,10 @@ export class CollectionsQueue extends Queue {
               if (options['twoWay']) {
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
-                  this.getRelatedAttrId(relatedCollection.getSequence(), options['twoWayKey']),
+                  this.getRelatedAttrId(
+                    relatedCollection.getSequence(),
+                    options['twoWayKey'],
+                  ),
                 );
                 await dbForProject.updateDocument(
                   'attributes',
@@ -182,7 +203,7 @@ export class CollectionsQueue extends Queue {
                     format,
                     formatOptions,
                     filters,
-                  }
+                  },
                 ))
               ) {
                 throw new DatabaseException('Failed to create Attribute');
@@ -242,10 +263,10 @@ export class CollectionsQueue extends Queue {
     const collection = new Doc(data.collection);
     const attribute = new Doc(data.attribute);
     const project = new Doc(data.project);
-    const { client, dbForProject } = await this.coreService.createProjectDatabase(
-      project,
-      { schema: database },
-    );
+    const { client, dbForProject } =
+      await this.coreService.createProjectDatabase(project, {
+        schema: database,
+      });
 
     if (collection.empty()) {
       throw new Error('Missing collection');
@@ -285,7 +306,10 @@ export class CollectionsQueue extends Queue {
                 }
                 relatedAttribute = await dbForProject.getDocument(
                   'attributes',
-                  this.getRelatedAttrId(relatedCollection.getSequence(), options['twoWayKey']),
+                  this.getRelatedAttrId(
+                    relatedCollection.getSequence(),
+                    options['twoWayKey'],
+                  ),
                 );
                 if (relatedAttribute.empty()) {
                   throw new DatabaseException('Related attribute not found');
@@ -371,9 +395,9 @@ export class CollectionsQueue extends Queue {
                 if (
                   existing.get('key') !== index.get('key') &&
                   existing.get('attributes').toString() ===
-                  index.get('attributes').toString() &&
+                    index.get('attributes').toString() &&
                   existing.get('orders').toString() ===
-                  index.get('orders').toString()
+                    index.get('orders').toString()
                 ) {
                   exists = true;
                   break;
@@ -434,10 +458,10 @@ export class CollectionsQueue extends Queue {
     const index = new Doc(data.index);
     const project = new Doc(data.project);
 
-    const { client, dbForProject } = await this.coreService.createProjectDatabase(
-      project,
-      { schema: data.database },
-    );
+    const { client, dbForProject } =
+      await this.coreService.createProjectDatabase(project, {
+        schema: data.database,
+      });
 
     if (collection.empty()) {
       throw new Error('Missing collection');
@@ -502,17 +526,19 @@ export class CollectionsQueue extends Queue {
    * Deletes an index from the specified collection.
    * If the index is part of a collection, it also deletes the index from the collection
    */
-  private async deleteIndex({ database, ...data }: JobData, dbForProject?: Database): Promise<void> {
+  private async deleteIndex(
+    { database, ...data }: JobData,
+    dbForProject?: Database,
+  ): Promise<void> {
     const collection = new Doc(data.collection);
     const index = new Doc(data.index);
     const project = new Doc(data.project);
 
     let client: any = null;
     if (!dbForProject) {
-      const r = await this.coreService.createProjectDatabase(
-        project,
-        { schema: database },
-      );
+      const r = await this.coreService.createProjectDatabase(project, {
+        schema: database,
+      });
       dbForProject = r.dbForProject;
       client = r.client;
     }
@@ -580,10 +606,10 @@ export class CollectionsQueue extends Queue {
   private async deleteCollection(data: JobData): Promise<void> {
     const project = new Doc(data.project);
     const collection = new Doc(data.collection);
-    const { client, dbForProject } = await this.coreService.createProjectDatabase(
-      project,
-      { schema: data.database },
-    );
+    const { client, dbForProject } =
+      await this.coreService.createProjectDatabase(project, {
+        schema: data.database,
+      });
 
     if (collection.empty()) {
       throw new Error('Missing collection');
@@ -594,20 +620,31 @@ export class CollectionsQueue extends Queue {
         const collectionId = collection.getId();
         const collectionInternalId = collection.getSequence();
 
-        const relationships = await dbForProject.find('attributes',
-          (qb) =>
-            qb.equal('type', AttributeType.Relationship)
-              .equal('collectionInternalId', collectionInternalId)
+        const relationships = await dbForProject.find(
+          'attributes',
+          qb =>
+            qb
+              .equal('type', AttributeType.Relationship)
+              .equal('collectionInternalId', collectionInternalId),
           // TODO: will back here after json filter support
         );
 
-        const internalCollectionName = this.getCollectionName(collectionInternalId);
+        const internalCollectionName =
+          this.getCollectionName(collectionInternalId);
         // TODO: -----------------
         for (const relationship of relationships) {
-          await dbForProject.deleteRelationship(internalCollectionName, relationship.get('key'));
+          await dbForProject.deleteRelationship(
+            internalCollectionName,
+            relationship.get('key'),
+          );
           if (relationship.get('options', {})['twoWay']) {
-            const relatedCollectionId = relationship.get('options', {})['relatedCollection'];
-            await dbForProject.deleteDocument(relatedCollectionId, relationship.get('options')['twoWayKey']);
+            const relatedCollectionId = relationship.get('options', {})[
+              'relatedCollection'
+            ];
+            await dbForProject.deleteDocument(
+              relatedCollectionId,
+              relationship.get('options')['twoWayKey'],
+            );
             await dbForProject.purgeCachedDocument(
               'collections',
               relatedCollectionId,
@@ -615,11 +652,11 @@ export class CollectionsQueue extends Queue {
           }
         }
         await dbForProject.deleteCollection(internalCollectionName);
-        await dbForProject.deleteDocuments('attributes', (qb) =>
-          qb.equal('collectionInternalId', collectionInternalId)
+        await dbForProject.deleteDocuments('attributes', qb =>
+          qb.equal('collectionInternalId', collectionInternalId),
         );
-        await dbForProject.deleteDocuments('indexes', (qb) =>
-          qb.equal('collectionInternalId', collectionInternalId)
+        await dbForProject.deleteDocuments('indexes', qb =>
+          qb.equal('collectionInternalId', collectionInternalId),
         );
 
         await this.deleteAuditLogsByResource(
@@ -638,9 +675,11 @@ export class CollectionsQueue extends Queue {
     project: ProjectsDoc,
     dbForProject: Database,
   ): Promise<void> {
-    await this.deleteByGroup(Audit.COLLECTION, [
-      Query.equal('resource', [resource])
-    ], dbForProject);
+    await this.deleteByGroup(
+      Audit.COLLECTION,
+      [Query.equal('resource', [resource])],
+      dbForProject,
+    );
   }
 
   private async deleteByGroup(
@@ -701,7 +740,7 @@ export enum CollectionsJob {
   DELETE_ATTRIBUTE = 'deleteAttribute',
   DELETE_INDEX = 'deleteIndex',
   DELETE_COLLECTION = 'deleteCollection',
-  DELETE_SCHEMA = 'deleteSchema'
+  DELETE_SCHEMA = 'deleteSchema',
 }
 
 export type CollectionsJobData = {

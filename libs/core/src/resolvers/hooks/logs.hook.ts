@@ -7,7 +7,7 @@ import type { Queue } from 'bullmq';
 
 @Injectable()
 export class LogsHook implements Hook {
-  constructor(@InjectQueue(QueueFor.LOGS) private readonly logsQueue: Queue) { }
+  constructor(@InjectQueue(QueueFor.LOGS) private readonly logsQueue: Queue) {}
 
   async onResponse(
     req: NuvixRequest,

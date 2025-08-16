@@ -12,9 +12,7 @@ import collections from '@nuvix/utils/collections/index.js';
 export class DatabasesQueue extends Queue {
   private readonly logger = new Logger(DatabasesQueue.name);
 
-  constructor(
-    private readonly coreService: CoreService,
-  ) {
+  constructor(private readonly coreService: CoreService) {
     super();
   }
 
@@ -24,7 +22,9 @@ export class DatabasesQueue extends Queue {
   ): Promise<void> {
     switch (name) {
       case SchemaJob.INIT_DOC:
-        const project = new Doc((data.project as unknown as Projects)) as ProjectsDoc;
+        const project = new Doc(
+          data.project as unknown as Projects,
+        ) as ProjectsDoc;
         await this.initDocumentSchema(project, data.schema);
         return;
       default:
@@ -36,7 +36,8 @@ export class DatabasesQueue extends Queue {
     project: ProjectsDoc,
     schema: string,
   ): Promise<void> {
-    const { client, dbForProject } = await this.coreService.createProjectDatabase(project, { schema });
+    const { client, dbForProject } =
+      await this.coreService.createProjectDatabase(project, { schema });
 
     try {
       await dbForProject.create(schema);
@@ -47,11 +48,11 @@ export class DatabasesQueue extends Queue {
         }
 
         const attributes = collection['attributes'].map(
-          (attribute) => new Doc(attribute),
+          attribute => new Doc(attribute),
         );
 
         const indexes = (collection['indexes'] ?? []).map(
-          (index) => new Doc(index),
+          index => new Doc(index),
         );
 
         try {
@@ -97,4 +98,4 @@ export interface SchemaQueueOptions {
 export enum SchemaJob {
   INIT_DOC = 'init_doc',
   PROCESS = 'process',
-};
+}

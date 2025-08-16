@@ -31,5 +31,5 @@ export default abstract class BaseModel {
 export abstract class BaseListModel {
   @Expose() declare total: number;
 
-  constructor() { }
+  constructor() {}
 }

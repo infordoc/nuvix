@@ -54,9 +54,12 @@ function findProjectRoot(): string {
 export const PROJECT_ROOT = findProjectRoot();
 
 // Asset paths configuration
-/**@deprecated */export const ASSETS = {
+/**@deprecated */ export const ASSETS = {
   ROOT: path.join(PROJECT_ROOT, process.env['ASSETS_ROOT'] || 'assets'),
-  IMAGES: path.join(PROJECT_ROOT, process.env['ASSETS_IMAGES'] || 'assets/images'),
+  IMAGES: path.join(
+    PROJECT_ROOT,
+    process.env['ASSETS_IMAGES'] || 'assets/images',
+  ),
   FONTS: path.join(PROJECT_ROOT, process.env['ASSETS_FONTS'] || 'assets/fonts'),
   TEMPLATES: path.join(PROJECT_ROOT, 'assets/locale/templates'),
   PUBLIC: path.join(PROJECT_ROOT, process.env['ASSETS_PUBLIC'] || 'public'),
@@ -68,60 +71,84 @@ export const PYTHON_API_URL = process.env['PYTHON_API_URL'];
 export const ENCRYPTION_KEY = process.env['ENCRYPTION_KEY'];
 export const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 
-/**@deprecated */export const APP_VERSION_STABLE = '1.0.0';
-/**@deprecated */export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
-/**@deprecated */export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
+/**@deprecated */ export const APP_VERSION_STABLE = '1.0.0';
+/**@deprecated */ export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
+/**@deprecated */ export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
-/**@deprecated */export const APP_REDIS_PORT = parseInt(
+/**@deprecated */ export const APP_REDIS_PORT = parseInt(
   process.env['APP_REDIS_PORT'] ?? '6379',
   10,
 );
-/**@deprecated */export const APP_REDIS_HOST = process.env['APP_REDIS_HOST'];
-/**@deprecated */export const APP_REDIS_USER = process.env['APP_REDIS_USER'];
-/**@deprecated */export const APP_REDIS_PASSWORD = process.env['APP_REDIS_PASSWORD'];
-/**@deprecated */export const APP_REDIS_DB = parseInt(process.env['APP_REDIS_DB'] ?? '0', 10);
-/**@deprecated */export const APP_REDIS_SECURE = process.env['APP_REDIS_SECURE'] === 'true';
+/**@deprecated */ export const APP_REDIS_HOST = process.env['APP_REDIS_HOST'];
+/**@deprecated */ export const APP_REDIS_USER = process.env['APP_REDIS_USER'];
+/**@deprecated */ export const APP_REDIS_PASSWORD =
+  process.env['APP_REDIS_PASSWORD'];
+/**@deprecated */ export const APP_REDIS_DB = parseInt(
+  process.env['APP_REDIS_DB'] ?? '0',
+  10,
+);
+/**@deprecated */ export const APP_REDIS_SECURE =
+  process.env['APP_REDIS_SECURE'] === 'true';
 
 // Email Config
-/**@deprecated */export const APP_SMTP_HOST = process.env['APP_SMTP_HOST'];
-/**@deprecated */export const APP_SMTP_PORT = parseInt(process.env['APP_SMTP_PORT'] ?? '587', 10);
-/**@deprecated */export const APP_SMTP_SECURE = process.env['APP_SMTP_SECURE'] === 'true';
-/**@deprecated */export const APP_SMTP_USER = process.env['APP_SMTP_USER'];
-/**@deprecated */export const APP_SMTP_PASSWORD = process.env['APP_SMTP_PASSWORD'];
-/**@deprecated */export const APP_SMTP_EMAIL_FROM = process.env['APP_SMTP_EMAIL_FROM'];
-/**@deprecated */export const APP_SMTP_SENDER = process.env['APP_SMTP_SENDER'];
-/**@deprecated */export const APP_SMTP_REPLY_TO = process.env['APP_SMTP_REPLY_TO'];
-/**@deprecated */export const APP_SMTP_DKIM_DOMAIN = process.env['APP_SMTP_DKIM_DOMAIN'];
-/**@deprecated */export const APP_SMTP_DKIM_KEY = process.env['APP_SMTP_DKIM_KEY'];
-/**@deprecated */export const APP_SMTP_DKIM_PRIVATE_KEY = process.env['APP_SMTP_DKIM_PRIVATE_KEY'];
+/**@deprecated */ export const APP_SMTP_HOST = process.env['APP_SMTP_HOST'];
+/**@deprecated */ export const APP_SMTP_PORT = parseInt(
+  process.env['APP_SMTP_PORT'] ?? '587',
+  10,
+);
+/**@deprecated */ export const APP_SMTP_SECURE =
+  process.env['APP_SMTP_SECURE'] === 'true';
+/**@deprecated */ export const APP_SMTP_USER = process.env['APP_SMTP_USER'];
+/**@deprecated */ export const APP_SMTP_PASSWORD =
+  process.env['APP_SMTP_PASSWORD'];
+/**@deprecated */ export const APP_SMTP_EMAIL_FROM =
+  process.env['APP_SMTP_EMAIL_FROM'];
+/**@deprecated */ export const APP_SMTP_SENDER = process.env['APP_SMTP_SENDER'];
+/**@deprecated */ export const APP_SMTP_REPLY_TO =
+  process.env['APP_SMTP_REPLY_TO'];
+/**@deprecated */ export const APP_SMTP_DKIM_DOMAIN =
+  process.env['APP_SMTP_DKIM_DOMAIN'];
+/**@deprecated */ export const APP_SMTP_DKIM_KEY =
+  process.env['APP_SMTP_DKIM_KEY'];
+/**@deprecated */ export const APP_SMTP_DKIM_PRIVATE_KEY =
+  process.env['APP_SMTP_DKIM_PRIVATE_KEY'];
 
 // Database Config
 // PostgreSQL
-export const APP_POSTGRES_HOST = process.env['APP_POSTGRES_HOST'] ?? 'localhost';
+export const APP_POSTGRES_HOST =
+  process.env['APP_POSTGRES_HOST'] ?? 'localhost';
 export const APP_POSTGRES_PORT = parseInt(
   process.env['APP_POSTGRES_PORT'] ?? '5432',
   10,
 );
-/**@deprecated */export const APP_POSTGRES_USER = process.env['APP_POSTGRES_USER'];
-/**@deprecated */export const APP_POSTGRES_PASSWORD = process.env['APP_POSTGRES_PASSWORD'];
-/**@deprecated */export const APP_POSTGRES_DB = process.env['APP_POSTGRES_DB'];
-/**@deprecated */export const APP_POSTGRES_SSL = process.env['APP_POSTGRES_SSL'] === 'true';
-/**@deprecated */export const APP_POSTGRES_MAX_CONNECTIONS = parseInt(
+/**@deprecated */ export const APP_POSTGRES_USER =
+  process.env['APP_POSTGRES_USER'];
+/**@deprecated */ export const APP_POSTGRES_PASSWORD =
+  process.env['APP_POSTGRES_PASSWORD'];
+/**@deprecated */ export const APP_POSTGRES_DB = process.env['APP_POSTGRES_DB'];
+/**@deprecated */ export const APP_POSTGRES_SSL =
+  process.env['APP_POSTGRES_SSL'] === 'true';
+/**@deprecated */ export const APP_POSTGRES_MAX_CONNECTIONS = parseInt(
   process.env['APP_POSTGRES_MAX_CONNECTIONS'] ?? '100',
   10,
 );
-/**@deprecated */export const APP_SHARED_CLUSTER = true; // Multi-cluster mode not supported yet!
+/**@deprecated */ export const APP_SHARED_CLUSTER = true; // Multi-cluster mode not supported yet!
 // Console DB
-/**@deprecated */export const APP_DATABASE_HOST = process.env['APP_DATABASE_HOST'] ?? 'localhost';
-/**@deprecated */export const APP_DATABASE_USER = process.env['APP_DATABASE_USER'];
-/**@deprecated */export const APP_DATABASE_PASSWORD = process.env['APP_DATABASE_PASSWORD'];
-/**@deprecated */export const APP_DATABASE_NAME = process.env['APP_DATABASE_NAME'];
-/**@deprecated */export const APP_DATABASE_PORT = parseInt(
+/**@deprecated */ export const APP_DATABASE_HOST =
+  process.env['APP_DATABASE_HOST'] ?? 'localhost';
+/**@deprecated */ export const APP_DATABASE_USER =
+  process.env['APP_DATABASE_USER'];
+/**@deprecated */ export const APP_DATABASE_PASSWORD =
+  process.env['APP_DATABASE_PASSWORD'];
+/**@deprecated */ export const APP_DATABASE_NAME =
+  process.env['APP_DATABASE_NAME'];
+/**@deprecated */ export const APP_DATABASE_PORT = parseInt(
   process.env['APP_DATABASE_PORT'] ?? '3306',
   10,
 );
 
-/**@deprecated */export const APP_INTERNAL_POOL_API = process.env['APP_POOL_API'];
+/**@deprecated */ export const APP_INTERNAL_POOL_API =
+  process.env['APP_POOL_API'];
 
 /**@deprecated */ export const PROJECT = 'project';
 /**@deprecated */ export const USER = 'user';
@@ -149,15 +176,16 @@ export const GEO_DB = Symbol('geoDb');
 /**@deprecated Symbol used to identify the operation for retrieving a device associated with a specific project. */
 export const GET_DEVICE_FOR_PROJECT = Symbol('getDeviceForProject');
 
-/**@deprecated */export const AUDITS_FOR_PLATFORM = Symbol('auditsForPlatform');
+/**@deprecated */ export const AUDITS_FOR_PLATFORM =
+  Symbol('auditsForPlatform');
 export const AUDITS_FOR_PROJECT = Symbol('auditsForProject');
 
-/** @deprecated */export const CACHE = 'cache';
+/** @deprecated */ export const CACHE = 'cache';
 export const IS_PUBLIC_KEY = 'isPublic';
-/**@deprecated */export const LOCALE = 'locale';
-/**@deprecated */export const API_KEY = 'apiKey';
-/**@deprecated */export const SCOPES = 'scopes';
-/**@deprecated */export const ROLE = 'role';
+/**@deprecated */ export const LOCALE = 'locale';
+/**@deprecated */ export const API_KEY = 'apiKey';
+/**@deprecated */ export const SCOPES = 'scopes';
+/**@deprecated */ export const ROLE = 'role';
 export const HOOKS = 'hooks';
 export const APP_COLOR = '#f67520';
 
@@ -211,7 +239,9 @@ export const SERVER_CONFIG: ServerConfig = {
   }),
   allowedHeaders: [
     ...allowedHeaders,
-    ...(process.env['CORS_HEADERS'] ?? '').split(',').map(header => header.trim()),
+    ...(process.env['CORS_HEADERS'] ?? '')
+      .split(',')
+      .map(header => header.trim()),
   ],
   credentials: true,
   exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
@@ -220,7 +250,7 @@ export const SERVER_CONFIG: ServerConfig = {
   cookieDomain: process.env['APP_COOKIE_DOMAIN'] ?? '',
 };
 
-export const LOG_LEVELS: { [key: string]: boolean; } = (
+export const LOG_LEVELS: { [key: string]: boolean } = (
   process.env['APP_LOG_LEVELS'] ?? ''
 )
   .split(',')
@@ -231,7 +261,7 @@ export const LOG_LEVELS: { [key: string]: boolean; } = (
       acc[level.toLowerCase()] = true;
       return acc;
     },
-    {} as { [key: string]: boolean; },
+    {} as { [key: string]: boolean },
   );
 
 // APP
@@ -246,45 +276,47 @@ export const APP_USERAGENT =
 /**@deprecated use `AppMode.DEFAULT` instead */
 export const APP_MODE_DEFAULT = 'default';
 /**@deprecated use `AppMode.ADMIN` instead */
-/**@deprecated */export const APP_MODE_ADMIN = 'admin';
-/**@deprecated */export const APP_PAGING_LIMIT = 12;
+/**@deprecated */ export const APP_MODE_ADMIN = 'admin';
+/**@deprecated */ export const APP_PAGING_LIMIT = 12;
 export const APP_MAX_COUNT = 1000;
-/**@deprecated */export const APP_LIMIT_COUNT = 5000;
-/**@deprecated */export const APP_LIMIT_USERS = 10_000;
-/**@deprecated */export const APP_LIMIT_USER_PASSWORD_HISTORY = 20;
-/**@deprecated */export const APP_LIMIT_USER_SESSIONS_MAX = 100;
-/**@deprecated */export const APP_LIMIT_USER_SESSIONS_DEFAULT = 10;
-/**@deprecated */export const APP_LIMIT_ANTIVIRUS = 20_000_000; //20MB
-/**@deprecated */export const APP_LIMIT_ENCRYPTION = 20_000_000; //20MB
-/**@deprecated */export const APP_LIMIT_COMPRESSION = 20_000_000; //20MB
+/**@deprecated */ export const APP_LIMIT_COUNT = 5000;
+/**@deprecated */ export const APP_LIMIT_USERS = 10_000;
+/**@deprecated */ export const APP_LIMIT_USER_PASSWORD_HISTORY = 20;
+/**@deprecated */ export const APP_LIMIT_USER_SESSIONS_MAX = 100;
+/**@deprecated */ export const APP_LIMIT_USER_SESSIONS_DEFAULT = 10;
+/**@deprecated */ export const APP_LIMIT_ANTIVIRUS = 20_000_000; //20MB
+/**@deprecated */ export const APP_LIMIT_ENCRYPTION = 20_000_000; //20MB
+/**@deprecated */ export const APP_LIMIT_COMPRESSION = 20_000_000; //20MB
 export const APP_LIMIT_ARRAY_PARAMS_SIZE = 100; // Default maximum of how many elements can there be in API parameter that expects array value
 export const APP_LIMIT_ARRAY_LABELS_SIZE = 1000; // Default maximum of how many labels elements can there be in API parameter that expects array value
 export const APP_LIMIT_ARRAY_ELEMENT_SIZE = 4096; // Default maximum length of element in array parameter represented by maximum URL length.
-/**@deprecated */export const APP_LIMIT_SUBQUERY = 1000;
-/**@deprecated */export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 1_000_000;
-/**@deprecated */export const APP_LIMIT_WRITE_RATE_DEFAULT = 60; // Default maximum write rate per rate period
-/**@deprecated */export const APP_LIMIT_WRITE_RATE_PERIOD_DEFAULT = 60; // Default maximum write rate period in seconds
-/**@deprecated */export const APP_LIMIT_LIST_DEFAULT = 25; // Default maximum number of items to return in list API calls
-/**@deprecated */export const APP_KEY_ACCESS = 24 * 60 * 60; // 24 hours
-/**@deprecated */export const APP_USER_ACCESS = 24 * 60 * 60; // 24 hours
-/**@deprecated */export const APP_PROJECT_ACCESS = 24 * 60 * 60; // 24 hours
-/**@deprecated */export const APP_CACHE_UPDATE = 24 * 60 * 60; // 24 hours
-/**@deprecated */export const APP_CACHE_BUSTER = 4318;
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_EMAIL = 'email';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_ENUM = 'enum';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_IP = 'ip';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_DATETIME = 'datetime';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_URL = 'url';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_INT_RANGE = 'intRange';
-/**@deprecated */export const APP_DATABASE_ATTRIBUTE_FLOAT_RANGE = 'floatRange';
+/**@deprecated */ export const APP_LIMIT_SUBQUERY = 1000;
+/**@deprecated */ export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 1_000_000;
+/**@deprecated */ export const APP_LIMIT_WRITE_RATE_DEFAULT = 60; // Default maximum write rate per rate period
+/**@deprecated */ export const APP_LIMIT_WRITE_RATE_PERIOD_DEFAULT = 60; // Default maximum write rate period in seconds
+/**@deprecated */ export const APP_LIMIT_LIST_DEFAULT = 25; // Default maximum number of items to return in list API calls
+/**@deprecated */ export const APP_KEY_ACCESS = 24 * 60 * 60; // 24 hours
+/**@deprecated */ export const APP_USER_ACCESS = 24 * 60 * 60; // 24 hours
+/**@deprecated */ export const APP_PROJECT_ACCESS = 24 * 60 * 60; // 24 hours
+/**@deprecated */ export const APP_CACHE_UPDATE = 24 * 60 * 60; // 24 hours
+/**@deprecated */ export const APP_CACHE_BUSTER = 4318;
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_EMAIL = 'email';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_ENUM = 'enum';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_IP = 'ip';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_DATETIME = 'datetime';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_URL = 'url';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_INT_RANGE = 'intRange';
+/**@deprecated */ export const APP_DATABASE_ATTRIBUTE_FLOAT_RANGE =
+  'floatRange';
 export const APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH = 1_073_741_824; // 2^32 bits / 4 bits per char
 export const APP_DATABASE_TIMEOUT_MILLISECONDS = 15_000;
 export const APP_STORAGE_UPLOADS = path.join(PROJECT_ROOT, 'storage/uploads');
-/**@deprecated */export const APP_STORAGE_FUNCTIONS = 'storage/functions';
-/**@deprecated */export const APP_STORAGE_BUILDS = 'storage/builds';
-/**@deprecated */export const APP_STORAGE_CACHE = 'storage/cache';
-/**@deprecated */export const APP_STORAGE_CERTIFICATES = 'storage/certificates';
-/**@deprecated */export const APP_STORAGE_CONFIG = 'storage/config';
+/**@deprecated */ export const APP_STORAGE_FUNCTIONS = 'storage/functions';
+/**@deprecated */ export const APP_STORAGE_BUILDS = 'storage/builds';
+/**@deprecated */ export const APP_STORAGE_CACHE = 'storage/cache';
+/**@deprecated */ export const APP_STORAGE_CERTIFICATES =
+  'storage/certificates';
+/**@deprecated */ export const APP_STORAGE_CONFIG = 'storage/config';
 export const APP_STORAGE_TEMP = path.join(PROJECT_ROOT, 'storage/tmp');
 export const APP_STORAGE_READ_BUFFER = 20 * (1000 * 1000); //20MB other names `APP_STORAGE_MEMORY_LIMIT`, `APP_STORAGE_MEMORY_BUFFER`, `APP_STORAGE_READ_LIMIT`, `APP_STORAGE_BUFFER_LIMIT`
 export const APP_STORAGE_MAX_SIZE = 5 * (1000 * 1000 * 1000); // 5GB
@@ -299,44 +331,50 @@ export const APP_FUNCTION_MEMORY_DEFAULT = 512;
 export const APP_DEBUG_COLORS = process.env['APP_DEBUG_COLORS'] === 'true';
 export const APP_DEBUG_FORMAT = process.env['APP_DEBUG_FORMAT'] === 'json';
 
-/**@deprecated */export const WORKER_TYPE_MAILS = 'mails';
-/**@deprecated */export const WORKER_TYPE_MESSAGING = 'messaging';
+/**@deprecated */ export const WORKER_TYPE_MAILS = 'mails';
+/**@deprecated */ export const WORKER_TYPE_MESSAGING = 'messaging';
 
 // Mails
 export const APP_SYSTEM_EMAIL_ADDRESS = 'app@nuvix.io';
 export const APP_SYSTEM_EMAIL_NAME = 'Nuvix';
-/**@deprecated */export const SEND_TYPE_EMAIL = 'sendEmail';
+/**@deprecated */ export const SEND_TYPE_EMAIL = 'sendEmail';
 
 // Database Reconnect
 export const DATABASE_RECONNECT_SLEEP = 2;
 export const DATABASE_RECONNECT_MAX_ATTEMPTS = 10;
 
 // Database Worker Types
-/**@deprecated */export const DATABASE_TYPE_CREATE_ATTRIBUTE = 'createAttribute' as const;
-/**@deprecated */export const DATABASE_TYPE_CREATE_INDEX = 'createIndex' as const;
-/**@deprecated */export const DATABASE_TYPE_DELETE_ATTRIBUTE = 'deleteAttribute' as const;
-/**@deprecated */export const DATABASE_TYPE_DELETE_INDEX = 'deleteIndex' as const;
-/**@deprecated */export const DATABASE_TYPE_DELETE_COLLECTION = 'deleteCollection' as const;
-/**@deprecated */export const DATABASE_TYPE_DELETE_DATABASE = 'deleteDatabase' as const;
+/**@deprecated */ export const DATABASE_TYPE_CREATE_ATTRIBUTE =
+  'createAttribute' as const;
+/**@deprecated */ export const DATABASE_TYPE_CREATE_INDEX =
+  'createIndex' as const;
+/**@deprecated */ export const DATABASE_TYPE_DELETE_ATTRIBUTE =
+  'deleteAttribute' as const;
+/**@deprecated */ export const DATABASE_TYPE_DELETE_INDEX =
+  'deleteIndex' as const;
+/**@deprecated */ export const DATABASE_TYPE_DELETE_COLLECTION =
+  'deleteCollection' as const;
+/**@deprecated */ export const DATABASE_TYPE_DELETE_DATABASE =
+  'deleteDatabase' as const;
 
 // Build Worker Types
 export const BUILD_TYPE_DEPLOYMENT = 'deployment';
 export const BUILD_TYPE_RETRY = 'retry';
 
 // Message types
-/**@deprecated */export const MESSAGE_SEND_TYPE_INTERNAL = 'internal' as const;
-/**@deprecated */export const MESSAGE_SEND_TYPE_EXTERNAL = 'external' as const;
+/**@deprecated */ export const MESSAGE_SEND_TYPE_INTERNAL = 'internal' as const;
+/**@deprecated */ export const MESSAGE_SEND_TYPE_EXTERNAL = 'external' as const;
 // Mail Types
-/**@deprecated */export const MAIL_TYPE_VERIFICATION = 'verification';
-/**@deprecated */export const MAIL_TYPE_MAGIC_SESSION = 'magicSession';
-/**@deprecated */export const MAIL_TYPE_RECOVERY = 'recovery';
-/**@deprecated */export const MAIL_TYPE_INVITATION = 'invitation';
-/**@deprecated */export const MAIL_TYPE_CERTIFICATE = 'certificate';
+/**@deprecated */ export const MAIL_TYPE_VERIFICATION = 'verification';
+/**@deprecated */ export const MAIL_TYPE_MAGIC_SESSION = 'magicSession';
+/**@deprecated */ export const MAIL_TYPE_RECOVERY = 'recovery';
+/**@deprecated */ export const MAIL_TYPE_INVITATION = 'invitation';
+/**@deprecated */ export const MAIL_TYPE_CERTIFICATE = 'certificate';
 // Auth Types
-/**@deprecated */export const APP_AUTH_TYPE_SESSION = 'Session';
-/**@deprecated */export const APP_AUTH_TYPE_JWT = 'JWT';
-/**@deprecated */export const APP_AUTH_TYPE_KEY = 'Key';
-/**@deprecated */export const APP_AUTH_TYPE_ADMIN = 'Admin';
+/**@deprecated */ export const APP_AUTH_TYPE_SESSION = 'Session';
+/**@deprecated */ export const APP_AUTH_TYPE_JWT = 'JWT';
+/**@deprecated */ export const APP_AUTH_TYPE_KEY = 'Key';
+/**@deprecated */ export const APP_AUTH_TYPE_ADMIN = 'Admin';
 // Response related
 export const MAX_OUTPUT_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 // Function headers
@@ -365,14 +403,21 @@ export const API_KEY_DYNAMIC = 'dynamic';
 export const WORKER_TYPE_USAGE = 'usage';
 
 // Events
-/**@deprecated */export const EVENT_DELIMITER = '.';
-/**@deprecated */export const EVENT_USER_CREATE = 'user' + EVENT_DELIMITER + 'create';
-/**@deprecated */export const EVENT_USER_DELETE = 'user' + EVENT_DELIMITER + 'delete';
-/**@deprecated */export const EVENT_USER_UPDATE = 'user' + EVENT_DELIMITER + 'update';
-/**@deprecated */export const EVENT_SESSION_CREATE = 'session' + EVENT_DELIMITER + 'create';
-/**@deprecated */export const EVENT_SESSION_DELETE = 'session' + EVENT_DELIMITER + 'delete';
-/**@deprecated */export const EVENT_SESSIONS_DELETE = 'sessions' + EVENT_DELIMITER + 'delete';
-/**@deprecated */export const EVENT_SESSION_UPDATE = 'session' + EVENT_DELIMITER + 'update';
+/**@deprecated */ export const EVENT_DELIMITER = '.';
+/**@deprecated */ export const EVENT_USER_CREATE =
+  'user' + EVENT_DELIMITER + 'create';
+/**@deprecated */ export const EVENT_USER_DELETE =
+  'user' + EVENT_DELIMITER + 'delete';
+/**@deprecated */ export const EVENT_USER_UPDATE =
+  'user' + EVENT_DELIMITER + 'update';
+/**@deprecated */ export const EVENT_SESSION_CREATE =
+  'session' + EVENT_DELIMITER + 'create';
+/**@deprecated */ export const EVENT_SESSION_DELETE =
+  'session' + EVENT_DELIMITER + 'delete';
+/**@deprecated */ export const EVENT_SESSIONS_DELETE =
+  'sessions' + EVENT_DELIMITER + 'delete';
+/**@deprecated */ export const EVENT_SESSION_UPDATE =
+  'session' + EVENT_DELIMITER + 'update';
 
 // CLOUD
 export const GOOGLE_CLOUD_API = process.env['GOOGLE_CLOUD_API'];
@@ -381,13 +426,13 @@ export const GOOGLE_CLOUD_API = process.env['GOOGLE_CLOUD_API'];
 export enum AppMode {
   ADMIN = 'admin',
   DEFAULT = 'default',
-  /**@deprecated use Context.Mode */_REQUEST = 'mode',
+  /**@deprecated use Context.Mode */ _REQUEST = 'mode',
 }
 
 export enum ApiKey {
   STANDARD = 'standard',
   DYNAMIC = 'dynamic',
-  /**@deprecated use Context.ApiKey*/_REQUEST = 'apiKey',
+  /**@deprecated use Context.ApiKey*/ _REQUEST = 'apiKey',
 }
 
 export enum Schemas {

@@ -42,14 +42,14 @@ export class ProjectHook implements Hook {
       return null;
     }
 
-    const project = await Authorization.skip(
-      () => this.db.getDocument('projects', projectId),
+    const project = await Authorization.skip(() =>
+      this.db.getDocument('projects', projectId),
     );
 
     if (!project.empty()) {
       // For testing & demo purpose (until infra. setup)
       project.set('database', {
-        ...project.get('database') as unknown as Record<string, any>,
+        ...(project.get('database') as unknown as Record<string, any>),
         name: 'postgres',
         host: '35.244.24.126',
         port: 6432,
@@ -59,14 +59,21 @@ export class ProjectHook implements Hook {
         userPassword: 'testpassword',
       });
       try {
-        const dbOptions = project.get('database') as unknown as Record<string, any>;
-        const client = await this.coreService.createProjectDbClient(project.getId(), {
-          database: dbOptions['name'],
-          user: dbOptions['adminRole'],
-          password: this.appConfig.getDatabaseConfig().postgres.password as string,
-          port: dbOptions['port'],
-          host: dbOptions['host'],
-        });
+        const dbOptions = project.get('database') as unknown as Record<
+          string,
+          any
+        >;
+        const client = await this.coreService.createProjectDbClient(
+          project.getId(),
+          {
+            database: dbOptions['name'],
+            user: dbOptions['adminRole'],
+            password: this.appConfig.getDatabaseConfig().postgres
+              .password as string,
+            port: dbOptions['port'],
+            host: dbOptions['host'],
+          },
+        );
         client.setMaxListeners(20);
         req[PROJECT_DB_CLIENT] = client;
 
@@ -76,9 +83,15 @@ export class ProjectHook implements Hook {
           request: req,
         });
 
-        req[PROJECT_DB] = this.coreService.getProjectDb(client, project.getId());
+        req[PROJECT_DB] = this.coreService.getProjectDb(
+          client,
+          project.getId(),
+        );
         req[PROJECT_PG] = this.coreService.getProjectPg(client);
-        const coreDatabase = this.coreService.getProjectDb(client, project.getId());
+        const coreDatabase = this.coreService.getProjectDb(
+          client,
+          project.getId(),
+        );
         coreDatabase.setMeta({
           schema: CORE_SCHEMA,
         });

@@ -1,4 +1,11 @@
-import { AttributeType, Collection, Database, ID, IndexType, Order } from '@nuvix-tech/db';
+import {
+  AttributeType,
+  Collection,
+  Database,
+  ID,
+  IndexType,
+  Order,
+} from '@nuvix-tech/db';
 import { commonCollections } from './common';
 import { APP_DATABASE_ATTRIBUTE_EMAIL } from '../constants';
 
@@ -118,6 +125,7 @@ export const consoleCollections: Record<string, Collection> = {
       {
         $id: ID.custom('agreementBAA'),
         key: 'agreementBAA',
+        size: 1000,
         type: AttributeType.String,
         default: null,
       },
@@ -854,7 +862,6 @@ export const consoleCollections: Record<string, Collection> = {
         key: 'resourceUpdatedAt',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('projectId'),
@@ -1027,14 +1034,12 @@ export const consoleCollections: Record<string, Collection> = {
         key: 'expire',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('accessedAt'),
         key: 'accessedAt',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('sdks'),
@@ -1187,14 +1192,12 @@ export const consoleCollections: Record<string, Collection> = {
         key: 'issueDate',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('renewDate'),
         key: 'renewDate',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('attempts'),
@@ -1214,7 +1217,6 @@ export const consoleCollections: Record<string, Collection> = {
         key: 'updated',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
     ],
     indexes: [
@@ -1245,7 +1247,6 @@ export const consoleCollections: Record<string, Collection> = {
         key: 'timestamp',
         type: AttributeType.Timestamptz,
         default: null,
-
       },
       {
         $id: ID.custom('value'),

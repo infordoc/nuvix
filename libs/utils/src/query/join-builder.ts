@@ -99,7 +99,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     const conditionSQL = conditionQueryBuilder.toSQL();
     const cleanedCondition = conditionSQL.sql.replace('select * where ', '');
 
-    (this.astBuilder.qb as any)[joinType + 'Join']( // TODO: Fix type casting
+    (this.astBuilder.qb as any)[joinType + 'Join'](
+      // TODO: Fix type casting
       this.astBuilder.pg.alias(tableName, joinAlias),
       this.astBuilder.pg.raw(cleanedCondition, conditionSQL.bindings),
     );
@@ -153,7 +154,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       resultShape,
     );
 
-    (this.astBuilder.qb as any)[joinType + 'Join']( // TODO: Fix type casting
+    (this.astBuilder.qb as any)[joinType + 'Join'](
+      // TODO: Fix type casting
       this.astBuilder.pg.raw(
         `lateral (${lateralSelectContent})`,
         subQuerySQL.bindings,

@@ -10,5 +10,5 @@ export class UsersService {
   constructor(
     @Inject(DB_FOR_PLATFORM) private readonly db: Database,
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
-  ) { }
+  ) {}
 }

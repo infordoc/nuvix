@@ -1,4 +1,10 @@
-import { AttributeType, Authorization, Database, Doc, Query } from '@nuvix-tech/db';
+import {
+  AttributeType,
+  Authorization,
+  Database,
+  Doc,
+  Query,
+} from '@nuvix-tech/db';
 import {
   APP_LIMIT_SUBQUERY,
   APP_LIMIT_SUBSCRIBERS_SUBQUERY,
@@ -7,7 +13,11 @@ import {
 import crypto from 'crypto';
 
 type SecondArgType = {
-  encode: (value: any, attribute: Doc<Record<string, any>>, database: Database) => any;
+  encode: (
+    value: any,
+    attribute: Doc<Record<string, any>>,
+    database: Database,
+  ) => any;
   decode: (
     value: any,
     document: Doc<Record<string, any>>,
@@ -17,14 +27,14 @@ type SecondArgType = {
 
 export const filters: Record<string, SecondArgType> = {
   casting: {
-    encode: (value) => {
+    encode: value => {
       return JSON.stringify({ value: value }, (key, value) => {
         return typeof value === 'number' && !isFinite(value)
           ? String(value)
           : value;
       });
     },
-    decode: (value) => {
+    decode: value => {
       if (value == null || value === undefined) {
         return null;
       }
@@ -63,16 +73,14 @@ export const filters: Record<string, SecondArgType> = {
     decode: (value, attribute) => {
       const formatOptions = attribute.get('formatOptions', {});
       if (formatOptions.min || formatOptions.max) {
-        attribute
-          .set('min', formatOptions.min)
-          .set('max', formatOptions.max);
+        attribute.set('min', formatOptions.min).set('max', formatOptions.max);
       }
 
       return value;
     },
   },
   subQueryAttributes: {
-    encode: (_) => {
+    encode: _ => {
       return null;
     },
     decode: async (_, document, database) => {
@@ -95,7 +103,7 @@ export const filters: Record<string, SecondArgType> = {
     },
   },
   subQueryIndexes: {
-    encode: (_) => {
+    encode: _ => {
       return null;
     },
     decode: async (_, document, database) => {
@@ -106,7 +114,7 @@ export const filters: Record<string, SecondArgType> = {
     },
   },
   subQueryPlatforms: {
-    encode: (_) => {
+    encode: _ => {
       return null;
     },
     decode: (_, document, database) => {
@@ -218,7 +226,7 @@ export const filters: Record<string, SecondArgType> = {
   },
 
   encrypt: {
-    encode: (value) => {
+    encode: value => {
       const key = APP_OPENSSL_KEY_1;
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipheriv('aes-128-gcm', key, iv);
@@ -243,7 +251,7 @@ export const filters: Record<string, SecondArgType> = {
       switch (value.version) {
         case '1':
           key = APP_OPENSSL_KEY_1;
-          break
+          break;
         default:
           key = APP_OPENSSL_KEY_1;
       }
@@ -284,7 +292,7 @@ export const filters: Record<string, SecondArgType> = {
 
       return searchValues.filter(Boolean).join(' ');
     },
-    decode: (value) => {
+    decode: value => {
       return value;
     },
   },
@@ -311,15 +319,15 @@ export const filters: Record<string, SecondArgType> = {
           Query.equal('topicInternalId', [document.getSequence()]),
           Query.limit(APP_LIMIT_SUBSCRIBERS_SUBQUERY),
         ]);
-        return subscribers.map((subscriber) =>
+        return subscribers.map(subscriber =>
           subscriber.get('targetInternalId'),
         );
       });
 
       if (targetIds.length > 0) {
-        return database.skipValidation(() => database.find('targets', [
-          Query.equal('$internalId', targetIds),
-        ]));
+        return database.skipValidation(() =>
+          database.find('targets', [Query.equal('$internalId', targetIds)]),
+        );
       }
       return [];
     },
@@ -335,7 +343,7 @@ export const filters: Record<string, SecondArgType> = {
 
       return searchValues.filter(Boolean).join(' ');
     },
-    decode: (value) => {
+    decode: value => {
       return value;
     },
   },
@@ -349,7 +357,7 @@ export const filters: Record<string, SecondArgType> = {
 
       return searchValues.filter(Boolean).join(' ');
     },
-    decode: (value) => {
+    decode: value => {
       return value;
     },
   },

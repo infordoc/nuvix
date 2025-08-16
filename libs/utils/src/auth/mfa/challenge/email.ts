@@ -12,10 +12,7 @@ export class Email extends Challenge {
     user: UsersDoc,
     otp: string,
   ): boolean {
-    if (
-      challenge.has('type') &&
-      challenge.get('type') === MfaType.EMAIL
-    ) {
+    if (challenge.has('type') && challenge.get('type') === MfaType.EMAIL) {
       return this.verify(challenge as UsersDoc, otp);
     }
 
