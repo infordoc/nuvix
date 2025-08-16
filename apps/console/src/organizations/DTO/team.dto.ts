@@ -4,14 +4,14 @@ import { IsString, IsOptional, IsObject, IsNotEmpty } from 'class-validator';
 export class CreateOrgDTO {
   @IsString()
   @IsNotEmpty()
-  organizationId: string;
+  declare organizationId: string;
 
   @IsString()
   @IsNotEmpty()
-  name: string;
+  declare name: string;
 
   @IsNotEmpty()
-  billingPlan: string;
+  declare billingPlan: string;
 
   @IsOptional()
   @IsString()

@@ -3,24 +3,24 @@ import { IsString, IsNotEmpty, IsOptional, Length } from 'class-validator';
 export class CreateProjectDTO {
   @IsString()
   @IsNotEmpty()
-  projectId: string;
+  projectId!: string;
 
   @IsNotEmpty()
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
-  teamId: string;
+  teamId!: string;
 
   @IsString()
   @IsNotEmpty()
   @Length(6)
-  password: string;
+  password!: string;
 
   @IsString()
   @IsNotEmpty()
-  region: string;
+  region!: string;
 
   @IsOptional()
   @IsString()

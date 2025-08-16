@@ -4,10 +4,10 @@ import { services } from '@nuvix/core/config/services';
 
 export class UpdateProjectServiceDTO {
   @IsIn(Object.values(services).map(value => value.optional && value.key))
-  service: string;
+  service!: string;
 
   @IsBoolean()
-  status: boolean;
+  status!: boolean;
 }
 
 export class UpdateProjectAllServiceDTO extends OmitType(

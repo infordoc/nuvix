@@ -396,7 +396,7 @@ export class ProjectsController {
   async testSMTP(
     @Param('id') id: string,
     @Body() input: SmtpTestsDTO,
-  ): Promise<{}> {
+  ): Promise<void> {
     return await this.projectService.testSMTP(id, input);
   }
 

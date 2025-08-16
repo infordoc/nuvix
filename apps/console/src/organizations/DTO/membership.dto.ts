@@ -15,47 +15,47 @@ export class CreateMembershipDTO {
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  declare email: string;
 
   @IsOptional()
   @IsNotEmpty()
-  userId: string;
+  declare userId: string;
 
   @IsOptional()
-  @IsPhoneNumber(null)
+  @IsPhoneNumber()
   @IsNotEmpty()
-  phone: string;
+  declare phone: string;
 
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
   @IsString({ each: true })
-  roles: string[];
+  declare roles: string[];
 
   @IsOptional()
   @IsUrl()
   @IsNotEmpty()
-  url: string;
+  declare url: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(128)
   @IsNotEmpty()
-  name: string;
+  declare name: string;
 }
 
 export class UpdateMembershipDTO {
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
   @IsString({ each: true })
-  roles: string[];
+  declare roles: string[];
 }
 
 export class UpdateMembershipStatusDTO {
   @IsNotEmpty()
   @IsString()
-  userId: string;
+  declare userId: string;
 
   @IsNotEmpty()
   @MaxLength(256)
-  secret: string;
+  declare secret: string;
 }

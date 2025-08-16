@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateProjectDTO } from './DTO/create-project.dto';
 import {
   UpdateProjectDTO,
@@ -6,18 +6,15 @@ import {
 } from './DTO/update-project.dto';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
-  API_KEY_DYNAMIC,
-  API_KEY_STANDARD,
+  ApiKey,
   APP_MAX_COUNT,
-  APP_VERSION_STABLE,
-  DB_FOR_PLATFORM,
   QueueFor,
 } from '@nuvix/utils';
 import authMethods, {
   AuthMethod,
   defaultAuthConfig,
 } from '@nuvix/core/config/auth';
-import { oAuthProviders } from '@nuvix/core/config/authProviders';
+import { oAuthProviders, type OAuthProviderType } from '@nuvix/core/config/authProviders';
 import { defaultSmtpConfig } from '@nuvix/core/config/smtp';
 import { services } from '@nuvix/core/config/services';
 import { UpdateProjectServiceDTO } from './DTO/project-service.dto';
@@ -44,47 +41,37 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import {
-  ProjectJobs,
+  ProjectJob,
   ProjectQueueOptions,
 } from '@nuvix/core/resolvers/queues/projects.queue';
+import type { ConfigService, CoreService } from '@nuvix/core';
+import type { Projects } from '@nuvix/utils/types';
 
 @Injectable()
 export class ProjectService {
-  constructor(
-    @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @InjectQueue(QueueFor.PROJECTS)
-    private readonly projectQueue: Queue<ProjectQueueOptions, any, ProjectJobs>,
-    private readonly jwtService: JwtService,
-  ) { }
-
   private readonly logger = new Logger(ProjectService.name);
+  private readonly db: Database;
+
+  constructor(
+    private coreService: CoreService,
+    private readonly configService: ConfigService,
+    @InjectQueue(QueueFor.PROJECTS)
+    private readonly projectQueue: Queue<ProjectQueueOptions, unknown, ProjectJob>,
+    private readonly jwtService: JwtService,
+  ) {
+    this.db = coreService.getPlatformDb();
+  }
 
   /**
    * Create a new project.
    */
-  async create(data: CreateProjectDTO): Promise<Doc> {
-    const projectId =
-      data.projectId === 'unique()' ? ID.unique() : ID.custom(data.projectId);
-    const {
-      teamId,
-      password,
-      name,
-      description,
-      logo,
-      region,
-      url,
-      legalAddress,
-      legalCity,
-      legalCountry,
-      legalName,
-      legalState,
-      legalTaxId,
-    } = data;
+  async create({ projectId: _projectId, teamId, password, name, ...rest }: CreateProjectDTO): Promise<Doc<Projects>> {
+    const projectId = _projectId === 'unique()' ? ID.unique() : _projectId;
 
     try {
       const org = await this.db.getDocument('teams', teamId);
 
-      if (!org || org.empty())
+      if (org.empty())
         throw new Exception(
           Exception.TEAM_NOT_FOUND,
           'Organization not found.',
@@ -98,9 +85,8 @@ export class ProjectService {
       }
 
       const auths = loadAuthConfig(authMethods);
-
-      const defaultoAuthProviders = [];
-      const defaultServices = {};
+      const defaultoAuthProviders: OAuthProviderType[] = [];
+      const defaultServices: Record<string, boolean> = {};
 
       Object.entries(oAuthProviders).forEach(([key, value]) => {
         if (value.enabled) {
@@ -120,7 +106,8 @@ export class ProjectService {
         }
       });
 
-      let project = new Doc({
+      let project = new Doc<Projects>({
+        ...rest,
         $id: projectId,
         $permissions: [
           Permission.read(Role.team(ID.custom(teamId))),
@@ -132,38 +119,25 @@ export class ProjectService {
         teamId: org.getId(),
         teamInternalId: org.getSequence(),
         name: name,
-        region: region,
-        description: description ?? null,
-        logo: logo ?? null,
-        url: url ?? null,
-        legalName: legalName ?? null,
-        legalCity: legalCity ?? null,
-        legalAddress: legalAddress ?? null,
-        legalCountry: legalCountry ?? null,
-        legalState: legalState ?? null,
-        legalTaxId: legalTaxId ?? null,
-        platforms: [],
-        oAuthProviders: defaultoAuthProviders,
-        webhooks: [],
-        smtp: defaultSmtpConfig,
-        keys: [],
+        oAuthProviders: defaultoAuthProviders as any,
+        smtp: defaultSmtpConfig as any,
         auths: auths,
         services: defaultServices,
         accessedAt: new Date(),
-        version: APP_VERSION_STABLE,
+        version: this.configService.get('app').version,
         database: {
           password,
           // Will be set in the project queue
           // name
           // host, port,
-        },
+        } as any,
         enabled: true,
         status: 'pending',
       });
 
       project = await this.db.createDocument('projects', project);
 
-      await this.projectQueue.add('init', {
+      await this.projectQueue.add(ProjectJob.INIT, {
         project,
       });
 
@@ -180,28 +154,7 @@ export class ProjectService {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const projectId = cursor.getValue();
-      const cursorDocument = await this.db.getDocument('projects', projectId);
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Project '${projectId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries)['filters'];
-
     return {
       projects: await this.db.find('projects', queries),
       total: await this.db.count('projects', filterQueries, APP_MAX_COUNT),
@@ -211,7 +164,8 @@ export class ProjectService {
   async findOne(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
+    if (project.empty())
+      throw new Exception(Exception.PROJECT_NOT_FOUND);
 
     return project;
   }
@@ -517,7 +471,7 @@ export class ProjectService {
       expire: input.expire ?? null,
       sdks: [],
       accessedAt: null,
-      secret: API_KEY_STANDARD + '_' + randomBytes(128).toString('hex'),
+      secret: ApiKey.STANDARD + '_' + randomBytes(128).toString('hex'),
     });
 
     const createdKey = await this.db.createDocument('keys', key);
@@ -620,7 +574,7 @@ export class ProjectService {
     );
 
     return {
-      jwt: API_KEY_DYNAMIC + '_' + jwt,
+      jwt: ApiKey.DYNAMIC + '_' + jwt,
     };
   }
 
@@ -796,7 +750,7 @@ export class ProjectService {
   /**
    * Update service status of a project.
    */
-  async updateServiceStatus(id: string, input: UpdateProjectServiceDTO) {
+  async updateServiceStatus(id: string, { status, service }: UpdateProjectServiceDTO) {
     let project = await this.db.getDocument('projects', id);
 
     if (project.empty()) {
@@ -804,7 +758,7 @@ export class ProjectService {
     }
 
     const services = project.get('services', {});
-    services[input.service] = input.status;
+    services[service] = status;
 
     project = await this.db.updateDocument(
       'projects',
@@ -825,10 +779,10 @@ export class ProjectService {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const servicesObj = {};
-    Object.entries(services).forEach(([key, value]) => {
+    const servicesObj: Record<string, boolean> = {};
+    Object.entries(services).forEach(([_, value]) => {
       if (value.optional) {
-        servicesObj[key] = status;
+        servicesObj[value.key] = status;
       }
     });
 
@@ -844,7 +798,7 @@ export class ProjectService {
   /**
    * Update Apis status of a project.
    */
-  async updateApiStatus(id: string, input: ProjectApiStatusDTO) {
+  async updateApiStatus(id: string, { api, status }: ProjectApiStatusDTO) {
     let project = await this.db.getDocument('projects', id);
 
     if (project.empty()) {
@@ -852,7 +806,7 @@ export class ProjectService {
     }
 
     const apis = project.get('apis', {});
-    apis[input.api] = input.status;
+    apis[api] = status;
 
     project = await this.db.updateDocument(
       'projects',
@@ -873,7 +827,7 @@ export class ProjectService {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const apisObj = {};
+    const apisObj: Record<string, boolean> = {};
     Object.keys(apis).forEach(api => {
       apisObj[api] = status;
     });
@@ -890,33 +844,33 @@ export class ProjectService {
   /**
    * Update OAuth2 of a project.
    */
-  async updateOAuth2(id: string, input: oAuth2DTO) {
+  async updateOAuth2(id: string, { provider, appId, secret, enabled }: oAuth2DTO) {
     let project = await this.db.getDocument('projects', id);
 
     if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const providers = project.get('oAuthProviders', []);
+    const providers = project.get('oAuthProviders', []) as OAuthProviderType[];
     const providerIndex = providers.findIndex(
-      (provider: any) => provider.key === input.provider,
+      (p) => p.key === provider,
     );
 
     if (providerIndex === -1) {
       throw new Exception(Exception.PROVIDER_NOT_FOUND);
     }
 
-    if (input.appId !== undefined) {
-      providers[providerIndex].appId = input.appId;
+    if (appId !== undefined) {
+      providers[providerIndex]!.appId = appId;
     }
 
     // TODO: Encrypt the secret
-    if (input.secret !== undefined) {
-      providers[providerIndex].secret = input.secret;
+    if (secret !== undefined) {
+      providers[providerIndex]!.secret = secret;
     }
 
-    if (input.enabled !== undefined) {
-      providers[providerIndex].enabled = input.enabled;
+    if (enabled !== undefined) {
+      providers[providerIndex]!.enabled = enabled;
     }
 
     project = await this.db.updateDocument(
@@ -939,7 +893,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.sessionAlerts = status;
+    auths['sessionAlerts'] = status;
 
     project = await this.db.updateDocument(
       'projects',
@@ -961,7 +915,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.limit = limit;
+    auths['limit'] = limit;
 
     project = await this.db.updateDocument(
       'projects',
@@ -983,7 +937,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.duration = duration;
+    auths['duration'] = duration;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1030,7 +984,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.passwordHistory = limit;
+    auths['passwordHistory'] = limit;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1052,7 +1006,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.passwordDictionary = enabled;
+    auths['passwordDictionary'] = enabled;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1074,7 +1028,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.personalDataCheck = enabled;
+    auths['personalDataCheck'] = enabled;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1096,7 +1050,7 @@ export class ProjectService {
     }
 
     const auths = project.get('auths', {});
-    auths.maxSessions = limit;
+    auths['maxSessions'] = limit;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1117,7 +1071,7 @@ export class ProjectService {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const uniqueNumbers: { [key: string]: string } = {};
+    const uniqueNumbers: { [key: string]: string; } = {};
     input.numbers.forEach(number => {
       if (uniqueNumbers[number.phone]) {
         throw new Exception(
@@ -1129,7 +1083,7 @@ export class ProjectService {
     });
 
     const auths = project.get('auths', {});
-    auths.mockNumbers = input.numbers;
+    auths['mockNumbers'] = input.numbers;
 
     project = await this.db.updateDocument(
       'projects',
@@ -1177,8 +1131,7 @@ export class ProjectService {
       }
     }
 
-    // Note: SMTP validation is commented out as it requires implementation
-    // of SMTP validation logic
+    // TODO: SMTP validation logic
 
     const smtp = input.enabled
       ? {
@@ -1211,12 +1164,11 @@ export class ProjectService {
    */
   async testSMTP(id: string, input: SmtpTestsDTO) {
     throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
-    return {};
   }
 }
 
 function loadAuthConfig(authMethods: Record<string, AuthMethod>) {
-  const authConfig = { ...defaultAuthConfig };
+  const authConfig: Record<string, any> = { ...defaultAuthConfig };
 
   Object.values(authMethods).forEach(method => {
     if (method.enabled) {

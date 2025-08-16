@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Authorization,
   AuthorizationException,
@@ -11,7 +11,6 @@ import {
   Role,
 } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
-import { DB_FOR_PLATFORM } from '@nuvix/utils';
 import {
   CreateMembershipDTO,
   UpdateMembershipDTO,
@@ -20,12 +19,20 @@ import {
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { TOTP } from '@nuvix/core/validators/MFA.validator';
 import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './DTO/team.dto';
+import type { ConfigService, CoreService } from '@nuvix/core';
+import type { Organizations, OrganizationsDoc, UsersDoc } from '@nuvix/utils/types';
 
 @Injectable()
 export class OrganizationsService {
   private readonly logger = new Logger();
 
-  constructor(@Inject(DB_FOR_PLATFORM) private readonly db: Database) { }
+  private readonly db: Database;
+  constructor(
+    coreService: CoreService,
+    private readonly configService: ConfigService,
+  ) {
+    this.db = coreService.getPlatformDb();
+  }
 
   /**
    * Find all teams
@@ -35,29 +42,8 @@ export class OrganizationsService {
       queries.push(Query.search('search', search));
     }
 
-    // Get cursor document if there was a cursor query
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const teamId = cursor.getValue();
-      const cursorDocument = await this.db.getDocument('teams', teamId);
-
-      if (!cursorDocument) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Team '${teamId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries)['filters'];
-    const results = await this.db.find('teams', queries);
+    const results = await this.db.find('teams', queries) as OrganizationsDoc[];
     const total = await this.db.count('teams', filterQueries);
 
     return {
@@ -69,14 +55,14 @@ export class OrganizationsService {
   /**
    * Create a new team
    */
-  async create(user: Doc | null, input: CreateOrgDTO) {
+  async create(user: UsersDoc, input: CreateOrgDTO) {
     const teamId =
       input.organizationId == 'unique()' ? ID.unique() : input.organizationId;
 
     const team = await this.db
       .createDocument(
         'teams',
-        new Doc({
+        new Doc<Organizations>({
           $id: teamId,
           $permissions: [
             Permission.read(Role.team(teamId)),
@@ -85,8 +71,8 @@ export class OrganizationsService {
           ],
           name: input.name,
           billingPlan: input.billingPlan,
-          paymentMethodId: input.paymentMethodId || null,
-          billingAddressId: input.billingAddressId || null,
+          paymentMethodId: input.paymentMethodId,
+          billingAddressId: input.billingAddressId,
           total: 1,
           prefs: {},
           search: [teamId, input.name].join(' '),
@@ -100,7 +86,7 @@ export class OrganizationsService {
       });
 
     const membershipId = ID.unique();
-    const membership = await this.db.createDocument(
+    await this.db.createDocument(
       'memberships',
       new Doc({
         $id: membershipId,
@@ -199,7 +185,7 @@ export class OrganizationsService {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    return team;
+    return team as OrganizationsDoc;
   }
 
   /**
@@ -254,7 +240,7 @@ export class OrganizationsService {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    let invitee: Doc | null = null;
+    let invitee: UsersDoc | null = null;
 
     if (input.userId) {
       invitee = await this.db.getDocument('users', input.userId);
@@ -307,7 +293,7 @@ export class OrganizationsService {
       }
     }
 
-    if (invitee.empty()) {
+    if (!invitee || invitee.empty()) {
       const userId = ID.unique();
       invitee = await this.db.createDocument(
         'users',
@@ -319,8 +305,8 @@ export class OrganizationsService {
             Permission.update(Role.user(userId)),
             Permission.delete(Role.user(userId)),
           ],
-          email: input.email || null,
-          phone: input.phone || null,
+          email: input.email,
+          phone: input.phone,
           emailVerification: false,
           name: input.name || input.email,
           prefs: {},
@@ -351,7 +337,7 @@ export class OrganizationsService {
         teamInternalId: team.getSequence(),
         roles: input.roles,
         invited: new Date(),
-        joined: isPrivilegedUser || isAppUser ? new Date() : null,
+        joined: isPrivilegedUser || isAppUser ? new Date() : undefined,
         confirm: isPrivilegedUser || isAppUser,
         secret: Auth.hash(secret),
         search: [membershipId, invitee.getId()].join(' '),
@@ -388,33 +374,7 @@ export class OrganizationsService {
     if (search) {
       queries.push(Query.search('search', search));
     }
-
-    // Set internal queries
     queries.push(Query.equal('teamInternalId', [team.getSequence()]));
-
-    // Get cursor document if there was a cursor query
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const membershipId = cursor.getValue();
-      const cursorDocument = await this.db.getDocument(
-        'memberships',
-        membershipId,
-      );
-
-      if (!cursorDocument) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Membership '${membershipId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
 
     const filterQueries = Query.groupByType(queries)['filters'];
     const memberships = await this.db.find('memberships', queries);

@@ -3,7 +3,7 @@ import { oAuthProviders } from '@nuvix/core/config/authProviders';
 
 export class oAuth2DTO {
   @IsIn(Object.keys(oAuthProviders))
-  provider: string;
+  provider!: string;
 
   @IsOptional()
   @IsString()

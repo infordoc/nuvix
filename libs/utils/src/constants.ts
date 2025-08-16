@@ -248,7 +248,7 @@ export const APP_MODE_DEFAULT = 'default';
 /**@deprecated use `AppMode.ADMIN` instead */
 /**@deprecated */export const APP_MODE_ADMIN = 'admin';
 /**@deprecated */export const APP_PAGING_LIMIT = 12;
-/**@deprecated */export const APP_MAX_COUNT = 1000;
+export const APP_MAX_COUNT = 1000;
 /**@deprecated */export const APP_LIMIT_COUNT = 5000;
 /**@deprecated */export const APP_LIMIT_USERS = 10_000;
 /**@deprecated */export const APP_LIMIT_USER_PASSWORD_HISTORY = 20;

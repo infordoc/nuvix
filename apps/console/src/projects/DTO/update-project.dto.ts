@@ -9,5 +9,5 @@ export class UpdateProjectDTO extends PartialType(
 export class UpdateProjectTeamDTO {
   @IsNotEmpty()
   @IsString()
-  teamId: string;
+  declare teamId: string;
 }

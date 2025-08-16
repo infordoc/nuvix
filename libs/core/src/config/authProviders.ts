@@ -417,6 +417,7 @@ export type OAuthProviders = (typeof oAuthProvidersList)[number];
 
 export type OAuthProviderType = {
   key: string;
+  name: string;
   enabled: boolean;
   appId: string;
   secret: string;

@@ -8,7 +8,6 @@ import {
   Post,
   Put,
   Query,
-  Scope,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -24,6 +23,7 @@ import { CreateMembershipDTO, UpdateMembershipDTO } from './DTO/membership.dto';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 import { ResModel } from '@nuvix/core/decorators';
 import { roles } from '@nuvix/core/config/roles';
+import type { UsersDoc } from '@nuvix/utils/types';
 
 @Controller({
   version: ['1'],
@@ -45,7 +45,7 @@ export class OrganizationsController {
 
   @Post()
   @ResModel(Models.ORGANIZATION)
-  async create(@User() user: any, @Body() input: CreateOrgDTO) {
+  async create(@User() user: UsersDoc, @Body() input: CreateOrgDTO) {
     return await this.organizationsService.create(user, input);
   }
 
