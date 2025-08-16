@@ -18,7 +18,7 @@ import {
   APP_REDIS_USER,
   JWT_SECRET,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 // Hooks
 import {
   ApiHook,

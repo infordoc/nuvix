@@ -1,5 +1,5 @@
 /**
- * The main entry point for the Nuvix Console application.
+ * The main entry point for the Nuvix Platform application.
  * @author Nuvix-Tech
  * @version 1.0
  * @beta
@@ -21,14 +21,15 @@ import {
   LOG_LEVELS,
   PROJECT_ROOT,
   SERVER_CONFIG,
-} from '@nuvix/utils/constants';
-import { Authorization, Role, storage } from '@nuvix/database';
+} from '@nuvix/utils';
+import { Authorization, Role, storage } from '@nuvix-tech/db';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import QueryString from 'qs';
 import path from 'path';
 import { initSetup } from './utils/initial-setup';
 import { ErrorFilter } from '@nuvix/core/filters';
+import { ConfigService } from '@nuvix/core';
 
 config({
   path: [
@@ -37,7 +38,7 @@ config({
   ],
 });
 
-Authorization.enableStorage();
+Authorization.enableAsyncLocalStorage();
 
 async function bootstrap() {
   const adapter = new NuvixAdapter({
@@ -49,7 +50,7 @@ async function bootstrap() {
     logger: {
       enabled: true,
       edgeLimit: 100,
-      msgPrefix: '[Nuvix-Console] ',
+      msgPrefix: '[Nuvix-Platform] ',
       safe: true,
       level: 'error',
     },
@@ -104,6 +105,7 @@ async function bootstrap() {
   );
 
   const fastify = adapter.getInstance();
+  const config = app.get(ConfigService);
 
   fastify.addHook('onRequest', (req, res, done) => {
     res.header('X-Powered-By', 'Nuvix-Server');
@@ -116,40 +118,32 @@ async function bootstrap() {
     prefix: '/public/',
   });
 
-  fastify.addHook('onRequest', (req, res, done) => {
-    if (Authorization['useStorage']) {
-      storage.run(new Map(), () => {
-        Authorization.setDefaultStatus(true); // Set per-request default status
-        Authorization.cleanRoles(); // Reset roles per request
-        Authorization.setRole(Role.any().toString());
-        done();
-      });
-    } else {
-      // Fallback to default static behavior
-      Authorization.setDefaultStatus(true);
-      Authorization.cleanRoles();
+  fastify.addHook('onRequest', (_, __, done) => {
+    storage.run(new Map(), () => {
+      Authorization.setDefaultStatus(true); // Set per-request default status
+      Authorization.cleanRoles(); // Reset roles per request
       Authorization.setRole(Role.any().toString());
       done();
-    }
+    });
   });
 
-  process.on('SIGINT', async () => {
+  process.on('SIGINT', () => {
     Logger.warn('SIGINT received, shutting down gracefully...');
   });
-  process.on('SIGTERM', async () => {
+  process.on('SIGTERM', () => {
     Logger.warn('SIGTERM received, shutting down gracefully...');
   });
 
   app.useGlobalFilters(new ErrorFilter());
-  await initSetup();
+  await initSetup(config as ConfigService);
 
-  const port = parseInt(process.env.APP_CONSOLE_PORT, 10) || 4100;
+  const port = parseInt(config.get('APP_PLATFORM_PORT', '4100'), 10);
   const host = '0.0.0.0';
   await app.listen(port, host);
 
   Logger.log(
-    `🚀 Console API application is running on: http://${host}:${port}`,
-    'Bootstrap',
+    `🚀 Platform API application is running on: http://${host}:${port}`,
+    'Nuvix-Platform',
   );
 }
 bootstrap();

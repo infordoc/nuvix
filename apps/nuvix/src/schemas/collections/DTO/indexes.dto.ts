@@ -1,12 +1,12 @@
 import { IsString, IsIn, IsArray, ArrayMaxSize } from 'class-validator';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
-import { Database } from '@nuvix/database';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
+import { Database } from '@nuvix-tech/db';
 
 export class CreateIndexDTO {
   @IsString()
   key: string;
 
-  @IsIn([Database.INDEX_KEY, Database.INDEX_FULLTEXT, Database.INDEX_UNIQUE])
+  @IsIn([IndexType.Key, IndexType.FullText, IndexType.Unique])
   type: string;
 
   @IsArray()

@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { OmitType } from '@nestjs/swagger';
 import { IsCustomID } from '@nuvix/core/validators';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
 import {
   IsString,
   IsArray,
@@ -29,4 +29,4 @@ export class CreateTopicDTO {
 
 export class UpdateTopicDTO extends PartialType(
   OmitType(CreateTopicDTO, ['topicId']),
-) {}
+) { }

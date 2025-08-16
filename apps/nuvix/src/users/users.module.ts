@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { JwtModule } from '@nestjs/jwt';
-import { JWT_SECRET } from '@nuvix/utils/constants';
+import { JWT_SECRET } from '@nuvix/utils';
 
 @Module({
   controllers: [UsersController],
@@ -14,4 +14,4 @@ import { JWT_SECRET } from '@nuvix/utils/constants';
     }),
   ],
 })
-export class UsersModule {}
+export class UsersModule { }

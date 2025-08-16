@@ -28,7 +28,7 @@ import {
   UpdateMembershipStatusDTO,
 } from './DTO/membership.dto';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
-import { Database, Document, Query as Queries } from '@nuvix/database';
+import { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
@@ -44,7 +44,7 @@ import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
 @Namespace('teams')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(private readonly teamsService: TeamsService) { }
 
   @Get()
   @Scope('teams.read')
@@ -119,9 +119,9 @@ export class TeamsController {
     @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateMembershipDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
     @Locale() locale: LocaleTranslator,
-    @User() user: Document,
+    @User() user: Doc,
   ) {
     return await this.teamsService.addMember(
       db,

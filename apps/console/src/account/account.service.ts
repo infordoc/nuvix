@@ -1,14 +1,14 @@
-import { Inject, Injectable, UseInterceptors } from '@nestjs/common';
+import { Injectable, UseInterceptors } from '@nestjs/common';
 import {
   Authorization,
   Database,
-  Document,
+  Doc,
   DuplicateException,
   ID,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 
 import { CountryResponse, Reader } from 'maxmind';
 import { Exception } from '@nuvix/core/extend/exception';
@@ -16,20 +16,9 @@ import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 import { PersonalDataValidator } from '@nuvix/core/validators/personal-data.validator';
 import {
-  ASSETS,
-  CONSOLE_CONFIG,
-  DB_FOR_PLATFORM,
-  GEO_DB,
-  SEND_TYPE_EMAIL,
   QueueFor,
   Events,
-  APP_NAME,
-  APP_LIMIT_USERS,
-  APP_SMTP_HOST,
-  AUDITS_FOR_PLATFORM,
-  MESSAGE_TYPE_PUSH,
-  APP_LIMIT_COUNT,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import {
   UpdateEmailDTO,
@@ -53,7 +42,7 @@ import { Queue } from 'bullmq';
 import * as Template from 'handlebars';
 import * as fs from 'fs/promises';
 import {
-  MailJobs,
+  MailJob,
   MailQueueOptions,
 } from '@nuvix/core/resolvers/queues/mails.queue';
 import path from 'path';
@@ -73,22 +62,32 @@ import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
 import { Audit } from '@nuvix/audit';
 import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto';
 import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto';
+import type { MembershipsDoc, SessionsDoc, TargetsDoc, UsersDoc } from '@nuvix/utils/types';
+import type { ConfigService, CoreService, Platform } from '@nuvix/core';
 
 @Injectable()
 @UseInterceptors(ResponseInterceptor)
 export class AccountService {
+  private readonly geodb: Reader<CountryResponse>;
+  private readonly db: Database;
+  private readonly audit: Audit;
+  private readonly platform: Doc<Platform>;
   constructor(
-    @Inject(GEO_DB) private readonly geodb: Reader<CountryResponse>,
-    @Inject(DB_FOR_PLATFORM) private readonly db: Database,
-    @Inject(AUDITS_FOR_PLATFORM) private readonly audit: Audit,
-    @InjectQueue(QueueFor.MAILS)
-    private readonly mailsQueue: Queue<MailQueueOptions, MailJobs>,
-    private eventEmitter: EventEmitter2,
+    private readonly coreService: CoreService,
+    private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly jwtService: JwtService,
-  ) {}
+    @InjectQueue(QueueFor.MAILS)
+    private readonly mailsQueue: Queue<MailQueueOptions, MailJob>,
+  ) {
+    this.db = coreService.getPlatformDb();
+    this.geodb = coreService.getGeoDb();
+    this.audit = coreService.getPlatformAudit();
+    this.platform = coreService.getPlatform();
+  }
 
-  private readonly oauthDefaultSuccess = '/auth/oauth2/success';
-  private readonly oauthDefaultFailure = '/auth/oauth2/failure';
+  private static readonly oauthDefaultSuccess = '/auth/oauth2/success';
+  private static readonly oauthDefaultFailure = '/auth/oauth2/failure';
 
   /**
    * Create a new account
@@ -97,14 +96,14 @@ export class AccountService {
     userId: string,
     email: string,
     password: string,
-    name: string,
+    name: string | undefined,
     request: NuvixRequest,
-    user: Document,
-  ): Promise<Document> {
+    user: UsersDoc,
+  ): Promise<UsersDoc> {
     email = email.toLowerCase();
 
-    const whitelistEmails = CONSOLE_CONFIG.authWhitelistEmails;
-    const whitelistIPs = CONSOLE_CONFIG.authWhitelistIPs ?? false;
+    const whitelistEmails = this.platform.get('authWhitelistEmails');
+    const whitelistIPs = this.platform.get('authWhitelistIPs', false);
 
     if (
       whitelistEmails &&
@@ -118,8 +117,7 @@ export class AccountService {
       throw new Exception(Exception.USER_IP_NOT_WHITELISTED);
     }
 
-    const limit = CONSOLE_CONFIG.auths.limit ?? 0;
-
+    const limit = this.platform.get('auths').limit ?? 0;
     if (limit !== 0) {
       const total = await this.db.count('users', []);
 
@@ -132,34 +130,34 @@ export class AccountService {
       Query.equal('providerEmail', [email]),
     ]);
 
-    if (identityWithMatchingEmail && !identityWithMatchingEmail.isEmpty()) {
+    if (identityWithMatchingEmail && !identityWithMatchingEmail.empty()) {
       throw new Exception(Exception.GENERAL_BAD_REQUEST);
     }
 
-    if (CONSOLE_CONFIG.auths.personalDataCheck ?? false) {
+    if (this.platform.get('auths').personalDataCheck ?? false) {
       const personalDataValidator = new PersonalDataValidator(
         userId,
         email,
         name,
         null,
       );
-      if (!personalDataValidator.isValid(password)) {
+      if (!personalDataValidator.$valid(password)) {
         throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
       }
     }
 
     // hooks.trigger('passwordValidator', [db, project, password, user, true]);
 
-    const passwordHistory = CONSOLE_CONFIG.auths.passwordHistory ?? 0;
+    const passwordHistory = this.platform.get('auths').passwordHistory ?? 0;
     const hashedPassword = await Auth.passwordHash(
       password,
       Auth.DEFAULT_ALGO,
       Auth.DEFAULT_ALGO_OPTIONS,
-    );
+    ) ?? undefined;
 
     try {
       userId = userId === 'unique()' ? ID.unique() : userId;
-      user.setAttributes({
+      user.setAll({
         $id: userId,
         $permissions: [
           Permission.read(Role.any()),
@@ -170,7 +168,7 @@ export class AccountService {
         emailVerification: false,
         status: true,
         password: hashedPassword,
-        passwordHistory: passwordHistory > 0 ? [hashedPassword] : [],
+        passwordHistory: (passwordHistory > 0 && hashedPassword) ? [hashedPassword] : [],
         passwordUpdate: new Date(),
         hash: Auth.DEFAULT_ALGO,
         hashOptions: Auth.DEFAULT_ALGO_OPTIONS,
@@ -179,38 +177,34 @@ export class AccountService {
         name: name,
         mfa: false,
         prefs: {},
-        sessions: null,
-        tokens: null,
-        memberships: null,
-        authenticators: null,
         search: `${userId} ${email} ${name}`,
         accessedAt: new Date(),
       });
-      user.removeAttribute('$internalId');
+      user.delete('$sequence');
       user = await Authorization.skip(
-        async () => await this.db.createDocument('users', user),
+        () => this.db.createDocument('users', user),
       );
 
       try {
         const target = await Authorization.skip(
-          async () =>
-            await this.db.createDocument(
+          () =>
+            this.db.createDocument(
               'targets',
-              new Document({
+              new Doc({
                 $permissions: [
                   Permission.read(Role.user(user.getId())),
                   Permission.update(Role.user(user.getId())),
                   Permission.delete(Role.user(user.getId())),
                 ],
                 userId: user.getId(),
-                userInternalId: user.getInternalId(),
+                userInternalId: user.getSequence(),
                 providerType: 'email',
                 identifier: email,
-              }),
+              }) as TargetsDoc,
             ),
         );
-        user.setAttribute('targets', [
-          ...user.getAttribute('targets', []),
+        user.set('targets', [
+          ...user.get('targets', []),
           target,
         ]);
       } catch (error) {
@@ -219,10 +213,9 @@ export class AccountService {
             Query.equal('identifier', [email]),
           ]);
           if (existingTarget) {
-            user.setAttribute(
+            user.append(
               'targets',
               existingTarget,
-              Document.SET_TYPE_APPEND,
             );
           }
         } else {
@@ -248,14 +241,14 @@ export class AccountService {
     Authorization.setRole(Role.users().toString());
 
     const templatePath = path.join(
-      ASSETS.TEMPLATES,
-      'email-account-create.tpl',
+      this.configService.assetConfig.templates,
+      'email-account-create.tpl'
     );
     const templateSource = await fs.readFile(templatePath, 'utf8');
     const template = Template.compile(templateSource);
 
     const body = template({
-      name: user.getAttribute('name', 'User'),
+      name: user.get('name', 'User'),
       verification_link: '#',
     });
 
@@ -264,9 +257,9 @@ export class AccountService {
       year: new Date().getFullYear(),
     };
 
-    await this.mailsQueue.add(SEND_TYPE_EMAIL, {
+    await this.mailsQueue.add(MailJob.SEND_EMAIL, {
       subject: 'Account Created! Start Exploring Nuvix Now ⚡',
-      email: user.getAttribute('email'),
+      email: user.get('email'),
       body: body,
       variables: vars,
     });
@@ -279,67 +272,71 @@ export class AccountService {
   /**
    * Update user's prefs
    */
-  async updatePrefs(user: Document, prefs: { [key: string]: any }) {
-    user.setAttribute('prefs', prefs);
+  async updatePrefs(user: UsersDoc, prefs: Record<string, any>) {
+    user.set('prefs', prefs);
+    user = await this.db.updateDocument(
+      'users', user.getId(),
+      user
+    );
 
-    user = await this.db.updateDocument('users', user.getId(), user);
-
-    return user.getAttribute('prefs', {});
+    return user.get('prefs', {});
   }
 
   /**
    * Delete User Account.
    */
-  async deleteAccount(user: Document) {
-    if (user.isEmpty()) {
+  async deleteAccount(user: UsersDoc) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     // Get all memberships and check if user can be deleted
-    const memberships = user.getAttribute('memberships', []);
+    const memberships = user.get('memberships', []) as MembershipsDoc[];
     for (const membership of memberships) {
-      if (membership.getAttribute('confirm', false)) {
+      if (membership.get('confirm', false)) {
         throw new Exception(Exception.USER_DELETION_PROHIBITED);
       }
     }
 
     await Authorization.skip(
-      async () => await this.db.deleteDocument('users', user.getId()),
+      () => this.db.deleteDocument('users', user.getId()),
     );
-
     await this.db.purgeCachedDocument('users', user.getId());
 
     return user;
   }
 
-  async updateEmail(user: Document, input: UpdateEmailDTO) {
-    const passwordUpdate = user.getAttribute('passwordUpdate');
+  /**
+   * Update User's Email
+   */
+  async updateEmail(user: UsersDoc, input: UpdateEmailDTO) {
+    const passwordUpdate = user.get('passwordUpdate');
 
     if (
       passwordUpdate &&
       !(await Auth.passwordVerify(
         input.password,
-        user.getAttribute('password'),
-        user.getAttribute('hash'),
-        user.getAttribute('hashOptions'),
+        user.get('password'),
+        user.get('hash'),
+        user.get('hashOptions'),
       ))
     ) {
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
     }
 
-    const oldEmail = user.getAttribute('email');
+    const oldEmail = user.get('email');
     const email = input.email.toLowerCase();
 
-    const identityWithMatchingEmail = await this.db.findOne('identities', [
-      Query.equal('providerEmail', [email]),
-      Query.notEqual('userInternalId', user.getInternalId()),
-    ]);
+    const identityWithMatchingEmail = await this.db.findOne('identities', (qb) =>
+      qb.equal('providerEmail', email)
+        .equal('userInternalId', user.getSequence())
+    );
 
-    if (identityWithMatchingEmail && !identityWithMatchingEmail.isEmpty()) {
+    if (identityWithMatchingEmail && !identityWithMatchingEmail.empty()) {
       throw new Exception(Exception.GENERAL_BAD_REQUEST);
     }
 
-    user.setAttribute('email', email).setAttribute('emailVerification', false);
+    user.set('email', email).set('emailVerification', false);
 
     if (!passwordUpdate) {
       const hashedPassword = await Auth.passwordHash(
@@ -348,32 +345,35 @@ export class AccountService {
         Auth.DEFAULT_ALGO_OPTIONS,
       );
       user
-        .setAttribute('password', hashedPassword)
-        .setAttribute('hash', Auth.DEFAULT_ALGO)
-        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
-        .setAttribute('passwordUpdate', new Date());
+        .set('password', hashedPassword)
+        .set('hash', Auth.DEFAULT_ALGO)
+        .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
+        .set('passwordUpdate', new Date());
     }
 
     const target = await Authorization.skip(
-      async () =>
-        await this.db.findOne('targets', [Query.equal('identifier', [email])]),
+      () =>
+        this.db.findOne('targets', [Query.equal('identifier', [email])]),
     );
 
-    if (target && !target.isEmpty()) {
+    if (target && !target.empty()) {
       throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
     }
 
     try {
       user = await this.db.updateDocument('users', user.getId(), user);
-      const oldTarget = user.find<any>('identifier', oldEmail, 'targets');
+      const oldTarget = user.findWhere(
+        'targets',
+        (target: TargetsDoc) => target.get('identifier') === oldEmail
+      );
 
-      if (oldTarget && !oldTarget.isEmpty()) {
+      if (oldTarget && !oldTarget.empty()) {
         await Authorization.skip(
-          async () =>
-            await this.db.updateDocument(
+          () =>
+            this.db.updateDocument(
               'targets',
               oldTarget.getId(),
-              oldTarget.setAttribute('identifier', email),
+              oldTarget.set('identifier', email),
             ),
         );
       }
@@ -390,10 +390,12 @@ export class AccountService {
   /**
    * Update User's Name
    */
-  async updateName(user: Document, name: string) {
-    user.setAttribute('name', name);
-
-    user = await this.db.updateDocument('users', user.getId(), user);
+  async updateName(user: UsersDoc, name: string) {
+    user.set('name', name);
+    user = await this.db.updateDocument(
+      'users', user.getId(),
+      user
+    );
 
     return user;
   }
@@ -401,18 +403,15 @@ export class AccountService {
   /**
    * Update User's Password
    */
-  async updatePassword(user: Document, input: UpdatePasswordDTO) {
-    const oldPassword = input.oldPassword;
-    const newPassword = input.password;
-
+  async updatePassword(user: UsersDoc, { oldPassword, password: newPassword }: UpdatePasswordDTO) {
     // Check old password only if it's an existing user.
     if (
-      user.getAttribute('passwordUpdate') &&
+      user.get('passwordUpdate') &&
       !(await Auth.passwordVerify(
         oldPassword,
-        user.getAttribute('password'),
-        user.getAttribute('hash'),
-        user.getAttribute('hashOptions'),
+        user.get('password'),
+        user.get('hash'),
+        user.get('hashOptions'),
       ))
     ) {
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
@@ -424,15 +423,15 @@ export class AccountService {
       Auth.DEFAULT_ALGO_OPTIONS,
     );
 
-    const historyLimit = CONSOLE_CONFIG.auths.passwordHistory ?? 0;
-    let history = user.getAttribute('passwordHistory', []);
-    if (historyLimit > 0) {
+    const historyLimit = this.platform.get('auths').passwordHistory ?? 0;
+    let history = user.get('passwordHistory', []);
+    if (historyLimit > 0 && hashedNewPassword) {
       const validator = new PasswordHistoryValidator(
         history,
-        user.getAttribute('hash'),
-        user.getAttribute('hashOptions'),
+        user.get('hash'),
+        user.get('hashOptions'),
       );
-      if (!validator.isValid(newPassword)) {
+      if (!await validator.$valid(newPassword)) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
       }
 
@@ -440,23 +439,23 @@ export class AccountService {
       history = history.slice(-historyLimit);
     }
 
-    if (CONSOLE_CONFIG.auths.personalDataCheck ?? false) {
+    if (this.platform.get('auths').personalDataCheck ?? false) {
       const personalDataValidator = new PersonalDataValidator(
         user.getId(),
-        user.getAttribute('email'),
-        user.getAttribute('name'),
-        user.getAttribute('phone'),
+        user.get('email'),
+        user.get('name'),
+        user.get('phone'),
       );
-      if (!personalDataValidator.isValid(newPassword)) {
+      if (!personalDataValidator.$valid(newPassword)) {
         throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
       }
     }
 
-    user.setAttribute('password', hashedNewPassword);
-    user.setAttribute('passwordHistory', history);
-    user.setAttribute('passwordUpdate', new Date());
-    user.setAttribute('hash', Auth.DEFAULT_ALGO);
-    user.setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
+    user.set('password', hashedNewPassword)
+      .set('passwordHistory', history)
+      .set('passwordUpdate', new Date())
+      .set('hash', Auth.DEFAULT_ALGO)
+      .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
 
     // TODO: should update with request timestamp
     user = await this.db.updateDocument('users', user.getId(), user);
@@ -467,63 +466,65 @@ export class AccountService {
   /**
    * Update User's Phone
    */
-  async updatePhone(user: Document, input: UpdatePhoneDTO) {
-    const passwordUpdate = user.getAttribute('passwordUpdate');
+  async updatePhone(user: UsersDoc, { phone, password }: UpdatePhoneDTO) {
+    const passwordUpdate = user.get('passwordUpdate');
 
     if (
       passwordUpdate &&
       !(await Auth.passwordVerify(
-        input.password,
-        user.getAttribute('password'),
-        user.getAttribute('hash'),
-        user.getAttribute('hashOptions'),
+        password,
+        user.get('password'),
+        user.get('hash'),
+        user.get('hashOptions'),
       ))
     ) {
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
     }
 
-    const oldPhone = user.getAttribute('phone');
-    const phone = input.phone;
-
+    const oldPhone = user.get('phone');
     const target = await Authorization.skip(
-      async () =>
-        await this.db.findOne('targets', [Query.equal('identifier', [phone])]),
+      () =>
+        this.db.findOne('targets', [Query.equal('identifier', [phone])]),
     );
 
-    if (target && !target.isEmpty()) {
+    if (target && !target.empty()) {
       throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
     }
 
-    user.setAttribute('phone', phone).setAttribute('phoneVerification', false);
+    user.set('phone', phone).set('phoneVerification', false);
 
     if (!passwordUpdate) {
       const hashedPassword = await Auth.passwordHash(
-        input.password,
+        password,
         Auth.DEFAULT_ALGO,
         Auth.DEFAULT_ALGO_OPTIONS,
       );
       user
-        .setAttribute('password', hashedPassword)
-        .setAttribute('hash', Auth.DEFAULT_ALGO)
-        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
-        .setAttribute('passwordUpdate', new Date());
+        .set('password', hashedPassword)
+        .set('hash', Auth.DEFAULT_ALGO)
+        .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
+        .set('passwordUpdate', new Date());
     }
 
     try {
       user = await this.db.updateDocument('users', user.getId(), user);
-      const oldTarget = user.find<any>('identifier', oldPhone, 'targets');
+      const oldTarget = user.findWhere(
+        'targets',
+        (target: TargetsDoc) => target.get('identifier') === oldPhone
+      );
 
-      if (oldTarget && !oldTarget.isEmpty()) {
+      if (oldTarget && !oldTarget.empty()) {
         await Authorization.skip(
-          async () =>
-            await this.db.updateDocument(
+          () =>
+            this.db.updateDocument(
               'targets',
               oldTarget.getId(),
-              oldTarget.setAttribute('identifier', phone),
+              oldTarget.set('identifier', phone),
             ),
         );
       }
       await this.db.purgeCachedDocument('users', user.getId());
+      return user;
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.USER_PHONE_ALREADY_EXISTS);
@@ -536,47 +537,47 @@ export class AccountService {
   /**
    * Get Logs
    */
-  async getLogs(user: Document, queries: Query[]) {
+  async getLogs(user: UsersDoc, queries: Query[]) {
     const grouped = Query.groupByType(queries);
     const limit = grouped.limit ?? CONSOLE_CONFIG.auths.limit ?? 100;
     const offset = grouped.offset ?? 0;
 
-    const logs = await this.audit.getLogsByUser(user.getInternalId(), [
+    const logs = await this.audit.getLogsByUser(user.getSequence(), [
       Query.limit(limit),
       Query.offset(offset),
     ]);
     const output = [];
 
     for (const log of logs) {
-      log.setAttribute('userAgent', log.getAttribute('userAgent', 'UNKNOWN'));
-      const detector = new Detector(log.getAttribute('userAgent'));
+      log.set('userAgent', log.get('userAgent', 'UNKNOWN'));
+      const detector = new Detector(log.get('userAgent'));
 
-      const logDocument = new Document({
+      const logDocument = new Doc({
         ...log.toObject(),
-        ...log.getAttribute('data'),
+        ...log.get('data'),
         ...detector.getOS(),
         ...detector.getClient(),
         ...detector.getDevice(),
       });
 
-      const record = this.geodb.get(log.getAttribute('ip'));
+      const record = this.geodb.get(log.get('ip'));
 
       if (record) {
-        logDocument.setAttribute(
+        logDocument.set(
           'countryCode',
           record.country.iso_code.toLowerCase(),
         );
-        logDocument.setAttribute('countryName', record.country.names.en);
+        logDocument.set('countryName', record.country.names.en);
       } else {
-        logDocument.setAttribute('countryCode', '--');
-        logDocument.setAttribute('countryName', 'Unknown');
+        logDocument.set('countryCode', '--');
+        logDocument.set('countryName', 'Unknown');
       }
 
       output.push(logDocument);
     }
 
     return {
-      total: await this.audit.countLogsByUser(user.getInternalId()),
+      total: await this.audit.countLogsByUser(user.getSequence()),
       logs: output,
     };
   }
@@ -584,25 +585,25 @@ export class AccountService {
   /**
    * Get User's Sessions
    */
-  async getSessions(user: Document, locale: LocaleTranslator) {
+  async getSessions(user: UsersDoc, locale: LocaleTranslator) {
     const roles = Authorization.getRoles();
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
     const isAppUser = Auth.isAppUser(roles);
 
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
     const current = Auth.sessionVerify(sessions, Auth.secret);
 
-    const updatedSessions = sessions.map((session: Document) => {
+    const updatedSessions = sessions.map((session: SessionsDoc) => {
       const countryName = locale.getText(
-        'countries' + session.getAttribute('countryCode', '').toLowerCase(),
+        'countries' + session.get('countryCode', '').toLowerCase(),
         locale.getText('locale.country.unknown'),
       );
 
-      session.setAttribute('countryName', countryName);
-      session.setAttribute('current', current === session.getId());
-      session.setAttribute(
+      session.set('countryName', countryName);
+      session.set('current', current === session.getId());
+      session.set(
         'secret',
-        isPrivilegedUser || isAppUser ? session.getAttribute('secret', '') : '',
+        isPrivilegedUser || isAppUser ? session.get('secret', '') : '',
       );
 
       return session;
@@ -618,13 +619,13 @@ export class AccountService {
    * Delete user's session
    */
   async deleteSessions(
-    user: Document,
+    user: UsersDoc,
     locale: LocaleTranslator,
     request: NuvixRequest,
     response: NuvixRes,
   ) {
     const protocol = request.protocol;
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
 
     for (const session of sessions) {
       await this.db.deleteDocument('sessions', session.getId());
@@ -633,17 +634,17 @@ export class AccountService {
         response.header('X-Fallback-Cookies', JSON.stringify([]));
       }
 
-      session.setAttribute('current', false);
-      session.setAttribute(
+      session.set('current', false);
+      session.set(
         'countryName',
         locale.getText(
-          'countries' + session.getAttribute('countryCode', '').toLowerCase(),
+          'countries' + session.get('countryCode', '').toLowerCase(),
           locale.getText('locale.country.unknown'),
         ),
       );
 
-      if (session.getAttribute('secret') === Auth.hash(Auth.secret)) {
-        session.setAttribute('current', true);
+      if (session.get('secret') === Auth.hash(Auth.secret)) {
+        session.set('current', true);
 
         // If current session, delete the cookies too
         response
@@ -679,7 +680,7 @@ export class AccountService {
    * Get a Session
    */
   async getSession(
-    user: Document,
+    user: UsersDoc,
     sessionId: string,
     locale: LocaleTranslator,
   ) {
@@ -687,32 +688,32 @@ export class AccountService {
     const isPrivilegedUser = Auth.isPrivilegedUser(roles);
     const isAppUser = Auth.isAppUser(roles);
 
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-            user.getAttribute('sessions'),
-            Auth.secret,
-          ) as string)
+          user.get('sessions'),
+          Auth.secret,
+        ) as string)
         : sessionId;
 
     for (const session of sessions) {
       if (sessionId === session.getId()) {
         const countryName = locale.getText(
-          'countries' + session.getAttribute('countryCode', '').toLowerCase(),
+          'countries' + session.get('countryCode', '').toLowerCase(),
           locale.getText('locale.country.unknown'),
         );
 
         session
-          .setAttribute(
+          .set(
             'current',
-            session.getAttribute('secret') === Auth.hash(Auth.secret),
+            session.get('secret') === Auth.hash(Auth.secret),
           )
-          .setAttribute('countryName', countryName)
-          .setAttribute(
+          .set('countryName', countryName)
+          .set(
             'secret',
             isPrivilegedUser || isAppUser
-              ? session.getAttribute('secret', '')
+              ? session.get('secret', '')
               : '',
           );
 
@@ -727,13 +728,13 @@ export class AccountService {
    * Delete a Session
    */
   async deleteSession(
-    user: Document,
+    user: UsersDoc,
     sessionId: string,
     request: NuvixRequest,
     response: NuvixRes,
   ) {
     const protocol = request.protocol;
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
 
     for (const session of sessions) {
       if (sessionId !== session.getId()) {
@@ -742,10 +743,10 @@ export class AccountService {
 
       await this.db.deleteDocument('sessions', session.getId());
 
-      session.setAttribute('current', false);
+      session.set('current', false);
 
-      if (session.getAttribute('secret') === Auth.hash(Auth.secret)) {
-        session.setAttribute('current', true);
+      if (session.get('secret') === Auth.hash(Auth.secret)) {
+        session.set('current', true);
 
         response
           .cookie(`${Auth.cookieName}_legacy`, '', {
@@ -777,17 +778,17 @@ export class AccountService {
   /**
    * Update a Session
    */
-  async updateSession(user: Document, sessionId: string) {
+  async updateSession(user: UsersDoc, sessionId: string) {
     sessionId =
       sessionId === 'current'
         ? (Auth.sessionVerify(
-            user.getAttribute('sessions'),
-            Auth.secret,
-          ) as string)
+          user.get('sessions'),
+          Auth.secret,
+        ) as string)
         : sessionId;
 
-    const sessions = user.getAttribute('sessions', []);
-    let session: Document | null = null;
+    const sessions = user.get('sessions', []);
+    let session: SessionsDoc | null = null;
 
     for (const value of sessions) {
       if (sessionId === value.getId()) {
@@ -803,10 +804,10 @@ export class AccountService {
     const auths = CONSOLE_CONFIG.auths;
 
     const authDuration = auths.duration ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
-    session.setAttribute('expire', new Date(Date.now() + authDuration * 1000));
+    session.set('expire', new Date(Date.now() + authDuration * 1000));
 
-    const provider: string = session.getAttribute('provider', '');
-    const refreshToken = session.getAttribute('providerRefreshToken', '');
+    const provider: string = session.get('provider', '');
+    const refreshToken = session.get('providerRefreshToken', '');
 
     const authClass = await import(
       /* webpackChunkName: "OAuth2" */
@@ -833,9 +834,9 @@ export class AccountService {
       const accessToken = await oauth2.getAccessToken('');
 
       session
-        .setAttribute('providerAccessToken', accessToken)
-        .setAttribute('providerRefreshToken', accessToken)
-        .setAttribute(
+        .set('providerAccessToken', accessToken)
+        .set('providerRefreshToken', accessToken)
+        .set(
           'providerAccessTokenExpiry',
           new Date(Date.now() + (await oauth2.getAccessTokenExpiry('')) * 1000),
         );
@@ -851,7 +852,7 @@ export class AccountService {
    * Create a new session for the user using Email & Password
    */
   async createEmailSession(
-    user: Document,
+    user: UsersDoc,
     input: CreateEmailSessionDTO,
     locale: LocaleTranslator,
     request: NuvixRequest,
@@ -866,18 +867,18 @@ export class AccountService {
 
     if (
       !profile ||
-      !profile.getAttribute('passwordUpdate') ||
+      !profile.get('passwordUpdate') ||
       !(await Auth.passwordVerify(
         input.password,
-        profile.getAttribute('password'),
-        profile.getAttribute('hash'),
-        profile.getAttribute('hashOptions'),
+        profile.get('password'),
+        profile.get('hash'),
+        profile.get('hashOptions'),
       ))
     ) {
       throw new Exception(Exception.USER_INVALID_CREDENTIALS);
     }
 
-    if (profile.getAttribute('status') === false) {
+    if (profile.get('status') === false) {
       throw new Exception(Exception.USER_BLOCKED);
     }
 
@@ -893,10 +894,10 @@ export class AccountService {
     const record = this.geodb.get(request.ip);
     const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
 
-    const session = new Document<any>({
+    const session = new Doc<any>({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       provider: Auth.SESSION_PROVIDER_EMAIL,
       providerUid: email,
       secret: Auth.hash(secret),
@@ -912,9 +913,9 @@ export class AccountService {
 
     Authorization.setRole(Role.user(user.getId()).toString());
 
-    if (user.getAttribute('hash') !== Auth.DEFAULT_ALGO) {
+    if (user.get('hash') !== Auth.DEFAULT_ALGO) {
       user
-        .setAttribute(
+        .set(
           'password',
           await Auth.passwordHash(
             input.password,
@@ -922,8 +923,8 @@ export class AccountService {
             Auth.DEFAULT_ALGO_OPTIONS,
           ),
         )
-        .setAttribute('hash', Auth.DEFAULT_ALGO)
-        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
+        .set('hash', Auth.DEFAULT_ALGO)
+        .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS);
       await this.db.updateDocument('users', user.getId(), user);
     }
 
@@ -931,7 +932,7 @@ export class AccountService {
 
     const createdSession = await this.db.createDocument(
       'sessions',
-      session.setAttribute('$permissions', [
+      session.set('$permissions', [
         Permission.read(Role.user(user.getId())),
         Permission.update(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
@@ -961,14 +962,14 @@ export class AccountService {
       .status(201);
 
     const countryName = locale.getText(
-      'countries' + session.getAttribute('countryCode', '').toLowerCase(),
+      'countries' + session.get('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
     createdSession
-      .setAttribute('current', true)
-      .setAttribute('countryName', countryName)
-      .setAttribute(
+      .set('current', true)
+      .set('countryName', countryName)
+      .set(
         'secret',
         isPrivilegedUser || isAppUser
           ? Auth.encodeSession(user.getId(), secret)
@@ -1071,7 +1072,7 @@ export class AccountService {
     request,
     response,
   }: {
-    user: Document;
+    user: UsersDoc;
     input: OAuth2CallbackDTO;
     provider: string;
     request: NuvixRequest;
@@ -1198,14 +1199,14 @@ export class AccountService {
 
     // Check if this identity is connected to a different user
     let sessionUpgrade = false;
-    if (!user.isEmpty()) {
+    if (!user.empty()) {
       const userId = user.getId();
 
       const identityWithMatchingEmail = await this.db.findOne('identities', [
         Query.equal('providerEmail', [email]),
-        Query.notEqual('userInternalId', user.getInternalId()),
+        Query.notEqual('userInternalId', user.getSequence()),
       ]);
-      if (!identityWithMatchingEmail.isEmpty()) {
+      if (!identityWithMatchingEmail.empty()) {
         failureRedirect(Exception.USER_ALREADY_EXISTS);
       }
 
@@ -1220,32 +1221,32 @@ export class AccountService {
       sessionUpgrade = true;
     }
 
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
     const current = Auth.sessionVerify(sessions, Auth.secret);
 
     if (current) {
       const currentDocument = await this.db.getDocument('sessions', current);
-      if (!currentDocument.isEmpty()) {
+      if (!currentDocument.empty()) {
         await this.db.deleteDocument('sessions', currentDocument.getId());
         await this.db.purgeCachedDocument('users', user.getId());
       }
     }
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       const session = await this.db.findOne('sessions', [
         Query.equal('provider', [provider]),
         Query.equal('providerUid', [oauth2ID]),
       ]);
-      if (!session.isEmpty()) {
+      if (!session.empty()) {
         const foundUser = await this.db.getDocument(
           'users',
-          session.getAttribute('userId'),
+          session.get('userId'),
         );
         user.setAttributes(foundUser.toObject());
       }
     }
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       if (!email) {
         failureRedirect(
           Exception.USER_UNAUTHORIZED,
@@ -1256,26 +1257,26 @@ export class AccountService {
       const userWithEmail = await this.db.findOne('users', [
         Query.equal('email', [email]),
       ]);
-      if (!userWithEmail.isEmpty()) {
+      if (!userWithEmail.empty()) {
         user.setAttributes(userWithEmail.toObject());
       }
 
-      if (user.isEmpty()) {
+      if (user.empty()) {
         const identity = await this.db.findOne('identities', [
           Query.equal('provider', [provider]),
           Query.equal('providerUid', [oauth2ID]),
         ]);
 
-        if (!identity.isEmpty()) {
+        if (!identity.empty()) {
           const foundUser = await this.db.getDocument(
             'users',
-            identity.getAttribute('userId'),
+            identity.get('userId'),
           );
           user.setAttributes(foundUser.toObject());
         }
       }
 
-      if (user.isEmpty()) {
+      if (user.empty()) {
         const limit = CONSOLE_CONFIG.auths['limit'] ?? 0;
 
         if (limit !== 0) {
@@ -1288,7 +1289,7 @@ export class AccountService {
         const identityWithMatchingEmail = await this.db.findOne('identities', [
           Query.equal('providerEmail', [email]),
         ]);
-        if (!identityWithMatchingEmail.isEmpty()) {
+        if (!identityWithMatchingEmail.empty()) {
           failureRedirect(Exception.GENERAL_BAD_REQUEST);
         }
 
@@ -1320,7 +1321,7 @@ export class AccountService {
             search: `${userId} ${email} ${name}`,
             accessedAt: new Date(),
           });
-          user.removeAttribute('$internalId');
+          user.delete('$internalId');
 
           const userDoc = await Authorization.skip(
             async () => await this.db.createDocument('users', user),
@@ -1328,14 +1329,14 @@ export class AccountService {
 
           await this.db.createDocument(
             'targets',
-            new Document({
+            new Doc({
               $permissions: [
                 Permission.read(Role.user(user.getId())),
                 Permission.update(Role.user(user.getId())),
                 Permission.delete(Role.user(user.getId())),
               ],
               userId: userDoc.getId(),
-              userInternalId: userDoc.getInternalId(),
+              userInternalId: userDoc.getSequence(),
               providerType: 'email',
               identifier: email,
             }),
@@ -1352,20 +1353,20 @@ export class AccountService {
     Authorization.setRole(Role.user(user.getId()).toString());
     Authorization.setRole(Role.users().toString());
 
-    if (user.getAttribute('status') === false) {
+    if (user.get('status') === false) {
       failureRedirect(Exception.USER_BLOCKED);
     }
 
     let identity = await this.db.findOne('identities', [
-      Query.equal('userInternalId', [user.getInternalId()]),
+      Query.equal('userInternalId', [user.getSequence()]),
       Query.equal('provider', [provider]),
       Query.equal('providerUid', [oauth2ID]),
     ]);
 
-    if (identity.isEmpty()) {
+    if (identity.empty()) {
       const identitiesWithMatchingEmail = await this.db.find('identities', [
         Query.equal('providerEmail', [email]),
-        Query.notEqual('userInternalId', [user.getInternalId()]),
+        Query.notEqual('userInternalId', [user.getSequence()]),
       ]);
       if (identitiesWithMatchingEmail.length > 0) {
         failureRedirect(Exception.GENERAL_BAD_REQUEST);
@@ -1373,14 +1374,14 @@ export class AccountService {
 
       identity = (await this.db.createDocument(
         'identities',
-        new Document({
+        new Doc({
           $id: ID.unique(),
           $permissions: [
             Permission.read(Role.any()),
             Permission.update(Role.user(user.getId())),
             Permission.delete(Role.user(user.getId())),
           ],
-          userInternalId: user.getInternalId(),
+          userInternalId: user.getSequence(),
           userId: user.getId(),
           provider: provider,
           providerUid: oauth2ID,
@@ -1394,24 +1395,24 @@ export class AccountService {
       )) as any;
     } else {
       identity
-        .setAttribute('providerAccessToken', accessToken)
-        .setAttribute('providerRefreshToken', refreshToken)
-        .setAttribute(
+        .set('providerAccessToken', accessToken)
+        .set('providerRefreshToken', refreshToken)
+        .set(
           'providerAccessTokenExpiry',
           new Date(Date.now() + accessTokenExpiry * 1000),
         );
       await this.db.updateDocument('identities', identity.getId(), identity);
     }
 
-    if (!user.getAttribute('email')) {
-      user.setAttribute('email', email);
+    if (!user.get('email')) {
+      user.set('email', email);
     }
 
-    if (!user.getAttribute('name')) {
-      user.setAttribute('name', name);
+    if (!user.get('name')) {
+      user.set('name', name);
     }
 
-    user.setAttribute('status', true);
+    user.set('status', true);
     await this.db.updateDocument('users', user.getId(), user);
 
     const duration =
@@ -1424,10 +1425,10 @@ export class AccountService {
     // If token param is set, return token in query string
     if ((state as any).token) {
       const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_OAUTH2);
-      const token = new Document({
+      const token = new Doc({
         $id: ID.unique(),
         userId: user.getId(),
-        userInternalId: user.getInternalId(),
+        userInternalId: user.getSequence(),
         type: Auth.TOKEN_TYPE_OAUTH2,
         secret: Auth.hash(secret),
         expire: expire,
@@ -1437,7 +1438,7 @@ export class AccountService {
 
       const createdToken = await this.db.createDocument(
         'tokens',
-        token.setAttribute('$permissions', [
+        token.set('$permissions', [
           Permission.read(Role.user(user.getId())),
           Permission.update(Role.user(user.getId())),
           Permission.delete(Role.user(user.getId())),
@@ -1452,10 +1453,10 @@ export class AccountService {
       const record = this.geodb.get(request.ip);
       const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
 
-      const session = new Document({
+      const session = new Doc({
         $id: ID.unique(),
         userId: user.getId(),
-        userInternalId: user.getInternalId(),
+        userInternalId: user.getSequence(),
         provider: provider,
         providerUid: oauth2ID,
         providerAccessToken: accessToken,
@@ -1476,7 +1477,7 @@ export class AccountService {
 
       const createdSession = await this.db.createDocument(
         'sessions',
-        session.setAttribute('$permissions', [
+        session.set('$permissions', [
           Permission.read(Role.user(user.getId())),
           Permission.update(Role.user(user.getId())),
           Permission.delete(Role.user(user.getId())),
@@ -1512,14 +1513,14 @@ export class AccountService {
       );
 
       if (sessionUpgrade) {
-        const targets = user.getAttribute('targets', []);
+        const targets = user.get('targets', []);
         for (const target of targets) {
-          if (target.getAttribute('providerType') !== 'push') {
+          if (target.get('providerType') !== 'push') {
             continue;
           }
           target
-            .setAttribute('sessionId', createdSession.getId())
-            .setAttribute('sessionInternalId', createdSession.getInternalId());
+            .set('sessionId', createdSession.getId())
+            .set('sessionInternalId', createdSession.getSequence());
           await this.db.updateDocument('targets', target.getId(), target);
         }
       }
@@ -1631,7 +1632,7 @@ export class AccountService {
     response,
     locale,
   }: {
-    user: Document;
+    user: UsersDoc;
     input: CreateMagicURLTokenDTO;
     request: NuvixRequest;
     response: NuvixRes;
@@ -1657,7 +1658,7 @@ export class AccountService {
     const result = await this.db.findOne('users', [
       Query.equal('email', [email]),
     ]);
-    if (!result.isEmpty()) {
+    if (!result.empty()) {
       user.setAttributes(result.toObject());
     } else {
       const limit = CONSOLE_CONFIG.auths['limit'] ?? 0;
@@ -1674,7 +1675,7 @@ export class AccountService {
       const identityWithMatchingEmail = await this.db.findOne('identities', [
         Query.equal('providerEmail', [email]),
       ]);
-      if (!identityWithMatchingEmail.isEmpty()) {
+      if (!identityWithMatchingEmail.empty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
 
@@ -1706,7 +1707,7 @@ export class AccountService {
         accessedAt: new Date(),
       });
 
-      user.removeAttribute('$internalId');
+      user.delete('$internalId');
       await Authorization.skip(
         async () => await this.db.createDocument('users', user),
       );
@@ -1715,10 +1716,10 @@ export class AccountService {
     const tokenSecret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_MAGIC_URL);
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000);
 
-    const token = new Document({
+    const token = new Doc({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: Auth.TOKEN_TYPE_MAGIC_URL,
       secret: Auth.hash(tokenSecret), // One way hash encryption to protect DB leak
       expire: expire,
@@ -1730,7 +1731,7 @@ export class AccountService {
 
     const createdToken = await this.db.createDocument(
       'tokens',
-      token.setAttribute('$permissions', [
+      token.set('$permissions', [
         Permission.read(Role.user(user.getId())),
         Permission.update(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
@@ -1778,7 +1779,7 @@ export class AccountService {
 
     const emailVariables = {
       direction: locale.getText('settings.direction'),
-      user: user.getAttribute('name'),
+      user: user.get('name'),
       project: 'Console',
       redirect: url,
       agentDevice: agentDevice['deviceBrand'] || 'UNKNOWN',
@@ -1794,10 +1795,10 @@ export class AccountService {
       variables: emailVariables,
     });
 
-    createdToken.setAttribute('secret', tokenSecret);
+    createdToken.set('secret', tokenSecret);
 
     if (phrase) {
-      createdToken.setAttribute('phrase', phrase);
+      createdToken.set('phrase', phrase);
     }
 
     response.status(201);
@@ -1814,7 +1815,7 @@ export class AccountService {
     response,
     locale,
   }: {
-    user: Document;
+    user: UsersDoc;
     input: CreateEmailTokenDTO;
     request: NuvixRequest;
     response: NuvixRes;
@@ -1834,7 +1835,7 @@ export class AccountService {
     const result = await this.db.findOne('users', [
       Query.equal('email', [email]),
     ]);
-    if (!result.isEmpty()) {
+    if (!result.empty()) {
       user.setAttributes(result.toObject());
     } else {
       const limit = CONSOLE_CONFIG.auths['limit'] ?? 0;
@@ -1851,7 +1852,7 @@ export class AccountService {
       const identityWithMatchingEmail = await this.db.findOne('identities', [
         Query.equal('providerEmail', [email]),
       ]);
-      if (!identityWithMatchingEmail.isEmpty()) {
+      if (!identityWithMatchingEmail.empty()) {
         throw new Exception(Exception.GENERAL_BAD_REQUEST); // Return a generic bad request to prevent exposing existing accounts
       }
 
@@ -1881,7 +1882,7 @@ export class AccountService {
         accessedAt: new Date(),
       });
 
-      user.removeAttribute('$internalId');
+      user.delete('$internalId');
       await Authorization.skip(
         async () => await this.db.createDocument('users', user),
       );
@@ -1890,10 +1891,10 @@ export class AccountService {
     const tokenSecret = Auth.codeGenerator(6);
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_OTP * 1000);
 
-    const token = new Document({
+    const token = new Doc({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: Auth.TOKEN_TYPE_EMAIL,
       secret: Auth.hash(tokenSecret), // One way hash encryption to protect DB leak
       expire: expire,
@@ -1905,7 +1906,7 @@ export class AccountService {
 
     const createdToken = await this.db.createDocument(
       'tokens',
-      token.setAttribute('$permissions', [
+      token.set('$permissions', [
         Permission.read(Role.user(user.getId())),
         Permission.update(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
@@ -1939,7 +1940,7 @@ export class AccountService {
 
     const emailVariables = {
       direction: locale.getText('settings.direction'),
-      user: user.getAttribute('name'),
+      user: user.get('name'),
       project: 'Console',
       otp: tokenSecret,
       agentDevice: agentDevice['deviceBrand'] || 'UNKNOWN',
@@ -1955,10 +1956,10 @@ export class AccountService {
       variables: emailVariables,
     });
 
-    createdToken.setAttribute('secret', tokenSecret);
+    createdToken.set('secret', tokenSecret);
 
     if (phrase) {
-      createdToken.setAttribute('phrase', phrase);
+      createdToken.set('phrase', phrase);
     }
 
     response.status(201);
@@ -1970,8 +1971,8 @@ export class AccountService {
    */
   async sendSessionAlert(
     locale: LocaleTranslator,
-    user: Document,
-    session: Document,
+    user: UsersDoc,
+    session: SessionsDoc,
   ) {
     let subject: string = locale.getText('emails.sessionAlert.subject');
     const templatePath = path.join(ASSETS.TEMPLATES, 'email-session-alert.tpl');
@@ -1997,18 +1998,18 @@ export class AccountService {
       }),
       year: new Date().getFullYear(),
       time: new Date().toLocaleTimeString(locale.default),
-      user: user.getAttribute('name'),
+      user: user.get('name'),
       project: 'Console',
-      device: session.getAttribute('clientName'),
-      ipAddress: session.getAttribute('ip'),
+      device: session.get('clientName'),
+      ipAddress: session.get('ip'),
       country: locale.getText(
-        'countries.' + session.getAttribute('countryCode'),
+        'countries.' + session.get('countryCode'),
         locale.getText('locale.country.unknown'),
       ),
     };
 
     let body = template(emailData);
-    const email = user.getAttribute('email');
+    const email = user.get('email');
 
     await this.mailsQueue.add(SEND_TYPE_EMAIL, {
       email,
@@ -2021,18 +2022,18 @@ export class AccountService {
   /**
    * Create JWT
    */
-  async createJWT(user: Document, response: NuvixRes) {
-    const sessions = user.getAttribute('sessions', []);
-    let current = new Document();
+  async createJWT(user: UsersDoc, response: NuvixRes) {
+    const sessions = user.get('sessions', []);
+    let current = new Doc();
 
     for (const session of sessions) {
-      if (session.getAttribute('secret') === Auth.hash(Auth.secret)) {
+      if (session.get('secret') === Auth.hash(Auth.secret)) {
         current = session;
         break;
       }
     }
 
-    if (current.isEmpty()) {
+    if (current.empty()) {
       throw new Exception(Exception.USER_SESSION_NOT_FOUND);
     }
 
@@ -2046,7 +2047,7 @@ export class AccountService {
     });
 
     response.status(201);
-    return new Document({ jwt });
+    return new Doc({ jwt });
   }
 
   /**
@@ -2059,7 +2060,7 @@ export class AccountService {
     response,
     locale,
   }: {
-    user: Document;
+    user: UsersDoc;
     input: CreateSessionDTO;
     request: NuvixRequest;
     response: NuvixRes;
@@ -2074,12 +2075,12 @@ export class AccountService {
       async () => await this.db.getDocument('users', userId),
     );
 
-    if (userFromRequest.isEmpty()) {
+    if (userFromRequest.empty()) {
       throw new Exception(Exception.USER_INVALID_TOKEN);
     }
 
     const verifiedToken = Auth.tokenVerify(
-      userFromRequest.getAttribute('tokens', []),
+      userFromRequest.get('tokens', []),
       null,
       secret,
     );
@@ -2097,7 +2098,7 @@ export class AccountService {
     const sessionSecret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
 
     const factor = (() => {
-      switch (verifiedToken.getAttribute('type')) {
+      switch (verifiedToken.get('type')) {
         case Auth.TOKEN_TYPE_MAGIC_URL:
         case Auth.TOKEN_TYPE_OAUTH2:
         case Auth.TOKEN_TYPE_EMAIL:
@@ -2111,12 +2112,12 @@ export class AccountService {
       }
     })();
 
-    const session = new Document<any>({
+    const session = new Doc<any>({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       provider: Auth.getSessionProviderByTokenType(
-        verifiedToken.getAttribute('type'),
+        verifiedToken.get('type'),
       ),
       secret: Auth.hash(sessionSecret),
       userAgent: request.headers['user-agent'] || 'UNKNOWN',
@@ -2133,7 +2134,7 @@ export class AccountService {
 
     const createdSession = await this.db.createDocument(
       'sessions',
-      session.setAttribute('$permissions', [
+      session.set('$permissions', [
         Permission.read(Role.user(user.getId())),
         Permission.update(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
@@ -2147,14 +2148,14 @@ export class AccountService {
 
     if (
       [Auth.TOKEN_TYPE_MAGIC_URL, Auth.TOKEN_TYPE_EMAIL].includes(
-        verifiedToken.getAttribute('type'),
+        verifiedToken.get('type'),
       )
     ) {
-      user.setAttribute('emailVerification', true);
+      user.set('emailVerification', true);
     }
 
-    if (verifiedToken.getAttribute('type') === Auth.TOKEN_TYPE_PHONE) {
-      user.setAttribute('phoneVerification', true);
+    if (verifiedToken.get('type') === Auth.TOKEN_TYPE_PHONE) {
+      user.set('phoneVerification', true);
     }
 
     try {
@@ -2169,8 +2170,8 @@ export class AccountService {
     const isAllowedTokenType = ![
       Auth.TOKEN_TYPE_MAGIC_URL,
       Auth.TOKEN_TYPE_EMAIL,
-    ].includes(verifiedToken.getAttribute('type'));
-    const hasUserEmail = user.getAttribute('email', false) !== false;
+    ].includes(verifiedToken.get('type'));
+    const hasUserEmail = user.get('email', false) !== false;
     const isSessionAlertsEnabled = CONSOLE_CONFIG.auths.sessionAlerts ?? false;
     const isNotFirstSession =
       (await this.db.count('sessions', [
@@ -2208,15 +2209,15 @@ export class AccountService {
 
     const countryName = locale.getText(
       'countries.' +
-        createdSession.getAttribute('countryCode', '').toLowerCase(),
+      createdSession.get('countryCode', '').toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
     createdSession
-      .setAttribute('current', true)
-      .setAttribute('countryName', countryName)
-      .setAttribute('expire', expire)
-      .setAttribute(
+      .set('current', true)
+      .set('countryName', countryName)
+      .set('expire', expire)
+      .set(
         'secret',
         isPrivilegedUser || isAppUser
           ? Auth.encodeSession(user.getId(), sessionSecret)
@@ -2234,11 +2235,11 @@ export class AccountService {
     request,
     response,
   }: {
-    user: Document;
+    user: UsersDoc;
     request: NuvixRequest;
     response: NuvixRes;
   }) {
-    user.setAttribute('status', false);
+    user.set('status', false);
 
     user = await this.db.updateDocument('users', user.getId(), user);
     if (!CONSOLE_CONFIG.domainVerification) {
@@ -2267,7 +2268,7 @@ export class AccountService {
     user,
     locale,
     input,
-  }: WithReqRes<WithUser<WithLocale<{ input: CreateRecoveryDTO }>>>) {
+  }: WithReqRes<WithUser<WithLocale<{ input: CreateRecoveryDTO; }>>>) {
     if (!APP_SMTP_HOST) {
       throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
     }
@@ -2279,23 +2280,23 @@ export class AccountService {
       Query.equal('email', [email]),
     ]);
 
-    if (profile.isEmpty()) {
+    if (profile.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     user.setAttributes(profile.toObject());
 
-    if (profile.getAttribute('status') === false) {
+    if (profile.get('status') === false) {
       throw new Exception(Exception.USER_BLOCKED);
     }
 
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_RECOVERY * 1000);
     const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_RECOVERY);
 
-    const recovery = new Document({
+    const recovery = new Doc({
       $id: ID.unique(),
       userId: profile.getId(),
-      userInternalId: profile.getInternalId(),
+      userInternalId: profile.getSequence(),
       type: Auth.TOKEN_TYPE_RECOVERY,
       secret: Auth.hash(secret), // One way hash encryption to protect DB leak
       expire: expire,
@@ -2307,7 +2308,7 @@ export class AccountService {
 
     const createdRecovery = await this.db.createDocument(
       'tokens',
-      recovery.setAttribute('$permissions', [
+      recovery.set('$permissions', [
         Permission.read(Role.user(profile.getId())),
         Permission.update(Role.user(profile.getId())),
         Permission.delete(Role.user(profile.getId())),
@@ -2342,20 +2343,20 @@ export class AccountService {
     body = template(emailData);
     const emailVariables = {
       direction: locale.getText('settings.direction'),
-      user: profile.getAttribute('name'),
+      user: profile.get('name'),
       redirect: url,
       project: projectName,
       team: '',
     };
 
     await this.mailsQueue.add(SEND_TYPE_EMAIL, {
-      email: profile.getAttribute('email', ''),
+      email: profile.get('email', ''),
       subject,
       body,
       variables: emailVariables,
     });
 
-    createdRecovery.setAttribute('secret', secret);
+    createdRecovery.set('secret', secret);
 
     response.status(201);
     return createdRecovery;
@@ -2368,14 +2369,14 @@ export class AccountService {
     user,
     response,
     input,
-  }: WithUser<{ response: NuvixRes; input: UpdateRecoveryDTO }>) {
+  }: WithUser<{ response: NuvixRes; input: UpdateRecoveryDTO; }>) {
     const profile = await this.db.getDocument('users', input.userId);
 
-    if (profile.isEmpty()) {
+    if (profile.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const tokens = profile.getAttribute('tokens', []);
+    const tokens = profile.get('tokens', []);
     const verifiedToken = Auth.tokenVerify(
       tokens,
       Auth.TOKEN_TYPE_RECOVERY,
@@ -2395,13 +2396,13 @@ export class AccountService {
     );
 
     const historyLimit = CONSOLE_CONFIG.auths['passwordHistory'] ?? 0;
-    let history = profile.getAttribute('passwordHistory', []);
+    let history = profile.get('passwordHistory', []);
 
     if (historyLimit > 0) {
       const validator = new PasswordHistoryValidator(
         history,
-        profile.getAttribute('hash'),
-        profile.getAttribute('hashOptions'),
+        profile.get('hash'),
+        profile.get('hashOptions'),
       );
       if (!validator.isValid(input.password)) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
@@ -2417,12 +2418,12 @@ export class AccountService {
       'users',
       profile.getId(),
       profile
-        .setAttribute('password', newPassword)
-        .setAttribute('passwordHistory', history)
-        .setAttribute('passwordUpdate', new Date())
-        .setAttribute('hash', Auth.DEFAULT_ALGO)
-        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
-        .setAttribute('emailVerification', true),
+        .set('password', newPassword)
+        .set('passwordHistory', history)
+        .set('passwordUpdate', new Date())
+        .set('hash', Auth.DEFAULT_ALGO)
+        .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
+        .set('emailVerification', true),
     );
 
     user.setAttributes(updatedProfile.toObject());
@@ -2452,12 +2453,12 @@ export class AccountService {
     response,
     locale,
     url,
-  }: WithReqRes<WithUser<WithLocale<{ url: string }>>>) {
+  }: WithReqRes<WithUser<WithLocale<{ url?: string; }>>>) {
     if (!APP_SMTP_HOST) {
       throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP Disabled');
     }
 
-    if (user.getAttribute('emailVerification')) {
+    if (user.get('emailVerification')) {
       throw new Exception(Exception.USER_EMAIL_ALREADY_VERIFIED);
     }
 
@@ -2466,10 +2467,10 @@ export class AccountService {
     );
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000);
 
-    const verification = new Document({
+    const verification = new Doc({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: Auth.TOKEN_TYPE_VERIFICATION,
       secret: Auth.hash(verificationSecret), // One way hash encryption to protect DB leak
       expire: expire,
@@ -2481,7 +2482,7 @@ export class AccountService {
 
     const createdVerification = await this.db.createDocument(
       'tokens',
-      verification.setAttribute('$permissions', [
+      verification.set('$permissions', [
         Permission.read(Role.user(user.getId())),
         Permission.update(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
@@ -2516,20 +2517,20 @@ export class AccountService {
     body = template(emailData);
     const emailVariables = {
       direction: locale.getText('settings.direction'),
-      user: user.getAttribute('name'),
+      user: user.get('name'),
       redirect: finalUrl,
       project: projectName,
       team: '',
     };
 
     await this.mailsQueue.add(SEND_TYPE_EMAIL, {
-      email: user.getAttribute('email'),
+      email: user.get('email'),
       subject,
       body,
       variables: emailVariables,
     });
 
-    createdVerification.setAttribute('secret', verificationSecret);
+    createdVerification.set('secret', verificationSecret);
     response.status(201);
     return createdVerification;
   }
@@ -2542,16 +2543,16 @@ export class AccountService {
     response,
     userId,
     secret,
-  }: WithUser<{ response: NuvixRes; userId: string; secret: string }>) {
+  }: WithUser<{ response: NuvixRes; userId: string; secret: string; }>) {
     const profile = await Authorization.skip(
       async () => await this.db.getDocument('users', userId),
     );
 
-    if (profile.isEmpty()) {
+    if (profile.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const tokens = profile.getAttribute('tokens', []);
+    const tokens = profile.get('tokens', []);
     const verifiedToken = Auth.tokenVerify(
       tokens,
       Auth.TOKEN_TYPE_VERIFICATION,
@@ -2567,7 +2568,7 @@ export class AccountService {
     const updatedProfile = await this.db.updateDocument(
       'users',
       profile.getId(),
-      profile.setAttribute('emailVerification', true),
+      profile.set('emailVerification', true),
     );
 
     user.setAttributes(updatedProfile.toObject());
@@ -2594,36 +2595,36 @@ export class AccountService {
     user,
     mfa,
     session,
-  }: WithUser<{ mfa: boolean; session?: Document }>) {
-    user.setAttribute('mfa', mfa);
+  }: WithUser<{ mfa: boolean; session?: SessionsDoc; }>) {
+    user.set('mfa', mfa);
 
     user = await this.db.updateDocument('users', user.getId(), user);
 
     if (mfa && session) {
-      let factors = session.getAttribute('factors', []);
+      let factors = session.get('factors', []);
 
       const totp = TOTP.getAuthenticatorFromUser(user);
-      if (totp && totp.getAttribute('verified', false)) {
+      if (totp && totp.get('verified', false)) {
         factors.push('totp');
       }
 
       if (
-        user.getAttribute('email', false) &&
-        user.getAttribute('emailVerification', false)
+        user.get('email', false) &&
+        user.get('emailVerification', false)
       ) {
         factors.push('email');
       }
 
       if (
-        user.getAttribute('phone', false) &&
-        user.getAttribute('phoneVerification', false)
+        user.get('phone', false) &&
+        user.get('phoneVerification', false)
       ) {
         factors.push('phone');
       }
 
       factors = [...new Set(factors)]; // Ensure unique factors
 
-      session.setAttribute('factors', factors);
+      session.set('factors', factors);
       await this.db.updateDocument('sessions', session.getId(), session);
     }
 
@@ -2633,21 +2634,21 @@ export class AccountService {
   /**
    * Get Mfa factors
    */
-  async getMfaFactors(user: Document) {
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+  async getMfaFactors(user: UsersDoc) {
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
     const recoveryCodeEnabled =
       Array.isArray(mfaRecoveryCodes) && mfaRecoveryCodes.length > 0;
 
     const totp = TOTP.getAuthenticatorFromUser(user);
 
-    const factors = new Document({
-      totp: totp !== null && totp.getAttribute('verified', false),
+    const factors = new Doc({
+      totp: totp !== null && totp.get('verified', false),
       email:
-        user.getAttribute('email', false) &&
-        user.getAttribute('emailVerification', false),
+        user.get('email', false) &&
+        user.get('emailVerification', false),
       phone:
-        user.getAttribute('phone', false) &&
-        user.getAttribute('phoneVerification', false),
+        user.get('phone', false) &&
+        user.get('phoneVerification', false),
       recoveryCode: recoveryCodeEnabled,
     });
 
@@ -2657,7 +2658,7 @@ export class AccountService {
   /**
    * Create authenticator
    */
-  async createMfaAuthenticator({ user, type }: WithUser<{ type: string }>) {
+  async createMfaAuthenticator({ user, type }: WithUser<{ type: string; }>) {
     let otp: TOTP;
 
     switch (type) {
@@ -2671,22 +2672,22 @@ export class AccountService {
         );
     }
 
-    otp.setLabel(user.getAttribute('email'));
+    otp.setLabel(user.get('email'));
     otp.setIssuer('Console');
 
     const authenticator = TOTP.getAuthenticatorFromUser(user);
 
     if (authenticator) {
-      if (authenticator.getAttribute('verified')) {
+      if (authenticator.get('verified')) {
         throw new Exception(Exception.USER_AUTHENTICATOR_ALREADY_VERIFIED);
       }
       await this.db.deleteDocument('authenticators', authenticator.getId());
     }
 
-    const newAuthenticator = new Document({
+    const newAuthenticator = new Doc({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: 'totp',
       verified: false,
       data: {
@@ -2699,7 +2700,7 @@ export class AccountService {
       ],
     });
 
-    const model = new Document({
+    const model = new Doc({
       secret: otp.getSecret(),
       uri: otp.getProvisioningUri(),
     });
@@ -2718,8 +2719,8 @@ export class AccountService {
     otp,
     user,
     session,
-  }: WithUser<{ session: Document; otp: string; type: string }>) {
-    let authenticator: Document | null = null;
+  }: WithUser<{ session: SessionsDoc; otp: string; type: string; }>) {
+    let authenticator: Doc | null = null;
 
     switch (type) {
       case MfaType.TOTP:
@@ -2733,7 +2734,7 @@ export class AccountService {
       throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
     }
 
-    if (authenticator.getAttribute('verified')) {
+    if (authenticator.get('verified')) {
       throw new Exception(Exception.USER_AUTHENTICATOR_ALREADY_VERIFIED);
     }
 
@@ -2750,7 +2751,7 @@ export class AccountService {
       throw new Exception(Exception.USER_INVALID_TOKEN);
     }
 
-    authenticator.setAttribute('verified', true);
+    authenticator.set('verified', true);
 
     await this.db.updateDocument(
       'authenticators',
@@ -2759,11 +2760,11 @@ export class AccountService {
     );
     await this.db.purgeCachedDocument('users', user.getId());
 
-    const factors = session.getAttribute('factors', []);
+    const factors = session.get('factors', []);
     factors.push(type);
     const uniqueFactors = [...new Set(factors)];
 
-    session.setAttribute('factors', uniqueFactors);
+    session.set('factors', uniqueFactors);
     await this.db.updateDocument('sessions', session.getId(), session);
 
     return user;
@@ -2773,17 +2774,17 @@ export class AccountService {
    * Create MFA recovery codes
    */
   async createMfaRecoveryCodes({ user }: WithUser) {
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
 
     if (mfaRecoveryCodes.length > 0) {
       throw new Exception(Exception.USER_RECOVERY_CODES_ALREADY_EXISTS);
     }
 
     const newRecoveryCodes = TOTP.generateBackupCodes();
-    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    user.set('mfaRecoveryCodes', newRecoveryCodes);
     await this.db.updateDocument('users', user.getId(), user);
 
-    const document = new Document({
+    const document = new Doc({
       recoveryCodes: newRecoveryCodes,
     });
 
@@ -2794,17 +2795,17 @@ export class AccountService {
    * Update MFA recovery codes (regenerate)
    */
   async updateMfaRecoveryCodes({ user }: WithUser) {
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
 
     if (mfaRecoveryCodes.length === 0) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
     }
 
     const newMfaRecoveryCodes = TOTP.generateBackupCodes();
-    user.setAttribute('mfaRecoveryCodes', newMfaRecoveryCodes);
+    user.set('mfaRecoveryCodes', newMfaRecoveryCodes);
     await this.db.updateDocument('users', user.getId(), user);
 
-    const document = new Document({
+    const document = new Doc({
       recoveryCodes: newMfaRecoveryCodes,
     });
 
@@ -2814,7 +2815,7 @@ export class AccountService {
   /**
    * Delete Authenticator
    */
-  async deleteMfaAuthenticator({ user, type }: WithUser<{ type: string }>) {
+  async deleteMfaAuthenticator({ user, type }: WithUser<{ type: string; }>) {
     const authenticator = (() => {
       switch (type) {
         case MfaType.TOTP:
@@ -2848,10 +2849,10 @@ export class AccountService {
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000);
     const code = Auth.codeGenerator(6);
 
-    const challenge = new Document({
+    const challenge = new Doc({
       $id: ID.unique(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: factor,
       token: Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION),
       code: code,
@@ -2876,10 +2877,10 @@ export class AccountService {
             'Phone provider not configured',
           );
         }
-        if (!user.getAttribute('phone')) {
+        if (!user.get('phone')) {
           throw new Exception(Exception.USER_PHONE_NOT_FOUND);
         }
-        if (!user.getAttribute('phoneVerification')) {
+        if (!user.get('phoneVerification')) {
           throw new Exception(Exception.USER_PHONE_NOT_VERIFIED);
         }
 
@@ -2889,7 +2890,7 @@ export class AccountService {
           .replace('{{project}}', 'Console')
           .replace('{{secret}}', code);
 
-        const phone = user.getAttribute('phone');
+        const phone = user.get('phone');
 
         // TODO: Implement SMS queue functionality
         console.log(`SMS MFA Challenge to ${phone}: ${smsContent}`);
@@ -2901,10 +2902,10 @@ export class AccountService {
         if (!APP_SMTP_HOST) {
           throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
         }
-        if (!user.getAttribute('email')) {
+        if (!user.get('email')) {
           throw new Exception(Exception.USER_EMAIL_NOT_FOUND);
         }
-        if (!user.getAttribute('emailVerification')) {
+        if (!user.get('emailVerification')) {
           throw new Exception(Exception.USER_EMAIL_NOT_VERIFIED);
         }
 
@@ -2934,7 +2935,7 @@ export class AccountService {
         let body = template(emailData);
         const emailVariables = {
           direction: locale.getText('settings.direction'),
-          user: user.getAttribute('name'),
+          user: user.get('name'),
           project: 'Console',
           otp: code,
           agentDevice: agentDevice['deviceBrand'] || 'UNKNOWN',
@@ -2943,7 +2944,7 @@ export class AccountService {
         };
 
         await this.mailsQueue.add(SEND_TYPE_EMAIL, {
-          email: user.getAttribute('email'),
+          email: user.get('email'),
           subject,
           body,
           variables: emailVariables,
@@ -2963,30 +2964,30 @@ export class AccountService {
     session,
     otp,
     challengeId,
-  }: WithUser<VerifyMfaChallengeDTO & { session: Document }>) {
+  }: WithUser<VerifyMfaChallengeDTO & { session: SessionsDoc; }>) {
     const challenge = await this.db.getDocument('challenges', challengeId);
 
-    if (challenge.isEmpty()) {
+    if (challenge.empty()) {
       throw new Exception(Exception.USER_INVALID_TOKEN);
     }
 
-    const type = challenge.getAttribute('type');
+    const type = challenge.get('type');
 
     const recoveryCodeChallenge = async (
-      challenge: Document,
-      user: Document,
+      challenge: Doc,
+      user: UsersDoc,
       otp: string,
     ): Promise<boolean> => {
       if (
-        challenge.isSet('type') &&
-        challenge.getAttribute('type') === MfaType.RECOVERY_CODE.toLowerCase()
+        challenge.has('type') &&
+        challenge.get('type') === MfaType.RECOVERY_CODE.toLowerCase()
       ) {
-        let mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+        let mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
         if (mfaRecoveryCodes.includes(otp)) {
           mfaRecoveryCodes = mfaRecoveryCodes.filter(
             (code: string) => code !== otp,
           );
-          user.setAttribute('mfaRecoveryCodes', mfaRecoveryCodes);
+          user.set('mfaRecoveryCodes', mfaRecoveryCodes);
           await this.db.updateDocument('users', user.getId(), user);
           return true;
         }
@@ -3003,14 +3004,14 @@ export class AccountService {
       case MfaType.PHONE:
         success = PhoneChallenge.challenge(challenge, user, otp);
         success =
-          challenge.getAttribute('code') === otp &&
-          new Date() < challenge.getAttribute('expire');
+          challenge.get('code') === otp &&
+          new Date() < challenge.get('expire');
         break;
       case MfaType.EMAIL:
         success = EmailChallenge.challenge(challenge, user, otp);
         success =
-          challenge.getAttribute('code') === otp &&
-          new Date() < challenge.getAttribute('expire');
+          challenge.get('code') === otp &&
+          new Date() < challenge.get('expire');
         break;
       case MfaType.RECOVERY_CODE.toLowerCase():
         success = await recoveryCodeChallenge(challenge, user, otp);
@@ -3026,13 +3027,13 @@ export class AccountService {
     await this.db.deleteDocument('challenges', challengeId);
     await this.db.purgeCachedDocument('users', user.getId());
 
-    let factors = session.getAttribute('factors', []);
+    let factors = session.get('factors', []);
     factors.push(type);
     factors = [...new Set(factors)]; // Remove duplicates
 
     session
-      .setAttribute('factors', factors)
-      .setAttribute('mfaUpdatedAt', new Date());
+      .set('factors', factors)
+      .set('mfaUpdatedAt', new Date());
 
     await this.db.updateDocument('sessions', session.getId(), session);
 
@@ -3048,7 +3049,7 @@ export class AccountService {
     targetId,
     providerId,
     identifier,
-  }: WithUser<CreatePushTargetDTO & { request: NuvixRequest }>) {
+  }: WithUser<CreatePushTargetDTO & { request: NuvixRequest; }>) {
     const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId;
 
     const provider = await Authorization.skip(
@@ -3059,7 +3060,7 @@ export class AccountService {
       async () => await this.db.getDocument('targets', finalTargetId),
     );
 
-    if (!target.isEmpty()) {
+    if (!target.empty()) {
       throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
     }
 
@@ -3067,7 +3068,7 @@ export class AccountService {
     const device = detector.getDevice();
 
     const sessionId = Auth.sessionVerify(
-      user.getAttribute('sessions', []),
+      user.get('sessions', []),
       Auth.secret,
     );
     const session = await this.db.getDocument('sessions', sessionId.toString());
@@ -3075,7 +3076,7 @@ export class AccountService {
     try {
       const createdTarget = await this.db.createDocument(
         'targets',
-        new Document({
+        new Doc({
           $id: finalTargetId,
           $permissions: [
             Permission.read(Role.user(user.getId())),
@@ -3083,12 +3084,12 @@ export class AccountService {
             Permission.delete(Role.user(user.getId())),
           ],
           providerId: providerId || null,
-          providerInternalId: providerId ? provider.getInternalId() : null,
+          providerInternalId: providerId ? provider.getSequence() : null,
           providerType: MESSAGE_TYPE_PUSH,
           userId: user.getId(),
-          userInternalId: user.getInternalId(),
+          userInternalId: user.getSequence(),
           sessionId: session.getId(),
-          sessionInternalId: session.getInternalId(),
+          sessionInternalId: session.getSequence(),
           identifier: identifier,
           name: `${device['deviceBrand']} ${device['deviceModel']}`,
         }),
@@ -3114,30 +3115,30 @@ export class AccountService {
     targetId,
     identifier,
   }: WithUser<
-    UpdatePushTargetDTO & { request: NuvixRequest; targetId: string }
+    UpdatePushTargetDTO & { request: NuvixRequest; targetId: string; }
   >) {
     const target = await Authorization.skip(
       async () => await this.db.getDocument('targets', targetId),
     );
 
-    if (target.isEmpty()) {
+    if (target.empty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
-    if (user.getId() !== target.getAttribute('userId')) {
+    if (user.getId() !== target.get('userId')) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
     if (identifier) {
       target
-        .setAttribute('identifier', identifier)
-        .setAttribute('expired', false);
+        .set('identifier', identifier)
+        .set('expired', false);
     }
 
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
     const device = detector.getDevice();
 
-    target.setAttribute(
+    target.set(
       'name',
       `${device['deviceBrand']} ${device['deviceModel']}`,
     );
@@ -3155,16 +3156,16 @@ export class AccountService {
   /**
    * Delete Push Target
    */
-  async deletePushTarget({ user, targetId }: WithUser<{ targetId: string }>) {
+  async deletePushTarget({ user, targetId }: WithUser<{ targetId: string; }>) {
     const target = await Authorization.skip(
       async () => await this.db.getDocument('targets', targetId),
     );
 
-    if (target.isEmpty()) {
+    if (target.empty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
-    if (user.getInternalId() !== target.getAttribute('userInternalId')) {
+    if (user.getSequence() !== target.get('userInternalId')) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
@@ -3183,8 +3184,8 @@ export class AccountService {
   /**
    * Get Identities
    */
-  async getIdentities({ user, queries }: WithUser<{ queries: Query[] }>) {
-    queries.push(Query.equal('userInternalId', [user.getInternalId()]));
+  async getIdentities({ user, queries }: WithUser<{ queries: Query[]; }>) {
+    queries.push(Query.equal('userInternalId', [user.getSequence()]));
 
     const cursor = queries.find(query =>
       [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
@@ -3200,7 +3201,7 @@ export class AccountService {
         identityId,
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Identity '${identityId}' for the 'cursor' value not found.`,
@@ -3219,7 +3220,7 @@ export class AccountService {
         APP_LIMIT_COUNT,
       );
 
-      return new Document({
+      return new Doc({
         identities: results,
         total: total,
       });
@@ -3227,7 +3228,7 @@ export class AccountService {
       if (error.name === 'OrderException') {
         throw new Exception(
           Exception.DATABASE_QUERY_ORDER_NULL,
-          `The order attribute '${error.getAttribute()}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
+          `The order attribute '${error.get()}' had a null value. Cursor pagination requires all documents order attribute values are non-null.`,
         );
       }
       throw error;
@@ -3237,10 +3238,10 @@ export class AccountService {
   /**
    * Delete Identity
    */
-  async deleteIdentity({ identityId }: { identityId: string }) {
+  async deleteIdentity({ identityId }: { identityId: string; }) {
     const identity = await this.db.getDocument('identities', identityId);
 
-    if (identity.isEmpty()) {
+    if (identity.empty()) {
       throw new Exception(Exception.USER_IDENTITY_NOT_FOUND);
     }
 
@@ -3253,5 +3254,5 @@ type WithReqRes<T = unknown> = {
   request: NuvixRequest;
   response: NuvixRes;
 } & T;
-type WithUser<T = unknown> = { user: Document } & T;
-type WithLocale<T = unknown> = { locale: LocaleTranslator } & T;
+type WithUser<T = unknown> = { user: UsersDoc; } & T;
+type WithLocale<T = unknown> = { locale: LocaleTranslator; } & T;

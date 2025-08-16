@@ -1,5 +1,5 @@
 import { OmitType, PartialType } from '@nestjs/swagger';
-import { Database } from '@nuvix/database';
+import { Database } from '@nuvix-tech/db';
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
 
 export class CreateTargetDTO {
@@ -31,4 +31,4 @@ export class CreateTargetDTO {
 
 export class UpdateTargetDTO extends PartialType(
   OmitType(CreateTargetDTO, ['targetId', 'providerType']),
-) {}
+) { }

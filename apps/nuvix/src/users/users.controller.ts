@@ -45,10 +45,10 @@ import {
 import { CreateTokenDTO } from './DTO/token.dto';
 import { CreateJwtDTO } from './DTO/jwt.dto';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
-import type { Database, Document, Query as Queries } from '@nuvix/database';
+import type { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { CACHE } from '@nuvix/utils/constants';
+import { CACHE } from '@nuvix/utils';
 import { Cache } from '@nuvix/cache';
 
 @Namespace('users')
@@ -56,7 +56,7 @@ import { Cache } from '@nuvix/cache';
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   @Scope('users.read')
@@ -80,7 +80,7 @@ export class UsersController {
   async create(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.create(db, createUserDTO, project);
   }
@@ -94,7 +94,7 @@ export class UsersController {
   async createWithArgon2(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithArgon2(db, createUserDTO, project);
   }
@@ -108,7 +108,7 @@ export class UsersController {
   async createWithBcrypt(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithBcrypt(db, createUserDTO, project);
   }
@@ -122,7 +122,7 @@ export class UsersController {
   async createWithMd5(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithMd5(db, createUserDTO, project);
   }
@@ -136,7 +136,7 @@ export class UsersController {
   async createWithSha(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithSha(db, createUserDTO, project);
   }
@@ -150,7 +150,7 @@ export class UsersController {
   async createWithPhpass(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithPhpass(db, createUserDTO, project);
   }
@@ -164,7 +164,7 @@ export class UsersController {
   async createWithScrypt(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithScrypt(db, createUserDTO, project);
   }
@@ -178,7 +178,7 @@ export class UsersController {
   async createWithScryptModified(
     @ProjectDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.createWithScryptMod(
       db,
@@ -277,7 +277,7 @@ export class UsersController {
     @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPasswordDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.usersService.updatePassword(db, id, input, project);
   }
@@ -360,7 +360,7 @@ export class UsersController {
     @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Req() req: any,
-    @Project() project: Document,
+    @Project() project: Doc,
   ): Promise<any> {
     return await this.usersService.createSession(db, id, req, project);
   }

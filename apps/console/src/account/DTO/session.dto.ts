@@ -1,11 +1,11 @@
 import {
-  OAuthProviders,
+  type OAuthProviders,
   oAuthProvidersList,
 } from '@nuvix/core/config/authProviders';
 import {
   APP_LIMIT_ARRAY_ELEMENT_SIZE,
   APP_LIMIT_ARRAY_PARAMS_SIZE,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { Expose } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -23,20 +23,20 @@ import {
 
 export class CreateEmailSessionDTO {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @MinLength(8)
-  password: string;
+  password!: string;
 }
 
 export class CreateSessionDTO {
   @IsString()
   @IsNotEmpty()
-  userId: string;
+  userId!: string;
 
   @IsString()
   @Length(200, 256)
-  secret: string;
+  secret!: string;
 }
 
 export class CreateOAuth2SessionDTO {
@@ -82,5 +82,5 @@ export class OAuth2CallbackDTO {
 export class ProviderParamDTO {
   @IsString()
   @IsIn(oAuthProvidersList)
-  provider: OAuthProviders;
+  provider!: OAuthProviders;
 }

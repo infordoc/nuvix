@@ -1,18 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Authorization, Database, Document, Role } from '@nuvix/database';
+import { Authorization, Database, Doc, Role } from '@nuvix-tech/db';
 import {
   ApiKey,
-  APP_KEY_ACCESS,
   AppMode,
-  DB_FOR_PLATFORM,
-  PROJECT,
+  Context,
   PROJECT_DB_CLIENT,
-  ROLE,
-  SCOPES,
-  SESSION,
-  TEAM,
-  USER,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { roles } from '@nuvix/core/config/roles';
@@ -21,21 +14,30 @@ import { APP_PLATFORM_SERVER, platforms } from '@nuvix/core/config/platforms';
 import { Hook } from '../../server/hooks/interface';
 import { setupDatabaseMeta } from '@nuvix/core/helper/db-meta.helper';
 import { Key } from '@nuvix/core/helper/key.helper';
+import { KeysDoc, MembershipsDoc, ProjectsDoc, SessionsDoc, TeamsDoc, UsersDoc } from '@nuvix/utils/types';
+import type { CoreService } from '@nuvix/core/core.service.js';
+import type { ConfigService } from '@nuvix/core/config.service.js';
 
 @Injectable()
 export class ApiHook implements Hook {
   private readonly logger = new Logger(ApiHook.name);
-  constructor(@Inject(DB_FOR_PLATFORM) private readonly db: Database) {}
+  private readonly db: Database;
+  constructor(
+    private readonly coreService: CoreService,
+    private readonly configService: ConfigService,
+  ) {
+    this.db = coreService.getPlatformDb();
+  }
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
-    const project: Document = req[PROJECT];
-    let user: Document = req[USER];
-    const team: Document = req[TEAM];
-    const mode: AppMode = req[AppMode._REQUEST];
-    const apiKey: Key | null = req[ApiKey._REQUEST];
+    const project: ProjectsDoc = req[Context.Project];
+    let user: UsersDoc = req[Context.User];
+    const team: TeamsDoc = req[Context.Team];
+    const mode: AppMode = req[Context.Mode];
+    const apiKey: Key | null = req[Context.ApiKey];
 
-    if (project.isEmpty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
+    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
     if (mode === AppMode.ADMIN && project.getId() === 'console') {
       throw new Exception(
@@ -44,13 +46,13 @@ export class ApiHook implements Hook {
       );
     }
 
-    let role = user.isEmpty()
+    let role = user.empty()
       ? Role.guests().toString()
       : Role.users().toString();
-    let scopes = roles[role].scopes;
+    let scopes = roles[role as keyof typeof roles].scopes;
 
     if (apiKey) {
-      if (!user.isEmpty()) {
+      if (!user.empty()) {
         throw new Exception(Exception.USER_API_KEY_AND_SESSION_SET);
       }
 
@@ -65,34 +67,32 @@ export class ApiHook implements Hook {
       Authorization.setDefaultStatus(false);
 
       if (apiKey.getRole() === Auth.USER_ROLE_APPS) {
-        user = new Document({
+        user = new Doc({
           $id: '',
           status: true,
           type: Auth.ACTIVITY_TYPE_APP,
           email: 'app.' + project.getId() + '@service.' + req.hostname,
           password: '',
           name: apiKey.getName(),
-        });
+        }) as unknown as UsersDoc;
         // $queueForAudits -> setUser($user);
       }
 
       if (apiKey.getType() === ApiKey.STANDARD) {
-        const dbKey = project.find(
-          'secret',
-          params.getFromHeaders('x-nuvix-key') || params.getFromQuery('apiKey'),
+        const dbKey = project.findWhere(
           'keys',
+          (key: KeysDoc) => key.get('key') === apiKey.getKey() && key.get('type') === ApiKey.STANDARD,
         );
-
-        if (!dbKey || dbKey?.isEmpty?.()) {
+        if (!dbKey || dbKey.empty()) {
           throw new Exception(Exception.USER_UNAUTHORIZED);
         }
 
-        const accessedAt = dbKey.getAttribute('accessedAt', 0);
+        const accessedAt = dbKey.get('accessedAt', 0);
 
         if (
-          new Date(Date.now() - APP_KEY_ACCESS * 1000) > new Date(accessedAt)
+          new Date(Date.now() - this.configService.get('access').key * 1000) > new Date(accessedAt as string)
         ) {
-          dbKey.setAttribute('accessedAt', new Date());
+          dbKey.set('accessedAt', new Date());
           await this.db.updateDocument('keys', dbKey.getId(), dbKey);
           await this.db.purgeCachedDocument('projects', project.getId());
         }
@@ -103,34 +103,34 @@ export class ApiHook implements Hook {
         const sdk = params.getFromHeaders('x-sdk-name') || 'UNKNOWN';
 
         if (sdk !== 'UNKNOWN' && sdksList.includes(sdk)) {
-          const sdks = dbKey.getAttribute('sdks', []);
+          const sdks = dbKey.get('sdks', []);
 
           if (!sdks.includes(sdk)) {
             sdks.push(sdk);
-            dbKey.setAttribute('sdks', sdks);
+            dbKey.set('sdks', sdks);
 
             // Update access time as well
-            dbKey.setAttribute('accessedAt', new Date());
+            dbKey.set('accessedAt', new Date());
             await this.db.updateDocument('keys', dbKey.getId(), dbKey);
             await this.db.purgeCachedDocument('projects', project.getId());
           }
         }
       }
     } else if (
-      (project.getId() === 'console' && !team.isEmpty() && !user.isEmpty()) ||
+      (project.getId() === 'console' && !team.empty() && !user.empty()) ||
       (project.getId() !== 'console' &&
-        !user.isEmpty() &&
+        !user.empty() &&
         mode === AppMode.ADMIN)
     ) {
       const teamId = team.getId();
       let adminRoles: string[] = [];
-      const memberships = user.getAttribute('memberships', []);
+      const memberships = user.get('memberships', []) as MembershipsDoc[];
       for (const membership of memberships) {
         if (
-          membership.getAttribute('confirm', false) === true &&
-          membership.getAttribute('teamId') === teamId
+          membership.get('confirm', false) === true &&
+          membership.get('teamId') === teamId
         ) {
-          adminRoles = membership.getAttribute('roles', []);
+          adminRoles = membership.get('roles', []);
           break;
         }
       }
@@ -141,7 +141,7 @@ export class ApiHook implements Hook {
 
       scopes = []; // Reset scope if admin
       for (const adminRole of adminRoles) {
-        scopes = scopes.concat(roles[adminRole].scopes);
+        scopes = scopes.concat(roles[adminRole as keyof typeof roles].scopes);
       }
 
       Authorization.setDefaultStatus(false); // Cancel security segmentation for admin users.
@@ -155,17 +155,17 @@ export class ApiHook implements Hook {
     scopes = Array.from(new Set(scopes));
 
     // Update project last activity
-    if (!project.isEmpty() && project.getId() !== 'console') {
-      const accessedAt = project.getAttribute('accessedAt', 0);
-      if (new Date(Date.now() - APP_KEY_ACCESS * 1000) > new Date(accessedAt)) {
-        project.setAttribute('accessedAt', new Date());
+    if (!project.empty() && project.getId() !== 'console') {
+      const accessedAt = project.get('accessedAt', 0);
+      if (new Date(Date.now() - this.configService.get('access').key * 1000) > new Date(accessedAt as string)) {
+        project.set('accessedAt', new Date());
         await Authorization.skip(async () => {
           await this.db.updateDocument('projects', project.getId(), project);
         });
       }
     }
 
-    const session: Document = req[SESSION];
+    const session: SessionsDoc = req[Context.Session];
     const client = req[PROJECT_DB_CLIENT];
 
     if (client) {
@@ -173,12 +173,12 @@ export class ApiHook implements Hook {
         client: req[PROJECT_DB_CLIENT],
         extra: {
           user:
-            user && !user.isEmpty()
+            user && !user.empty()
               ? JSON.stringify({
-                  $id: user.getId(),
-                  name: user.getAttribute('name'),
-                  email: user.getAttribute('email'),
-                })
+                $id: user.getId(),
+                name: user.get('name'),
+                email: user.get('email'),
+              })
               : undefined,
           session: session ? JSON.stringify(session) : undefined,
           roles: JSON.stringify(Authorization.getRoles()),
@@ -187,12 +187,12 @@ export class ApiHook implements Hook {
       });
     }
 
-    req[SCOPES] = scopes;
-    req[ROLE] = role;
-    req[USER] = user;
+    req[Context.Scopes] = scopes;
+    req[Context.Role] = role;
+    req[Context.User] = user;
 
     this.logger.debug(
-      `[${mode}] ${role} ${user.isEmpty() ? 'API' : user.getAttribute('email')}`,
+      `[${mode}] ${role} ${user.empty() ? 'API' : user.get('email')}`,
     );
 
     return;

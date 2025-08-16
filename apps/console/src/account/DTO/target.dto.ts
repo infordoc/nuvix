@@ -6,11 +6,11 @@ export class CreatePushTargetDTO {
   @IsString()
   @IsNotEmpty()
   @IsCustomID()
-  targetId: string;
+  targetId!: string;
 
   @IsString()
   @IsNotEmpty()
-  identifier: string;
+  identifier!: string;
 
   @IsOptional()
   @IsString()
@@ -26,5 +26,5 @@ export class TargetIdParamDTO {
   @IsString()
   @IsNotEmpty()
   @IsCustomID()
-  targetId: string;
+  targetId!: string;
 }

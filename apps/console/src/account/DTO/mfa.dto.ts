@@ -10,27 +10,27 @@ import {
 export class UpdateAccountMfaDTO {
   @IsBoolean()
   @IsNotEmpty()
-  mfa: boolean;
+  declare mfa: boolean;
 }
 
 export class MfaAuthenticatorTypeParamDTO {
   @IsString()
   @IsNotEmpty()
   @IsIn([TOTP.TOTP]) // TODO: Add other supported types
-  type: string;
+  declare type: string;
 }
 
 export class VerifyMfaAuthenticatorDTO {
   @IsString()
   @IsNotEmpty()
-  otp: string;
+  declare otp: string;
 }
 
 export class CreateMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
   @IsIn([TOTP.EMAIL, TOTP.PHONE, TOTP.TOTP, TOTP.RECOVERY_CODE])
-  factor: string;
+  declare factor: string;
 
   @IsOptional()
   @IsString()
@@ -42,9 +42,9 @@ export class VerifyMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
   @IsCustomID()
-  challengeId: string;
+  declare challengeId: string;
 
   @IsString()
   @IsNotEmpty()
-  otp: string;
+  declare otp: string;
 }

@@ -5,5 +5,5 @@ export class IdentityIdParamDTO {
   @IsString()
   @IsNotEmpty()
   @IsCustomID()
-  identityId: string;
+  declare identityId: string;
 }

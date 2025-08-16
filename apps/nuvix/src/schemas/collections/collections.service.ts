@@ -3,7 +3,7 @@ import {
   Authorization,
   AuthorizationException,
   Database,
-  Document,
+  Doc,
   DuplicateException,
   ID,
   IndexValidator,
@@ -16,7 +16,7 @@ import {
   StructureException,
   TextValidator,
   TruncateException,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import {
   APP_DATABASE_ATTRIBUTE_EMAIL,
   APP_DATABASE_ATTRIBUTE_ENUM,
@@ -32,7 +32,7 @@ import {
   DATABASE_TYPE_DELETE_INDEX,
   GEO_DB,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Auth } from '@nuvix/core/helper/auth.helper';
@@ -77,7 +77,7 @@ export class CollectionsService {
     @InjectQueue(QueueFor.COLLECTIONS)
     private readonly schemasQueue: Queue<DatabaseJobData, any, DatabaseJobs>,
     private readonly event: EventEmitter2,
-  ) {}
+  ) { }
 
   /**
    * Create a new collection.
@@ -92,7 +92,7 @@ export class CollectionsService {
     try {
       await db.createDocument(
         `collections`,
-        new Document({
+        new Doc({
           $id: collectionId,
           $permissions: permissions ?? [],
           documentSecurity: documentSecurity,
@@ -105,7 +105,7 @@ export class CollectionsService {
       const collection = await db.getDocument(`collections`, collectionId);
 
       await db.createCollection(
-        `collection_${collection.getInternalId()}`,
+        `collection_${collection.getSequence()}`,
         [],
         [],
         permissions ?? [],
@@ -146,7 +146,7 @@ export class CollectionsService {
       const collectionId = cursor.getValue();
       const cursorDocument = await db.getDocument(`collections`, collectionId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Collection '${collectionId}' for the 'cursor' value not found.`,
@@ -173,7 +173,7 @@ export class CollectionsService {
   async getCollection(db: Database, collectionId: string) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -208,26 +208,26 @@ export class CollectionsService {
 
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     permissions = Permission.aggregate(permissions);
-    enabled = enabled ?? collection.getAttribute('enabled');
+    enabled = enabled ?? collection.get('enabled');
 
     const updatedCollection = await db.updateDocument(
       `collections`,
       collectionId,
       collection
-        .setAttribute('name', name)
-        .setAttribute('$permissions', permissions)
-        .setAttribute('documentSecurity', documentSecurity)
-        .setAttribute('enabled', enabled)
-        .setAttribute('search', `${collectionId} ${name}`),
+        .set('name', name)
+        .set('$permissions', permissions)
+        .set('documentSecurity', documentSecurity)
+        .set('enabled', enabled)
+        .set('search', `${collectionId} ${name}`),
     );
 
     await db.updateCollection(
-      `collection_${collection.getInternalId()}`,
+      `collection_${collection.getSequence()}`,
       permissions,
       documentSecurity,
     );
@@ -245,11 +245,11 @@ export class CollectionsService {
   async removeCollection(
     db: Database,
     collectionId: string,
-    project: Document,
+    project: Doc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -266,7 +266,7 @@ export class CollectionsService {
       project,
     });
 
-    await db.purgeCachedCollection(`collection_${collection.getInternalId()}`);
+    await db.purgeCachedCollection(`collection_${collection.getSequence()}`);
 
     return null;
   }
@@ -277,7 +277,7 @@ export class CollectionsService {
   async getAttributes(db: Database, collectionId: string, queries: Query[]) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -290,12 +290,12 @@ export class CollectionsService {
     if (cursor) {
       const attributeId = cursor.getValue();
       const cursorDocument = await db.find('attributes', [
-        Query.equal('collectionInternalId', [collection.getInternalId()]),
+        Query.equal('collectionInternalId', [collection.getSequence()]),
         Query.equal('key', [attributeId]),
         Query.limit(1),
       ]);
 
-      if (cursorDocument.length === 0 || cursorDocument[0].isEmpty()) {
+      if (cursorDocument.length === 0 || cursorDocument[0].empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Attribute '${attributeId}' for the 'cursor' value not found.`,
@@ -306,7 +306,7 @@ export class CollectionsService {
     }
 
     queries.push(
-      Query.equal('collectionInternalId', [collection.getInternalId()]),
+      Query.equal('collectionInternalId', [collection.getSequence()]),
     );
 
     const filterQueries = Query.groupByType(queries).filters;
@@ -329,8 +329,8 @@ export class CollectionsService {
     );
 
     if (
-      collection.isEmpty() ||
-      (!collection.getAttribute('enabled', false) &&
+      collection.empty() ||
+      (!collection.get('enabled', false) &&
         !isAPIKey &&
         !isPrivilegedUser)
     ) {
@@ -348,15 +348,15 @@ export class CollectionsService {
       const cursorDocument = await Authorization.skip(
         async () =>
           await db.getDocument(
-            `collection_${collection.getInternalId()}`,
+            `collection_${collection.getSequence()}`,
             documentId,
           ),
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Document '${documentId}' for the 'cursor' value not found.`,
+          `Doc '${documentId}' for the 'cursor' value not found.`,
         );
       }
 
@@ -366,56 +366,56 @@ export class CollectionsService {
     const filterQueries = Query.groupByType(queries).filters;
 
     const documents = await db.find(
-      `collection_${collection.getInternalId()}`,
+      `collection_${collection.getSequence()}`,
       queries,
     );
     const total = await db.count(
-      `collection_${collection.getInternalId()}`,
+      `collection_${collection.getSequence()}`,
       filterQueries,
       APP_LIMIT_COUNT,
     );
 
     // Add $collectionId for all documents
     const processDocument = async (
-      collection: Document,
-      document: Document,
+      collection: Doc,
+      document: Doc,
     ): Promise<boolean> => {
-      if (document.isEmpty()) {
+      if (document.empty()) {
         return false;
       }
 
-      document.setAttribute('$collectionId', collection.getId());
+      document.set('$collectionId', collection.getId());
 
       const relationships = collection
-        .getAttribute('attributes', [])
+        .get('attributes', [])
         .filter(
           (attribute: any) =>
-            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+            attribute.get('type') === AttributeType.Relationship,
         );
 
       for (const relationship of relationships) {
-        const related = document.getAttribute(
-          relationship.getAttribute('key'),
+        const related = document.get(
+          relationship.get('key'),
           null,
         );
 
         if (
           related === null ||
           (Array.isArray(related) && related.length === 0) ||
-          (related instanceof Document && related.isEmpty())
+          (related instanceof Doc && related.empty())
         ) {
           continue;
         }
 
         const relations = Array.isArray(related) ? related : [related];
         const relatedCollectionId =
-          relationship.getAttribute('relatedCollection');
+          relationship.get('relatedCollection');
         const relatedCollection = await Authorization.skip(
           async () => await db.getDocument(`collections`, relatedCollectionId),
         );
 
         for (let i = 0; i < relations.length; i++) {
-          if (relations[i] instanceof Document) {
+          if (relations[i] instanceof Doc) {
             if (!processDocument(relatedCollection, relations[i])) {
               relations.splice(i, 1);
               i--;
@@ -423,13 +423,13 @@ export class CollectionsService {
           }
         }
 
-        document.setAttribute(
-          relationship.getAttribute('key'),
+        document.set(
+          relationship.get('key'),
           Array.isArray(related) ? relations : relations[0] || null,
         );
       }
 
-      document.removeAttribute('$collection');
+      document.delete('$collection');
       return true;
     };
 
@@ -453,7 +453,7 @@ export class CollectionsService {
     if (select) {
       for (const document of documents) {
         if (!hasCollectionId) {
-          document.removeAttribute('$collectionId');
+          document.delete('$collectionId');
         }
       }
     }
@@ -471,7 +471,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateStringAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const {
       key,
@@ -495,9 +495,9 @@ export class CollectionsService {
       filters.push('encrypt');
     }
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size,
       required,
       default: defaultValue,
@@ -515,13 +515,13 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateEmailAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size: 254,
       required,
       default: defaultValue,
@@ -539,7 +539,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateEnumAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array, elements } = input;
 
@@ -550,9 +550,9 @@ export class CollectionsService {
       );
     }
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size: Database.LENGTH_KEY,
       required,
       default: defaultValue,
@@ -571,13 +571,13 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIpAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size: 39,
       required,
       default: defaultValue,
@@ -595,13 +595,13 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateStringAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size: 2000,
       required,
       default: defaultValue,
@@ -619,7 +619,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIntegerAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -644,9 +644,9 @@ export class CollectionsService {
 
     const size = maxValue > 2147483647 ? 8 : 4; // Automatically create BigInt depending on max value
 
-    let attribute = new Document<any>({
+    let attribute = new Doc<any>({
       key,
-      type: Database.VAR_INTEGER,
+      type: AttributeType.Integer,
       size,
       required,
       default: defaultValue,
@@ -665,11 +665,11 @@ export class CollectionsService {
       project,
     );
 
-    const formatOptions = attribute.getAttribute('formatOptions', {});
+    const formatOptions = attribute.get('formatOptions', {});
 
     if (formatOptions) {
-      attribute.setAttribute('min', parseInt(formatOptions.min));
-      attribute.setAttribute('max', parseInt(formatOptions.max));
+      attribute.set('min', parseInt(formatOptions.min));
+      attribute.set('max', parseInt(formatOptions.max));
     }
 
     return attribute;
@@ -682,7 +682,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateFloatAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -705,9 +705,9 @@ export class CollectionsService {
       );
     }
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_FLOAT,
+      type: AttributeType.Float,
       size: 0,
       required,
       default: defaultValue,
@@ -726,11 +726,11 @@ export class CollectionsService {
       project,
     );
 
-    const formatOptions = createdAttribute.getAttribute('formatOptions', {});
+    const formatOptions = createdAttribute.get('formatOptions', {});
 
     if (formatOptions) {
-      createdAttribute.setAttribute('min', parseFloat(formatOptions.min));
-      createdAttribute.setAttribute('max', parseFloat(formatOptions.max));
+      createdAttribute.set('min', parseFloat(formatOptions.min));
+      createdAttribute.set('max', parseFloat(formatOptions.max));
     }
 
     return createdAttribute;
@@ -743,13 +743,13 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateBooleanAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_BOOLEAN,
+      type: AttributeType.Boolean,
       size: 0,
       required,
       default: defaultValue,
@@ -766,15 +766,15 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateDatetimeAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
     const filters = ['datetime'];
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_DATETIME,
+      type: AttributeType.Timestamptz,
       size: 0,
       required,
       default: defaultValue,
@@ -792,14 +792,14 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateRelationAttributeDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, type, twoWay, twoWayKey, onDelete, relatedCollectionId } =
       input;
 
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -808,33 +808,33 @@ export class CollectionsService {
       relatedCollectionId,
     );
 
-    if (relatedCollectionDocument.isEmpty()) {
+    if (relatedCollectionDocument.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     const relatedCollection = await db.getCollection(
-      `collection_${relatedCollectionDocument.getInternalId()}`,
+      `collection_${relatedCollectionDocument.getSequence()}`,
     );
 
-    if (relatedCollection.isEmpty()) {
+    if (relatedCollection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const attributes = collection.getAttribute('attributes', []);
+    const attributes = collection.get('attributes', []);
     for (const attribute of attributes) {
-      if (attribute.getAttribute('type') !== Database.VAR_RELATIONSHIP) {
+      if (attribute.get('type') !== AttributeType.Relationship) {
         continue;
       }
 
-      if (attribute.getAttribute('key').toLowerCase() === key.toLowerCase()) {
+      if (attribute.get('key').toLowerCase() === key.toLowerCase()) {
         throw new Exception(Exception.ATTRIBUTE_ALREADY_EXISTS);
       }
 
       if (
-        attribute.getAttribute('options')?.['twoWayKey']?.toLowerCase() ===
-          twoWayKey.toLowerCase() &&
-        attribute.getAttribute('options')?.['relatedCollection'] ===
-          relatedCollection.getId()
+        attribute.get('options')?.['twoWayKey']?.toLowerCase() ===
+        twoWayKey.toLowerCase() &&
+        attribute.get('options')?.['relatedCollection'] ===
+        relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -844,10 +844,10 @@ export class CollectionsService {
 
       if (
         type === Database.RELATION_MANY_TO_MANY &&
-        attribute.getAttribute('options')?.['relationType'] ===
-          Database.RELATION_MANY_TO_MANY &&
-        attribute.getAttribute('options')?.['relatedCollection'] ===
-          relatedCollection.getId()
+        attribute.get('options')?.['relationType'] ===
+        Database.RELATION_MANY_TO_MANY &&
+        attribute.get('options')?.['relatedCollection'] ===
+        relatedCollection.getId()
       ) {
         throw new Exception(
           Exception.ATTRIBUTE_ALREADY_EXISTS,
@@ -856,9 +856,9 @@ export class CollectionsService {
       }
     }
 
-    const attribute = new Document({
+    const attribute = new Doc({
       key,
-      type: Database.VAR_RELATIONSHIP,
+      type: AttributeType.Relationship,
       size: 0,
       required: false,
       default: null,
@@ -882,23 +882,23 @@ export class CollectionsService {
   async getAttribute(db: Database, collectionId: string, key: string) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     const attribute = await db.getDocument(
       'attributes',
-      `${collection.getInternalId()}_${key}`,
+      `${collection.getSequence()}_${key}`,
     );
 
-    if (attribute.isEmpty()) {
+    if (attribute.empty()) {
       throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
     }
 
-    const options = attribute.getAttribute('options', []);
+    const options = attribute.get('options', []);
 
     for (const [optionKey, option] of Object.entries(options)) {
-      attribute.setAttribute(optionKey, option);
+      attribute.set(optionKey, option);
     }
 
     return attribute;
@@ -919,7 +919,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       size,
       defaultValue,
       required,
@@ -945,7 +945,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       filter: APP_DATABASE_ATTRIBUTE_EMAIL,
       defaultValue,
       required,
@@ -978,7 +978,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       filter: APP_DATABASE_ATTRIBUTE_ENUM,
       defaultValue,
       required,
@@ -1004,7 +1004,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       filter: APP_DATABASE_ATTRIBUTE_IP,
       defaultValue,
       required,
@@ -1030,7 +1030,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_STRING,
+      type: AttributeType.String,
       filter: APP_DATABASE_ATTRIBUTE_URL,
       defaultValue,
       required,
@@ -1056,18 +1056,18 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_INTEGER,
+      type: AttributeType.Integer,
       defaultValue,
       required,
       options: { min, max },
       newKey,
     });
 
-    const formatOptions = attribute.getAttribute('formatOptions', []);
+    const formatOptions = attribute.get('formatOptions', []);
 
     if (formatOptions) {
-      attribute.setAttribute('min', parseInt(formatOptions.min));
-      attribute.setAttribute('max', parseInt(formatOptions.max));
+      attribute.set('min', parseInt(formatOptions.min));
+      attribute.set('max', parseInt(formatOptions.max));
     }
 
     return attribute;
@@ -1088,18 +1088,18 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_FLOAT,
+      type: AttributeType.Float,
       defaultValue,
       required,
       options: { min, max },
       newKey,
     });
 
-    const formatOptions = attribute.getAttribute('formatOptions', []);
+    const formatOptions = attribute.get('formatOptions', []);
 
     if (formatOptions) {
-      attribute.setAttribute('min', parseFloat(formatOptions.min));
-      attribute.setAttribute('max', parseFloat(formatOptions.max));
+      attribute.set('min', parseFloat(formatOptions.min));
+      attribute.set('max', parseFloat(formatOptions.max));
     }
 
     return attribute;
@@ -1120,7 +1120,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_BOOLEAN,
+      type: AttributeType.Boolean,
       defaultValue,
       required,
       options: {},
@@ -1145,7 +1145,7 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_DATETIME,
+      type: AttributeType.Timestamptz,
       defaultValue,
       required,
       options: {},
@@ -1170,17 +1170,17 @@ export class CollectionsService {
       db,
       collectionId,
       key,
-      type: Database.VAR_RELATIONSHIP,
+      type: AttributeType.Relationship,
       options: {
         onDelete: onDelete,
       },
       newKey,
     });
 
-    const options = attribute.getAttribute('options', []);
+    const options = attribute.get('options', []);
 
     for (const [key, option] of Object.entries(options)) {
-      attribute.setAttribute(key, option);
+      attribute.set(key, option);
     }
 
     return attribute;
@@ -1192,24 +1192,24 @@ export class CollectionsService {
   async createAttribute(
     db: Database,
     collectionId: string,
-    attribute: Document,
-    project: Document,
+    attribute: Doc,
+    project: Doc,
   ) {
-    const key = attribute.getAttribute('key');
-    const type = attribute.getAttribute('type', '');
-    const size = attribute.getAttribute('size', 0);
-    const required = attribute.getAttribute('required', true);
-    const signed = attribute.getAttribute('signed', true);
-    const array = attribute.getAttribute('array', false);
-    const format = attribute.getAttribute('format', '');
-    const formatOptions = attribute.getAttribute('formatOptions', {});
-    const filters = attribute.getAttribute('filters', []);
-    const defaultValue = attribute.getAttribute('default', null);
-    const options = attribute.getAttribute('options', {});
+    const key = attribute.get('key');
+    const type = attribute.get('type', '');
+    const size = attribute.get('size', 0);
+    const required = attribute.get('required', true);
+    const signed = attribute.get('signed', true);
+    const array = attribute.get('array', false);
+    const format = attribute.get('format', '');
+    const formatOptions = attribute.get('formatOptions', {});
+    const filters = attribute.get('filters', []);
+    const defaultValue = attribute.get('default', null);
+    const options = attribute.get('options', {});
 
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -1234,14 +1234,14 @@ export class CollectionsService {
       );
     }
 
-    let relatedCollection: Document;
-    if (type === Database.VAR_RELATIONSHIP) {
+    let relatedCollection: Doc;
+    if (type === AttributeType.Relationship) {
       options['side'] = Database.RELATION_SIDE_PARENT;
       relatedCollection = await db.getDocument(
         `collections`,
         options['relatedCollection'] ?? '',
       );
-      if (relatedCollection.isEmpty()) {
+      if (relatedCollection.empty()) {
         throw new Exception(
           Exception.COLLECTION_NOT_FOUND,
           'The related collection was not found.',
@@ -1250,10 +1250,10 @@ export class CollectionsService {
     }
 
     try {
-      const newAttribute = new Document({
-        $id: ID.custom(`${collection.getInternalId()}_${key}`),
+      const newAttribute = new Doc({
+        $id: ID.custom(`${collection.getSequence()}_${key}`),
         key,
-        collectionInternalId: collection.getInternalId(),
+        collectionInternalId: collection.getSequence(),
         collectionId,
         type,
         status: 'processing',
@@ -1284,21 +1284,21 @@ export class CollectionsService {
     }
 
     db.purgeCachedDocument(`collections`, collectionId);
-    db.purgeCachedCollection(`collection_${collection.getInternalId()}`);
+    db.purgeCachedCollection(`collection_${collection.getSequence()}`);
 
-    if (type === Database.VAR_RELATIONSHIP && options['twoWay']) {
+    if (type === AttributeType.Relationship && options['twoWay']) {
       const twoWayKey = options['twoWayKey'];
       options['relatedCollection'] = collection.getId();
       options['twoWayKey'] = key;
       options['side'] = Database.RELATION_SIDE_CHILD;
 
       try {
-        const twoWayAttribute = new Document({
+        const twoWayAttribute = new Doc({
           $id: ID.custom(
-            `related_${relatedCollection.getInternalId()}_${twoWayKey}`,
+            `related_${relatedCollection.getSequence()}_${twoWayKey}`,
           ),
           key: twoWayKey,
-          collectionInternalId: relatedCollection.getInternalId(),
+          collectionInternalId: relatedCollection.getSequence(),
           collectionId: relatedCollection.getId(),
           type,
           status: 'processing',
@@ -1331,7 +1331,7 @@ export class CollectionsService {
 
       db.purgeCachedDocument(`collections`, relatedCollection.getId());
       db.purgeCachedCollection(
-        `collection_${relatedCollection.getInternalId()}`,
+        `collection_${relatedCollection.getSequence()}`,
       );
     }
 
@@ -1380,31 +1380,31 @@ export class CollectionsService {
     } = input;
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     let attribute = await db.getDocument(
       'attributes',
-      `${collection.getInternalId()}_${key}`,
+      `${collection.getSequence()}_${key}`,
     );
 
-    if (attribute.isEmpty()) {
+    if (attribute.empty()) {
       throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
     }
 
-    if (attribute.getAttribute('status') !== 'available') {
+    if (attribute.get('status') !== 'available') {
       throw new Exception(Exception.ATTRIBUTE_NOT_AVAILABLE);
     }
 
-    if (attribute.getAttribute('type') !== type) {
+    if (attribute.get('type') !== type) {
       throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
     }
 
     if (
-      attribute.getAttribute('type') === 'string' &&
+      attribute.get('type') === 'string' &&
       filter &&
-      attribute.getAttribute('filters') !== filter
+      attribute.get('filters') !== filter
     ) {
       throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
     }
@@ -1417,7 +1417,7 @@ export class CollectionsService {
     }
 
     if (
-      attribute.getAttribute('array', false) &&
+      attribute.get('array', false) &&
       defaultValue !== undefined &&
       defaultValue !== null
     ) {
@@ -1427,17 +1427,17 @@ export class CollectionsService {
       );
     }
 
-    const collectionIdWithPrefix = `collection_${collection.getInternalId()}`;
+    const collectionIdWithPrefix = `collection_${collection.getSequence()}`;
 
     attribute
-      .setAttribute('default', defaultValue)
-      .setAttribute('required', required);
+      .set('default', defaultValue)
+      .set('required', required);
 
     if (size !== undefined && size !== null) {
-      attribute.setAttribute('size', size);
+      attribute.set('size', size);
     }
 
-    switch (attribute.getAttribute('format')) {
+    switch (attribute.get('format')) {
       case APP_DATABASE_ATTRIBUTE_INT_RANGE:
       case APP_DATABASE_ATTRIBUTE_FLOAT_RANGE:
         if ((min ?? null) !== null && (max ?? null) !== null) {
@@ -1449,8 +1449,8 @@ export class CollectionsService {
           }
 
           const validator =
-            attribute.getAttribute('format') ===
-            APP_DATABASE_ATTRIBUTE_INT_RANGE
+            attribute.get('format') ===
+              APP_DATABASE_ATTRIBUTE_INT_RANGE
               ? new RangeValidator(min, max, 'integer')
               : new RangeValidator(min, max, 'float');
 
@@ -1462,7 +1462,7 @@ export class CollectionsService {
           }
 
           options = { min, max };
-          attribute.setAttribute('formatOptions', options);
+          attribute.set('formatOptions', options);
         }
         break;
       case APP_DATABASE_ATTRIBUTE_ENUM:
@@ -1493,16 +1493,16 @@ export class CollectionsService {
         }
 
         options = { elements };
-        attribute.setAttribute('formatOptions', options);
+        attribute.set('formatOptions', options);
         break;
     }
 
-    if (type === Database.VAR_RELATIONSHIP) {
+    if (type === AttributeType.Relationship) {
       const primaryDocumentOptions = {
-        ...attribute.getAttribute('options', {}),
+        ...attribute.get('options', {}),
         ...options,
       };
-      attribute.setAttribute('options', primaryDocumentOptions);
+      attribute.set('options', primaryDocumentOptions);
 
       await db.updateRelationship(
         collectionIdWithPrefix,
@@ -1519,7 +1519,7 @@ export class CollectionsService {
 
         const relatedAttribute = await db.getDocument(
           'attributes',
-          `related_${relatedCollection.getInternalId()}_${primaryDocumentOptions['twoWayKey']}`,
+          `related_${relatedCollection.getSequence()}_${primaryDocumentOptions['twoWayKey']}`,
         );
 
         if (newKey && newKey !== key) {
@@ -1527,13 +1527,13 @@ export class CollectionsService {
         }
 
         const relatedOptions = {
-          ...relatedAttribute.getAttribute('options'),
+          ...relatedAttribute.get('options'),
           ...options,
         };
-        relatedAttribute.setAttribute('options', relatedOptions);
+        relatedAttribute.set('options', relatedOptions);
         await db.updateDocument(
           'attributes',
-          `related_${relatedCollection.getInternalId()}_${primaryDocumentOptions['twoWayKey']}`,
+          `related_${relatedCollection.getSequence()}_${primaryDocumentOptions['twoWayKey']}`,
           relatedAttribute,
         );
 
@@ -1565,8 +1565,8 @@ export class CollectionsService {
       await db.deleteDocument('attributes', attribute.getId());
 
       attribute
-        .setAttribute('$id', `${collection.getInternalId()}_${newKey}`)
-        .setAttribute('key', newKey);
+        .set('$id', `${collection.getSequence()}_${newKey}`)
+        .set('key', newKey);
 
       try {
         attribute = await db.createDocument('attributes', attribute);
@@ -1576,7 +1576,7 @@ export class CollectionsService {
     } else {
       attribute = await db.updateDocument(
         'attributes',
-        `${collection.getInternalId()}_${key}`,
+        `${collection.getSequence()}_${key}`,
         attribute,
       );
     }
@@ -1598,67 +1598,67 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     key: string,
-    project: Document,
+    project: Doc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     const attribute = await db.getDocument(
       'attributes',
-      `${collection.getInternalId()}_${key}`,
+      `${collection.getSequence()}_${key}`,
     );
 
-    if (attribute.isEmpty()) {
+    if (attribute.empty()) {
       throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
     }
 
     // Only update status if removing available attribute
-    if (attribute.getAttribute('status') === 'available') {
+    if (attribute.get('status') === 'available') {
       await db.updateDocument(
         'attributes',
         attribute.getId(),
-        attribute.setAttribute('status', 'deleting'),
+        attribute.set('status', 'deleting'),
       );
     }
 
     db.purgeCachedDocument(`collections`, collectionId);
-    db.purgeCachedCollection(`collection_${collection.getInternalId()}`);
+    db.purgeCachedCollection(`collection_${collection.getSequence()}`);
 
-    if (attribute.getAttribute('type') === Database.VAR_RELATIONSHIP) {
-      const options = attribute.getAttribute('options');
+    if (attribute.get('type') === AttributeType.Relationship) {
+      const options = attribute.get('options');
       if (options['twoWay']) {
         const relatedCollection = await db.getDocument(
           `collections`,
           options['relatedCollection'],
         );
 
-        if (relatedCollection.isEmpty()) {
+        if (relatedCollection.empty()) {
           throw new Exception(Exception.COLLECTION_NOT_FOUND);
         }
 
         const relatedAttribute = await db.getDocument(
           'attributes',
-          `related_${relatedCollection.getInternalId()}_${options['twoWayKey']}`,
+          `related_${relatedCollection.getSequence()}_${options['twoWayKey']}`,
         );
 
-        if (relatedAttribute.isEmpty()) {
+        if (relatedAttribute.empty()) {
           throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
         }
 
-        if (relatedAttribute.getAttribute('status') === 'available') {
+        if (relatedAttribute.get('status') === 'available') {
           await db.updateDocument(
             'attributes',
             relatedAttribute.getId(),
-            relatedAttribute.setAttribute('status', 'deleting'),
+            relatedAttribute.set('status', 'deleting'),
           );
         }
 
         db.purgeCachedDocument(`collections`, options['relatedCollection']);
         db.purgeCachedCollection(
-          `collection_${relatedCollection.getInternalId()}`,
+          `collection_${relatedCollection.getSequence()}`,
         );
       }
     }
@@ -1680,19 +1680,19 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIndexDTO,
-    project: Document,
+    project: Doc,
   ) {
     const { key, type, attributes, orders } = input;
 
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     const count = await db.count(
       'indexes',
-      [Query.equal('collectionInternalId', [collection.getInternalId()])],
+      [Query.equal('collectionInternalId', [collection.getSequence()])],
       61,
     );
 
@@ -1706,13 +1706,13 @@ export class CollectionsService {
     }
 
     const oldAttributes = collection
-      .getAttribute('attributes')
+      .get('attributes')
       .map((a: any) => a.toObject());
 
     oldAttributes.push(
       {
         key: '$id',
-        type: Database.VAR_STRING,
+        type: AttributeType.String,
         status: 'available',
         required: true,
         array: false,
@@ -1721,7 +1721,7 @@ export class CollectionsService {
       },
       {
         key: '$createdAt',
-        type: Database.VAR_DATETIME,
+        type: AttributeType.Timestamptz,
         status: 'available',
         signed: false,
         required: false,
@@ -1731,7 +1731,7 @@ export class CollectionsService {
       },
       {
         key: '$updatedAt',
-        type: Database.VAR_DATETIME,
+        type: AttributeType.Timestamptz,
         status: 'available',
         signed: false,
         required: false,
@@ -1762,7 +1762,7 @@ export class CollectionsService {
         array: attributeArray = false,
       } = oldAttributes[attributeIndex];
 
-      if (attributeType === Database.VAR_RELATIONSHIP) {
+      if (attributeType === AttributeType.Relationship) {
         throw new Exception(
           Exception.ATTRIBUTE_TYPE_INVALID,
           `Cannot create an index for a relationship attribute: ${oldAttributes[attributeIndex].key}`,
@@ -1778,7 +1778,7 @@ export class CollectionsService {
 
       lengths[i] = null;
 
-      if (attributeType === Database.VAR_STRING) {
+      if (attributeType === AttributeType.String) {
         lengths[i] = attributeSize;
       }
 
@@ -1788,11 +1788,11 @@ export class CollectionsService {
       }
     }
 
-    let index = new Document({
-      $id: ID.custom(`${collection.getInternalId()}_${key}`),
+    let index = new Doc({
+      $id: ID.custom(`${collection.getSequence()}_${key}`),
       key,
       status: 'processing',
-      collectionInternalId: collection.getInternalId(),
+      collectionInternalId: collection.getSequence(),
       collectionId,
       type,
       attributes,
@@ -1801,7 +1801,7 @@ export class CollectionsService {
     });
 
     const validator = new IndexValidator(
-      collection.getAttribute('attributes'),
+      collection.get('attributes'),
       db.getAdapter().getMaxIndexLength(),
     );
 
@@ -1836,7 +1836,7 @@ export class CollectionsService {
   async getIndexes(db: Database, collectionId: string, queries: Query[]) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
@@ -1851,13 +1851,13 @@ export class CollectionsService {
       const cursorDocument = await Authorization.skip(
         async () =>
           await db.find('indexes', [
-            Query.equal('collectionInternalId', [collection.getInternalId()]),
+            Query.equal('collectionInternalId', [collection.getSequence()]),
             Query.equal('key', [indexId]),
             Query.limit(1),
           ]),
       );
 
-      if (cursorDocument.length === 0 || cursorDocument[0].isEmpty()) {
+      if (cursorDocument.length === 0 || cursorDocument[0].empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Index '${indexId}' for the 'cursor' value not found.`,
@@ -1868,7 +1868,7 @@ export class CollectionsService {
     }
 
     queries.push(
-      Query.equal('collectionInternalId', [collection.getInternalId()]),
+      Query.equal('collectionInternalId', [collection.getSequence()]),
     );
 
     const filterQueries = Query.groupByType(queries).filters;
@@ -1888,7 +1888,7 @@ export class CollectionsService {
   async getIndex(db: Database, collectionId: string, key: string) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
     const index = collection.find<any>('key', key, 'indexes');
@@ -1907,29 +1907,29 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     key: string,
-    project: Document,
+    project: Doc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
-    if (collection.isEmpty()) {
+    if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
     const index = await db.getDocument(
       'indexes',
-      `${collection.getInternalId()}_${key}`,
+      `${collection.getSequence()}_${key}`,
     );
 
-    if (index.isEmpty()) {
+    if (index.empty()) {
       throw new Exception(Exception.INDEX_NOT_FOUND);
     }
 
     // Only update status if removing available index
-    if (index.getAttribute('status') === 'available') {
+    if (index.get('status') === 'available') {
       await db.updateDocument(
         'indexes',
         index.getId(),
-        index.setAttribute('status', 'deleting'),
+        index.set('status', 'deleting'),
       );
     }
 
@@ -1946,7 +1946,7 @@ export class CollectionsService {
   }
 
   /**
-   * Create a Document.
+   * Create a Doc.
    */
   async createDocument(
     db: Database,
@@ -1967,8 +1967,8 @@ export class CollectionsService {
     );
 
     if (
-      collection.isEmpty() ||
-      (!collection.getAttribute('enabled', false) &&
+      collection.empty() ||
+      (!collection.get('enabled', false) &&
         !isAPIKey &&
         !isPrivilegedUser)
     ) {
@@ -1994,14 +1994,14 @@ export class CollectionsService {
     data['$id'] = documentId === 'unique()' ? ID.unique() : documentId;
     data['$permissions'] = aggregatedPermissions;
 
-    const document = new Document(data);
+    const document = new Doc(data);
 
     const checkPermissions = async (
-      collection: Document,
-      document: Document,
+      collection: Doc,
+      document: Doc,
       permission: string,
     ) => {
-      const documentSecurity = collection.getAttribute(
+      const documentSecurity = collection.get(
         'documentSecurity',
         false,
       );
@@ -2025,14 +2025,14 @@ export class CollectionsService {
       }
 
       const relationships = collection
-        .getAttribute('attributes', [])
+        .get('attributes', [])
         .filter(
           (attribute: any) =>
-            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+            attribute.get('type') === AttributeType.Relationship,
         );
 
       for (const relationship of relationships) {
-        const related = document.getAttribute(relationship.getAttribute('key'));
+        const related = document.get(relationship.get('key'));
 
         if (!(related ?? false)) {
           continue;
@@ -2040,27 +2040,27 @@ export class CollectionsService {
 
         const relations = Array.isArray(related) ? related : [related];
         const relatedCollectionId =
-          relationship.getAttribute('relatedCollection');
+          relationship.get('relatedCollection');
         const relatedCollection = await Authorization.skip(
           async () => await db.getDocument(`collections`, relatedCollectionId),
         );
 
         for (let i = 0; i < relations.length; i++) {
-          if (relations[i] instanceof Document) {
+          if (relations[i] instanceof Doc) {
             const current = await Authorization.skip(
               async () =>
                 await db.getDocument(
-                  `collection_${relatedCollection.getInternalId()}`,
+                  `collection_${relatedCollection.getSequence()}`,
                   relations[i].getId(),
                 ),
             );
 
-            if (current.isEmpty()) {
-              relations[i].setAttribute('$id', ID.unique());
+            if (current.empty()) {
+              relations[i].set('$id', ID.unique());
             } else {
-              relations[i].removeAttribute('$collectionId');
-              relations[i].removeAttribute('$databaseId');
-              relations[i].setAttribute(
+              relations[i].delete('$collectionId');
+              relations[i].delete('$databaseId');
+              relations[i].set(
                 '$collection',
                 relatedCollection.getId(),
               );
@@ -2074,8 +2074,8 @@ export class CollectionsService {
           }
         }
 
-        document.setAttribute(
-          relationship.getAttribute('key'),
+        document.set(
+          relationship.get('key'),
           Array.isArray(related) ? relations : relations[0] || null,
         );
       }
@@ -2085,7 +2085,7 @@ export class CollectionsService {
 
     try {
       const createdDocument = await db.createDocument(
-        `collection_${collection.getInternalId()}`,
+        `collection_${collection.getSequence()}`,
         document,
       );
 
@@ -2123,8 +2123,8 @@ export class CollectionsService {
     );
 
     if (
-      collection.isEmpty() ||
-      (!collection.getAttribute('enabled', false) &&
+      collection.empty() ||
+      (!collection.get('enabled', false) &&
         !isAPIKey &&
         !isPrivilegedUser)
     ) {
@@ -2133,12 +2133,12 @@ export class CollectionsService {
 
     try {
       const document = await db.getDocument(
-        `collection_${collection.getInternalId()}`,
+        `collection_${collection.getSequence()}`,
         documentId,
         queries,
       );
 
-      if (document.isEmpty()) {
+      if (document.empty()) {
         throw new Exception(Exception.DOCUMENT_NOT_FOUND);
       }
 
@@ -2158,47 +2158,47 @@ export class CollectionsService {
 
   private processDocument = async (
     db: Database,
-    collection: Document,
-    document: Document,
+    collection: Doc,
+    document: Doc,
   ): Promise<void> => {
-    document.setAttribute('$database', db.getDatabase());
-    document.setAttribute('$collectionId', collection.getId());
+    document.set('$database', db.getDatabase());
+    document.set('$collectionId', collection.getId());
 
     const relationships = collection
-      .getAttribute('attributes', [])
+      .get('attributes', [])
       .filter(
         (attribute: any) =>
-          attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+          attribute.get('type') === AttributeType.Relationship,
       );
 
     for (const relationship of relationships) {
-      const related = document.getAttribute(
-        relationship.getAttribute('key'),
+      const related = document.get(
+        relationship.get('key'),
         null,
       );
 
       if (
         related === null ||
         (Array.isArray(related) && related.length === 0) ||
-        (related instanceof Document && related.isEmpty())
+        (related instanceof Doc && related.empty())
       ) {
         continue;
       }
 
       const relations = Array.isArray(related) ? related : [related];
       const relatedCollectionId =
-        relationship.getAttribute('relatedCollection');
+        relationship.get('relatedCollection');
       const relatedCollection = await Authorization.skip(
         async () => await db.getDocument(`collections`, relatedCollectionId),
       );
 
       for (const relation of relations) {
-        if (relation instanceof Document) {
+        if (relation instanceof Doc) {
           await this.processDocument(db, relatedCollection, relation);
         }
       }
     }
-    document.removeAttribute('$collection');
+    document.delete('$collection');
   };
 
   /**
@@ -2241,8 +2241,8 @@ export class CollectionsService {
     );
 
     if (
-      collection.isEmpty() ||
-      (!collection.getAttribute('enabled', false) &&
+      collection.empty() ||
+      (!collection.get('enabled', false) &&
         !isAPIKey &&
         !isPrivilegedUser)
     ) {
@@ -2252,12 +2252,12 @@ export class CollectionsService {
     const document = await Authorization.skip(
       async () =>
         await db.getDocument(
-          `collection_${collection.getInternalId()}`,
+          `collection_${collection.getSequence()}`,
           documentId,
         ),
     );
 
-    if (document.isEmpty()) {
+    if (document.empty()) {
       throw new Exception(Exception.DOCUMENT_NOT_FOUND);
     }
 
@@ -2275,21 +2275,21 @@ export class CollectionsService {
     data['$permissions'] = aggregatedPermissions;
     data['$updatedAt'] = new Date();
 
-    const newDocument = new Document(data);
+    const newDocument = new Doc(data);
 
     const setCollection = async (
-      collection: Document,
-      document: Document,
+      collection: Doc,
+      document: Doc,
     ): Promise<void> => {
       const relationships = collection
-        .getAttribute('attributes', [])
+        .get('attributes', [])
         .filter(
           (attribute: any) =>
-            attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+            attribute.get('type') === AttributeType.Relationship,
         );
 
       for (const relationship of relationships) {
-        const related = document.getAttribute(relationship.getAttribute('key'));
+        const related = document.get(relationship.get('key'));
 
         if (!related) {
           continue;
@@ -2297,31 +2297,31 @@ export class CollectionsService {
 
         const relations = Array.isArray(related) ? related : [related];
         const relatedCollectionId =
-          relationship.getAttribute('relatedCollection');
+          relationship.get('relatedCollection');
         const relatedCollection = await Authorization.skip(
           async () => await db.getDocument(`collections`, relatedCollectionId),
         );
 
         for (let i = 0; i < relations.length; i++) {
-          if (relations[i] instanceof Document) {
+          if (relations[i] instanceof Doc) {
             const oldDocument = await Authorization.skip(
               async () =>
                 await db.getDocument(
-                  `collection_${relatedCollection.getInternalId()}`,
+                  `collection_${relatedCollection.getSequence()}`,
                   relations[i].getId(),
                 ),
             );
 
-            relations[i].removeAttribute('$collectionId');
-            relations[i].removeAttribute('$databaseId');
-            relations[i].setAttribute(
+            relations[i].delete('$collectionId');
+            relations[i].delete('$databaseId');
+            relations[i].set(
               '$collection',
-              `collection_${relatedCollection.getInternalId()}`,
+              `collection_${relatedCollection.getSequence()}`,
             );
 
-            if (oldDocument.isEmpty()) {
-              if (relations[i].getAttribute('$id') === 'unique()') {
-                relations[i].setAttribute('$id', ID.unique());
+            if (oldDocument.empty()) {
+              if (relations[i].get('$id') === 'unique()') {
+                relations[i].set('$id', ID.unique());
               }
             }
 
@@ -2329,8 +2329,8 @@ export class CollectionsService {
           }
         }
 
-        document.setAttribute(
-          relationship.getAttribute('key'),
+        document.set(
+          relationship.get('key'),
           Array.isArray(related) ? relations : relations[0] || null,
         );
       }
@@ -2340,7 +2340,7 @@ export class CollectionsService {
 
     try {
       const updatedDocument = await db.updateDocument(
-        `collection_${collection.getInternalId()}`,
+        `collection_${collection.getSequence()}`,
         document.getId(),
         newDocument,
       );
@@ -2383,8 +2383,8 @@ export class CollectionsService {
     );
 
     if (
-      collection.isEmpty() ||
-      (!collection.getAttribute('enabled', false) &&
+      collection.empty() ||
+      (!collection.get('enabled', false) &&
         !isAPIKey &&
         !isPrivilegedUser)
     ) {
@@ -2394,18 +2394,18 @@ export class CollectionsService {
     const document = await Authorization.skip(
       async () =>
         await db.getDocument(
-          `collection_${collection.getInternalId()}`,
+          `collection_${collection.getSequence()}`,
           documentId,
         ),
     );
 
-    if (document.isEmpty()) {
+    if (document.empty()) {
       throw new Exception(Exception.DOCUMENT_NOT_FOUND);
     }
 
     await db.withRequestTimestamp(timestamp, async () => {
       await db.deleteDocument(
-        `collection_${collection.getInternalId()}`,
+        `collection_${collection.getSequence()}`,
         documentId,
       );
     });
@@ -2414,12 +2414,12 @@ export class CollectionsService {
 
     // TODO: ----->
     // const relationships = collection
-    //   .getAttribute('attributes', [])
+    //   .get('attributes', [])
     //   .filter(
     //     (attribute: any) =>
-    //       attribute.getAttribute('type') === Database.VAR_RELATIONSHIP,
+    //       attribute.get('type') === AttributeType.Relationship,
     //   )
-    //   .map((attribute: any) => attribute.getAttribute('key'));
+    //   .map((attribute: any) => attribute.get('key'));
 
     return {};
   }
@@ -2453,8 +2453,8 @@ export class CollectionsService {
 
         stats[metric].data = {};
         for (const result of results) {
-          stats[metric].data[result.getAttribute('time')] = {
-            value: result.getAttribute('value'),
+          stats[metric].data[result.get('time')] = {
+            value: result.get('value'),
           };
         }
       }
@@ -2476,7 +2476,7 @@ export class CollectionsService {
       }
     }
 
-    return new Document({
+    return new Doc({
       range,
       databasesTotal: usage.databases.total,
       collectionsTotal: usage.collections.total,
@@ -2493,7 +2493,7 @@ export class CollectionsService {
   async getDatabaseUsage(db: Database, range?: string) {
     // const database = await db.getDocument('databases', databaseId);
 
-    // if (database.isEmpty()) {
+    // if (database.empty()) {
     //   throw new Exception(Exception.DATABASE_NOT_FOUND);
     // }
 
@@ -2502,8 +2502,8 @@ export class CollectionsService {
     // const usage: any = {};
     // const days = periods[range];
     // const metrics = [
-    //   `database_${database.getInternalId()}_collections`,
-    //   `database_${database.getInternalId()}_documents`,
+    //   `database_${database.getSequence()}_collections`,
+    //   `database_${database.getSequence()}_documents`,
     // ];
 
     // await Authorization.skip(async () => {
@@ -2525,8 +2525,8 @@ export class CollectionsService {
 
     //     stats[metric].data = {};
     //     for (const result of results) {
-    //       stats[metric].data[result.getAttribute('time')] = {
-    //         value: result.getAttribute('value'),
+    //       stats[metric].data[result.get('time')] = {
+    //         value: result.get('value'),
     //       };
     //     }
     //   }
@@ -2548,14 +2548,14 @@ export class CollectionsService {
     //   }
     // }
 
-    // return new Document({
+    // return new Doc({
     //   range,
     //   collectionsTotal: usage[metrics[0]].total,
     //   documentsTotal: usage[metrics[1]].total,
     //   collections: usage[metrics[0]].data,
     //   documents: usage[metrics[1]].data,
     // });
-    return new Document();
+    return new Doc();
   }
 
   /**
@@ -2564,7 +2564,7 @@ export class CollectionsService {
   async getCollectionUsage(db: Database, collectionId: string, range?: string) {
     // const database = await db.getDocument('databases', databaseId);
 
-    // if (database.isEmpty()) {
+    // if (database.empty()) {
     //   throw new Exception(Exception.DATABASE_NOT_FOUND);
     // }
 
@@ -2574,10 +2574,10 @@ export class CollectionsService {
     // );
 
     // const collection = await db.getCollection(
-    //   `database_${database.getInternalId()}_collection_${collectionDocument.getInternalId()}`,
+    //   `database_${database.getSequence()}_collection_${collectionDocument.getSequence()}`,
     // );
 
-    // if (collection.isEmpty()) {
+    // if (collection.empty()) {
     //   throw new Exception(Exception.COLLECTION_NOT_FOUND);
     // }
 
@@ -2586,7 +2586,7 @@ export class CollectionsService {
     // const usage: any = {};
     // const days = periods[range];
     // const metrics = [
-    //   `database_${database.getInternalId()}_collection_${collectionDocument.getInternalId()}_documents`,
+    //   `database_${database.getSequence()}_collection_${collectionDocument.getSequence()}_documents`,
     // ];
 
     // await Authorization.skip(async () => {
@@ -2608,8 +2608,8 @@ export class CollectionsService {
 
     //     stats[metric].data = {};
     //     for (const result of results) {
-    //       stats[metric].data[result.getAttribute('time')] = {
-    //         value: result.getAttribute('value'),
+    //       stats[metric].data[result.get('time')] = {
+    //         value: result.get('value'),
     //       };
     //     }
     //   }
@@ -2631,12 +2631,12 @@ export class CollectionsService {
     //   }
     // }
 
-    // return new Document({
+    // return new Doc({
     //   range,
     //   documentsTotal: usage[metrics[0]].total,
     //   documents: usage[metrics[0]].data,
     // });
 
-    return new Document();
+    return new Doc();
   }
 }

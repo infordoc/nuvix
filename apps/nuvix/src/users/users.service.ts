@@ -14,7 +14,7 @@ import {
   UpdateUserPoneVerificationDTO,
   UpdateUserStatusDTO,
 } from './DTO/user.dto';
-import { APP_LIMIT_COUNT, GEO_DB } from '@nuvix/utils/constants';
+import { APP_LIMIT_COUNT, GEO_DB } from '@nuvix/utils';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto';
 import { EmailValidator } from '@nuvix/core/validators/email.validator';
@@ -28,12 +28,12 @@ import { CreateJwtDTO } from './DTO/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
 import {
   Database,
-  Document,
+  Doc,
   DuplicateException,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import { CountryResponse, Reader } from 'maxmind';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 
@@ -45,7 +45,7 @@ export class UsersService {
     @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
     private readonly jwtService: JwtService,
     private readonly event: EventEmitter2,
-  ) {}
+  ) { }
 
   /**
    * Find all users
@@ -66,7 +66,7 @@ export class UsersService {
       const userId = cursor.getValue();
       const cursorDocument = await db.getDocument('users', userId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `User '${userId}' for the 'cursor' value not found.`,
@@ -90,7 +90,7 @@ export class UsersService {
   async findOne(db: Database, id: string) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -103,11 +103,11 @@ export class UsersService {
   async getPrefs(db: Database, id: string) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    return user.getAttribute('prefs', {});
+    return user.get('prefs', {});
   }
 
   /**
@@ -116,20 +116,20 @@ export class UsersService {
   async updatePrefs(db: Database, id: string, prefs: any) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const updatedUser = await db.updateDocument(
       'users',
       user.getId(),
-      user.setAttribute('prefs', prefs),
+      user.set('prefs', prefs),
     );
 
     // TODO: Implement queue for events
     // queueForEvents.setParam('userId', updatedUser.getId());
 
-    return updatedUser.getAttribute('prefs');
+    return updatedUser.get('prefs');
   }
 
   /**
@@ -138,14 +138,14 @@ export class UsersService {
   async updateStatus(db: Database, id: string, input: UpdateUserStatusDTO) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     return await db.updateDocument(
       'users',
       user.getId(),
-      user.setAttribute('status', input.status),
+      user.set('status', input.status),
     );
   }
 
@@ -155,11 +155,11 @@ export class UsersService {
   async updateLabels(db: Database, id: string, input: UpdateUserLabelDTO) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.setAttribute('labels', Array.from(new Set(input.labels)));
+    user.set('labels', Array.from(new Set(input.labels)));
 
     return await db.updateDocument('users', user.getId(), user);
   }
@@ -170,11 +170,11 @@ export class UsersService {
   async updateName(db: Database, id: string, input: UpdateUserNameDTO) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.setAttribute('name', input.name);
+    user.set('name', input.name);
 
     return await db.updateDocument('users', user.getId(), user);
   }
@@ -186,20 +186,20 @@ export class UsersService {
     db: Database,
     id: string,
     input: UpdateUserPasswordDTO,
-    project: Document,
+    project: Doc,
   ) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (project.getAttribute('auths', {})['personalDataCheck'] ?? false) {
+    if (project.get('auths', {})['personalDataCheck'] ?? false) {
       const personalDataValidator = new PersonalDataValidator(
         id,
-        user.getAttribute('email'),
-        user.getAttribute('name'),
-        user.getAttribute('phone'),
+        user.get('email'),
+        user.get('name'),
+        user.get('phone'),
       );
       if (!personalDataValidator.isValid(input.password)) {
         throw new Exception(Exception.USER_PASSWORD_PERSONAL_DATA);
@@ -211,8 +211,8 @@ export class UsersService {
         'users',
         user.getId(),
         user
-          .setAttribute('password', '')
-          .setAttribute('passwordUpdate', new Date()),
+          .set('password', '')
+          .set('passwordUpdate', new Date()),
       );
 
       // TODO: Implement queue for events
@@ -231,14 +231,14 @@ export class UsersService {
     );
 
     const historyLimit =
-      project.getAttribute('auths', {})['passwordHistory'] ?? 0;
-    let history = user.getAttribute('passwordHistory', []);
+      project.get('auths', {})['passwordHistory'] ?? 0;
+    let history = user.get('passwordHistory', []);
 
     if (historyLimit > 0) {
       const validator = new PasswordHistoryValidator(
         history,
-        user.getAttribute('hash'),
-        user.getAttribute('hashOptions'),
+        user.get('hash'),
+        user.get('hashOptions'),
       );
       if (!validator.isValid(input.password)) {
         throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
@@ -251,11 +251,11 @@ export class UsersService {
       'users',
       user.getId(),
       user
-        .setAttribute('password', newPassword)
-        .setAttribute('passwordHistory', history)
-        .setAttribute('passwordUpdate', new Date())
-        .setAttribute('hash', Auth.DEFAULT_ALGO)
-        .setAttribute('hashOptions', Auth.DEFAULT_ALGO_OPTIONS),
+        .set('password', newPassword)
+        .set('passwordHistory', history)
+        .set('passwordUpdate', new Date())
+        .set('hash', Auth.DEFAULT_ALGO)
+        .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS),
     );
 
     return updatedUser;
@@ -267,7 +267,7 @@ export class UsersService {
   async updateEmail(db: Database, id: string, email: string) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -277,9 +277,9 @@ export class UsersService {
       // Check if email exists in identities
       const identityWithMatchingEmail = await db.findOne('identities', [
         Query.equal('providerEmail', [email]),
-        Query.notEqual('userInternalId', user.getInternalId()),
+        Query.notEqual('userInternalId', user.getSequence()),
       ]);
-      if (!identityWithMatchingEmail.isEmpty()) {
+      if (!identityWithMatchingEmail.empty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
 
@@ -287,14 +287,14 @@ export class UsersService {
         Query.equal('identifier', [email]),
       ]);
 
-      if (!target.isEmpty()) {
+      if (!target.empty()) {
         throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
       }
     }
 
-    const oldEmail = user.getAttribute('email');
+    const oldEmail = user.get('email');
 
-    user.setAttribute('email', email).setAttribute('emailVerification', false);
+    user.set('email', email).set('emailVerification', false);
 
     try {
       const updatedUser = await db.updateDocument('users', user.getId(), user);
@@ -304,12 +304,12 @@ export class UsersService {
         'targets',
       );
 
-      if (!oldTarget.isEmpty()) {
+      if (!oldTarget.empty()) {
         if (email.length !== 0) {
           await db.updateDocument(
             'targets',
             oldTarget.getId(),
-            oldTarget.setAttribute('identifier', email),
+            oldTarget.set('identifier', email),
           );
         } else {
           await db.deleteDocument('targets', oldTarget.getId());
@@ -318,20 +318,20 @@ export class UsersService {
         if (email.length !== 0) {
           const target = await db.createDocument(
             'targets',
-            new Document({
+            new Doc({
               $permissions: [
                 Permission.read(Role.user(user.getId())),
                 Permission.update(Role.user(user.getId())),
                 Permission.delete(Role.user(user.getId())),
               ],
               userId: user.getId(),
-              userInternalId: user.getInternalId(),
+              userInternalId: user.getSequence(),
               providerType: 'email',
               identifier: email,
             }),
           );
-          updatedUser.setAttribute('targets', [
-            ...updatedUser.getAttribute('targets', []),
+          updatedUser.set('targets', [
+            ...updatedUser.get('targets', []),
             target,
           ]);
         }
@@ -353,20 +353,20 @@ export class UsersService {
   async updatePhone(db: Database, id: string, phone: string) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const oldPhone = user.getAttribute('phone');
+    const oldPhone = user.get('phone');
 
-    user.setAttribute('phone', phone).setAttribute('phoneVerification', false);
+    user.set('phone', phone).set('phoneVerification', false);
 
     if (phone.length !== 0) {
       const target = await db.findOne('targets', [
         Query.equal('identifier', [phone]),
       ]);
 
-      if (!target.isEmpty()) {
+      if (!target.empty()) {
         throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
       }
     }
@@ -379,12 +379,12 @@ export class UsersService {
         'targets',
       );
 
-      if (!oldTarget.isEmpty()) {
+      if (!oldTarget.empty()) {
         if (phone.length !== 0) {
           await db.updateDocument(
             'targets',
             oldTarget.getId(),
-            oldTarget.setAttribute('identifier', phone),
+            oldTarget.set('identifier', phone),
           );
         } else {
           await db.deleteDocument('targets', oldTarget.getId());
@@ -393,20 +393,20 @@ export class UsersService {
         if (phone.length !== 0) {
           const target = await db.createDocument(
             'targets',
-            new Document({
+            new Doc({
               $permissions: [
                 Permission.read(Role.user(user.getId())),
                 Permission.update(Role.user(user.getId())),
                 Permission.delete(Role.user(user.getId())),
               ],
               userId: user.getId(),
-              userInternalId: user.getInternalId(),
+              userInternalId: user.getSequence(),
               providerType: 'sms',
               identifier: phone,
             }),
           );
-          updatedUser.setAttribute('targets', [
-            ...updatedUser.getAttribute('targets', []),
+          updatedUser.set('targets', [
+            ...updatedUser.get('targets', []),
             target,
           ]);
         }
@@ -431,14 +431,14 @@ export class UsersService {
   ) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const updatedUser = await db.updateDocument(
       'users',
       user.getId(),
-      user.setAttribute('emailVerification', input.emailVerification),
+      user.set('emailVerification', input.emailVerification),
     );
 
     return updatedUser;
@@ -454,14 +454,14 @@ export class UsersService {
   ) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const updatedUser = await db.updateDocument(
       'users',
       user.getId(),
-      user.setAttribute('phoneVerification', input.phoneVerification),
+      user.set('phoneVerification', input.phoneVerification),
     );
 
     // TODO: Implement queue for events
@@ -476,11 +476,11 @@ export class UsersService {
   async updateMfaStatus(db: Database, id: string, mfa: boolean) {
     const user = await db.getDocument('users', id);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    user.setAttribute('mfa', mfa);
+    user.set('mfa', mfa);
 
     const updatedUser = await db.updateDocument('users', user.getId(), user);
 
@@ -493,7 +493,7 @@ export class UsersService {
   /**
    * Create a new user
    */
-  create(db: Database, createUserDTO: CreateUserDTO, project: Document) {
+  create(db: Database, createUserDTO: CreateUserDTO, project: Doc) {
     return this.createUser(
       db,
       'plaintext',
@@ -513,7 +513,7 @@ export class UsersService {
   createWithArgon2(
     db: Database,
     createUserDTO: CreateUserDTO,
-    project: Document,
+    project: Doc,
   ) {
     return this.createUser(
       db,
@@ -534,7 +534,7 @@ export class UsersService {
   createWithBcrypt(
     db: Database,
     createUserDTO: CreateUserDTO,
-    project: Document,
+    project: Doc,
   ) {
     return this.createUser(
       db,
@@ -552,7 +552,7 @@ export class UsersService {
   /**
    * Create a new user with md5
    */
-  createWithMd5(db: Database, createUserDTO: CreateUserDTO, project: Document) {
+  createWithMd5(db: Database, createUserDTO: CreateUserDTO, project: Doc) {
     return this.createUser(
       db,
       'md5',
@@ -572,7 +572,7 @@ export class UsersService {
   createWithSha(
     db: Database,
     createUserDTO: CreateUserWithShaDTO,
-    project: Document,
+    project: Doc,
   ) {
     let hashOptions = {};
     if (createUserDTO.passwordVersion) {
@@ -597,7 +597,7 @@ export class UsersService {
   createWithPhpass(
     db: Database,
     createUserDTO: CreateUserDTO,
-    project: Document,
+    project: Doc,
   ) {
     return this.createUser(
       db,
@@ -618,7 +618,7 @@ export class UsersService {
   createWithScrypt(
     db: Database,
     createUserDTO: CreateUserWithScryptDTO,
-    project: Document,
+    project: Doc,
   ) {
     const hashOptions = {
       salt: createUserDTO.passwordSalt,
@@ -646,7 +646,7 @@ export class UsersService {
   createWithScryptMod(
     db: Database,
     createUserDTO: CreateUserWithScryptModifedDTO,
-    project: Document,
+    project: Doc,
   ) {
     const hashOptions = {
       salt: createUserDTO.passwordSalt,
@@ -673,7 +673,7 @@ export class UsersService {
     const targetId =
       input.targetId === 'unique()' ? ID.unique() : input.targetId;
 
-    let provider: Document;
+    let provider: Doc;
     if (input.providerId) {
       provider = await db.getDocument('providers', input.providerId);
     }
@@ -697,20 +697,20 @@ export class UsersService {
 
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const existingTarget = await db.getDocument('targets', targetId);
 
-    if (!existingTarget.isEmpty()) {
+    if (!existingTarget.empty()) {
       throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
     }
 
     try {
       const target = await db.createDocument(
         'targets',
-        new Document({
+        new Doc({
           $id: targetId,
           $permissions: [
             Permission.read(Role.user(user.getId())),
@@ -718,10 +718,10 @@ export class UsersService {
             Permission.delete(Role.user(user.getId())),
           ],
           providerId: provider ? provider.getId() : null,
-          providerInternalId: provider ? provider.getInternalId() : null,
+          providerInternalId: provider ? provider.getSequence() : null,
           providerType: input.providerType,
           userId: userId,
-          userInternalId: user.getInternalId(),
+          userInternalId: user.getSequence(),
           identifier: input.identifier,
           name: input.name || null,
         }),
@@ -748,7 +748,7 @@ export class UsersService {
   async getTargets(db: Database, userId: string, queries: Query[] = []) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -765,7 +765,7 @@ export class UsersService {
       const targetId = cursor.getValue();
       const cursorDocument = await db.getDocument('targets', targetId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Target '${targetId}' for the 'cursor' value not found.`,
@@ -792,22 +792,22 @@ export class UsersService {
   ) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const target = await db.getDocument('targets', targetId);
 
-    if (target.isEmpty()) {
+    if (target.empty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
-    if (user.getId() !== target.getAttribute('userId')) {
+    if (user.getId() !== target.get('userId')) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
     if (input.identifier) {
-      const providerType = target.getAttribute('providerType');
+      const providerType = target.get('providerType');
 
       switch (providerType) {
         case 'email':
@@ -826,28 +826,28 @@ export class UsersService {
           throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
       }
 
-      target.setAttribute('identifier', input.identifier);
+      target.set('identifier', input.identifier);
     }
 
     if (input.providerId) {
       const provider = await db.getDocument('providers', input.providerId);
 
-      if (provider.isEmpty()) {
+      if (provider.empty()) {
         throw new Exception(Exception.PROVIDER_NOT_FOUND);
       }
 
       if (
-        provider.getAttribute('type') !== target.getAttribute('providerType')
+        provider.get('type') !== target.get('providerType')
       ) {
         throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
       }
 
-      target.setAttribute('providerId', provider.getId());
-      target.setAttribute('providerInternalId', provider.getInternalId());
+      target.set('providerId', provider.getId());
+      target.set('providerInternalId', provider.getSequence());
     }
 
     if (input.name) {
-      target.setAttribute('name', input.name);
+      target.set('name', input.name);
     }
 
     const updatedTarget = await db.updateDocument(
@@ -870,13 +870,13 @@ export class UsersService {
   async getTarget(db: Database, userId: string, targetId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const target = await db.getDocument('targets', targetId);
 
-    if (target.isEmpty() || target.getAttribute('userId') !== userId) {
+    if (target.empty() || target.get('userId') !== userId) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
@@ -889,17 +889,17 @@ export class UsersService {
   async deleteTarget(db: Database, userId: string, targetId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const target = await db.getDocument('targets', targetId);
 
-    if (target.isEmpty()) {
+    if (target.empty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
-    if (user.getId() !== target.getAttribute('userId')) {
+    if (user.getId() !== target.get('userId')) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
@@ -925,19 +925,19 @@ export class UsersService {
   async getSessions(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
 
     for (const session of sessions) {
-      const countryCode = session.getAttribute('countryCode', '');
+      const countryCode = session.get('countryCode', '');
       // TODO: Implement proper locale/translation service
       const countryName = countryCode ? countryCode.toLowerCase() : 'unknown';
 
-      session.setAttribute('countryName', countryName);
-      session.setAttribute('current', false);
+      session.set('countryName', countryName);
+      session.set('current', false);
     }
 
     return {
@@ -952,21 +952,21 @@ export class UsersService {
   async getMemberships(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
-    const memberships = user.getAttribute('memberships', []);
+    const memberships = user.get('memberships', []);
 
     for (const membership of memberships) {
       const team = await db.getDocument(
         'teams',
-        membership.getAttribute('teamId'),
+        membership.get('teamId'),
       );
 
       membership
-        .setAttribute('teamName', team.getAttribute('name'))
-        .setAttribute('userName', user.getAttribute('name'))
-        .setAttribute('userEmail', user.getAttribute('email'));
+        .set('teamName', team.get('name'))
+        .set('userName', user.get('name'))
+        .set('userEmail', user.get('email'));
     }
 
     return {
@@ -981,20 +981,20 @@ export class UsersService {
   async getMfaFactors(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const totp = TOTP.getAuthenticatorFromUser(user);
 
-    return new Document({
-      [MfaType.TOTP]: totp !== null && totp.getAttribute('verified', false),
+    return new Doc({
+      [MfaType.TOTP]: totp !== null && totp.get('verified', false),
       [MfaType.EMAIL]:
-        user.getAttribute('email', false) &&
-        user.getAttribute('emailVerification', false),
+        user.get('email', false) &&
+        user.get('emailVerification', false),
       [MfaType.PHONE]:
-        user.getAttribute('phone', false) &&
-        user.getAttribute('phoneVerification', false),
+        user.get('phone', false) &&
+        user.get('phoneVerification', false),
     });
   }
 
@@ -1004,17 +1004,17 @@ export class UsersService {
   async getMfaRecoveryCodes(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
 
     if (!mfaRecoveryCodes.length) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
     }
 
-    return new Document({
+    return new Doc({
       recoveryCodes: mfaRecoveryCodes,
     });
   }
@@ -1025,24 +1025,24 @@ export class UsersService {
   async generateMfaRecoveryCodes(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
 
     if (mfaRecoveryCodes.length > 0) {
       throw new Exception(Exception.USER_RECOVERY_CODES_ALREADY_EXISTS);
     }
 
     const newRecoveryCodes = MfaType.generateBackupCodes();
-    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    user.set('mfaRecoveryCodes', newRecoveryCodes);
     await db.updateDocument('users', user.getId(), user);
 
     // TODO: Implement queue for events
     // queueForEvents.setParam('userId', user.getId());
 
-    return new Document({
+    return new Doc({
       recoveryCodes: newRecoveryCodes,
     });
   }
@@ -1053,23 +1053,23 @@ export class UsersService {
   async regenerateMfaRecoveryCodes(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
     if (!mfaRecoveryCodes.length) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
     }
 
     const newRecoveryCodes = MfaType.generateBackupCodes();
-    user.setAttribute('mfaRecoveryCodes', newRecoveryCodes);
+    user.set('mfaRecoveryCodes', newRecoveryCodes);
     await db.updateDocument('users', user.getId(), user);
 
     // TODO: Implement queue for events
     // queueForEvents.setParam('userId', user.getId());
 
-    return new Document({
+    return new Doc({
       recoveryCodes: newRecoveryCodes,
     });
   }
@@ -1080,7 +1080,7 @@ export class UsersService {
   async deleteMfaAuthenticator(db: Database, userId: string, type: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -1105,7 +1105,7 @@ export class UsersService {
   async getLogs(db: Database, userId: string, queries: Query[]) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -1116,7 +1116,7 @@ export class UsersService {
 
     // Get logs from audit service
     // const audit = new Audit(db);
-    const logs = []; //await audit.getLogsByUser(user.getInternalId(), limit, offset);
+    const logs = []; //await audit.getLogsByUser(user.getSequence(), limit, offset);
     const output = [];
 
     for (const log of logs) {
@@ -1129,7 +1129,7 @@ export class UsersService {
       const device = detector.getDevice();
 
       output.push(
-        new Document({
+        new Doc({
           event: log.event,
           userId: ID.custom(log.data.userId),
           userEmail: log.data.userEmail || null,
@@ -1155,7 +1155,7 @@ export class UsersService {
     }
 
     return {
-      total: 0, // await audit.countLogsByUser(user.getInternalId()),
+      total: 0, // await audit.countLogsByUser(user.getSequence()),
       logs: output,
     };
   }
@@ -1180,7 +1180,7 @@ export class UsersService {
       const identityId = cursor.getValue();
       const cursorDocument = await db.getDocument('identities', identityId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `User '${identityId}' for the 'cursor' value not found.`,
@@ -1205,7 +1205,7 @@ export class UsersService {
   async deleteIdentity(db: Database, identityId: string) {
     const identity = await db.getDocument('identities', identityId);
 
-    if (identity.isEmpty()) {
+    if (identity.empty()) {
       throw new Exception(Exception.USER_IDENTITY_NOT_FOUND);
     }
 
@@ -1213,7 +1213,7 @@ export class UsersService {
 
     // TODO: Implement queue for events
     // queueForEvents
-    //   .setParam('userId', identity.getAttribute('userId'))
+    //   .setParam('userId', identity.get('userId'))
     //   .setParam('identityId', identity.getId())
     //   .setPayload(identity); // TODO: Implement proper response formatter
 
@@ -1231,14 +1231,14 @@ export class UsersService {
   ) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const secret = Auth.tokenGenerator(input.length);
     const expire = new Date(Date.now() + input.expire * 1000);
 
-    const token = new Document({
+    const token = new Doc({
       $id: ID.unique(),
       $permissions: [
         Permission.read(Role.user(userId)),
@@ -1246,7 +1246,7 @@ export class UsersService {
         Permission.delete(Role.user(userId)),
       ],
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       type: Auth.TOKEN_TYPE_GENERIC,
       secret: Auth.hash(secret),
       expire: expire,
@@ -1257,7 +1257,7 @@ export class UsersService {
     const createdToken = await db.createDocument('tokens', token);
     await db.purgeCachedDocument('users', user.getId());
 
-    createdToken.setAttribute('secret', secret);
+    createdToken.set('secret', secret);
 
     // TODO: Implement queue for events
     // queueForEvents
@@ -1274,17 +1274,17 @@ export class UsersService {
   async createJwt(db: Database, userId: string, input: CreateJwtDTO) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const sessions = user.getAttribute('sessions', []);
-    let session = new Document();
+    const sessions = user.get('sessions', []);
+    let session = new Doc();
 
     if (input.sessionId === 'recent') {
       // Get most recent
       session =
-        sessions.length > 0 ? sessions[sessions.length - 1] : new Document();
+        sessions.length > 0 ? sessions[sessions.length - 1] : new Doc();
     } else {
       // Find by ID
       for (const loopSession of sessions) {
@@ -1299,7 +1299,7 @@ export class UsersService {
       jwt: this.jwtService.sign(
         {
           userId: user.getId(),
-          sessionId: session.isEmpty() ? '' : session.getId(),
+          sessionId: session.empty() ? '' : session.getId(),
         },
         { expiresIn: input.duration },
       ),
@@ -1313,11 +1313,11 @@ export class UsersService {
     db: Database,
     userId: string,
     req: NuvixRequest,
-    project: Document,
+    project: Doc,
   ) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -1326,11 +1326,11 @@ export class UsersService {
     const record = this.geoDb.get(req.ip);
 
     const duration =
-      project.getAttribute('auths', {})['duration'] ??
+      project.get('auths', {})['duration'] ??
       Auth.TOKEN_EXPIRATION_LOGIN_LONG;
     const expire = new Date(Date.now() + duration * 1000);
 
-    const session = new Document<any>({
+    const session = new Doc<any>({
       $id: ID.unique(),
       $permissions: [
         Permission.read(Role.user(userId)),
@@ -1338,7 +1338,7 @@ export class UsersService {
         Permission.delete(Role.user(userId)),
       ],
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
+      userInternalId: user.getSequence(),
       provider: Auth.SESSION_PROVIDER_SERVER,
       secret: Auth.hash(secret),
       userAgent: req.headers['user-agent'] || 'UNKNOWN',
@@ -1355,8 +1355,8 @@ export class UsersService {
 
     const createdSession = await db.createDocument('sessions', session);
     createdSession
-      .setAttribute('secret', secret)
-      .setAttribute('countryName', countryName);
+      .set('secret', secret)
+      .set('countryName', countryName);
 
     // TODO: Implement queue for events
     // queueForEvents
@@ -1373,13 +1373,13 @@ export class UsersService {
   async deleteSession(db: Database, userId: string, sessionId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
     const session = await db.getDocument('sessions', sessionId);
 
-    if (session.isEmpty()) {
+    if (session.empty()) {
       throw new Exception(Exception.USER_SESSION_NOT_FOUND);
     }
 
@@ -1401,11 +1401,11 @@ export class UsersService {
   async deleteSessions(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    const sessions = user.getAttribute('sessions', []);
+    const sessions = user.get('sessions', []);
 
     for (const session of sessions) {
       await db.deleteDocument('sessions', session.getId());
@@ -1422,7 +1422,7 @@ export class UsersService {
   async remove(db: Database, userId: string) {
     const user = await db.getDocument('users', userId);
 
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -1463,12 +1463,12 @@ export class UsersService {
     password: string | null,
     phone: string | null,
     name: string,
-    project: Document,
-  ): Promise<Document> {
+    project: Doc,
+  ): Promise<Doc> {
     const plaintextPassword = password;
     const hashOptionsObject =
       typeof hashOptions === 'string' ? JSON.parse(hashOptions) : hashOptions;
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     const passwordHistory = auths?.passwordHistory ?? 0;
 
     if (email) {
@@ -1478,7 +1478,7 @@ export class UsersService {
       const identityWithMatchingEmail = await db.findOne('identities', [
         Query.equal('providerEmail', [email]),
       ]);
-      if (!identityWithMatchingEmail.isEmpty()) {
+      if (!identityWithMatchingEmail.empty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
     }
@@ -1506,7 +1506,7 @@ export class UsersService {
           : password
         : null;
 
-      const user = new Document<any>({
+      const user = new Doc<any>({
         $id: userId,
         $permissions: [
           Permission.read(Role.any()),
@@ -1543,20 +1543,20 @@ export class UsersService {
         try {
           const target = await db.createDocument(
             'targets',
-            new Document({
+            new Doc({
               $permissions: [
                 Permission.read(Role.user(createdUser.getId())),
                 Permission.update(Role.user(createdUser.getId())),
                 Permission.delete(Role.user(createdUser.getId())),
               ],
               userId: createdUser.getId(),
-              userInternalId: createdUser.getInternalId(),
+              userInternalId: createdUser.getSequence(),
               providerType: 'email',
               identifier: email,
             }),
           );
-          createdUser.setAttribute('targets', [
-            ...createdUser.getAttribute('targets', []),
+          createdUser.set('targets', [
+            ...createdUser.get('targets', []),
             target,
           ]);
         } catch (error) {
@@ -1565,10 +1565,10 @@ export class UsersService {
               Query.equal('identifier', [email]),
             ]);
             if (existingTarget) {
-              createdUser.setAttribute(
+              createdUser.set(
                 'targets',
                 existingTarget,
-                Document.SET_TYPE_APPEND,
+                Doc.SET_TYPE_APPEND,
               );
             }
           } else throw error;
@@ -1579,20 +1579,20 @@ export class UsersService {
         try {
           const target = await db.createDocument(
             'targets',
-            new Document({
+            new Doc({
               $permissions: [
                 Permission.read(Role.user(createdUser.getId())),
                 Permission.update(Role.user(createdUser.getId())),
                 Permission.delete(Role.user(createdUser.getId())),
               ],
               userId: createdUser.getId(),
-              userInternalId: createdUser.getInternalId(),
+              userInternalId: createdUser.getSequence(),
               providerType: 'sms',
               identifier: phone,
             }),
           );
-          createdUser.setAttribute('targets', [
-            ...createdUser.getAttribute('targets', []),
+          createdUser.set('targets', [
+            ...createdUser.get('targets', []),
             target,
           ]);
         } catch (error) {
@@ -1601,10 +1601,10 @@ export class UsersService {
               Query.equal('identifier', [phone]),
             ]);
             if (existingTarget) {
-              createdUser.setAttribute(
+              createdUser.set(
                 'targets',
                 existingTarget,
-                Document.SET_TYPE_APPEND,
+                Doc.SET_TYPE_APPEND,
               );
             }
           } else throw error;
@@ -1644,7 +1644,7 @@ export class UsersService {
         Query.equal('period', ['inf']),
       ]);
 
-      stats[metric] = { total: result?.getAttribute('value') ?? 0, data: {} };
+      stats[metric] = { total: result?.get('value') ?? 0, data: {} };
 
       const results = await db.find('stats', [
         Query.equal('metric', [metric]),
@@ -1655,8 +1655,8 @@ export class UsersService {
 
       stats[metric].data = {};
       for (const result of results) {
-        stats[metric].data[result.getAttribute('time')] = {
-          value: result.getAttribute('value'),
+        stats[metric].data[result.get('time')] = {
+          value: result.get('value'),
         };
       }
     }
@@ -1682,7 +1682,7 @@ export class UsersService {
       }
     }
 
-    return new Document({
+    return new Doc({
       range: range,
       usersTotal: usage[metrics[0]].total,
       sessionsTotal: usage[metrics[1]].total,

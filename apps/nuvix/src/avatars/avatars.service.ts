@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import { default as path } from 'path';
 
-import { PROJECT_ROOT } from '@nuvix/utils/constants';
+import { PROJECT_ROOT } from '@nuvix/utils';
 import fs from 'fs';
 
 @Injectable()

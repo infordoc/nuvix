@@ -9,9 +9,9 @@ export class CreateEmailVerificationDTO {
 export class UpdateEmailVerificationDTO {
   @IsNotEmpty()
   @IsString()
-  userId: string;
+  userId!: string;
 
   @IsNotEmpty()
   @IsString()
-  secret: string;
+  secret!: string;
 }

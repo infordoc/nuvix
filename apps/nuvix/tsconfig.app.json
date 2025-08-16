@@ -2,8 +2,16 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": false,
-    "outDir": "../../dist/apps/nuvix"
+    "outDir": "./dist"
   },
-  "include": ["src/**/*", "../../nuvix.d.ts"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": [
+    "src/**/*",
+    "../../nuvix.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts"
+  ]
 }

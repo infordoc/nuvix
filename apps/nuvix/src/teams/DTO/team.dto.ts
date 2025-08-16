@@ -8,7 +8,7 @@ import {
   IsObject,
 } from 'class-validator';
 import { IsCustomID } from '@nuvix/core/validators';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
 
 export class CreateTeamDTO {
   @IsCustomID()
@@ -34,7 +34,7 @@ export class CreateTeamDTO {
 
 export class UpdateTeamDTO extends PartialType(
   OmitType(CreateTeamDTO, ['teamId', 'roles']),
-) {}
+) { }
 
 export class UpdateTeamPrefsDTO {
   @IsObject()

@@ -80,9 +80,9 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
           const error = options.throwOnEmptyError
             ? options.throwOnEmptyError
             : new Exception(
-                Exception.GENERAL_PARSER_EMPTY_ERROR,
-                'Empty expression provided',
-              );
+              Exception.GENERAL_PARSER_EMPTY_ERROR,
+              'Empty expression provided',
+            );
           throw error;
         }
         return this.qb;
@@ -132,7 +132,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
   /**
    *apply ordering to QueryBuilder order clauses
    */
-  applyOrder(orderings: ParsedOrdering[], table: string): T {
+  applyOrder(orderings: ParsedOrdering[] = [], table: string = ''): T {
     if (!orderings || orderings.length === 0) {
       return this.qb;
     }
@@ -193,8 +193,8 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
           ? Number(offset)
           : undefined;
 
-    if (Number.isInteger(limit)) this.qb.limit(limit);
-    if (Number.isInteger(offset)) this.qb.limit(offset);
+    if (Number.isInteger(limit)) this.qb.limit(limit as number);
+    if (Number.isInteger(offset)) this.qb.limit(offset as number);
 
     return this.qb;
   }
@@ -302,7 +302,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
     let value = values[0];
 
     if (
-      typeof value === 'object' &&
+      typeof value === 'object' && value !== null &&
       '__type' in value &&
       value.__type === 'column' &&
       right === '??'
@@ -484,7 +484,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
       value.__type === 'column'
     )
       return true;
-    else false;
+    else return false;
   }
 
   private _valueTypeToPlaceholder(values: Condition['values']): '?' | '??' {
@@ -497,7 +497,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
 
   public _rawField(
     _field: Condition['field'],
-    table: string,
+    table?: string,
   ): ReturnType<(typeof this.pg)['raw']> {
     if (typeof _field === 'string') {
       return this.pg.raw('??.??', [table, _field]);
@@ -554,7 +554,7 @@ export class ASTToQueryBuilder<T extends QueryBuilder> {
               sqlParts.push(`'${part.name}'`);
             }
           }
-          sqlParts.push(part.operator);
+          sqlParts.push(part.operator as string);
         }
       }
 

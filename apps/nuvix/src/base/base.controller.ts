@@ -1,12 +1,12 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { All, Controller, Query, Res } from '@nestjs/common';
 import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { SEND_TYPE_EMAIL } from '@nuvix/utils/constants';
+import { SEND_TYPE_EMAIL } from '@nuvix/utils';
 import { Queue } from 'bullmq';
 
 @Controller({ version: ['1'] })
 export class BaseController {
-  constructor(@InjectQueue('mails') private readonly mailQueue: Queue) {}
+  constructor(@InjectQueue('mails') private readonly mailQueue: Queue) { }
 
   @All('health/version')
   @Public()

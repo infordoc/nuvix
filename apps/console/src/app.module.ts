@@ -17,15 +17,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import {
-  APP_REDIS_DB,
-  APP_REDIS_HOST,
-  APP_REDIS_PASSWORD,
-  APP_REDIS_PORT,
-  APP_REDIS_SECURE,
-  APP_REDIS_USER,
   JWT_SECRET,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { HostHook, AuthHook, ApiHook } from '@nuvix/core/resolvers/hooks';
 import { ProjectHook } from './resolvers/hooks/project.hook';
 import { ProjectHook as RequestProjectHook } from '@nuvix/core/resolvers/hooks';
@@ -38,27 +32,32 @@ import { ProjectsController } from './projects/projects.controller';
 import { AuditHook } from '@nuvix/core/resolvers/hooks/audit.hook';
 import { AuditsQueue } from './resolvers/queues/audits.queue';
 import { Key } from '@nuvix/core/helper/key.helper';
+import { ConfigService } from '@nuvix/core';
 
 @Module({
   imports: [
-    BullModule.forRoot({
-      connection: {
-        port: APP_REDIS_PORT,
-        host: APP_REDIS_HOST,
-        username: APP_REDIS_USER,
-        password: APP_REDIS_PASSWORD,
-        db: APP_REDIS_DB,
-        tls: APP_REDIS_SECURE ? {} : undefined,
+    BullModule.forRootAsync({
+      useFactory(config: ConfigService) {
+        const redisConfig = config.getRedisConfig();
+        return {
+          connection: {
+            ...redisConfig,
+            tls: redisConfig.secure ? {
+              rejectUnauthorized: false
+            } : undefined,
+          },
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+          prefix: 'nuvix', // TODO: we have to include a instance key that should be unique per app instance
+        };
       },
-      defaultJobOptions: {
-        removeOnComplete: true,
-        removeOnFail: true,
-      },
-      prefix: 'nuvix',
+      imports: [ConfigService]
     }),
     BullModule.registerQueue(
       { name: QueueFor.MAILS },
-      { name: QueueFor.USAGE },
+      { name: QueueFor.STATS },
       { name: QueueFor.AUDITS },
     ),
     EventEmitterModule.forRoot({

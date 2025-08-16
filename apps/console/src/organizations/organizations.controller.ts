@@ -16,7 +16,7 @@ import { OrganizationsService } from './organizations.service';
 import { Models } from '@nuvix/core/helper/response.helper';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { Query as Queries } from '@nuvix/database';
+import { Query as Queries } from '@nuvix-tech/db';
 import { User } from '@nuvix/core/decorators/user.decorator';
 import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './DTO/team.dto';
 import { AuthGuard } from '@nuvix/core/resolvers/guards/auth.guard';
@@ -32,7 +32,7 @@ import { roles } from '@nuvix/core/config/roles';
 @UseGuards(AuthGuard)
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class OrganizationsController {
-  constructor(private readonly organizationsService: OrganizationsService) {}
+  constructor(private readonly organizationsService: OrganizationsService) { }
 
   @Get()
   @ResModel({ type: Models.ORGANIZATION, list: true })

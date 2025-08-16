@@ -19,7 +19,7 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { StorageService } from './storage.service';
 import { Models } from '@nuvix/core/helper/response.helper';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
-import { Database, Document, Query as Queries } from '@nuvix/database';
+import { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import {
@@ -48,7 +48,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
-  constructor(private readonly storageService: StorageService) {}
+  constructor(private readonly storageService: StorageService) { }
 
   @Get('buckets')
   @ResModel({ type: Models.BUCKET, list: true })
@@ -123,7 +123,7 @@ export class StorageController {
   //   @ProjectDatabase() db: Database,
   //   @Param('id') id: string,
   //   @Body() createObjectDTO: CreateBucketDTO,
-  //   @User() user: Document,
+  //   @User() user: Doc,
   // ) {
   //   return await this.storageService.createFolder(
   //     db,
@@ -146,7 +146,7 @@ export class StorageController {
   //   @Body('permissions') permissions: string[] = [],
   //   @UploadedFile() file: MultipartFile,
   //   @Req() req: NuvixRequest,
-  //   @User() user: Document,
+  //   @User() user: Doc,
   // ) {
   //   return await this.storageService.uploadFile(
   //     db,
@@ -167,8 +167,8 @@ export class StorageController {
     @MultipartParam('permissions') permissions: string[] = [],
     @UploadedFile() file: SavedMultipartFile,
     @Req() req: NuvixRequest,
-    @User() user: Document,
-    @Project() project: Document,
+    @User() user: Doc,
+    @Project() project: Doc,
   ) {
     if (!fileId)
       throw new Exception(Exception.INVALID_PARAMS, 'fileId is required');
@@ -199,7 +199,7 @@ export class StorageController {
     @Param('id') id: string,
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
-    @Project() project: Document,
+    @Project() project: Doc,
     @Query('width', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     width?: string,
     @Query('height', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -255,7 +255,7 @@ export class StorageController {
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.storageService.downloadFile(
       db,
@@ -274,7 +274,7 @@ export class StorageController {
     @Param('fileId') fileId: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.storageService.viewFile(
       db,
@@ -294,7 +294,7 @@ export class StorageController {
     @Query('jwt') jwt: string,
     @Req() req: NuvixRequest,
     @Res({ passthrough: true }) res: any,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.storageService.getFileForPushNotification(
       db,
@@ -324,7 +324,7 @@ export class StorageController {
     @ProjectDatabase() db: Database,
     @Param('id') id: string,
     @Param('fileId') fileId: string,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.storageService.deleteFile(db, id, fileId, project);
   }

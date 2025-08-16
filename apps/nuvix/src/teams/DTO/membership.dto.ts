@@ -9,7 +9,7 @@ import {
   IsUrl,
   IsOptional,
 } from 'class-validator';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
 
 export class CreateMembershipDTO {
   @IsOptional()

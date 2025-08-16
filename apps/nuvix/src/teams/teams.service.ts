@@ -19,17 +19,17 @@ import {
   PROJECT_ROOT,
   SEND_TYPE_EMAIL,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import {
   Authorization,
   AuthorizationException,
   Database,
-  Document,
+  Doc,
   DuplicateException,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
@@ -49,7 +49,7 @@ export class TeamsService {
   constructor(
     @InjectQueue(QueueFor.MAILS)
     private readonly mailsQueue: Queue<MailQueueOptions, any, MailJobs>,
-  ) {}
+  ) { }
 
   /**
    * Find all teams
@@ -95,7 +95,7 @@ export class TeamsService {
    */
   async create(
     db: Database,
-    user: Document | null,
+    user: Doc | null,
     input: CreateTeamDTO,
     mode: string,
   ) {
@@ -107,7 +107,7 @@ export class TeamsService {
     const team = await db
       .createDocument(
         'teams',
-        new Document({
+        new Doc({
           $id: teamId,
           $permissions: [
             Permission.read(Role.team(teamId)),
@@ -136,7 +136,7 @@ export class TeamsService {
       const membershipId = ID.unique();
       await db.createDocument(
         'memberships',
-        new Document({
+        new Doc({
           $id: membershipId,
           $permissions: [
             Permission.read(Role.user(user.getId())),
@@ -147,9 +147,9 @@ export class TeamsService {
             Permission.delete(Role.team(team.getId(), 'owner')),
           ],
           userId: user.getId(),
-          userInternalId: user.getInternalId(),
+          userInternalId: user.getSequence(),
           teamId: team.getId(),
-          teamInternalId: team.getInternalId(),
+          teamInternalId: team.getSequence(),
           roles: input.roles,
           invited: new Date(),
           joined: new Date(),
@@ -171,12 +171,12 @@ export class TeamsService {
   async update(db: Database, id: string, input: UpdateTeamDTO) {
     const team = await db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    team.setAttribute('name', input.name);
-    team.setAttribute('search', [id, input.name].join(' '));
+    team.set('name', input.name);
+    team.set('search', [id, input.name].join(' '));
 
     const updatedTeam = await db.updateDocument('teams', team.getId(), team);
 
@@ -189,7 +189,7 @@ export class TeamsService {
   async remove(db: Database, id: string) {
     const team = await db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
@@ -235,7 +235,7 @@ export class TeamsService {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    return team.getAttribute('prefs', {});
+    return team.get('prefs', {});
   }
 
   /**
@@ -244,14 +244,14 @@ export class TeamsService {
   async setPrefs(db: Database, id: string, input: UpdateTeamPrefsDTO) {
     const team = await db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    team.setAttribute('prefs', input.prefs);
+    team.set('prefs', input.prefs);
     const updatedTeam = await db.updateDocument('teams', team.getId(), team);
 
-    return updatedTeam.getAttribute('prefs');
+    return updatedTeam.get('prefs');
   }
 
   /**
@@ -261,8 +261,8 @@ export class TeamsService {
     db: Database,
     id: string,
     input: CreateMembershipDTO,
-    project: Document,
-    user: Document,
+    project: Doc,
+    user: Doc,
     locale: LocaleTranslator,
   ) {
     const isAPIKey = Auth.isAppUser(Authorization.getRoles());
@@ -292,42 +292,42 @@ export class TeamsService {
     }
 
     const team = await db.getDocument('teams', id);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     let email = input.email ? input.email.trim().toLowerCase() : '';
     let name = input.name ? input.name.trim() : email;
-    let invitee: Document | null = null;
+    let invitee: Doc | null = null;
 
     if (input.userId) {
       invitee = await db.getDocument('users', input.userId);
-      if (invitee.isEmpty()) {
+      if (invitee.empty()) {
         throw new Exception(Exception.USER_NOT_FOUND);
       }
-      if (email && invitee.getAttribute('email') !== email) {
+      if (email && invitee.get('email') !== email) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and email do not match',
           409,
         );
       }
-      if (input.phone && invitee.getAttribute('phone') !== input.phone) {
+      if (input.phone && invitee.get('phone') !== input.phone) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and phone do not match',
           409,
         );
       }
-      email = invitee.getAttribute('email', '');
-      input.phone = invitee.getAttribute('phone', '');
-      name = !name ? invitee.getAttribute('name', '') : name;
+      email = invitee.get('email', '');
+      input.phone = invitee.get('phone', '');
+      name = !name ? invitee.get('name', '') : name;
     } else if (input.email) {
       invitee = await db.findOne('users', [Query.equal('email', [email])]);
       if (
-        !invitee.isEmpty() &&
+        !invitee.empty() &&
         input.phone &&
-        invitee.getAttribute('phone') !== input.phone
+        invitee.get('phone') !== input.phone
       ) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
@@ -340,9 +340,9 @@ export class TeamsService {
         Query.equal('phone', [input.phone]),
       ]);
       if (
-        !invitee.isEmpty() &&
+        !invitee.empty() &&
         email &&
-        invitee.getAttribute('email') !== email
+        invitee.get('email') !== email
       ) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
@@ -352,11 +352,11 @@ export class TeamsService {
       }
     }
 
-    if (!invitee || invitee.isEmpty()) {
+    if (!invitee || invitee.empty()) {
       const userId = ID.unique();
 
       // Check user limit if not privileged or app user
-      const limit = project.getAttribute('auths', {})['limit'] ?? 0;
+      const limit = project.get('auths', {})['limit'] ?? 0;
       if (!isPrivilegedUser && !isAppUser && limit !== 0) {
         const total = await db.count('users', []);
         if (total >= limit) {
@@ -371,14 +371,14 @@ export class TeamsService {
       const identityWithMatchingEmail = await db.findOne('identities', [
         Query.equal('providerEmail', [email]),
       ]);
-      if (identityWithMatchingEmail && !identityWithMatchingEmail.isEmpty()) {
+      if (identityWithMatchingEmail && !identityWithMatchingEmail.empty()) {
         throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
       }
 
       try {
         invitee = await db.createDocument(
           'users',
-          new Document({
+          new Doc({
             $id: userId,
             $permissions: [
               Permission.read(Role.any()),
@@ -419,7 +419,7 @@ export class TeamsService {
     const membershipId = ID.unique();
     const secret = Auth.tokenGenerator();
 
-    let membership = new Document<any>({
+    let membership = new Doc<any>({
       $id: membershipId,
       $permissions: [
         Permission.read(Role.any()),
@@ -429,9 +429,9 @@ export class TeamsService {
         Permission.delete(Role.team(team.getId(), 'owner')),
       ],
       userId: invitee.getId(),
-      userInternalId: invitee.getInternalId(),
+      userInternalId: invitee.getSequence(),
       teamId: team.getId(),
-      teamInternalId: team.getInternalId(),
+      teamInternalId: team.getSequence(),
       roles: input.roles,
       invited: new Date(),
       joined: isPrivilegedUser || isAppUser ? new Date() : null,
@@ -473,19 +473,19 @@ export class TeamsService {
       url.searchParams.append('secret', secret);
       url.searchParams.append('teamId', team.getId());
 
-      const email = invitee.getAttribute('email');
+      const email = invitee.get('email');
       if (email) {
-        const projectName = project.isEmpty()
+        const projectName = project.empty()
           ? 'Console'
-          : project.getAttribute('name', '[APP-NAME]');
+          : project.get('name', '[APP-NAME]');
         let subject = sprintf(
           locale.getText('emails.invitation.subject'),
-          team.getAttribute('name'),
+          team.get('name'),
           projectName,
         );
         const customTemplate =
-          project.getAttribute('templates', {})?.[
-            'email.invitation-' + locale.default
+          project.get('templates', {})?.[
+          'email.invitation-' + locale.default
           ] ?? {};
         const templatePath =
           PROJECT_ROOT + 'assets/locale/templates/email-inner-base.tpl';
@@ -502,7 +502,7 @@ export class TeamsService {
 
         let body = template(emailData);
 
-        const smtp = project.getAttribute('smtp', {});
+        const smtp = project.get('smtp', {});
         const smtpEnabled = smtp['enabled'] ?? false;
 
         let senderEmail =
@@ -529,10 +529,10 @@ export class TeamsService {
         }
 
         const emailVariables = {
-          owner: user.getAttribute('name'),
+          owner: user.get('name'),
           direction: locale.getText('settings.direction'),
-          user: invitee.getAttribute('name'),
-          team: team.getAttribute('name'),
+          user: invitee.get('name'),
+          team: team.get('name'),
           redirect: url.toString(),
           project: projectName,
         };
@@ -557,9 +557,9 @@ export class TeamsService {
     }
 
     membership
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', invitee.getAttribute('name'))
-      .setAttribute('userEmail', invitee.getAttribute('email'));
+      .set('teamName', team.get('name'))
+      .set('userName', invitee.get('name'))
+      .set('userEmail', invitee.get('email'));
 
     return membership;
   }
@@ -574,7 +574,7 @@ export class TeamsService {
     search?: string,
   ) {
     const team = await db.getDocument('teams', id);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
@@ -583,7 +583,7 @@ export class TeamsService {
     }
 
     // Set internal queries
-    queries.push(Query.equal('teamInternalId', [team.getInternalId()]));
+    queries.push(Query.equal('teamInternalId', [team.getSequence()]));
 
     // Get cursor document if there was a cursor query
     const cursor = queries.find(query =>
@@ -611,23 +611,23 @@ export class TeamsService {
     const total = await db.count('memberships', filterQueries);
 
     const validMemberships = memberships
-      .filter(membership => membership.getAttribute('userId'))
+      .filter(membership => membership.get('userId'))
       .map(async membership => {
         const user = await db.getDocument(
           'users',
-          membership.getAttribute('userId'),
+          membership.get('userId'),
         );
 
-        let mfa = user.getAttribute('mfa', false);
+        let mfa = user.get('mfa', false);
         if (mfa) {
           const totp = TOTP.getAuthenticatorFromUser(user);
-          const totpEnabled = totp && totp.getAttribute('verified', false);
+          const totpEnabled = totp && totp.get('verified', false);
           const emailEnabled =
-            user.getAttribute('email') &&
-            user.getAttribute('emailVerification');
+            user.get('email') &&
+            user.get('emailVerification');
           const phoneEnabled =
-            user.getAttribute('phone') &&
-            user.getAttribute('phoneVerification');
+            user.get('phone') &&
+            user.get('phoneVerification');
 
           if (!totpEnabled && !emailEnabled && !phoneEnabled) {
             mfa = false;
@@ -635,10 +635,10 @@ export class TeamsService {
         }
 
         membership
-          .setAttribute('mfa', mfa)
-          .setAttribute('teamName', team.getAttribute('name'))
-          .setAttribute('userName', user.getAttribute('name'))
-          .setAttribute('userEmail', user.getAttribute('email'));
+          .set('mfa', mfa)
+          .set('teamName', team.get('name'))
+          .set('userName', user.get('name'))
+          .set('userEmail', user.get('email'));
 
         return membership;
       });
@@ -654,28 +654,28 @@ export class TeamsService {
    */
   async getMember(db: Database, teamId: string, memberId: string) {
     const team = await db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await db.getDocument('memberships', memberId);
-    if (membership.isEmpty() || !membership.getAttribute('userId')) {
+    if (membership.empty() || !membership.get('userId')) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
 
-    let mfa = user.getAttribute('mfa', false);
+    let mfa = user.get('mfa', false);
     if (mfa) {
       const totp = TOTP.getAuthenticatorFromUser(user);
-      const totpEnabled = totp && totp.getAttribute('verified', false);
+      const totpEnabled = totp && totp.get('verified', false);
       const emailEnabled =
-        user.getAttribute('email') && user.getAttribute('emailVerification');
+        user.get('email') && user.get('emailVerification');
       const phoneEnabled =
-        user.getAttribute('phone') && user.getAttribute('phoneVerification');
+        user.get('phone') && user.get('phoneVerification');
 
       if (!totpEnabled && !emailEnabled && !phoneEnabled) {
         mfa = false;
@@ -683,10 +683,10 @@ export class TeamsService {
     }
 
     membership
-      .setAttribute('mfa', mfa)
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', user.getAttribute('name'))
-      .setAttribute('userEmail', user.getAttribute('email'));
+      .set('mfa', mfa)
+      .set('teamName', team.get('name'))
+      .set('userName', user.get('name'))
+      .set('userEmail', user.get('email'));
 
     return membership;
   }
@@ -701,20 +701,20 @@ export class TeamsService {
     input: UpdateMembershipDTO,
   ) {
     const team = await db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await db.getDocument('memberships', memberId);
-    if (membership.isEmpty()) {
+    if (membership.empty()) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -729,7 +729,7 @@ export class TeamsService {
       );
     }
 
-    membership.setAttribute('roles', input.roles);
+    membership.set('roles', input.roles);
     const updatedMembership = await db.updateDocument(
       'memberships',
       membership.getId(),
@@ -739,9 +739,9 @@ export class TeamsService {
     await db.purgeCachedDocument('users', user.getId());
 
     updatedMembership
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', user.getAttribute('name'))
-      .setAttribute('userEmail', user.getAttribute('email'));
+      .set('teamName', team.get('name'))
+      .set('userName', user.get('name'))
+      .set('userEmail', user.get('email'));
 
     return updatedMembership;
   }
@@ -764,24 +764,24 @@ export class TeamsService {
    */
   async deleteMember(db: Database, teamId: string, memberId: string) {
     const team = await db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await db.getDocument('memberships', memberId);
-    if (membership.isEmpty()) {
+    if (membership.empty()) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (membership.getAttribute('teamInternalId') !== team.getInternalId()) {
+    if (membership.get('teamInternalId') !== team.getSequence()) {
       throw new Exception(Exception.TEAM_MEMBERSHIP_MISMATCH);
     }
 
@@ -799,7 +799,7 @@ export class TeamsService {
 
     await db.purgeCachedDocument('users', user.getId());
 
-    if (membership.getAttribute('confirm')) {
+    if (membership.get('confirm')) {
       await db.decreaseDocumentAttribute('teams', team.getId(), 'total', 1, 0);
     }
 

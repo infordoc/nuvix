@@ -3,15 +3,15 @@ import {
   Authorization,
   AuthorizationException,
   Database,
-  Document,
+  Doc,
   DuplicateException,
   ID,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
-import { DB_FOR_PLATFORM } from '@nuvix/utils/constants';
+import { DB_FOR_PLATFORM } from '@nuvix/utils';
 import {
   CreateMembershipDTO,
   UpdateMembershipDTO,
@@ -25,7 +25,7 @@ import { CreateOrgDTO, UpdateOrgDTO, UpdateTeamPrefsDTO } from './DTO/team.dto';
 export class OrganizationsService {
   private readonly logger = new Logger();
 
-  constructor(@Inject(DB_FOR_PLATFORM) private readonly db: Database) {}
+  constructor(@Inject(DB_FOR_PLATFORM) private readonly db: Database) { }
 
   /**
    * Find all teams
@@ -69,14 +69,14 @@ export class OrganizationsService {
   /**
    * Create a new team
    */
-  async create(user: Document | null, input: CreateOrgDTO) {
+  async create(user: Doc | null, input: CreateOrgDTO) {
     const teamId =
       input.organizationId == 'unique()' ? ID.unique() : input.organizationId;
 
     const team = await this.db
       .createDocument(
         'teams',
-        new Document({
+        new Doc({
           $id: teamId,
           $permissions: [
             Permission.read(Role.team(teamId)),
@@ -102,7 +102,7 @@ export class OrganizationsService {
     const membershipId = ID.unique();
     const membership = await this.db.createDocument(
       'memberships',
-      new Document({
+      new Doc({
         $id: membershipId,
         $permissions: [
           Permission.read(Role.user(user.getId())),
@@ -113,9 +113,9 @@ export class OrganizationsService {
           Permission.delete(Role.team(team.getId(), 'owner')),
         ],
         userId: user.getId(),
-        userInternalId: user.getInternalId(),
+        userInternalId: user.getSequence(),
         teamId: team.getId(),
-        teamInternalId: team.getInternalId(),
+        teamInternalId: team.getSequence(),
         roles: ['owner'],
         invited: new Date(),
         joined: new Date(),
@@ -136,12 +136,12 @@ export class OrganizationsService {
   async update(id: string, input: UpdateOrgDTO) {
     const team = await this.db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    team.setAttribute('name', input.name);
-    team.setAttribute('search', [id, input.name].join(' '));
+    team.set('name', input.name);
+    team.set('search', [id, input.name].join(' '));
 
     const updatedTeam = await this.db.updateDocument(
       'teams',
@@ -158,12 +158,12 @@ export class OrganizationsService {
   async remove(id: string) {
     const team = await this.db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     // TODO: improve the logic || add logic
-    if (team.getAttribute('total') > 1) {
+    if (team.get('total') > 1) {
       throw new Exception(
         Exception.DELETE_FAILED,
         "Can't delete team with members",
@@ -212,7 +212,7 @@ export class OrganizationsService {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    return team.getAttribute('prefs', {});
+    return team.get('prefs', {});
   }
 
   /**
@@ -221,18 +221,18 @@ export class OrganizationsService {
   async setPrefs(id: string, input: UpdateTeamPrefsDTO) {
     const team = await this.db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    team.setAttribute('prefs', input.prefs);
+    team.set('prefs', input.prefs);
     const updatedTeam = await this.db.updateDocument(
       'teams',
       team.getId(),
       team,
     );
 
-    return updatedTeam.getAttribute('prefs');
+    return updatedTeam.get('prefs');
   }
 
   /**
@@ -250,25 +250,25 @@ export class OrganizationsService {
     }
 
     const team = await this.db.getDocument('teams', id);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
-    let invitee: Document | null = null;
+    let invitee: Doc | null = null;
 
     if (input.userId) {
       invitee = await this.db.getDocument('users', input.userId);
-      if (invitee.isEmpty()) {
+      if (invitee.empty()) {
         throw new Exception(Exception.USER_NOT_FOUND);
       }
-      if (input.email && invitee.getAttribute('email') !== input.email) {
+      if (input.email && invitee.get('email') !== input.email) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and email do not match',
           409,
         );
       }
-      if (input.phone && invitee.getAttribute('phone') !== input.phone) {
+      if (input.phone && invitee.get('phone') !== input.phone) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and phone do not match',
@@ -280,9 +280,9 @@ export class OrganizationsService {
         Query.equal('email', [input.email]),
       ]);
       if (
-        !invitee.isEmpty() &&
+        !invitee.empty() &&
         input.phone &&
-        invitee.getAttribute('phone') !== input.phone
+        invitee.get('phone') !== input.phone
       ) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
@@ -295,9 +295,9 @@ export class OrganizationsService {
         Query.equal('phone', [input.phone]),
       ]);
       if (
-        !invitee.isEmpty() &&
+        !invitee.empty() &&
         input.email &&
-        invitee.getAttribute('email') !== input.email
+        invitee.get('email') !== input.email
       ) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
@@ -307,11 +307,11 @@ export class OrganizationsService {
       }
     }
 
-    if (invitee.isEmpty()) {
+    if (invitee.empty()) {
       const userId = ID.unique();
       invitee = await this.db.createDocument(
         'users',
-        new Document({
+        new Doc({
           $id: userId,
           $permissions: [
             Permission.read(Role.any()),
@@ -336,7 +336,7 @@ export class OrganizationsService {
 
     const membership = await this.db.createDocument(
       'memberships',
-      new Document({
+      new Doc({
         $id: membershipId,
         $permissions: [
           Permission.read(Role.any()),
@@ -346,9 +346,9 @@ export class OrganizationsService {
           Permission.delete(Role.team(team.getId(), 'owner')),
         ],
         userId: invitee.getId(),
-        userInternalId: invitee.getInternalId(),
+        userInternalId: invitee.getSequence(),
         teamId: team.getId(),
-        teamInternalId: team.getInternalId(),
+        teamInternalId: team.getSequence(),
         roles: input.roles,
         invited: new Date(),
         joined: isPrivilegedUser || isAppUser ? new Date() : null,
@@ -369,9 +369,9 @@ export class OrganizationsService {
     }
 
     membership
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', invitee.getAttribute('name'))
-      .setAttribute('userEmail', invitee.getAttribute('email'));
+      .set('teamName', team.get('name'))
+      .set('userName', invitee.get('name'))
+      .set('userEmail', invitee.get('email'));
 
     return membership;
   }
@@ -381,7 +381,7 @@ export class OrganizationsService {
    */
   async getMembers(id: string, queries: Query[], search?: string) {
     const team = await this.db.getDocument('teams', id);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
@@ -390,7 +390,7 @@ export class OrganizationsService {
     }
 
     // Set internal queries
-    queries.push(Query.equal('teamInternalId', [team.getInternalId()]));
+    queries.push(Query.equal('teamInternalId', [team.getSequence()]));
 
     // Get cursor document if there was a cursor query
     const cursor = queries.find(query =>
@@ -421,23 +421,23 @@ export class OrganizationsService {
     const total = await this.db.count('memberships', filterQueries);
 
     const validMemberships = memberships
-      .filter(membership => membership.getAttribute('userId'))
+      .filter(membership => membership.get('userId'))
       .map(async membership => {
         const user = await this.db.getDocument(
           'users',
-          membership.getAttribute('userId'),
+          membership.get('userId'),
         );
 
-        let mfa = user.getAttribute('mfa', false);
+        let mfa = user.get('mfa', false);
         if (mfa) {
           const totp = TOTP.getAuthenticatorFromUser(user);
-          const totpEnabled = totp && totp.getAttribute('verified', false);
+          const totpEnabled = totp && totp.get('verified', false);
           const emailEnabled =
-            user.getAttribute('email') &&
-            user.getAttribute('emailVerification');
+            user.get('email') &&
+            user.get('emailVerification');
           const phoneEnabled =
-            user.getAttribute('phone') &&
-            user.getAttribute('phoneVerification');
+            user.get('phone') &&
+            user.get('phoneVerification');
 
           if (!totpEnabled && !emailEnabled && !phoneEnabled) {
             mfa = false;
@@ -445,10 +445,10 @@ export class OrganizationsService {
         }
 
         membership
-          .setAttribute('mfa', mfa)
-          .setAttribute('teamName', team.getAttribute('name'))
-          .setAttribute('userName', user.getAttribute('name'))
-          .setAttribute('userEmail', user.getAttribute('email'));
+          .set('mfa', mfa)
+          .set('teamName', team.get('name'))
+          .set('userName', user.get('name'))
+          .set('userEmail', user.get('email'));
 
         return membership;
       });
@@ -464,28 +464,28 @@ export class OrganizationsService {
    */
   async getMember(teamId: string, memberId: string) {
     const team = await this.db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await this.db.getDocument('memberships', memberId);
-    if (membership.isEmpty() || !membership.getAttribute('userId')) {
+    if (membership.empty() || !membership.get('userId')) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await this.db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
 
-    let mfa = user.getAttribute('mfa', false);
+    let mfa = user.get('mfa', false);
     if (mfa) {
       const totp = TOTP.getAuthenticatorFromUser(user);
-      const totpEnabled = totp && totp.getAttribute('verified', false);
+      const totpEnabled = totp && totp.get('verified', false);
       const emailEnabled =
-        user.getAttribute('email') && user.getAttribute('emailVerification');
+        user.get('email') && user.get('emailVerification');
       const phoneEnabled =
-        user.getAttribute('phone') && user.getAttribute('phoneVerification');
+        user.get('phone') && user.get('phoneVerification');
 
       if (!totpEnabled && !emailEnabled && !phoneEnabled) {
         mfa = false;
@@ -493,10 +493,10 @@ export class OrganizationsService {
     }
 
     membership
-      .setAttribute('mfa', mfa)
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', user.getAttribute('name'))
-      .setAttribute('userEmail', user.getAttribute('email'));
+      .set('mfa', mfa)
+      .set('teamName', team.get('name'))
+      .set('userName', user.get('name'))
+      .set('userEmail', user.get('email'));
 
     return membership;
   }
@@ -510,20 +510,20 @@ export class OrganizationsService {
     input: UpdateMembershipDTO,
   ) {
     const team = await this.db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await this.db.getDocument('memberships', memberId);
-    if (membership.isEmpty()) {
+    if (membership.empty()) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await this.db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
@@ -538,7 +538,7 @@ export class OrganizationsService {
       );
     }
 
-    membership.setAttribute('roles', input.roles);
+    membership.set('roles', input.roles);
     const updatedMembership = await this.db.updateDocument(
       'memberships',
       membership.getId(),
@@ -548,9 +548,9 @@ export class OrganizationsService {
     await this.db.purgeCachedDocument('users', user.getId());
 
     updatedMembership
-      .setAttribute('teamName', team.getAttribute('name'))
-      .setAttribute('userName', user.getAttribute('name'))
-      .setAttribute('userEmail', user.getAttribute('email'));
+      .set('teamName', team.get('name'))
+      .set('userName', user.get('name'))
+      .set('userEmail', user.get('email'));
 
     return updatedMembership;
   }
@@ -572,28 +572,28 @@ export class OrganizationsService {
    */
   async deleteMember(teamId: string, memberId: string) {
     const team = await this.db.getDocument('teams', teamId);
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const membership = await this.db.getDocument('memberships', memberId);
-    if (membership.isEmpty()) {
+    if (membership.empty()) {
       throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
     }
 
     const user = await this.db.getDocument(
       'users',
-      membership.getAttribute('userId'),
+      membership.get('userId'),
     );
-    if (user.isEmpty()) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    if (membership.getAttribute('teamInternalId') !== team.getInternalId()) {
+    if (membership.get('teamInternalId') !== team.getSequence()) {
       throw new Exception(Exception.TEAM_MEMBERSHIP_MISMATCH);
     }
 
-    if (team.getAttribute('total', 0) === 1) {
+    if (team.get('total', 0) === 1) {
       throw new Exception(
         Exception.DELETE_FAILED,
         'Organization must have at least one member',
@@ -614,7 +614,7 @@ export class OrganizationsService {
 
     await this.db.purgeCachedDocument('users', user.getId());
 
-    if (membership.getAttribute('confirm')) {
+    if (membership.get('confirm')) {
       await this.db.decreaseDocumentAttribute(
         'teams',
         team.getId(),
@@ -633,13 +633,13 @@ export class OrganizationsService {
   async billingPlan(id: string) {
     const team = await this.db.getDocument('teams', id);
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
     const plan = await this.db.getDocument(
       'plans',
-      team.getAttribute('billingPlan') || 'tier-2',
+      team.get('billingPlan') || 'tier-2',
     );
 
     if (!plan) {

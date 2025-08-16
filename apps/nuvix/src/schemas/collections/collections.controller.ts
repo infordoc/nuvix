@@ -15,7 +15,7 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { CollectionsService } from './collections.service';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Document, Query as Queries } from '@nuvix/database';
+import type { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import {
@@ -57,7 +57,7 @@ import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
 @UseGuards(ProjectGuard, DocSchemaGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class CollectionsController {
-  constructor(private readonly collectionsService: CollectionsService) {}
+  constructor(private readonly collectionsService: CollectionsService) { }
 
   @Get()
   @ResModel({ type: Models.COLLECTION, list: true })
@@ -137,7 +137,7 @@ export class CollectionsController {
   async removeCollection(
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.removeCollection(
       db,
@@ -167,7 +167,7 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Query('queries', ParseQueryPipe) queries: Queries[],
   ) {
-    return await this.collectionsService.getAttributes(
+    return await this.collectionsService.getAll(
       db,
       collectionId,
       queries,
@@ -180,7 +180,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateStringAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createStringAttribute(
       db,
@@ -196,7 +196,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateEmailAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createEmailAttribute(
       db,
@@ -212,7 +212,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateEnumAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createEnumAttribute(
       db,
@@ -228,7 +228,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateIpAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createIPAttribute(
       db,
@@ -244,7 +244,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateURLAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createURLAttribute(
       db,
@@ -260,7 +260,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateIntegerAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createIntegerAttribute(
       db,
@@ -276,7 +276,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateFloatAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createFloatAttribute(
       db,
@@ -292,7 +292,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateBooleanAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createBooleanAttribute(
       db,
@@ -308,7 +308,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateDatetimeAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createDateAttribute(
       db,
@@ -324,7 +324,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateRelationAttributeDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createRelationshipAttribute(
       db,
@@ -341,7 +341,7 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Param('attributeId') attributeId: string,
   ) {
-    return await this.collectionsService.getAttribute(
+    return await this.collectionsService.get(
       db,
       collectionId,
       attributeId,
@@ -514,7 +514,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Param('attributeId') attributeId: string,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.deleteAttribute(
       db,
@@ -530,7 +530,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() input: CreateIndexDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.createIndex(
       db,
@@ -566,7 +566,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Param('indexId') indexId: string,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.collectionsService.deleteIndex(
       db,

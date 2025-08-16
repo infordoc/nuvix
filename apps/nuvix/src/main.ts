@@ -23,8 +23,8 @@ import {
   LOG_LEVELS,
   PROJECT_ROOT,
   SERVER_CONFIG,
-} from '@nuvix/utils/constants';
-import { Authorization, Role, storage } from '@nuvix/database';
+} from '@nuvix/utils';
+import { Authorization, Role, storage } from '@nuvix-tech/db';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import { openApiSetup } from '@nuvix/core/helper';

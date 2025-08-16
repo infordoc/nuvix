@@ -39,14 +39,14 @@ import {
   Authorization,
   CursorValidator,
   Database,
-  Document,
+  Doc,
   DuplicateException,
   ID,
   OrderException,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
   APP_DOMAIN,
@@ -57,7 +57,7 @@ import {
   MESSAGE_TYPE_PUSH,
   MESSAGE_TYPE_SMS,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -74,7 +74,7 @@ export class MessagingService {
     @InjectQueue(QueueFor.MESSAGING)
     private readonly queue: Queue<MessagingJobData, any, MessagingJob>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   /**
    * Common method to create a provider.
@@ -123,7 +123,7 @@ export class MessagingService {
     const enabled =
       inputEnabled === true && enabledCondition(credentials, options);
 
-    const provider = new Document({
+    const provider = new Doc({
       $id: providerId,
       name,
       provider: providerType,
@@ -415,7 +415,7 @@ export class MessagingService {
         async () => await db.getDocument('providers', providerId),
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           `Provider '${providerId}' for the 'cursor' value not found.`,
         );
@@ -449,7 +449,7 @@ export class MessagingService {
   async getProvider(db: Database, id: string) {
     const provider = await db.getDocument('providers', id);
 
-    if (provider.isEmpty()) {
+    if (provider.empty()) {
       throw new Exception(Exception.PROVIDER_NOT_FOUND);
     }
 
@@ -481,20 +481,20 @@ export class MessagingService {
   }) {
     const provider = await db.getDocument('providers', providerId);
 
-    if (provider.isEmpty()) {
+    if (provider.empty()) {
       throw new Exception(Exception.PROVIDER_NOT_FOUND);
     }
 
-    if (provider.getAttribute('provider') !== providerType) {
+    if (provider.get('provider') !== providerType) {
       throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
     }
 
     if (updatedFields.name) {
-      provider.setAttribute('name', updatedFields.name);
+      provider.set('name', updatedFields.name);
     }
 
     // Update credentials
-    const credentials = provider.getAttribute('credentials') || {};
+    const credentials = provider.get('credentials') || {};
     Object.entries(credentialFields).forEach(([key, inputKey]) => {
       if (
         updatedFields[inputKey] !== undefined &&
@@ -503,10 +503,10 @@ export class MessagingService {
         credentials[key] = updatedFields[inputKey];
       }
     });
-    provider.setAttribute('credentials', credentials);
+    provider.set('credentials', credentials);
 
     // Update options
-    const options = provider.getAttribute('options') || {};
+    const options = provider.get('options') || {};
     Object.entries(optionFields).forEach(([key, inputKey]) => {
       if (
         updatedFields[inputKey] !== undefined &&
@@ -515,18 +515,18 @@ export class MessagingService {
         options[key] = updatedFields[inputKey];
       }
     });
-    provider.setAttribute('options', options);
+    provider.set('options', options);
 
     // Update enabled status
     if (updatedFields.enabled !== undefined && updatedFields.enabled !== null) {
       if (updatedFields.enabled) {
         if (enabledCondition(credentials, options)) {
-          provider.setAttribute('enabled', true);
+          provider.set('enabled', true);
         } else {
           throw new Exception(Exception.PROVIDER_MISSING_CREDENTIALS);
         }
       } else {
-        provider.setAttribute('enabled', false);
+        provider.set('enabled', false);
       }
     }
 
@@ -813,7 +813,7 @@ export class MessagingService {
   async deleteProvider(db: Database, providerId: string) {
     const provider = await db.getDocument('providers', providerId);
 
-    if (provider.isEmpty()) {
+    if (provider.empty()) {
       throw new Exception(Exception.PROVIDER_NOT_FOUND);
     }
 
@@ -832,7 +832,7 @@ export class MessagingService {
     const { topicId: inputTopicId, name, subscribe } = input;
     const topicId = inputTopicId === 'unique()' ? ID.unique() : inputTopicId;
 
-    const topic = new Document({
+    const topic = new Doc({
       $id: topicId,
       name,
       subscribe,
@@ -880,7 +880,7 @@ export class MessagingService {
         async () => await db.getDocument('topics', topicId),
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Topic '${topicId}' for the 'cursor' value not found.`,
@@ -915,7 +915,7 @@ export class MessagingService {
   async getTopic(db: Database, id: string) {
     const topic = await db.getDocument('topics', id);
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
@@ -928,16 +928,16 @@ export class MessagingService {
   async updateTopic({ topicId, db, input }: UpdateTopic) {
     const topic = await db.getDocument('topics', topicId);
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
     if (input.name !== undefined && input.name !== null) {
-      topic.setAttribute('name', input.name);
+      topic.set('name', input.name);
     }
 
     if (input.subscribe !== undefined && input.subscribe !== null) {
-      topic.setAttribute('subscribe', input.subscribe);
+      topic.set('subscribe', input.subscribe);
     }
 
     const updatedTopic = await db.updateDocument('topics', topicId, topic);
@@ -954,7 +954,7 @@ export class MessagingService {
   async deleteTopic(db: Database, topicId: string) {
     const topic = await db.getDocument('topics', topicId);
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
@@ -982,12 +982,12 @@ export class MessagingService {
       async () => await db.getDocument('topics', topicId),
     );
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
     const validator = new Authorization('subscribe');
-    if (!validator.isValid(topic.getAttribute('subscribe'))) {
+    if (!validator.isValid(topic.get('subscribe'))) {
       throw new Exception(
         Exception.USER_UNAUTHORIZED,
         validator.getDescription(),
@@ -998,32 +998,32 @@ export class MessagingService {
       async () => await db.getDocument('targets', targetId),
     );
 
-    if (target.isEmpty()) {
+    if (target.empty()) {
       throw new Exception(Exception.USER_TARGET_NOT_FOUND);
     }
 
     const user = await Authorization.skip(
-      async () => await db.getDocument('users', target.getAttribute('userId')),
+      async () => await db.getDocument('users', target.get('userId')),
     );
 
-    const subscriber = new Document({
+    const subscriber = new Doc({
       $id: subscriberId,
       $permissions: [
         Permission.read(Role.user(user.getId())),
         Permission.delete(Role.user(user.getId())),
       ],
       topicId,
-      topicInternalId: topic.getInternalId(),
+      topicInternalId: topic.getSequence(),
       targetId,
-      targetInternalId: target.getInternalId(),
+      targetInternalId: target.getSequence(),
       userId: user.getId(),
-      userInternalId: user.getInternalId(),
-      providerType: target.getAttribute('providerType'),
+      userInternalId: user.getSequence(),
+      providerType: target.get('providerType'),
       search: [
         subscriberId,
         targetId,
         user.getId(),
-        target.getAttribute('providerType'),
+        target.get('providerType'),
       ].join(' '),
     });
 
@@ -1034,7 +1034,7 @@ export class MessagingService {
       );
 
       const totalAttribute = (() => {
-        switch (target.getAttribute('providerType')) {
+        switch (target.get('providerType')) {
           case MESSAGE_TYPE_EMAIL:
             return 'emailTotal';
           case MESSAGE_TYPE_SMS:
@@ -1057,8 +1057,8 @@ export class MessagingService {
       //   .setParam('subscriberId', createdSubscriber.getId());
 
       createdSubscriber
-        .setAttribute('target', target)
-        .setAttribute('userName', user.getAttribute('name'));
+        .set('target', target)
+        .set('userName', user.get('name'));
 
       return createdSubscriber;
     } catch (error) {
@@ -1081,11 +1081,11 @@ export class MessagingService {
       async () => await db.getDocument('topics', topicId),
     );
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
-    queries.push(Query.equal('topicInternalId', [topic.getInternalId()]));
+    queries.push(Query.equal('topicInternalId', [topic.getSequence()]));
 
     // Get cursor document if there was a cursor query
     const cursor = queries.find(query =>
@@ -1108,7 +1108,7 @@ export class MessagingService {
         async () => await db.getDocument('subscribers', subscriberId),
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Subscriber '${subscriberId}' for the 'cursor' value not found.`,
@@ -1129,17 +1129,17 @@ export class MessagingService {
             async () =>
               await db.getDocument(
                 'targets',
-                subscriber.getAttribute('targetId'),
+                subscriber.get('targetId'),
               ),
           );
           const user = await Authorization.skip(
             async () =>
-              await db.getDocument('users', target.getAttribute('userId')),
+              await db.getDocument('users', target.get('userId')),
           );
 
           return subscriber
-            .setAttribute('target', target)
-            .setAttribute('userName', user.getAttribute('name'));
+            .set('target', target)
+            .set('userName', user.get('name'));
         }),
       );
 
@@ -1166,30 +1166,30 @@ export class MessagingService {
       async () => await db.getDocument('topics', topicId),
     );
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
     const subscriber = await db.getDocument('subscribers', subscriberId);
 
     if (
-      subscriber.isEmpty() ||
-      subscriber.getAttribute('topicId') !== topicId
+      subscriber.empty() ||
+      subscriber.get('topicId') !== topicId
     ) {
       throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
     }
 
     const target = await Authorization.skip(
       async () =>
-        await db.getDocument('targets', subscriber.getAttribute('targetId')),
+        await db.getDocument('targets', subscriber.get('targetId')),
     );
     const user = await Authorization.skip(
-      async () => await db.getDocument('users', target.getAttribute('userId')),
+      async () => await db.getDocument('users', target.get('userId')),
     );
 
     subscriber
-      .setAttribute('target', target)
-      .setAttribute('userName', user.getAttribute('name'));
+      .set('target', target)
+      .set('userName', user.get('name'));
 
     return subscriber;
   }
@@ -1202,28 +1202,28 @@ export class MessagingService {
       async () => await db.getDocument('topics', topicId),
     );
 
-    if (topic.isEmpty()) {
+    if (topic.empty()) {
       throw new Exception(Exception.TOPIC_NOT_FOUND);
     }
 
     const subscriber = await db.getDocument('subscribers', subscriberId);
 
     if (
-      subscriber.isEmpty() ||
-      subscriber.getAttribute('topicId') !== topicId
+      subscriber.empty() ||
+      subscriber.get('topicId') !== topicId
     ) {
       throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
     }
 
     const target = await db.getDocument(
       'targets',
-      subscriber.getAttribute('targetId'),
+      subscriber.get('targetId'),
     );
 
     await db.deleteDocument('subscribers', subscriberId);
 
     const totalAttribute = (() => {
-      switch (target.getAttribute('providerType')) {
+      switch (target.get('providerType')) {
         case MESSAGE_TYPE_EMAIL:
           return 'emailTotal';
         case MESSAGE_TYPE_SMS:
@@ -1308,7 +1308,7 @@ export class MessagingService {
       }
 
       for (const target of foundTargets) {
-        if (target.isEmpty()) {
+        if (target.empty()) {
           throw new Exception(Exception.USER_TARGET_NOT_FOUND);
         }
       }
@@ -1320,15 +1320,15 @@ export class MessagingService {
         const [bucketId, fileId] = attachment.split(':');
 
         const bucket = await db.getDocument('buckets', bucketId);
-        if (bucket.isEmpty()) {
+        if (bucket.empty()) {
           throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
         }
 
         const file = await db.getDocument(
-          `bucket_${bucket.getInternalId()}`,
+          `bucket_${bucket.getSequence()}`,
           fileId,
         );
-        if (file.isEmpty()) {
+        if (file.empty()) {
           throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
         }
 
@@ -1339,7 +1339,7 @@ export class MessagingService {
       }
     }
 
-    const message = new Document({
+    const message = new Doc({
       $id: messageId,
       providerType: MESSAGE_TYPE_EMAIL,
       topics,
@@ -1367,11 +1367,11 @@ export class MessagingService {
         });
         break;
       case MessageStatus.SCHEDULED:
-        const schedule = new Document({
-          region: project.getAttribute('region'),
+        const schedule = new Doc({
+          region: project.get('region'),
           resourceType: 'message',
           resourceId: createdMessage.getId(),
-          resourceInternalId: createdMessage.getInternalId(),
+          resourceInternalId: createdMessage.getSequence(),
           resourceUpdatedAt: new Date().toISOString(),
           projectId: project.getId(),
           schedule: scheduledAt,
@@ -1382,7 +1382,7 @@ export class MessagingService {
           'schedules',
           schedule,
         );
-        createdMessage.setAttribute('scheduleId', createdSchedule.getId());
+        createdMessage.set('scheduleId', createdSchedule.getId());
         await db.updateDocument(
           'messages',
           createdMessage.getId(),
@@ -1444,13 +1444,13 @@ export class MessagingService {
       }
 
       for (const target of foundTargets) {
-        if (target.isEmpty()) {
+        if (target.empty()) {
           throw new Exception(Exception.USER_TARGET_NOT_FOUND);
         }
       }
     }
 
-    const message = new Document({
+    const message = new Doc({
       $id: messageId,
       providerType: MESSAGE_TYPE_SMS,
       topics,
@@ -1473,11 +1473,11 @@ export class MessagingService {
         });
         break;
       case MessageStatus.SCHEDULED:
-        const schedule = new Document({
-          region: project.getAttribute('region'),
+        const schedule = new Doc({
+          region: project.get('region'),
           resourceType: 'message',
           resourceId: createdMessage.getId(),
-          resourceInternalId: createdMessage.getInternalId(),
+          resourceInternalId: createdMessage.getSequence(),
           resourceUpdatedAt: new Date().toISOString(),
           projectId: project.getId(),
           schedule: scheduledAt,
@@ -1488,7 +1488,7 @@ export class MessagingService {
           'schedules',
           schedule,
         );
-        createdMessage.setAttribute('scheduleId', createdSchedule.getId());
+        createdMessage.set('scheduleId', createdSchedule.getId());
         await db.updateDocument(
           'messages',
           createdMessage.getId(),
@@ -1562,7 +1562,7 @@ export class MessagingService {
       }
 
       for (const target of foundTargets) {
-        if (target.isEmpty()) {
+        if (target.empty()) {
           throw new Exception(Exception.USER_TARGET_NOT_FOUND);
         }
       }
@@ -1573,20 +1573,20 @@ export class MessagingService {
       const [bucketId, fileId] = image.split(':');
 
       const bucket = await db.getDocument('buckets', bucketId);
-      if (bucket.isEmpty()) {
+      if (bucket.empty()) {
         throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
       }
 
       const file = await db.getDocument(
-        `bucket_${bucket.getInternalId()}`,
+        `bucket_${bucket.getSequence()}`,
         fileId,
       );
-      if (file.isEmpty()) {
+      if (file.empty()) {
         throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
       }
 
       const allowedMimeTypes = ['image/png', 'image/jpeg'];
-      if (!allowedMimeTypes.includes(file.getAttribute('mimeType'))) {
+      if (!allowedMimeTypes.includes(file.get('mimeType'))) {
         throw new Exception(Exception.STORAGE_FILE_TYPE_UNSUPPORTED);
       }
 
@@ -1640,7 +1640,7 @@ export class MessagingService {
     if (critical) pushData.critical = true;
     if (priority) pushData.priority = priority;
 
-    const message = new Document({
+    const message = new Doc({
       $id: messageId,
       providerType: MESSAGE_TYPE_PUSH,
       topics,
@@ -1661,11 +1661,11 @@ export class MessagingService {
         });
         break;
       case MessageStatus.SCHEDULED:
-        const schedule = new Document({
-          region: project.getAttribute('region'),
+        const schedule = new Doc({
+          region: project.get('region'),
           resourceType: 'message',
           resourceId: createdMessage.getId(),
-          resourceInternalId: createdMessage.getInternalId(),
+          resourceInternalId: createdMessage.getSequence(),
           resourceUpdatedAt: new Date().toISOString(),
           projectId: project.getId(),
           schedule: scheduledAt,
@@ -1676,7 +1676,7 @@ export class MessagingService {
           'schedules',
           schedule,
         );
-        createdMessage.setAttribute('scheduleId', createdSchedule.getId());
+        createdMessage.set('scheduleId', createdSchedule.getId());
         await db.updateDocument(
           'messages',
           createdMessage.getId(),
@@ -1719,7 +1719,7 @@ export class MessagingService {
         async () => await db.getDocument('messages', messageId),
       );
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Message '${messageId}' for the 'cursor' value not found.`,
@@ -1754,7 +1754,7 @@ export class MessagingService {
   async getMessage(db: Database, id: string) {
     const message = await db.getDocument('messages', id);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
@@ -1767,11 +1767,11 @@ export class MessagingService {
   async listTargets({ db, messageId, queries }: ListTargets) {
     const message = await db.getDocument('messages', messageId);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
-    const targetIDs = message.getAttribute('targets');
+    const targetIDs = message.get('targets');
 
     if (!targetIDs || targetIDs.length === 0) {
       return {
@@ -1801,7 +1801,7 @@ export class MessagingService {
       const targetId = cursor.getValue();
       const cursorDocument = await db.getDocument('targets', targetId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Target '${targetId}' for the 'cursor' value not found.`,
@@ -1841,7 +1841,7 @@ export class MessagingService {
   }: UpdateEmailMessage) {
     const message = await db.getDocument('messages', messageId);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
@@ -1855,21 +1855,21 @@ export class MessagingService {
           : MessageStatus.PROCESSING;
       }
     } else {
-      status = message.getAttribute('status');
+      status = message.get('status');
     }
 
     if (
       status !== MessageStatus.DRAFT &&
-      (input.topics ?? message.getAttribute('topics', [])).length === 0 &&
-      (input.users ?? message.getAttribute('users', [])).length === 0 &&
-      (input.targets ?? message.getAttribute('targets', [])).length === 0
+      (input.topics ?? message.get('topics', [])).length === 0 &&
+      (input.users ?? message.get('users', [])).length === 0 &&
+      (input.targets ?? message.get('targets', [])).length === 0
     ) {
       throw new Exception(Exception.MESSAGE_MISSING_TARGET);
     }
 
-    const currentScheduledAt = message.getAttribute('scheduledAt');
+    const currentScheduledAt = message.get('scheduledAt');
 
-    switch (message.getAttribute('status')) {
+    switch (message.get('status')) {
       case MessageStatus.PROCESSING:
         throw new Exception(Exception.MESSAGE_ALREADY_PROCESSING);
       case MessageStatus.SENT:
@@ -1892,11 +1892,11 @@ export class MessagingService {
 
     // Handle schedule creation
     if (!currentScheduledAt && input.scheduledAt) {
-      const schedule = new Document({
-        region: project.getAttribute('region'),
+      const schedule = new Doc({
+        region: project.get('region'),
         resourceType: 'message',
         resourceId: message.getId(),
-        resourceInternalId: message.getInternalId(),
+        resourceInternalId: message.getSequence(),
         resourceUpdatedAt: new Date().toISOString(),
         projectId: project.getId(),
         schedule: input.scheduledAt,
@@ -1907,27 +1907,27 @@ export class MessagingService {
         'schedules',
         schedule,
       );
-      message.setAttribute('scheduleId', createdSchedule.getId());
+      message.set('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
       const schedule = await this.dbForPlatform.getDocument(
         'schedules',
-        message.getAttribute('scheduleId'),
+        message.get('scheduleId'),
       );
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
-      if (schedule.isEmpty()) {
+      if (schedule.empty()) {
         throw new Exception(Exception.SCHEDULE_NOT_FOUND);
       }
 
       schedule
-        .setAttribute('resourceUpdatedAt', new Date().toISOString())
-        .setAttribute('active', scheduledStatus);
+        .set('resourceUpdatedAt', new Date().toISOString())
+        .set('active', scheduledStatus);
 
       if (input.scheduledAt) {
-        schedule.setAttribute('schedule', input.scheduledAt);
+        schedule.set('schedule', input.scheduledAt);
       }
 
       await this.dbForPlatform.updateDocument(
@@ -1938,22 +1938,22 @@ export class MessagingService {
     }
 
     if (input.scheduledAt) {
-      message.setAttribute('scheduledAt', input.scheduledAt);
+      message.set('scheduledAt', input.scheduledAt);
     }
 
     if (input.topics !== undefined) {
-      message.setAttribute('topics', input.topics);
+      message.set('topics', input.topics);
     }
 
     if (input.users !== undefined) {
-      message.setAttribute('users', input.users);
+      message.set('users', input.users);
     }
 
     if (input.targets !== undefined) {
-      message.setAttribute('targets', input.targets);
+      message.set('targets', input.targets);
     }
 
-    const data = message.getAttribute('data');
+    const data = message.get('data');
 
     if (input.subject !== undefined) {
       data.subject = input.subject;
@@ -1969,15 +1969,15 @@ export class MessagingService {
         const [bucketId, fileId] = attachment.split(':');
 
         const bucket = await db.getDocument('buckets', bucketId);
-        if (bucket.isEmpty()) {
+        if (bucket.empty()) {
           throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
         }
 
         const file = await db.getDocument(
-          `bucket_${bucket.getInternalId()}`,
+          `bucket_${bucket.getSequence()}`,
           fileId,
         );
-        if (file.isEmpty()) {
+        if (file.empty()) {
           throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
         }
 
@@ -2001,10 +2001,10 @@ export class MessagingService {
       data.bcc = input.bcc;
     }
 
-    message.setAttribute('data', data);
+    message.set('data', data);
 
     if (status) {
-      message.setAttribute('status', status);
+      message.set('status', status);
     }
 
     const updatedMessage = await db.updateDocument(
@@ -2031,7 +2031,7 @@ export class MessagingService {
   async updateSmsMessage({ messageId, input, db, project }: UpdateSmsMessage) {
     const message = await db.getDocument('messages', messageId);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
@@ -2045,21 +2045,21 @@ export class MessagingService {
           : MessageStatus.PROCESSING;
       }
     } else {
-      status = message.getAttribute('status');
+      status = message.get('status');
     }
 
     if (
       status !== MessageStatus.DRAFT &&
-      (input.topics ?? message.getAttribute('topics', [])).length === 0 &&
-      (input.users ?? message.getAttribute('users', [])).length === 0 &&
-      (input.targets ?? message.getAttribute('targets', [])).length === 0
+      (input.topics ?? message.get('topics', [])).length === 0 &&
+      (input.users ?? message.get('users', [])).length === 0 &&
+      (input.targets ?? message.get('targets', [])).length === 0
     ) {
       throw new Exception(Exception.MESSAGE_MISSING_TARGET);
     }
 
-    const currentScheduledAt = message.getAttribute('scheduledAt');
+    const currentScheduledAt = message.get('scheduledAt');
 
-    switch (message.getAttribute('status')) {
+    switch (message.get('status')) {
       case MessageStatus.PROCESSING:
         throw new Exception(Exception.MESSAGE_ALREADY_PROCESSING);
       case MessageStatus.SENT:
@@ -2082,11 +2082,11 @@ export class MessagingService {
 
     // Handle schedule creation
     if (!currentScheduledAt && input.scheduledAt) {
-      const schedule = new Document({
-        region: project.getAttribute('region'),
+      const schedule = new Doc({
+        region: project.get('region'),
         resourceType: 'message',
         resourceId: message.getId(),
-        resourceInternalId: message.getInternalId(),
+        resourceInternalId: message.getSequence(),
         resourceUpdatedAt: new Date().toISOString(),
         projectId: project.getId(),
         schedule: input.scheduledAt,
@@ -2097,27 +2097,27 @@ export class MessagingService {
         'schedules',
         schedule,
       );
-      message.setAttribute('scheduleId', createdSchedule.getId());
+      message.set('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
       const schedule = await this.dbForPlatform.getDocument(
         'schedules',
-        message.getAttribute('scheduleId'),
+        message.get('scheduleId'),
       );
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
-      if (schedule.isEmpty()) {
+      if (schedule.empty()) {
         throw new Exception(Exception.SCHEDULE_NOT_FOUND);
       }
 
       schedule
-        .setAttribute('resourceUpdatedAt', new Date().toISOString())
-        .setAttribute('active', scheduledStatus);
+        .set('resourceUpdatedAt', new Date().toISOString())
+        .set('active', scheduledStatus);
 
       if (input.scheduledAt) {
-        schedule.setAttribute('schedule', input.scheduledAt);
+        schedule.set('schedule', input.scheduledAt);
       }
 
       await this.dbForPlatform.updateDocument(
@@ -2128,31 +2128,31 @@ export class MessagingService {
     }
 
     if (input.scheduledAt) {
-      message.setAttribute('scheduledAt', input.scheduledAt);
+      message.set('scheduledAt', input.scheduledAt);
     }
 
     if (input.topics !== undefined) {
-      message.setAttribute('topics', input.topics);
+      message.set('topics', input.topics);
     }
 
     if (input.users !== undefined) {
-      message.setAttribute('users', input.users);
+      message.set('users', input.users);
     }
 
     if (input.targets !== undefined) {
-      message.setAttribute('targets', input.targets);
+      message.set('targets', input.targets);
     }
 
-    const data = message.getAttribute('data');
+    const data = message.get('data');
 
     if (input.content !== undefined) {
       data.content = input.content;
     }
 
-    message.setAttribute('data', data);
+    message.set('data', data);
 
     if (status) {
-      message.setAttribute('status', status);
+      message.set('status', status);
     }
 
     const updatedMessage = await db.updateDocument(
@@ -2184,7 +2184,7 @@ export class MessagingService {
   }: UpdatePushMessage) {
     const message = await db.getDocument('messages', messageId);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
@@ -2198,21 +2198,21 @@ export class MessagingService {
           : MessageStatus.PROCESSING;
       }
     } else {
-      status = message.getAttribute('status');
+      status = message.get('status');
     }
 
     if (
       status !== MessageStatus.DRAFT &&
-      (input.topics ?? message.getAttribute('topics', [])).length === 0 &&
-      (input.users ?? message.getAttribute('users', [])).length === 0 &&
-      (input.targets ?? message.getAttribute('targets', [])).length === 0
+      (input.topics ?? message.get('topics', [])).length === 0 &&
+      (input.users ?? message.get('users', [])).length === 0 &&
+      (input.targets ?? message.get('targets', [])).length === 0
     ) {
       throw new Exception(Exception.MESSAGE_MISSING_TARGET);
     }
 
-    const currentScheduledAt = message.getAttribute('scheduledAt');
+    const currentScheduledAt = message.get('scheduledAt');
 
-    switch (message.getAttribute('status')) {
+    switch (message.get('status')) {
       case MessageStatus.PROCESSING:
         throw new Exception(Exception.MESSAGE_ALREADY_PROCESSING);
       case MessageStatus.SENT:
@@ -2235,11 +2235,11 @@ export class MessagingService {
 
     // Handle schedule creation
     if (!currentScheduledAt && input.scheduledAt) {
-      const schedule = new Document({
-        region: project.getAttribute('region'),
+      const schedule = new Doc({
+        region: project.get('region'),
         resourceType: 'message',
         resourceId: message.getId(),
-        resourceInternalId: message.getInternalId(),
+        resourceInternalId: message.getSequence(),
         resourceUpdatedAt: new Date().toISOString(),
         projectId: project.getId(),
         schedule: input.scheduledAt,
@@ -2250,27 +2250,27 @@ export class MessagingService {
         'schedules',
         schedule,
       );
-      message.setAttribute('scheduleId', createdSchedule.getId());
+      message.set('scheduleId', createdSchedule.getId());
     }
 
     // Handle schedule updates
     if (currentScheduledAt) {
       const schedule = await this.dbForPlatform.getDocument(
         'schedules',
-        message.getAttribute('scheduleId'),
+        message.get('scheduleId'),
       );
       const scheduledStatus = status === MessageStatus.SCHEDULED;
 
-      if (schedule.isEmpty()) {
+      if (schedule.empty()) {
         throw new Exception(Exception.SCHEDULE_NOT_FOUND);
       }
 
       schedule
-        .setAttribute('resourceUpdatedAt', new Date().toISOString())
-        .setAttribute('active', scheduledStatus);
+        .set('resourceUpdatedAt', new Date().toISOString())
+        .set('active', scheduledStatus);
 
       if (input.scheduledAt) {
-        schedule.setAttribute('schedule', input.scheduledAt);
+        schedule.set('schedule', input.scheduledAt);
       }
 
       await this.dbForPlatform.updateDocument(
@@ -2281,22 +2281,22 @@ export class MessagingService {
     }
 
     if (input.scheduledAt) {
-      message.setAttribute('scheduledAt', input.scheduledAt);
+      message.set('scheduledAt', input.scheduledAt);
     }
 
     if (input.topics !== undefined) {
-      message.setAttribute('topics', input.topics);
+      message.set('topics', input.topics);
     }
 
     if (input.users !== undefined) {
-      message.setAttribute('users', input.users);
+      message.set('users', input.users);
     }
 
     if (input.targets !== undefined) {
-      message.setAttribute('targets', input.targets);
+      message.set('targets', input.targets);
     }
 
-    const pushData = message.getAttribute('data');
+    const pushData = message.get('data');
 
     if (input.title !== undefined) {
       pushData.title = input.title;
@@ -2350,20 +2350,20 @@ export class MessagingService {
       const [bucketId, fileId] = input.image.split(':');
 
       const bucket = await db.getDocument('buckets', bucketId);
-      if (bucket.isEmpty()) {
+      if (bucket.empty()) {
         throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
       }
 
       const file = await db.getDocument(
-        `bucket_${bucket.getInternalId()}`,
+        `bucket_${bucket.getSequence()}`,
         fileId,
       );
-      if (file.isEmpty()) {
+      if (file.empty()) {
         throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
       }
 
       const allowedMimeTypes = ['image/png', 'image/jpeg'];
-      if (!allowedMimeTypes.includes(file.getAttribute('mimeType'))) {
+      if (!allowedMimeTypes.includes(file.get('mimeType'))) {
         throw new Exception(Exception.STORAGE_FILE_TYPE_UNSUPPORTED);
       }
 
@@ -2401,10 +2401,10 @@ export class MessagingService {
       };
     }
 
-    message.setAttribute('data', pushData);
+    message.set('data', pushData);
 
     if (status) {
-      message.setAttribute('status', status);
+      message.set('status', status);
     }
 
     const updatedMessage = await db.updateDocument(
@@ -2431,16 +2431,16 @@ export class MessagingService {
   async deleteMessage(db: Database, messageId: string) {
     const message = await db.getDocument('messages', messageId);
 
-    if (message.isEmpty()) {
+    if (message.empty()) {
       throw new Exception(Exception.MESSAGE_NOT_FOUND);
     }
 
-    switch (message.getAttribute('status')) {
+    switch (message.get('status')) {
       case MessageStatus.PROCESSING:
         throw new Exception(Exception.MESSAGE_ALREADY_SCHEDULED);
       case MessageStatus.SCHEDULED:
-        const scheduleId = message.getAttribute('scheduleId');
-        const scheduledAt = message.getAttribute('scheduledAt');
+        const scheduleId = message.get('scheduleId');
+        const scheduledAt = message.get('scheduledAt');
 
         const now = new Date();
         const scheduledDate = new Date(scheduledAt);

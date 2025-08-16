@@ -8,7 +8,7 @@ import {
   Length,
 } from 'class-validator';
 import { IsCustomID } from '@nuvix/core/validators/input.validator';
-import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils/constants';
+import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
 
 export class CreateFileDTO {
   @IsString()

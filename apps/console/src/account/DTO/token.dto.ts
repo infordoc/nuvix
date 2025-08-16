@@ -1,7 +1,7 @@
 import {
   APP_LIMIT_ARRAY_ELEMENT_SIZE,
   APP_LIMIT_ARRAY_PARAMS_SIZE,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import {
   IsString,
   IsUrl,
@@ -12,7 +12,6 @@ import {
   IsNotEmpty,
   IsEmail,
   IsBoolean,
-  IsPhoneNumber,
 } from 'class-validator';
 
 export class CreateOAuth2TokenDTO {
@@ -35,11 +34,11 @@ export class CreateOAuth2TokenDTO {
 export class CreateMagicURLTokenDTO {
   @IsString()
   @MaxLength(36)
-  userId: string;
+  userId!: string;
 
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsUrl()
@@ -53,11 +52,11 @@ export class CreateMagicURLTokenDTO {
 export class CreateEmailTokenDTO {
   @IsString()
   @MaxLength(36)
-  userId: string;
+  userId!: string;
 
   @IsNotEmpty()
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsBoolean()

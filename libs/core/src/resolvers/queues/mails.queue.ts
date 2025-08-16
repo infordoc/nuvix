@@ -3,73 +3,68 @@ import { Queue } from './queue';
 import { Job } from 'bullmq';
 import { createTransport, Transporter } from 'nodemailer';
 import {
-  APP_SMTP_DKIM_DOMAIN,
-  APP_SMTP_DKIM_KEY,
-  APP_SMTP_DKIM_PRIVATE_KEY,
-  APP_SMTP_EMAIL_FROM,
-  APP_SMTP_HOST,
-  APP_SMTP_PASSWORD,
-  APP_SMTP_PORT,
-  APP_SMTP_SECURE,
-  APP_SMTP_SENDER,
-  APP_SMTP_USER,
   PROJECT_ROOT,
   SEND_TYPE_EMAIL,
   QueueFor,
-} from '@nuvix/utils/constants';
-import SMTPTransport from 'nodemailer/lib/smtp-transport';
+} from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import * as fs from 'fs';
 import { Logger } from '@nestjs/common';
 import path from 'path';
 import * as Template from 'handlebars';
+import type { ConfigService } from '@nuvix/core/config.service.js';
 
 @Processor(QueueFor.MAILS, { concurrency: 10000 })
 export class MailsQueue extends Queue {
   private readonly logger = new Logger(MailsQueue.name);
-  private readonly transporter = createTransport({
-    host: APP_SMTP_HOST,
-    port: APP_SMTP_PORT,
-    secure: APP_SMTP_SECURE,
-    auth:
-      APP_SMTP_USER || APP_SMTP_PASSWORD
-        ? {
-            user: APP_SMTP_USER,
-            pass: APP_SMTP_PASSWORD,
-          }
-        : undefined,
-    dkim:
-      APP_SMTP_DKIM_DOMAIN && APP_SMTP_DKIM_KEY && APP_SMTP_DKIM_PRIVATE_KEY
-        ? {
-            domainName: APP_SMTP_DKIM_DOMAIN,
-            keySelector: APP_SMTP_DKIM_KEY,
-            privateKey: APP_SMTP_DKIM_PRIVATE_KEY,
-          }
-        : undefined,
-    from: {
-      name: APP_SMTP_SENDER,
-      address: APP_SMTP_EMAIL_FROM,
-    },
-    sender: {
-      name: APP_SMTP_SENDER,
-      address: APP_SMTP_EMAIL_FROM,
-    },
-    logger: true,
-    tls: {
-      rejectUnauthorized: false,
-    },
-  });
+  private readonly transporter: Transporter;
+
+  constructor(
+    private readonly configService: ConfigService,
+  ) {
+    super();
+    const config = this.configService.getSmtpConfig();
+
+    this.transporter = createTransport({
+      host: config.host,
+      pool: true,
+      port: config.port,
+      secure: config.secure,
+      auth: config.user || config.password ? {
+        user: config.user,
+        pass: config.password,
+      } : undefined,
+      dkim: config.dkim.domain || config.dkim.key || config.dkim.privateKey ? {
+        domainName: config.dkim.domain,
+        keySelector: config.dkim.key,
+        privateKey: config.dkim.privateKey,
+      } : undefined,
+      from: {
+        name: config.sender,
+        address: config.emailFrom,
+      },
+      sender: {
+        name: config.sender,
+        address: config.emailFrom,
+      },
+      logger: true,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    } as any);
+  }
 
   // TODO: better error handling
   async process(
-    job: Job<MailQueueOptions | MailsQueueOptions, any, MailJobs>,
+    job: Job<MailQueueOptions | MailsQueueOptions, any, MailJob>,
     token?: string,
   ): Promise<any> {
     switch (job.name) {
-      case SEND_TYPE_EMAIL:
+      case MailJob.SEND_EMAIL:
         const { body, subject, server, variables } = job.data;
+        const config = this.configService.getSmtpConfig();
 
-        if (!APP_SMTP_HOST && !server?.host)
+        if (!config.host && !server?.host)
           throw Error(
             'Skipped mail processing. No SMTP configuration has been set.',
           );
@@ -91,8 +86,8 @@ export class MailsQueue extends Queue {
         }
 
         const protocol =
-          process.env.APP_OPTIONS_FORCE_HTTPS === 'disabled' ? 'http' : 'https';
-        const hostname = process.env.APP_DOMAIN;
+          this.configService.get('app').forceHttps ? 'https' : 'http';
+        const hostname = this.configService.get('app', 'localhost').domain;
         const templateVariables = {
           ...variables,
           host: `${protocol}://${hostname}`,
@@ -102,10 +97,8 @@ export class MailsQueue extends Queue {
         };
 
         if (!job.data.bodyTemplate) {
-          job.data.bodyTemplate = path.resolve(
-            PROJECT_ROOT,
-            'assets/locale/templates/email-base-styled.tpl',
-          );
+          job.data.bodyTemplate = this.configService.assetConfig
+            .get('assets/locale/templates/email-base-styled.tpl');
         }
 
         const templateSource = fs.readFileSync(job.data.bodyTemplate, 'utf8');
@@ -138,10 +131,7 @@ export class MailsQueue extends Queue {
     subject,
     body,
   }: {
-    transporter: Transporter<
-      SMTPTransport.SentMessageInfo,
-      SMTPTransport.Options
-    >;
+    transporter: Transporter;
     email: string;
     subject: string;
     body: string;
@@ -156,7 +146,7 @@ export class MailsQueue extends Queue {
 
     try {
       await transporter.sendMail(mailOptions);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Error sending mail: ${error.message}`);
     }
   }
@@ -191,9 +181,9 @@ export class MailsQueue extends Queue {
       auth:
         options.username || options.password
           ? {
-              user: options.username,
-              pass: options.password,
-            }
+            user: options.username,
+            pass: options.password,
+          }
           : undefined,
       replyTo: options.replyTo,
       sender: {
@@ -204,7 +194,7 @@ export class MailsQueue extends Queue {
         name: options.senderName,
         address: options.senderEmail,
       },
-    });
+    } as any);
   }
 }
 
@@ -236,4 +226,6 @@ export interface MailsQueueOptions extends Omit<MailQueueOptions, 'email'> {
   emails: string[];
 }
 
-export type MailJobs = 'sendEmail';
+export enum MailJob {
+  SEND_EMAIL = 'send_email',
+}

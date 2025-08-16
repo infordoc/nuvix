@@ -11,7 +11,6 @@ import {
   Put,
   Query,
   Req,
-  Request,
   Res,
   Session,
   UseGuards,
@@ -22,7 +21,7 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { Models } from '@nuvix/core/helper/response.helper';
 import { User } from '@nuvix/core/decorators/user.decorator';
 import { AuditEvent, Locale, ResModel, Scope } from '@nuvix/core/decorators';
-import { Document, Query as Queries } from '@nuvix/database';
+import { Query as Queries } from '@nuvix-tech/db';
 
 import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
@@ -67,6 +66,7 @@ import {
   CreateEmailVerificationDTO,
   UpdateEmailVerificationDTO,
 } from './DTO/verification.dto';
+import type { SessionsDoc, UsersDoc } from '@nuvix/utils/types';
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(AuthGuard)
@@ -84,7 +84,7 @@ export class AccountController {
   })
   async createAccount(
     @Body() input: CreateAccountDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Req() request: NuvixRequest,
   ) {
     return await this.accountService.createAccount(
@@ -100,8 +100,8 @@ export class AccountController {
   @Get()
   @Scope('account')
   @ResModel(Models.USER)
-  async getAccount(@User() user: Document) {
-    if (user.isEmpty()) {
+  async getAccount(@User() user: UsersDoc) {
+    if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
     return user;
@@ -111,7 +111,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.NONE)
   @AuditEvent('user.delete', 'user/{res.$id}')
-  async deleteAccount(@User() user: Document) {
+  async deleteAccount(@User() user: UsersDoc) {
     return await this.accountService.deleteAccount(user);
   }
 
@@ -119,7 +119,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.SESSION, { list: true })
   async getSessions(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
     return await this.accountService.getSessions(user, locale);
@@ -130,7 +130,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSessions(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Req() request: any,
     @Res({ passthrough: true }) response: any,
     @Locale() locale: LocaleTranslator,
@@ -147,7 +147,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.SESSION)
   async getSession(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Param('id') sessionId: string,
     @Locale() locale: LocaleTranslator,
   ) {
@@ -159,7 +159,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSession(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Param('id') id: string,
     @Req() request: any,
     @Res({ passthrough: true }) response: any,
@@ -171,7 +171,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.SESSION)
   @AuditEvent('session.update', 'user/{res.userId}')
-  async updateSession(@User() user: Document, @Param('id') id: string) {
+  async updateSession(@User() user: UsersDoc, @Param('id') id: string) {
     return await this.accountService.updateSession(user, id);
   }
 
@@ -184,7 +184,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createEmailSession(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: CreateEmailSessionDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -208,7 +208,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createSession(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -254,7 +254,7 @@ export class AccountController {
     const domain = request.hostname;
     const protocol = request.protocol;
 
-    const params = { ...input };
+    const params: Record<string, any> = { ...input };
     params['provider'] = provider;
     params['project'] = projectId;
 
@@ -274,7 +274,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async OAuth2Redirect(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Query() input: OAuth2CallbackDTO,
     @Req() request: NuvixRequest,
     @Res() response: NuvixRes,
@@ -314,7 +314,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createMagicURLToken(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: CreateMagicURLTokenDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -341,7 +341,7 @@ export class AccountController {
     @Body() input: CreateEmailTokenDTO,
     @Req() request: NuvixRequest,
     @Res() response: NuvixRes,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
     return await this.accountService.createEmailToken({
@@ -361,7 +361,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async updateMagicURLSession(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
     @Res() response: NuvixRes,
@@ -380,7 +380,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.JWT)
   async createJWT(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Res({ passthrough: true }) response: NuvixRes,
   ) {
     return await this.accountService.createJWT(user, response);
@@ -389,15 +389,15 @@ export class AccountController {
   @Get('prefs')
   @Scope('account')
   @ResModel(Models.PREFERENCES)
-  getPrefs(@User() user: Document) {
-    return user.getAttribute('prefs', {});
+  getPrefs(@User() user: UsersDoc) {
+    return user.get('prefs', {});
   }
 
   @Patch('prefs')
   @Scope('account')
   @ResModel(Models.PREFERENCES)
   @AuditEvent('user.update', 'user/{res.$id}')
-  async updatePrefs(@User() user: Document, @Body() input: UpdatePrefsDTO) {
+  async updatePrefs(@User() user: UsersDoc, @Body() input: UpdatePrefsDTO) {
     return await this.accountService.updatePrefs(user, input.prefs);
   }
 
@@ -405,7 +405,7 @@ export class AccountController {
   @Scope('account')
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
-  async updateName(@User() user: Document, @Body() { name }: UpdateNameDTO) {
+  async updateName(@User() user: UsersDoc, @Body() { name }: UpdateNameDTO) {
     return await this.accountService.updateName(user, name);
   }
 
@@ -414,7 +414,7 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updatePassword(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: UpdatePasswordDTO,
   ) {
     return await this.accountService.updatePassword(user, input);
@@ -425,7 +425,7 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updateEmail(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() updateEmailDTO: UpdateEmailDTO,
   ) {
     return await this.accountService.updateEmail(user, updateEmailDTO);
@@ -436,7 +436,7 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updateStatus(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
   ) {
@@ -455,7 +455,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createRecovery(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: CreateRecoveryDTO,
     @Locale() locale: LocaleTranslator,
     @Req() request: NuvixRequest,
@@ -479,7 +479,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async updateRecovery(
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Body() input: UpdateRecoveryDTO,
     @Res() response: NuvixRes,
   ) {
@@ -501,7 +501,7 @@ export class AccountController {
     @Body() { url }: CreateEmailVerificationDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
     return this.accountService.createEmailVerification({
@@ -524,7 +524,7 @@ export class AccountController {
   async updateEmailVerification(
     @Body() { userId, secret }: UpdateEmailVerificationDTO,
     @Res({ passthrough: true }) response: NuvixRes,
-    @User() user: Document,
+    @User() user: UsersDoc,
   ) {
     return this.accountService.updateEmailVerification({
       userId,
@@ -536,7 +536,7 @@ export class AccountController {
 
   @Get('logs')
   @ResModel({ type: Models.LOG, list: true })
-  async getLogs(@User() user: Document, @Query('queries') queries: Queries[]) {
+  async getLogs(@User() user: UsersDoc, @Query('queries') queries: Queries[]) {
     return await this.accountService.getLogs(user, queries);
   }
 
@@ -549,8 +549,8 @@ export class AccountController {
   @ResModel(Models.ACCOUNT)
   async updateMfa(
     @Body() { mfa }: UpdateAccountMfaDTO,
-    @User() user: Document,
-    @Session() session: Document,
+    @User() user: UsersDoc,
+    @Session() session: SessionsDoc,
   ) {
     return this.accountService.updateMfa({
       mfa,
@@ -562,7 +562,7 @@ export class AccountController {
   @Get('mfa/factors')
   @Scope('account')
   @ResModel(Models.MFA_FACTORS)
-  async getMfaFactors(@User() user: Document) {
+  async getMfaFactors(@User() user: UsersDoc) {
     return this.accountService.getMfaFactors(user);
   }
 
@@ -575,7 +575,7 @@ export class AccountController {
   @ResModel(Models.MFA_TYPE)
   async createMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
   ) {
     return this.accountService.createMfaAuthenticator({
       type,
@@ -594,8 +594,8 @@ export class AccountController {
   async verifyMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @Body() { otp }: VerifyMfaAuthenticatorDTO,
-    @User() user: Document,
-    @Session() session: Document,
+    @User() user: UsersDoc,
+    @Session() session: SessionsDoc,
   ) {
     return this.accountService.verifyMfaAuthenticator({
       type,
@@ -612,7 +612,7 @@ export class AccountController {
     userId: '{res.$id}',
   })
   @ResModel(Models.MFA_RECOVERY_CODES)
-  async createMfaRecoveryCodes(@User() user: Document) {
+  async createMfaRecoveryCodes(@User() user: UsersDoc) {
     return this.accountService.createMfaRecoveryCodes({ user });
   }
 
@@ -623,15 +623,15 @@ export class AccountController {
     userId: '{res.$id}',
   })
   @ResModel(Models.MFA_RECOVERY_CODES)
-  async updateMfaRecoveryCodes(@User() user: Document) {
+  async updateMfaRecoveryCodes(@User() user: UsersDoc) {
     return this.accountService.updateMfaRecoveryCodes({ user });
   }
 
   @Get('mfa/recovery-codes')
   @Scope('account')
   @ResModel(Models.MFA_RECOVERY_CODES)
-  async getMfaRecoveryCodes(@User() user: Document) {
-    const mfaRecoveryCodes = user.getAttribute('mfaRecoveryCodes', []);
+  async getMfaRecoveryCodes(@User() user: UsersDoc) {
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
 
     if (!mfaRecoveryCodes || mfaRecoveryCodes.length === 0) {
       throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
@@ -652,7 +652,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   async deleteMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
   ) {
     return this.accountService.deleteMfaAuthenticator({
       type,
@@ -667,7 +667,7 @@ export class AccountController {
     @Body() input: CreateMfaChallengeDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
     return this.accountService.createMfaChallenge({
@@ -685,8 +685,8 @@ export class AccountController {
   @ResModel(Models.SESSION)
   async updateMfaChallenge(
     @Body() input: VerifyMfaChallengeDTO,
-    @User() user: Document,
-    @Session() session: Document,
+    @User() user: UsersDoc,
+    @Session() session: SessionsDoc,
   ) {
     return this.accountService.updateMfaChallenge({
       ...input,
@@ -704,7 +704,7 @@ export class AccountController {
   @ResModel(Models.TARGET)
   async createPushTarget(
     @Body() input: CreatePushTargetDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Req() request: NuvixRequest,
   ) {
     return this.accountService.createPushTarget({
@@ -724,7 +724,7 @@ export class AccountController {
   async updatePushTarget(
     @Param() { targetId }: TargetIdParamDTO,
     @Body() input: UpdatePushTargetDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
     @Req() request: NuvixRequest,
   ) {
     return this.accountService.updatePushTarget({
@@ -745,7 +745,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   async deletePushTarget(
     @Param() { targetId }: TargetIdParamDTO,
-    @User() user: Document,
+    @User() user: UsersDoc,
   ) {
     return this.accountService.deletePushTarget({
       targetId,
@@ -758,7 +758,7 @@ export class AccountController {
   @ResModel(Models.IDENTITY, { list: true })
   async getIdentities(
     @Query('queries', ParseQueryPipe) queries: Queries[],
-    @User() user: Document,
+    @User() user: UsersDoc,
   ) {
     return this.accountService.getIdentities({ user, queries });
   }

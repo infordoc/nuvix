@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AccountService } from './account.service';
 import { AccountController } from './account.controller';
 import { BullModule } from '@nestjs/bullmq';
-import { QueueFor } from '@nuvix/utils/constants';
+import { QueueFor } from '@nuvix/utils';
 
 @Module({
   imports: [
@@ -13,4 +13,4 @@ import { QueueFor } from '@nuvix/utils/constants';
   controllers: [AccountController],
   providers: [AccountService],
 })
-export class AccountModule {}
+export class AccountModule { }

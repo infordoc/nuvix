@@ -5,7 +5,7 @@ import {
 import {
   APP_LIMIT_ARRAY_ELEMENT_SIZE,
   APP_LIMIT_ARRAY_PARAMS_SIZE,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import { Expose } from 'class-transformer';
 import {
   ArrayMaxSize,

@@ -33,7 +33,7 @@ import {
   CreateMailgunProviderDTO,
   UpdateMailgunProviderDTO,
 } from './DTO/mailgun.dto';
-import { Database, Document, Query as Queries } from '@nuvix/database';
+import { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import {
   CreateSendgridProviderDTO,
   UpdateSendgridProviderDTO,
@@ -78,7 +78,7 @@ import {
 @UseGuards(ProjectGuard)
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class MessagingController {
-  constructor(private readonly messagingService: MessagingService) {}
+  constructor(private readonly messagingService: MessagingService) { }
 
   @Post('providers/mailgun')
   @Scope('providers.create')
@@ -747,7 +747,7 @@ export class MessagingController {
   async createEmail(
     @ProjectDatabase() db: Database,
     @Body() input: CreateEmailMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.createEmailMessage({
       db,
@@ -769,7 +769,7 @@ export class MessagingController {
   async createSms(
     @ProjectDatabase() db: Database,
     @Body() input: CreateSmsMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.createSmsMessage({
       db,
@@ -791,7 +791,7 @@ export class MessagingController {
   async createPush(
     @ProjectDatabase() db: Database,
     @Body() input: CreatePushMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.createPushMessage({
       db,
@@ -872,7 +872,7 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,
     @Body() input: UpdateEmailMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.updateEmailMessage({
       db,
@@ -896,7 +896,7 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,
     @Body() input: UpdateSmsMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.updateSmsMessage({
       db,
@@ -920,7 +920,7 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,
     @Body() input: UpdatePushMessageDTO,
-    @Project() project: Document,
+    @Project() project: Doc,
   ) {
     return await this.messagingService.updatePushMessage({
       db,

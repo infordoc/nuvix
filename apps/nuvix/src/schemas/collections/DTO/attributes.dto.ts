@@ -10,7 +10,7 @@ import {
   Min,
 } from 'class-validator';
 import { IsKey } from '@nuvix/core/validators/input.validator';
-import { APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH } from '@nuvix/utils/constants';
+import { APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH } from '@nuvix/utils';
 
 export class CreateStringAttributeDTO {
   @IsString()
@@ -42,7 +42,7 @@ export class CreateStringAttributeDTO {
 export class CreateEmailAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
   ['encrypt', 'size'],
-) {}
+) { }
 
 export class CreateEnumAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
@@ -62,12 +62,12 @@ export class CreateEnumAttributeDTO extends OmitType(CreateStringAttributeDTO, [
 export class CreateIpAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
   'size',
-]) {}
+]) { }
 
 export class CreateURLAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
   'size',
-]) {}
+]) { }
 
 export class CreateIntegerAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
@@ -86,7 +86,7 @@ export class CreateIntegerAttributeDTO extends OmitType(
   default?: number = null;
 }
 
-export class CreateFloatAttributeDTO extends CreateIntegerAttributeDTO {}
+export class CreateFloatAttributeDTO extends CreateIntegerAttributeDTO { }
 
 export class CreateBooleanAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
@@ -100,7 +100,7 @@ export class CreateBooleanAttributeDTO extends OmitType(
 export class CreateDatetimeAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
   ['size', 'encrypt'],
-) {}
+) { }
 
 export class CreateRelationAttributeDTO {
   @IsString()
@@ -140,7 +140,7 @@ export class UpdateStringAttributeDTO extends PartialType(
   newKey?: string = null;
 }
 
-export class UpdateEmailAttributeDTO extends UpdateStringAttributeDTO {}
+export class UpdateEmailAttributeDTO extends UpdateStringAttributeDTO { }
 
 export class UpdateEnumAttributeDTO extends PartialType(
   PickType(CreateEnumAttributeDTO, ['required', 'default', 'elements']),

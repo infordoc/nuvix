@@ -111,8 +111,8 @@ import { ObjectModel } from '../models/Object.model';
  * Each static property holds a reference to a specific model class or a string identifier.
  */
 export class Models {
-  public static NONE = class {};
-  public static ANY = class {};
+  public static NONE = class { };
+  public static ANY = class { };
   public static LOG = LogModel;
   public static ERROR = 'error';
   public static METRIC = MetricModel;

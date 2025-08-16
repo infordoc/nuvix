@@ -12,7 +12,7 @@ import {
   APP_VERSION_STABLE,
   DB_FOR_PLATFORM,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 import authMethods, {
   AuthMethod,
   defaultAuthConfig,
@@ -34,13 +34,13 @@ import { CreatePlatformDTO, UpdatePlatformDTO } from './DTO/platform.dto';
 import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto';
 import {
   Database,
-  Document,
+  Doc,
   DuplicateException,
   ID,
   Permission,
   Query,
   Role,
-} from '@nuvix/database';
+} from '@nuvix-tech/db';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import {
@@ -55,14 +55,14 @@ export class ProjectService {
     @InjectQueue(QueueFor.PROJECTS)
     private readonly projectQueue: Queue<ProjectQueueOptions, any, ProjectJobs>,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   private readonly logger = new Logger(ProjectService.name);
 
   /**
    * Create a new project.
    */
-  async create(data: CreateProjectDTO): Promise<Document> {
+  async create(data: CreateProjectDTO): Promise<Doc> {
     const projectId =
       data.projectId === 'unique()' ? ID.unique() : ID.custom(data.projectId);
     const {
@@ -84,7 +84,7 @@ export class ProjectService {
     try {
       const org = await this.db.getDocument('teams', teamId);
 
-      if (!org || org.isEmpty())
+      if (!org || org.empty())
         throw new Exception(
           Exception.TEAM_NOT_FOUND,
           'Organization not found.',
@@ -120,7 +120,7 @@ export class ProjectService {
         }
       });
 
-      let project = new Document({
+      let project = new Doc({
         $id: projectId,
         $permissions: [
           Permission.read(Role.team(ID.custom(teamId))),
@@ -130,7 +130,7 @@ export class ProjectService {
           Permission.delete(Role.team(ID.custom(teamId), 'developer')),
         ],
         teamId: org.getId(),
-        teamInternalId: org.getInternalId(),
+        teamInternalId: org.getSequence(),
         name: name,
         region: region,
         description: description ?? null,
@@ -190,7 +190,7 @@ export class ProjectService {
       const projectId = cursor.getValue();
       const cursorDocument = await this.db.getDocument('projects', projectId);
 
-      if (cursorDocument.isEmpty()) {
+      if (cursorDocument.empty()) {
         throw new Exception(
           Exception.GENERAL_CURSOR_NOT_FOUND,
           `Project '${projectId}' for the 'cursor' value not found.`,
@@ -211,7 +211,7 @@ export class ProjectService {
   async findOne(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
+    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
     return project;
   }
@@ -219,20 +219,20 @@ export class ProjectService {
   async update(id: string, updateProjectDTO: UpdateProjectDTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
+    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
     project
-      .setAttribute('name', updateProjectDTO.name)
-      .setAttribute('description', updateProjectDTO.description)
-      .setAttribute('logo', updateProjectDTO.logo)
-      .setAttribute('url', updateProjectDTO.url)
-      .setAttribute('legalName', updateProjectDTO.legalName)
-      .setAttribute('legalCity', updateProjectDTO.legalCity)
-      .setAttribute('legalAddress', updateProjectDTO.legalAddress)
-      .setAttribute('legalCountry', updateProjectDTO.legalCountry)
-      .setAttribute('legalState', updateProjectDTO.legalState)
-      .setAttribute('legalTaxId', updateProjectDTO.legalTaxId)
-      .setAttribute('search', [id, updateProjectDTO.name].join(' '));
+      .set('name', updateProjectDTO.name)
+      .set('description', updateProjectDTO.description)
+      .set('logo', updateProjectDTO.logo)
+      .set('url', updateProjectDTO.url)
+      .set('legalName', updateProjectDTO.legalName)
+      .set('legalCity', updateProjectDTO.legalCity)
+      .set('legalAddress', updateProjectDTO.legalAddress)
+      .set('legalCountry', updateProjectDTO.legalCountry)
+      .set('legalState', updateProjectDTO.legalState)
+      .set('legalTaxId', updateProjectDTO.legalTaxId)
+      .set('search', [id, updateProjectDTO.name].join(' '));
 
     project = await this.db.updateDocument(
       'projects',
@@ -249,7 +249,7 @@ export class ProjectService {
   async remove(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -270,11 +270,11 @@ export class ProjectService {
     let project = await this.db.getDocument('projects', id);
     const team = await this.db.getDocument('teams', input.teamId);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    if (team.isEmpty()) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND);
     }
 
@@ -287,9 +287,9 @@ export class ProjectService {
     ];
 
     project
-      .setAttribute('teamId', input.teamId)
-      .setAttribute('teamInternalId', team.getInternalId())
-      .setAttribute('$permissions', permissions);
+      .set('teamId', input.teamId)
+      .set('teamInternalId', team.getSequence())
+      .set('$permissions', permissions);
 
     project = await this.db.updateDocument(
       'projects',
@@ -298,10 +298,10 @@ export class ProjectService {
     );
 
     const installations = await this.db.find('installations', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
     for (const installation of installations) {
-      installation.getAttribute('$permissions', permissions);
+      installation.get('$permissions', permissions);
       await this.db.updateDocument(
         'installations',
         installation.getId(),
@@ -310,10 +310,10 @@ export class ProjectService {
     }
 
     const repositories = await this.db.find('repositories', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
     for (const repository of repositories) {
-      repository.getAttribute('$permissions', permissions);
+      repository.get('$permissions', permissions);
       await this.db.updateDocument(
         'repositories',
         repository.getId(),
@@ -322,10 +322,10 @@ export class ProjectService {
     }
 
     const vcsComments = await this.db.find('vcsComments', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
     for (const vcsComment of vcsComments) {
-      vcsComment.getAttribute('$permissions', permissions);
+      vcsComment.get('$permissions', permissions);
       await this.db.updateDocument(
         'vcsComments',
         vcsComment.getId(),
@@ -342,12 +342,12 @@ export class ProjectService {
   async getPlatforms(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const platforms = await this.db.find('platforms', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
       Query.limit(5000),
     ]);
 
@@ -363,18 +363,18 @@ export class ProjectService {
   async createPlatform(id: string, input: CreatePlatformDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const platform = new Document({
+    const platform = new Doc({
       $id: ID.unique(),
       $permissions: [
         Permission.read(Role.any()),
         Permission.update(Role.any()),
         Permission.delete(Role.any()),
       ],
-      projectInternalId: project.getInternalId(),
+      projectInternalId: project.getSequence(),
       projectId: project.getId(),
       type: input.type,
       name: input.name,
@@ -396,16 +396,16 @@ export class ProjectService {
   async getPlatform(id: string, platformId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const platform = await this.db.findOne('platforms', [
       Query.equal('$id', [platformId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (platform.isEmpty()) {
+    if (platform.empty()) {
       throw new Exception(Exception.PLATFORM_NOT_FOUND);
     }
 
@@ -422,24 +422,24 @@ export class ProjectService {
   ) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const platform = await this.db.findOne('platforms', [
       Query.equal('$id', [platformId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (platform.isEmpty()) {
+    if (platform.empty()) {
       throw new Exception(Exception.PLATFORM_NOT_FOUND);
     }
 
     platform
-      .setAttribute('name', input.name)
-      .setAttribute('key', input.key)
-      .setAttribute('store', input.store)
-      .setAttribute('hostname', input.hostname);
+      .set('name', input.name)
+      .set('key', input.key)
+      .set('store', input.store)
+      .set('hostname', input.hostname);
 
     await this.db.updateDocument('platforms', platform.getId(), platform);
     await this.db.purgeCachedDocument('projects', project.getId());
@@ -453,16 +453,16 @@ export class ProjectService {
   async deletePlatform(id: string, platformId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const platform = await this.db.findOne('platforms', [
       Query.equal('$id', [platformId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (platform.isEmpty()) {
+    if (platform.empty()) {
       throw new Exception(Exception.PLATFORM_NOT_FOUND);
     }
 
@@ -478,12 +478,12 @@ export class ProjectService {
   async getKeys(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const keys = await this.db.find('keys', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
       Query.limit(5000),
     ]);
 
@@ -499,18 +499,18 @@ export class ProjectService {
   async createKey(id: string, input: CreateKeyDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const key = new Document({
+    const key = new Doc({
       $id: ID.unique(),
       $permissions: [
         Permission.read(Role.any()),
         Permission.update(Role.any()),
         Permission.delete(Role.any()),
       ],
-      projectInternalId: project.getInternalId(),
+      projectInternalId: project.getSequence(),
       projectId: project.getId(),
       name: input.name,
       scopes: input.scopes,
@@ -533,16 +533,16 @@ export class ProjectService {
   async getKey(id: string, keyId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const key = await this.db.findOne('keys', [
       Query.equal('$id', [keyId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (key.isEmpty()) {
+    if (key.empty()) {
       throw new Exception(Exception.KEY_NOT_FOUND);
     }
 
@@ -555,23 +555,23 @@ export class ProjectService {
   async updateKey(id: string, keyId: string, input: UpdateKeyDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const key = await this.db.findOne('keys', [
       Query.equal('$id', [keyId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (key.isEmpty()) {
+    if (key.empty()) {
       throw new Exception(Exception.KEY_NOT_FOUND);
     }
 
     key
-      .setAttribute('name', input.name)
-      .setAttribute('scopes', input.scopes)
-      .setAttribute('expire', input.expire ?? null);
+      .set('name', input.name)
+      .set('scopes', input.scopes)
+      .set('expire', input.expire ?? null);
 
     await this.db.updateDocument('keys', key.getId(), key);
     await this.db.purgeCachedDocument('projects', project.getId());
@@ -585,16 +585,16 @@ export class ProjectService {
   async deleteKey(id: string, keyId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const key = await this.db.findOne('keys', [
       Query.equal('$id', [keyId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (key.isEmpty()) {
+    if (key.empty()) {
       throw new Exception(Exception.KEY_NOT_FOUND);
     }
 
@@ -610,7 +610,7 @@ export class ProjectService {
   async createJwt(id: string, input: CreateJwtDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -630,12 +630,12 @@ export class ProjectService {
   async getWebhooks(id: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const webhooks = await this.db.find('webhooks', [
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
       Query.limit(5000),
     ]);
 
@@ -651,18 +651,18 @@ export class ProjectService {
   async createWebhook(id: string, input: CreateWebhookDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const webhook = new Document({
+    const webhook = new Doc({
       $id: ID.unique(),
       $permissions: [
         Permission.read(Role.any()),
         Permission.update(Role.any()),
         Permission.delete(Role.any()),
       ],
-      projectInternalId: project.getInternalId(),
+      projectInternalId: project.getSequence(),
       projectId: project.getId(),
       name: input.name,
       events: input.events,
@@ -687,16 +687,16 @@ export class ProjectService {
   async getWebhook(id: string, webhookId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const webhook = await this.db.findOne('webhooks', [
       Query.equal('$id', [webhookId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (webhook.isEmpty()) {
+    if (webhook.empty()) {
       throw new Exception(Exception.WEBHOOK_NOT_FOUND);
     }
 
@@ -709,30 +709,30 @@ export class ProjectService {
   async updateWebhook(id: string, webhookId: string, input: UpdateWebhookDTO) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const webhook = await this.db.findOne('webhooks', [
       Query.equal('$id', [webhookId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (webhook.isEmpty()) {
+    if (webhook.empty()) {
       throw new Exception(Exception.WEBHOOK_NOT_FOUND);
     }
 
     webhook
-      .setAttribute('name', input.name)
-      .setAttribute('events', input.events)
-      .setAttribute('url', input.url)
-      .setAttribute('security', input.security)
-      .setAttribute('httpUser', input.httpUser)
-      .setAttribute('httpPass', input.httpPass)
-      .setAttribute('enabled', input.enabled);
+      .set('name', input.name)
+      .set('events', input.events)
+      .set('url', input.url)
+      .set('security', input.security)
+      .set('httpUser', input.httpUser)
+      .set('httpPass', input.httpPass)
+      .set('enabled', input.enabled);
 
     if (input.enabled) {
-      webhook.setAttribute('attempts', 0);
+      webhook.set('attempts', 0);
     }
 
     await this.db.updateDocument('webhooks', webhook.getId(), webhook);
@@ -747,20 +747,20 @@ export class ProjectService {
   async updateWebhookSignature(id: string, webhookId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const webhook = await this.db.findOne('webhooks', [
       Query.equal('$id', [webhookId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (webhook.isEmpty()) {
+    if (webhook.empty()) {
       throw new Exception(Exception.WEBHOOK_NOT_FOUND);
     }
 
-    webhook.setAttribute('signatureKey', randomBytes(64).toString('hex'));
+    webhook.set('signatureKey', randomBytes(64).toString('hex'));
 
     await this.db.updateDocument('webhooks', webhook.getId(), webhook);
     await this.db.purgeCachedDocument('projects', project.getId());
@@ -774,16 +774,16 @@ export class ProjectService {
   async deleteWebhook(id: string, webhookId: string) {
     const project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const webhook = await this.db.findOne('webhooks', [
       Query.equal('$id', [webhookId]),
-      Query.equal('projectInternalId', [project.getInternalId()]),
+      Query.equal('projectInternalId', [project.getSequence()]),
     ]);
 
-    if (webhook.isEmpty()) {
+    if (webhook.empty()) {
       throw new Exception(Exception.WEBHOOK_NOT_FOUND);
     }
 
@@ -799,17 +799,17 @@ export class ProjectService {
   async updateServiceStatus(id: string, input: UpdateProjectServiceDTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const services = project.getAttribute('services', {});
+    const services = project.get('services', {});
     services[input.service] = input.status;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('services', services),
+      project.set('services', services),
     );
 
     return project;
@@ -821,7 +821,7 @@ export class ProjectService {
   async updateAllServiceStatus(id: string, status: boolean) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -835,7 +835,7 @@ export class ProjectService {
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('services', servicesObj),
+      project.set('services', servicesObj),
     );
 
     return project;
@@ -847,17 +847,17 @@ export class ProjectService {
   async updateApiStatus(id: string, input: ProjectApiStatusDTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const apis = project.getAttribute('apis', {});
+    const apis = project.get('apis', {});
     apis[input.api] = input.status;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('apis', apis),
+      project.set('apis', apis),
     );
 
     return project;
@@ -869,7 +869,7 @@ export class ProjectService {
   async updateAllApiStatus(id: string, status: boolean) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -881,7 +881,7 @@ export class ProjectService {
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('apis', apisObj),
+      project.set('apis', apisObj),
     );
 
     return project;
@@ -893,11 +893,11 @@ export class ProjectService {
   async updateOAuth2(id: string, input: oAuth2DTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const providers = project.getAttribute('oAuthProviders', []);
+    const providers = project.get('oAuthProviders', []);
     const providerIndex = providers.findIndex(
       (provider: any) => provider.key === input.provider,
     );
@@ -922,7 +922,7 @@ export class ProjectService {
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('oAuthProviders', providers),
+      project.set('oAuthProviders', providers),
     );
 
     return project;
@@ -934,17 +934,17 @@ export class ProjectService {
   async updateSessionAlerts(id: string, status: boolean = false) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.sessionAlerts = status;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -956,17 +956,17 @@ export class ProjectService {
   async updateAuthLimit(id: string, limit: number) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.limit = limit;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -978,17 +978,17 @@ export class ProjectService {
   async updateSessionDuration(id: string, duration: number) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.duration = duration;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1000,20 +1000,20 @@ export class ProjectService {
   async updateAuthMethod(id: string, method: string, status: boolean) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
     const auth: any = authMethods[method] ?? {};
     const authKey = auth.key ?? '';
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths[authKey] = status;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1025,17 +1025,17 @@ export class ProjectService {
   async updatePasswordHistory(id: string, limit: number) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.passwordHistory = limit;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1047,17 +1047,17 @@ export class ProjectService {
   async updatePasswordDictionary(id: string, enabled: boolean) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.passwordDictionary = enabled;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1069,17 +1069,17 @@ export class ProjectService {
   async updatePersonalData(id: string, enabled: boolean) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.personalDataCheck = enabled;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1091,17 +1091,17 @@ export class ProjectService {
   async updateMaxSessions(id: string, limit: number) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.maxSessions = limit;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1113,7 +1113,7 @@ export class ProjectService {
   async updateMockNumbers(id: string, input: AuthMockNumbersDTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -1128,13 +1128,13 @@ export class ProjectService {
       uniqueNumbers[number.phone] = number.otp;
     });
 
-    const auths = project.getAttribute('auths', {});
+    const auths = project.get('auths', {});
     auths.mockNumbers = input.numbers;
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('auths', auths),
+      project.set('auths', auths),
     );
 
     return project;
@@ -1146,7 +1146,7 @@ export class ProjectService {
   async updateSMTP(id: string, input: UpdateSmtpDTO) {
     let project = await this.db.getDocument('projects', id);
 
-    if (project.isEmpty()) {
+    if (project.empty()) {
       throw new Exception(Exception.PROJECT_NOT_FOUND);
     }
 
@@ -1182,24 +1182,24 @@ export class ProjectService {
 
     const smtp = input.enabled
       ? {
-          enabled: input.enabled,
-          senderName: input.senderName,
-          senderEmail: input.senderEmail,
-          replyTo: input.replyTo,
-          host: input.host,
-          port: input.port,
-          username: input.username,
-          password: input.password,
-          secure: input.secure,
-        }
+        enabled: input.enabled,
+        senderName: input.senderName,
+        senderEmail: input.senderEmail,
+        replyTo: input.replyTo,
+        host: input.host,
+        port: input.port,
+        username: input.username,
+        password: input.password,
+        secure: input.secure,
+      }
       : {
-          enabled: false,
-        };
+        enabled: false,
+      };
 
     project = await this.db.updateDocument(
       'projects',
       project.getId(),
-      project.setAttribute('smtp', smtp),
+      project.set('smtp', smtp),
     );
 
     return project;

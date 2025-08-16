@@ -1,25 +1,22 @@
+import { IsUID } from '@nuvix/core/validators/input.validator.js';
 import {
   IsEmail,
   IsString,
   Length,
-  Matches,
   IsOptional,
   IsObject,
   IsNotEmpty,
 } from 'class-validator';
 
 export class CreateAccountDTO {
-  @Matches(/^(?:[a-zA-Z0-9][a-zA-Z0-9._-]{0,35}|unique\(\))$/, {
-    message:
-      'User ID must be either "unique()" or alphanumeric and can include period, hyphen, and underscore. Cannot start with a special character. Max length is 36 chars.',
-  })
-  userId: string;
+  @IsUID()
+  declare userId: string;
 
-  @IsEmail({}, { message: 'Invalid email address.' })
-  email: string;
-
+  @IsEmail({}, { message: 'Invalid email address.' }) 
+  declare email: string;
+  
   @Length(8, 256, { message: 'Password must be between 8 and 256 characters.' })
-  password: string;
+  declare password: string;
 
   @IsOptional()
   @IsString()
@@ -31,40 +28,40 @@ export class CreateAccountDTO {
 
 export class UpdatePrefsDTO {
   @IsObject()
-  prefs: { [key: string]: any };
+  declare prefs: { [key: string]: any };
 }
 
 export class UpdateEmailDTO {
   @IsEmail()
-  email: string;
+  declare email: string;
 
   @IsNotEmpty()
   @IsString()
-  password: string;
+  declare password: string;
 }
 
 export class UpdatePasswordDTO {
   @IsNotEmpty()
   @IsString()
-  password: string;
+  declare password: string;
 
   @IsNotEmpty()
   @IsString()
-  oldPassword: string;
+  declare oldPassword: string;
 }
 
 export class UpdateNameDTO {
   @IsNotEmpty()
   @IsString()
-  name: string;
+  declare name: string;
 }
 
 export class UpdatePhoneDTO {
   @IsNotEmpty()
   @IsString()
-  phone: string;
+  declare phone: string;
 
   @IsNotEmpty()
   @IsString()
-  password: string;
+  declare password: string;
 }

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Document } from '@nuvix/database';
+import { Doc } from '@nuvix-tech/db';
 import { DataSource } from '@nuvix/pg';
 import { Exception } from '@nuvix/core/extend/exception';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -12,7 +12,7 @@ import {
   INTERNAL_SCHEMAS,
   SYSTEM_SCHEMA,
   QueueFor,
-} from '@nuvix/utils/constants';
+} from '@nuvix/utils';
 
 // DTO's
 import { CreateDocumentSchema, CreateSchema } from './DTO/create-schema.dto';
@@ -24,11 +24,11 @@ export class DatabasesService {
   constructor(
     @InjectQueue(QueueFor.DATABASES)
     private readonly databasesQueue: Queue<SchemaQueueOptions, any, SchemaJobs>,
-  ) {}
+  ) { }
 
   public async createDocumentSchema(
     db: DataSource,
-    project: Document,
+    project: Doc,
     data: CreateDocumentSchema,
   ) {
     const isExists = await db.getSchema(data.name);

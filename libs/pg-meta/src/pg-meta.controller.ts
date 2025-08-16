@@ -254,9 +254,9 @@ export class PgMetaController {
     @Query('included_schemas', ParseComaStringPipe) includedSchemas?: string[],
     @Query('excluded_schemas', ParseComaStringPipe) excludedSchemas?: string[],
   ) {
-    let tableId: number, ordinalPosition: string;
+    let tableId: number, ordinalPosition!: string;
     if (id.includes('.')) {
-      const [tableIdString, ordinalPositionString] = id.split('.');
+      const [tableIdString, ordinalPositionString] = id.split('.') as [string, string];
       tableId = parseInt(tableIdString);
       ordinalPosition = ordinalPositionString;
     } else {
@@ -915,7 +915,7 @@ export class PgMetaController {
     const {
       included_schemas,
       excluded_schemas,
-      detect_one_to_one_relationships: detectOneToOneRelationships,
+      detect_one_to_one_relationships: detectOneToOneRelationships = false,
     } = query;
     const { data } = await getGeneratorMetadata(client, {
       includedSchemas: included_schemas
@@ -927,7 +927,7 @@ export class PgMetaController {
     });
 
     return applyTypescriptTemplate({
-      ...data,
+      ...data!,
       detectOneToOneRelationships,
     });
   }
@@ -946,7 +946,7 @@ export class PgMetaController {
         ?.split(',')
         .map(schema => schema.trim()),
     });
-    return applyGoTemplate(data);
+    return applyGoTemplate(data!);
   }
 
   @Get('generators/swift')
@@ -964,7 +964,7 @@ export class PgMetaController {
         .map(schema => schema.trim()),
     });
     return applySwiftTemplate({
-      ...data,
+      ...data!,
       accessControl: access_control ?? 'internal',
     });
   }

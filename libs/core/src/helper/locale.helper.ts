@@ -1,4 +1,4 @@
-import { PROJECT_ROOT } from '@nuvix/utils/constants';
+import { PROJECT_ROOT } from '@nuvix/utils';
 import * as fs from 'fs';
 import * as path from 'path';
 

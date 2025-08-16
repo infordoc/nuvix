@@ -1,16 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Document } from '@nuvix/database';
+import { Doc } from '@nuvix-tech/db';
 
-import { PROJECT } from '@nuvix/utils/constants';
+import { PROJECT } from '@nuvix/utils';
 import { Hook } from '@nuvix/core/server';
 
 @Injectable()
 export class ProjectHook implements Hook {
   private readonly logger = new Logger(ProjectHook.name);
-  constructor() {}
+  constructor() { }
 
   async onRequest(req: NuvixRequest, reply: NuvixRes) {
-    req[PROJECT] = new Document({ $id: 'console' });
+    req[Context.Project] = new Doc({ $id: 'console' });
     return null;
   }
 }

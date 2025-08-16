@@ -36,21 +36,21 @@ import { Hook, HookMethods } from './interface';
 
 export class HooksModule<
   TAppOptions extends
-    NestApplicationContextOptions = NestApplicationContextOptions,
+  NestApplicationContextOptions = NestApplicationContextOptions,
 > {
   private readonly routerProxy = new RouterProxy();
   private readonly exceptionFiltersCache = new WeakMap();
   private readonly logger = new Logger(HooksModule.name);
 
-  private injector: Injector;
-  private routerExceptionFilter: RouterExceptionFilters;
-  private routesMapper: RoutesMapper;
-  private resolver: MiddlewareResolver;
-  private container: NestContainer;
-  private httpAdapter: HttpServer;
-  private graphInspector: GraphInspector;
-  private appOptions: TAppOptions;
-  private routeInfoPathExtractor: RouteInfoPathExtractor;
+  private declare injector: Injector;
+  private declare routerExceptionFilter: RouterExceptionFilters;
+  private declare routesMapper: RoutesMapper;
+  private declare resolver: MiddlewareResolver;
+  private declare container: NestContainer;
+  private declare httpAdapter: HttpServer;
+  private declare graphInspector: GraphInspector;
+  private declare appOptions: TAppOptions;
+  private declare routeInfoPathExtractor: RouteInfoPathExtractor;
 
   public async register(
     HooksContainer: HooksContainer,
@@ -298,7 +298,7 @@ export class HooksModule<
             return proxy(req, res, next, ...rest);
           } catch (err) {
             let exceptionsHandler = this.exceptionFiltersCache.get(
-              instance[method],
+              instance[method]!,
             );
             if (!exceptionsHandler) {
               exceptionsHandler = this.routerExceptionFilter.create(
@@ -307,7 +307,7 @@ export class HooksModule<
                 undefined,
               );
               this.exceptionFiltersCache.set(
-                instance[method],
+                instance[method]!,
                 exceptionsHandler,
               );
             }
@@ -334,11 +334,11 @@ export class HooksModule<
   > {
     const exceptionsHandler = this.routerExceptionFilter.create(
       instance,
-      instance[method],
+      instance[method as keyof Hook] as any,
       undefined,
       contextId,
     );
-    const middleware = instance[method].bind(instance);
+    const middleware = instance[method as keyof Hook]!.bind(instance) as any;
     return this.routerProxy.createProxy(middleware, exceptionsHandler) as any;
   }
 
@@ -361,16 +361,16 @@ export class HooksModule<
     const middlewareFunction = isMethodAll
       ? proxy
       : async <TRequest, TResponse>(
-          req: TRequest,
-          res: TResponse,
-          next: VoidFunction,
-          ...rest: any
-        ) => {
-          if (applicationRef.getRequestMethod?.(req) === requestMethod) {
-            return await proxy(req, res, next, ...rest);
-          }
-          return Promise.resolve();
-        };
+        req: TRequest,
+        res: TResponse,
+        next: VoidFunction,
+        ...rest: any
+      ) => {
+        if (applicationRef.getRequestMethod?.(req) === requestMethod) {
+          return await proxy(req, res, next, ...rest);
+        }
+        return Promise.resolve();
+      };
     const pathsToApplyMiddleware = [] as string[];
     paths.some(path => path.match(/^\/?$/))
       ? pathsToApplyMiddleware.push('/')
@@ -382,7 +382,7 @@ export class HooksModule<
 
   private getContextId(request: unknown, isTreeDurable: boolean): ContextId {
     const contextId = ContextIdFactory.getByRequest(request as object);
-    if (!request![REQUEST_CONTEXT_ID]) {
+    if (!request![REQUEST_CONTEXT_ID as keyof object]) {
       Object.defineProperty(request, REQUEST_CONTEXT_ID, {
         value: contextId,
         enumerable: false,
