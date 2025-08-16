@@ -1,23 +1,18 @@
 import { Processor } from '@nestjs/bullmq';
 import {
-  Inject,
   Injectable,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { AUDITS_FOR_PLATFORM, QueueFor } from '@nuvix/utils';
-import { Audit } from '@nuvix/audit';
+import { QueueFor } from '@nuvix/utils';
+import { Audit, type AuditCreateInput } from '@nuvix/audit';
 import { Job } from 'bullmq';
 import { Queue } from '@nuvix/core/resolvers/queues/queue';
+import type { CoreService } from '@nuvix/core';
+import type { Users } from '@nuvix/utils/types';
 
-interface AuditLog {
-  userId: string;
-  event: string;
-  resource: string;
-  userAgent: string;
-  ip: string;
-  location: string;
+interface AuditLog extends AuditCreateInput {
   data: {
     userId: string;
     userName: string;
@@ -26,7 +21,6 @@ interface AuditLog {
     mode: string;
     data: Record<string, any>;
   };
-  timestamp: Date;
 }
 
 @Injectable()
@@ -38,10 +32,12 @@ export class AuditsQueue
   private static readonly BATCH_INTERVAL_MS = 1000; // Interval in milliseconds to flush
   private readonly logger = new Logger(AuditsQueue.name);
   private buffer: AuditLog[] = [];
-  private interval: NodeJS.Timeout;
+  private interval!: NodeJS.Timeout;
+  private readonly audit: Audit;
 
-  constructor(@Inject(AUDITS_FOR_PLATFORM) private readonly audit: Audit) {
+  constructor(private coreService: CoreService) {
     super();
+    this.audit = coreService.getPlatformAudit();
   }
 
   onModuleInit() {
@@ -81,23 +77,23 @@ export class AuditsQueue
 
   async process(job: Job<AuditsQueueJobData>): Promise<void> {
     const { resource, mode, userAgent, ip, data } = job.data;
-    const user = job.data.user as any;
+    const user = job.data.user;
     const log: AuditLog = {
-      userId: user.id,
+      userId: user.$sequence,
       event: job.name,
       resource,
       userAgent: userAgent || '',
       ip: ip || '',
       location: '', // TODO: Implement location extraction logic
       data: {
-        userId: user.id,
+        userId: user.$id,
         userName: user.name || '',
         userEmail: user.email || '',
         userType: user.type || '',
         mode,
         data: data || {},
       },
-      timestamp: new Date(),
+      time: new Date(),
     };
 
     this.buffer.push(log);
@@ -113,8 +109,8 @@ export class AuditsQueue
 }
 
 export type AuditsQueueJobData = {
-  project: object;
-  user: object;
+  project?: any,
+  user: Users & { type: string; };
   resource: string;
   mode: string;
   userAgent?: string;

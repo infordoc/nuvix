@@ -10,7 +10,7 @@ import {
 export class CreateWaitlistDTO {
   @IsEmail()
   @MaxLength(2000)
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsString()

@@ -11,7 +11,7 @@ import { Reader, CountryResponse } from 'maxmind';
 import { readFileSync } from 'fs';
 import path from "path";
 import type { ProjectsDoc } from "@nuvix/utils/types";
-import { CORE_SCHEMA } from "@nuvix/utils";
+import { Schemas } from "@nuvix/utils";
 import type { OAuthProviderType } from "./config/authProviders.js";
 
 @Injectable()
@@ -107,12 +107,12 @@ export class CoreService {
         const adapter = new Adapter({
             ...platformDbConfig,
             database: platformDbConfig.name,
+            max: 100,
         });
         const connection = new Database(adapter, this.cache).setMeta({
             schema: 'public',
             sharedTables: false,
             namespace: 'platform',
-            database: adapter.$database,
         });
         return connection;
     }
@@ -135,7 +135,7 @@ export class CoreService {
         const connection = new Database(adapter, this.cache);
         connection.setMeta({
             // cacheId: `${projectId}:core`
-            schema: CORE_SCHEMA
+            schema: Schemas.Core
         });
         return connection;
     };
@@ -183,7 +183,7 @@ export class CoreService {
         });
         const dbForProject = this.getProjectDb(client, project.getId());
         dbForProject.setMeta({
-            schema: options?.schema || CORE_SCHEMA,
+            schema: options?.schema || Schemas.Core,
             // cacheId: `${project.getId()}:core`,
         });
         return { client, dbForProject };

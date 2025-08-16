@@ -390,6 +390,11 @@ export enum ApiKey {
   /**@deprecated use Context.ApiKey*/_REQUEST = 'apiKey',
 }
 
+export enum Schemas {
+  Core = 'core',
+  System = 'system',
+}
+
 export enum QueueFor {
   AUDITS = 'audits',
   PROJECTS = 'projects',
