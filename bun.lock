@@ -49,8 +49,8 @@
         "typescript": "^5.8.3",
       },
     },
-    "apps/console": {
-      "name": "platform",
+    "apps/api": {
+      "name": "@nuvix/api",
       "version": "1.0.0",
       "dependencies": {
         "@apollo/server": "^4.12.2",
@@ -64,6 +64,7 @@
         "@nestjs/axios": "^4.0.0",
         "@nestjs/bullmq": "^11.0.2",
         "@nestjs/common": "^11.1.3",
+        "@nestjs/config": "^4.0.2",
         "@nestjs/core": "^11.1.3",
         "@nestjs/event-emitter": "^3.0.1",
         "@nestjs/graphql": "^13.1.0",
@@ -74,6 +75,7 @@
         "@nestjs/schedule": "^6.0.0",
         "@nestjs/swagger": "^11.2.0",
         "@nestjs/websockets": "^11.1.3",
+        "@nuvix/audit": "^1.0.0",
         "@nuvix/cache": "^1.0.3-alpha.1",
         "@nuvix/core": "workspace:*",
         "@nuvix/messaging": "^1.0.0",
@@ -140,8 +142,8 @@
         "typescript": "^5.8.3",
       },
     },
-    "apps/nuvix": {
-      "name": "api",
+    "apps/platform": {
+      "name": "@nuvix/platform",
       "version": "1.0.0",
       "dependencies": {
         "@apollo/server": "^4.12.2",
@@ -155,7 +157,6 @@
         "@nestjs/axios": "^4.0.0",
         "@nestjs/bullmq": "^11.0.2",
         "@nestjs/common": "^11.1.3",
-        "@nestjs/config": "^4.0.2",
         "@nestjs/core": "^11.1.3",
         "@nestjs/event-emitter": "^3.0.1",
         "@nestjs/graphql": "^13.1.0",
@@ -166,7 +167,6 @@
         "@nestjs/schedule": "^6.0.0",
         "@nestjs/swagger": "^11.2.0",
         "@nestjs/websockets": "^11.1.3",
-        "@nuvix/audit": "^1.0.0",
         "@nuvix/cache": "^1.0.3-alpha.1",
         "@nuvix/core": "workspace:*",
         "@nuvix/messaging": "^1.0.0",
@@ -175,7 +175,6 @@
         "@nuvix/storage": "^1.0.0",
         "@nuvix/telemetry": "^1.0.1",
         "@nuvix/utils": "workspace:*",
-        "@scalar/nestjs-api-reference": "^0.5.8",
         "argon2": "^0.43.0",
         "axios": "^1.9.0",
         "bcrypt": "^6.0.0",
@@ -765,6 +764,8 @@
 
     "@nuvix-tech/db": ["@nuvix-tech/db@0.1.26-alpha.2", "https://npm.pkg.github.com/download/@nuvix-tech/db/0.1.26-alpha.2/3bead6f4f4c94d934d818f0bd71924c86875b759", { "dependencies": { "chalk": "^5.5.0" }, "bin": { "nuvix-db": "dist/cli/generate-types.js" } }, "sha512-vNJNu89xvHlKg4xz04Mdv2p/VfGWJLfuczMhMEPL5RJXJ0KlopAZtJhcsETn4kYFCrSxoH9e5tsdE1qviVpaeA=="],
 
+    "@nuvix/api": ["@nuvix/api@workspace:apps/api"],
+
     "@nuvix/audit": ["@nuvix/audit@1.0.2", "", { "peerDependencies": { "@nuvix-tech/db": "latest" } }, "sha512-t9KDd1JVNIJzFeSJeaFnUqrDT0pktjkkOUKvBlLQCWVLTfbnhmlot1ormoAC0gsVtntIg5dUEqmYNE6+lYnwiA=="],
 
     "@nuvix/cache": ["@nuvix/cache@1.0.3-alpha.1", "", { "dependencies": { "ioredis": "^5.6.0" }, "peerDependencies": { "@nuvix/telemetry": "^1.0.1" } }, "sha512-voH/sKDmYZx4i7kdatjBF1BoIjsp/jznekHb2AkF5QeMof9RSJFM0tTtiKZtjkeBItYTZ3WXEKiVYUC74o4ANA=="],
@@ -776,6 +777,8 @@
     "@nuvix/pg": ["@nuvix/pg@1.0.2", "", { "dependencies": { "colorette": "^2.0.20", "debug": "^4.4.0", "lodash": "^4.17.21", "zod": "^3.24.2" } }, "sha512-3ZlEPCxs/9Yz4Af9bsZrIcaEID4oeo4jmLJkev45NVFJA0Xpddvsn3Vej9ljEdEuwyY4mkOOlHtbTBJReboClA=="],
 
     "@nuvix/pg-meta": ["@nuvix/pg-meta@workspace:libs/pg-meta"],
+
+    "@nuvix/platform": ["@nuvix/platform@workspace:apps/platform"],
 
     "@nuvix/storage": ["@nuvix/storage@1.0.0", "", { "dependencies": { "xml2js": "^0.6.2" } }, "sha512-Vbt6iHRt47I1Cq/mi8lLAYwkJeI44fuinMmxEXPK1rSmGqvUdxLbakoesMazqKh/H6cFIfUvhCAXBhb05jgB+w=="],
 
@@ -1162,8 +1165,6 @@
     "any-promise": ["any-promise@1.3.0", "", {}, "sha512-7UvmKalWRt1wgjL1RrGxoSJW/0QZFIegpeGvZG9kjp8vrRu55XTHbwnqq2GpXm9uLbcuhxm3IqX9OB4MZR1b2A=="],
 
     "anymatch": ["anymatch@3.1.3", "", { "dependencies": { "normalize-path": "^3.0.0", "picomatch": "^2.0.4" } }, "sha512-KMReFUr0B4t+D+OBkjR3KYqvocp2XaSzO55UcB6mgQMd3KbcE+mWTyvVV7D/zsdEbNnV6acZUutkiHQXvTr1Rw=="],
-
-    "api": ["api@workspace:apps/nuvix"],
 
     "aproba": ["aproba@2.0.0", "", {}, "sha512-lYe4Gx7QT+MKGbDsA+Z+he/Wtef0BiwDOlK/XkBrdfsh9J/jPPXbX0tE9x9cl27Tmu5gg3QUbUrQYa/y+KOHPQ=="],
 
@@ -2201,8 +2202,6 @@
 
     "pkg-types": ["pkg-types@1.3.1", "", { "dependencies": { "confbox": "^0.1.8", "mlly": "^1.7.4", "pathe": "^2.0.1" } }, "sha512-/Jm5M4RvtBFVkKWRu2BLUTNP8/M2a+UwuAX+ae4770q1qVGtfjG+WTCupoZixokjmHiry8uI+dlY8KXYV5HVVQ=="],
 
-    "platform": ["platform@workspace:apps/console"],
-
     "pluralize": ["pluralize@8.0.0", "", {}, "sha512-Nc3IT5yHzflTfbjgqWcCPpo7DaKy4FnpB0l/zCAW0Tc7jxAiuqSxHasntB3D7887LSrA93kDJ9IXovxJYxyLCA=="],
 
     "postcss-load-config": ["postcss-load-config@6.0.1", "", { "dependencies": { "lilconfig": "^3.1.1" }, "peerDependencies": { "jiti": ">=1.21.0", "postcss": ">=8.0.9", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["jiti", "postcss", "tsx", "yaml"] }, "sha512-oPtTM4oerL+UXmx+93ytZVN82RrlY/wPUV8IeDxFrzIjXOLF1pN+EmKPLbubvKHT2HC20xXsCAH2Z+CKV6Oz/g=="],
@@ -2826,8 +2825,6 @@
     "ansi-escapes/type-fest": ["type-fest@0.21.3", "", {}, "sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w=="],
 
     "anymatch/picomatch": ["picomatch@2.3.1", "", {}, "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="],
-
-    "api/@nuvix/audit": ["@nuvix/audit@1.0.1", "", { "peerDependencies": { "@nuvix-tech/db": "^0.1.1" } }, "sha512-gPHPMS06ua8uasDKrZwpIGgoCrKnyxl6B6mR+zC7tW7eIvBHJmU7gIkQ6VwwKO79XDc1zEj8NJu45MbvWjzSLA=="],
 
     "babel-plugin-istanbul/istanbul-lib-instrument": ["istanbul-lib-instrument@5.2.1", "", { "dependencies": { "@babel/core": "^7.12.3", "@babel/parser": "^7.14.7", "@istanbuljs/schema": "^0.1.2", "istanbul-lib-coverage": "^3.2.0", "semver": "^6.3.0" } }, "sha512-pzqtp31nLv/XFOzXGuvhCb8qhjmTVo5vjVk19XE4CRlSWz0KoeJ3bw9XsA7nOp9YBf4qHjwBxkDzKcME/J29Yg=="],
 
