@@ -10,17 +10,17 @@ import { IsCustomID } from '@nuvix/core/validators/input.validator';
 
 export class CreateDatabaseDTO {
   @IsCustomID()
-  databaseId: string;
+  databaseId!: string;
 
   @IsString()
   @Length(1, 128, {
     message: 'Database name must be between 1 and 128 characters.',
   })
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsBoolean()
-  enabled: boolean;
+  enabled!: boolean;
 }
 
 export class UpdateDatabaseDTO extends PartialType(

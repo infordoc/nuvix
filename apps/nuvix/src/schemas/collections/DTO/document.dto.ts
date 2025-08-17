@@ -5,13 +5,13 @@ import { IsCustomID } from '@nuvix/core/validators/input.validator';
 export class CreateDocumentDTO {
   @IsString()
   @IsCustomID()
-  documentId: string;
+  documentId!: string;
 
-  data: object;
+  data!: object;
 
   @IsOptional()
   @IsArray()
-  permissions: string[];
+  permissions!: string[];
 }
 
 export class UpdateDocumentDTO extends PartialType(

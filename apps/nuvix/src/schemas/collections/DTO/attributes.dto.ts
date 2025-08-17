@@ -15,12 +15,12 @@ import { APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH } from '@nuvix/utils';
 export class CreateStringAttributeDTO {
   @IsString()
   @IsKey()
-  key: string;
+  key!: string;
 
   @IsInt()
   @Min(1)
   @Max(APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH)
-  size?: number = 0;
+  size: number = 0;
 
   @IsOptional()
   @IsBoolean()
@@ -42,7 +42,7 @@ export class CreateStringAttributeDTO {
 export class CreateEmailAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
   ['encrypt', 'size'],
-) { }
+) {}
 
 export class CreateEnumAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
@@ -62,12 +62,12 @@ export class CreateEnumAttributeDTO extends OmitType(CreateStringAttributeDTO, [
 export class CreateIpAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
   'size',
-]) { }
+]) {}
 
 export class CreateURLAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   'encrypt',
   'size',
-]) { }
+]) {}
 
 export class CreateIntegerAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
@@ -75,18 +75,18 @@ export class CreateIntegerAttributeDTO extends OmitType(
 ) {
   @IsOptional()
   @IsInt()
-  min?: number = null;
+  min?: number;
 
   @IsOptional()
   @IsInt()
-  max?: number = null;
+  max?: number;
 
   @IsOptional()
   @IsInt()
-  default?: number = null;
+  default?: number;
 }
 
-export class CreateFloatAttributeDTO extends CreateIntegerAttributeDTO { }
+export class CreateFloatAttributeDTO extends CreateIntegerAttributeDTO {}
 
 export class CreateBooleanAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
@@ -94,22 +94,22 @@ export class CreateBooleanAttributeDTO extends OmitType(
 ) {
   @IsOptional()
   @IsBoolean()
-  default?: boolean = null;
+  default?: boolean = false;
 }
 
 export class CreateDatetimeAttributeDTO extends OmitType(
   CreateStringAttributeDTO,
   ['size', 'encrypt'],
-) { }
+) {}
 
 export class CreateRelationAttributeDTO {
   @IsString()
   @IsKey()
-  relatedCollectionId: string;
+  relatedCollectionId!: string;
 
   @IsString()
   @IsKey()
-  type: string;
+  type!: string;
 
   @IsOptional()
   @IsBoolean()
@@ -117,16 +117,16 @@ export class CreateRelationAttributeDTO {
 
   @IsString()
   @IsKey()
-  key: string;
+  key!: string;
 
   @IsOptional()
   @IsString()
   @IsKey()
-  twoWayKey?: string = null;
+  twoWayKey?: string;
 
   @IsString()
   @IsKey()
-  onDelete: string;
+  onDelete!: string;
 }
 
 // Update DTOs
@@ -137,10 +137,10 @@ export class UpdateStringAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
-export class UpdateEmailAttributeDTO extends UpdateStringAttributeDTO { }
+export class UpdateEmailAttributeDTO extends UpdateStringAttributeDTO {}
 
 export class UpdateEnumAttributeDTO extends PartialType(
   PickType(CreateEnumAttributeDTO, ['required', 'default', 'elements']),
@@ -148,7 +148,7 @@ export class UpdateEnumAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateIpAttributeDTO extends PartialType(
@@ -157,7 +157,7 @@ export class UpdateIpAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateURLAttributeDTO extends PartialType(
@@ -166,7 +166,7 @@ export class UpdateURLAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateIntegerAttributeDTO extends PartialType(
@@ -175,7 +175,7 @@ export class UpdateIntegerAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateFloatAttributeDTO extends PartialType(
@@ -184,7 +184,7 @@ export class UpdateFloatAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateBooleanAttributeDTO extends PartialType(
@@ -193,7 +193,7 @@ export class UpdateBooleanAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateDatetimeAttributeDTO extends PartialType(
@@ -202,7 +202,7 @@ export class UpdateDatetimeAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }
 
 export class UpdateRelationAttributeDTO extends PartialType(
@@ -211,5 +211,5 @@ export class UpdateRelationAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string = null;
+  newKey?: string;
 }

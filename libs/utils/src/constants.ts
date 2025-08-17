@@ -531,6 +531,15 @@ export enum ScheduleResourceType {
   MESSAGE = 'message',
 }
 
+export enum Status {
+  AVAILABLE = 'available',
+  FAILED = 'failed',
+  STUCK = 'stuck',
+  DELETED = 'deleted',
+  DELETING = 'deleting',
+  PENDING = 'pending',
+}
+
 export enum DeleteType {
   DATABASES = 'databases',
   DOCUMENT = 'document',

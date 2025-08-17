@@ -11,11 +11,11 @@ import { IsCustomID } from '@nuvix/core/validators/input.validator';
 
 export class CreateCollectionDTO {
   @IsCustomID()
-  collectionId: string;
+  collectionId!: string;
 
   @IsString()
   @MaxLength(128, { message: 'Collection name. Max length: 128 chars.' })
-  name: string;
+  name!: string;
 
   @IsOptional()
   permissions: string[] = [];

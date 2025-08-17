@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Authorization,
   AuthorizationException,
@@ -12,31 +12,25 @@ import {
   Query,
   QueryException,
   RangeValidator,
-  Structure,
+  StructureValidator,
   StructureException,
   TextValidator,
   TruncateException,
+  AttributeType,
+  QueryType,
+  NumericType,
+  RelationType,
+  RelationSide,
 } from '@nuvix-tech/db';
 import {
-  APP_DATABASE_ATTRIBUTE_EMAIL,
-  APP_DATABASE_ATTRIBUTE_ENUM,
-  APP_DATABASE_ATTRIBUTE_FLOAT_RANGE,
-  APP_DATABASE_ATTRIBUTE_INT_RANGE,
-  APP_DATABASE_ATTRIBUTE_IP,
-  APP_DATABASE_ATTRIBUTE_URL,
   APP_LIMIT_COUNT,
-  DATABASE_TYPE_CREATE_ATTRIBUTE,
-  DATABASE_TYPE_CREATE_INDEX,
-  DATABASE_TYPE_DELETE_ATTRIBUTE,
-  DATABASE_TYPE_DELETE_COLLECTION,
-  DATABASE_TYPE_DELETE_INDEX,
-  GEO_DB,
+  AttributeFormat,
   QueueFor,
+  Status,
 } from '@nuvix/utils';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Auth } from '@nuvix/core/helper/auth.helper';
-import { CountryResponse, Reader } from 'maxmind';
 import { Exception } from '@nuvix/core/extend/exception';
 import usageConfig from '@nuvix/core/config/usage';
 
@@ -66,18 +60,30 @@ import {
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
 import { CreateIndexDTO } from './DTO/indexes.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { DatabaseJobData, DatabaseJobs } from '@nuvix/core/resolvers/queues';
+import { CollectionsJob, CollectionsJobData } from '@nuvix/core/resolvers/queues';
+import type { Attributes, AttributesDoc, CollectionsDoc, ProjectsDoc } from '@nuvix/utils/types';
 
 @Injectable()
 export class CollectionsService {
   private readonly logger = new Logger(CollectionsService.name);
 
   constructor(
-    @Inject(GEO_DB) private readonly geoDb: Reader<CountryResponse>,
     @InjectQueue(QueueFor.COLLECTIONS)
-    private readonly schemasQueue: Queue<DatabaseJobData, any, DatabaseJobs>,
+    private readonly collectionsQueue: Queue<CollectionsJobData, unknown, CollectionsJob>,
     private readonly event: EventEmitter2,
-  ) { }
+  ) {}
+
+  getCollectionName(sequence: number): string {
+    return `collection_${sequence}`;
+  }
+
+  getRelatedAttrId(collectionSequence: number, key: string): string {
+    return `related_${collectionSequence}_${key}`;
+  }
+
+  getAttrId(collectionSequence: number, key: string): string {
+    return `${collectionSequence}_${key}`;
+  }
 
   /**
    * Create a new collection.
@@ -86,7 +92,7 @@ export class CollectionsService {
     const { name, enabled, documentSecurity } = input;
     let { collectionId, permissions } = input;
 
-    permissions = Permission.aggregate(permissions);
+    permissions = Permission.aggregate(permissions) ?? [];
     collectionId = collectionId === 'unique()' ? ID.unique() : collectionId;
 
     try {
@@ -104,16 +110,14 @@ export class CollectionsService {
 
       const collection = await db.getDocument(`collections`, collectionId);
 
-      await db.createCollection(
-        `collection_${collection.getSequence()}`,
-        [],
-        [],
-        permissions ?? [],
+      await db.createCollection({
+        id: this.getCollectionName(collection.getSequence()),
+        permissions,
         documentSecurity,
-      );
+      });
 
       this.event.emit(
-        `database.${db.getDatabase()}.collection.${collectionId}.created`,
+        `schema.${db.schema}.collection.${collectionId}.created`,
         collection,
       );
       return collection;
@@ -129,35 +133,14 @@ export class CollectionsService {
   }
 
   /**
-   * Get collections for a database.
+   * Get collections for a schema.
    */
   async getCollections(db: Database, queries: Query[], search?: string) {
     if (search) {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const collectionId = cursor.getValue();
-      const cursorDocument = await db.getDocument(`collections`, collectionId);
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Collection '${collectionId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries).filters;
-
     const collections = await db.find(`collections`, queries);
     const total = await db.count(`collections`, filterQueries, APP_LIMIT_COUNT);
 
@@ -212,7 +195,9 @@ export class CollectionsService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    permissions = Permission.aggregate(permissions);
+    if (permissions) {
+      permissions = Permission.aggregate(permissions) ?? [];
+    };
     enabled = enabled ?? collection.get('enabled');
 
     const updatedCollection = await db.updateDocument(
@@ -227,13 +212,15 @@ export class CollectionsService {
     );
 
     await db.updateCollection(
-      `collection_${collection.getSequence()}`,
-      permissions,
-      documentSecurity,
+      {
+        id: this.getCollectionName(collection.getSequence()),
+        permissions: permissions ?? collection.get('$permissions'),
+        documentSecurity: documentSecurity ?? collection.get('documentSecurity'),
+      }
     );
 
     this.event.emit(
-      `database.${db.getDatabase()}.collection.${collectionId}.updated`,
+      `schema.${db.schema}.collection.${collectionId}.updated`,
       updatedCollection,
     );
     return updatedCollection;
@@ -245,7 +232,7 @@ export class CollectionsService {
   async removeCollection(
     db: Database,
     collectionId: string,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
@@ -260,15 +247,15 @@ export class CollectionsService {
       );
     }
 
-    await this.schemasQueue.add(DATABASE_TYPE_DELETE_COLLECTION, {
-      database: db.getDatabase(),
+    await this.collectionsQueue.add(CollectionsJob.DELETE_COLLECTION, {
+      database: db.schema,
       collection,
       project,
     });
 
-    await db.purgeCachedCollection(`collection_${collection.getSequence()}`);
+    await db.purgeCachedCollection(this.getCollectionName(collection.getSequence()));
 
-    return null;
+    return;
   }
 
   /**
@@ -280,37 +267,11 @@ export class CollectionsService {
     if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
-
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const attributeId = cursor.getValue();
-      const cursorDocument = await db.find('attributes', [
-        Query.equal('collectionInternalId', [collection.getSequence()]),
-        Query.equal('key', [attributeId]),
-        Query.limit(1),
-      ]);
-
-      if (cursorDocument.length === 0 || cursorDocument[0].empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Attribute '${attributeId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument[0]);
-    }
-
     queries.push(
       Query.equal('collectionInternalId', [collection.getSequence()]),
     );
 
     const filterQueries = Query.groupByType(queries).filters;
-
     const attributes = await db.find('attributes', queries);
     const total = await db.count('attributes', filterQueries, APP_LIMIT_COUNT);
 
@@ -325,7 +286,7 @@ export class CollectionsService {
     const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
 
     const collection = await Authorization.skip(
-      async () => await db.getDocument(`collections`, collectionId),
+      () => db.getDocument(`collections`, collectionId),
     );
 
     if (
@@ -337,47 +298,21 @@ export class CollectionsService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const cursor = queries.find(query =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const documentId = cursor.getValue();
-      const cursorDocument = await Authorization.skip(
-        async () =>
-          await db.getDocument(
-            `collection_${collection.getSequence()}`,
-            documentId,
-          ),
-      );
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Doc '${documentId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries).filters;
-
     const documents = await db.find(
-      `collection_${collection.getSequence()}`,
+      this.getCollectionName(collection.getSequence()),
       queries,
     );
     const total = await db.count(
-      `collection_${collection.getSequence()}`,
+      this.getCollectionName(collection.getSequence()),
       filterQueries,
       APP_LIMIT_COUNT,
     );
 
     // Add $collectionId for all documents
+    // TODO: i don't think we should do this here, because its not what we are doing,
     const processDocument = async (
-      collection: Doc,
+      collection: CollectionsDoc,
       document: Doc,
     ): Promise<boolean> => {
       if (document.empty()) {
@@ -391,13 +326,13 @@ export class CollectionsService {
         .filter(
           (attribute: any) =>
             attribute.get('type') === AttributeType.Relationship,
-        );
+        ) as AttributesDoc[];
 
       for (const relationship of relationships) {
         const related = document.get(
           relationship.get('key'),
           null,
-        );
+        ) as any;
 
         if (
           related === null ||
@@ -407,11 +342,12 @@ export class CollectionsService {
           continue;
         }
 
+        // TODO: something is not good here
         const relations = Array.isArray(related) ? related : [related];
         const relatedCollectionId =
           relationship.get('relatedCollection');
         const relatedCollection = await Authorization.skip(
-          async () => await db.getDocument(`collections`, relatedCollectionId),
+          async () => await db.getDocument(`collections`, relatedCollectionId!),
         );
 
         for (let i = 0; i < relations.length; i++) {
@@ -433,12 +369,13 @@ export class CollectionsService {
       return true;
     };
 
+    // TODO: recheck the logic, something is very wrong here
     for (const document of documents) {
       await processDocument(collection, document);
     }
 
     const select = queries.some(
-      query => query.getMethod() === Query.TYPE_SELECT,
+      query => query.getMethod() === QueryType.Select,
     );
 
     // Check if the SELECT query includes $collectionId
@@ -446,8 +383,8 @@ export class CollectionsService {
       select &&
       queries.some(
         query =>
-          query.getMethod() === Query.TYPE_SELECT &&
-          query.getValues().includes('$collectionId'),
+          query.getMethod() === QueryType.Select &&
+          query.getValues().includes('$collectionId' as any),
       );
 
     if (select) {
@@ -471,7 +408,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateStringAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const {
       key,
@@ -483,10 +420,10 @@ export class CollectionsService {
     } = input;
 
     const validator = new TextValidator(size, 0);
-    if (defaultValue !== null && !validator.isValid(defaultValue)) {
+    if (defaultValue !== null && !validator.$valid(defaultValue)) {
       throw new Exception(
         Exception.ATTRIBUTE_VALUE_INVALID,
-        validator.getDescription(),
+        validator.$description,
       );
     }
 
@@ -495,7 +432,7 @@ export class CollectionsService {
       filters.push('encrypt');
     }
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.String,
       size,
@@ -515,18 +452,18 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateEmailAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.String,
       size: 254,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_EMAIL,
+      format: AttributeFormat.EMAIL,
     });
 
     return await this.createAttribute(db, collectionId, attribute, project);
@@ -539,25 +476,25 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateEnumAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array, elements } = input;
 
-    if (defaultValue !== null && !elements.includes(defaultValue)) {
+    if (defaultValue !== null && !elements?.includes(defaultValue)) {
       throw new Exception(
         Exception.ATTRIBUTE_VALUE_INVALID,
         'Default value not found in elements',
       );
     }
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.String,
       size: Database.LENGTH_KEY,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_ENUM,
+      format: AttributeFormat.ENUM,
       formatOptions: { elements },
     });
 
@@ -571,18 +508,18 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIpAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.String,
       size: 39,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_IP,
+      format: AttributeFormat.IP,
     });
 
     return await this.createAttribute(db, collectionId, attribute, project);
@@ -595,18 +532,18 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateStringAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.String,
       size: 2000,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_URL,
+      format: AttributeFormat.URL,
     });
 
     return await this.createAttribute(db, collectionId, attribute, project);
@@ -619,7 +556,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIntegerAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -633,25 +570,25 @@ export class CollectionsService {
       );
     }
 
-    const validator = new RangeValidator(minValue, maxValue, 'integer');
+    const validator = new RangeValidator(minValue, maxValue, NumericType.INTEGER);
 
-    if (defaultValue !== null && !validator.isValid(defaultValue)) {
+    if (defaultValue !== null && !validator.$valid(defaultValue)) {
       throw new Exception(
         Exception.ATTRIBUTE_VALUE_INVALID,
-        validator.getDescription(),
+        validator.$description,
       );
     }
 
     const size = maxValue > 2147483647 ? 8 : 4; // Automatically create BigInt depending on max value
 
-    let attribute = new Doc<any>({
+    let attribute = new Doc<Attributes>({
       key,
       type: AttributeType.Integer,
       size,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_INT_RANGE,
+      format: AttributeFormat.INTEGER,
       formatOptions: {
         min: minValue,
         max: maxValue,
@@ -668,8 +605,8 @@ export class CollectionsService {
     const formatOptions = attribute.get('formatOptions', {});
 
     if (formatOptions) {
-      attribute.set('min', parseInt(formatOptions.min));
-      attribute.set('max', parseInt(formatOptions.max));
+      attribute.set('min', parseInt(formatOptions['min']));
+      attribute.set('max', parseInt(formatOptions['max']));
     }
 
     return attribute;
@@ -682,7 +619,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateFloatAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array, min, max } = input;
 
@@ -696,23 +633,23 @@ export class CollectionsService {
       );
     }
 
-    const validator = new RangeValidator(minValue, maxValue, 'float');
+    const validator = new RangeValidator(minValue, maxValue, NumericType.FLOAT);
 
-    if (defaultValue !== null && !validator.isValid(defaultValue)) {
+    if (defaultValue !== null && !validator.$valid(defaultValue)) {
       throw new Exception(
         Exception.ATTRIBUTE_VALUE_INVALID,
-        validator.getDescription(),
+        validator.$description,
       );
     }
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.Float,
       size: 0,
       required,
       default: defaultValue,
       array,
-      format: APP_DATABASE_ATTRIBUTE_FLOAT_RANGE,
+      format: AttributeFormat.FLOAT,
       formatOptions: {
         min: minValue,
         max: maxValue,
@@ -729,8 +666,8 @@ export class CollectionsService {
     const formatOptions = createdAttribute.get('formatOptions', {});
 
     if (formatOptions) {
-      createdAttribute.set('min', parseFloat(formatOptions.min));
-      createdAttribute.set('max', parseFloat(formatOptions.max));
+      createdAttribute.set('min', parseFloat(formatOptions['min']));
+      createdAttribute.set('max', parseFloat(formatOptions['max']));
     }
 
     return createdAttribute;
@@ -743,11 +680,11 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateBooleanAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.Boolean,
       size: 0,
@@ -766,20 +703,17 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateDatetimeAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, required, default: defaultValue, array } = input;
 
-    const filters = ['datetime'];
-
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.Timestamptz,
       size: 0,
       required,
       default: defaultValue,
       array,
-      filters,
     });
 
     return await this.createAttribute(db, collectionId, attribute, project);
@@ -792,13 +726,12 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateRelationAttributeDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, type, twoWay, twoWayKey, onDelete, relatedCollectionId } =
       input;
 
     const collection = await db.getDocument(`collections`, collectionId);
-
     if (collection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
@@ -813,14 +746,17 @@ export class CollectionsService {
     }
 
     const relatedCollection = await db.getCollection(
-      `collection_${relatedCollectionDocument.getSequence()}`,
+      this.getCollectionName(relatedCollectionDocument.getSequence()),
     );
 
     if (relatedCollection.empty()) {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    const attributes = collection.get('attributes', []);
+    const attributes = collection.get('attributes', []) as AttributesDoc[];
+
+    // TODO: in new lib its possible to create multiple many to many collections
+    //  we have to review it later & remove the conditions
     for (const attribute of attributes) {
       if (attribute.get('type') !== AttributeType.Relationship) {
         continue;
@@ -832,7 +768,7 @@ export class CollectionsService {
 
       if (
         attribute.get('options')?.['twoWayKey']?.toLowerCase() ===
-        twoWayKey.toLowerCase() &&
+        twoWayKey?.toLowerCase() &&
         attribute.get('options')?.['relatedCollection'] ===
         relatedCollection.getId()
       ) {
@@ -843,9 +779,9 @@ export class CollectionsService {
       }
 
       if (
-        type === Database.RELATION_MANY_TO_MANY &&
+        type === RelationType.ManyToMany &&
         attribute.get('options')?.['relationType'] ===
-        Database.RELATION_MANY_TO_MANY &&
+        RelationType.ManyToMany &&
         attribute.get('options')?.['relatedCollection'] ===
         relatedCollection.getId()
       ) {
@@ -856,7 +792,7 @@ export class CollectionsService {
       }
     }
 
-    const attribute = new Doc({
+    const attribute = new Doc<Attributes>({
       key,
       type: AttributeType.Relationship,
       size: 0,
@@ -888,7 +824,7 @@ export class CollectionsService {
 
     const attribute = await db.getDocument(
       'attributes',
-      `${collection.getSequence()}_${key}`,
+      this.getAttrId(collection.getSequence(), key),
     );
 
     if (attribute.empty()) {
@@ -896,7 +832,6 @@ export class CollectionsService {
     }
 
     const options = attribute.get('options', []);
-
     for (const [optionKey, option] of Object.entries(options)) {
       attribute.set(optionKey, option);
     }
@@ -946,7 +881,7 @@ export class CollectionsService {
       collectionId,
       key,
       type: AttributeType.String,
-      filter: APP_DATABASE_ATTRIBUTE_EMAIL,
+      format: AttributeFormat.EMAIL,
       defaultValue,
       required,
       options: {},
@@ -967,7 +902,7 @@ export class CollectionsService {
   ) {
     const { required, default: defaultValue, newKey, elements } = input;
 
-    if (defaultValue !== null && !elements.includes(defaultValue)) {
+    if (defaultValue !== null && !elements?.includes(defaultValue)) {
       throw new Exception(
         Exception.ATTRIBUTE_VALUE_INVALID,
         'Default value not found in elements',
@@ -979,7 +914,7 @@ export class CollectionsService {
       collectionId,
       key,
       type: AttributeType.String,
-      filter: APP_DATABASE_ATTRIBUTE_ENUM,
+      format: AttributeFormat.ENUM,
       defaultValue,
       required,
       options: { elements },
@@ -1005,7 +940,7 @@ export class CollectionsService {
       collectionId,
       key,
       type: AttributeType.String,
-      filter: APP_DATABASE_ATTRIBUTE_IP,
+      format: AttributeFormat.IP,
       defaultValue,
       required,
       options: {},
@@ -1031,7 +966,7 @@ export class CollectionsService {
       collectionId,
       key,
       type: AttributeType.String,
-      filter: APP_DATABASE_ATTRIBUTE_URL,
+      format: AttributeFormat.URL,
       defaultValue,
       required,
       options: {},
@@ -1066,8 +1001,8 @@ export class CollectionsService {
     const formatOptions = attribute.get('formatOptions', []);
 
     if (formatOptions) {
-      attribute.set('min', parseInt(formatOptions.min));
-      attribute.set('max', parseInt(formatOptions.max));
+      attribute.set('min', parseInt(formatOptions['min']));
+      attribute.set('max', parseInt(formatOptions['max']));
     }
 
     return attribute;
@@ -1098,8 +1033,8 @@ export class CollectionsService {
     const formatOptions = attribute.get('formatOptions', []);
 
     if (formatOptions) {
-      attribute.set('min', parseFloat(formatOptions.min));
-      attribute.set('max', parseFloat(formatOptions.max));
+      attribute.set('min', parseFloat(formatOptions['min']));
+      attribute.set('max', parseFloat(formatOptions['max']));
     }
 
     return attribute;
@@ -1178,7 +1113,6 @@ export class CollectionsService {
     });
 
     const options = attribute.get('options', []);
-
     for (const [key, option] of Object.entries(options)) {
       attribute.set(key, option);
     }
@@ -1192,14 +1126,13 @@ export class CollectionsService {
   async createAttribute(
     db: Database,
     collectionId: string,
-    attribute: Doc,
-    project: Doc,
+    attribute: AttributesDoc,
+    project: ProjectsDoc,
   ) {
     const key = attribute.get('key');
-    const type = attribute.get('type', '');
+    const type = attribute.get('type') as AttributeType;
     const size = attribute.get('size', 0);
     const required = attribute.get('required', true);
-    const signed = attribute.get('signed', true);
     const array = attribute.get('array', false);
     const format = attribute.get('format', '');
     const formatOptions = attribute.get('formatOptions', {});
@@ -1213,7 +1146,7 @@ export class CollectionsService {
       throw new Exception(Exception.COLLECTION_NOT_FOUND);
     }
 
-    if (format && !Structure.hasFormat(format, type)) {
+    if (format && !StructureValidator.hasFormat(format, type)) {
       throw new Exception(
         Exception.ATTRIBUTE_FORMAT_UNSUPPORTED,
         `Format ${format} not available for ${type} attributes.`,
@@ -1234,9 +1167,9 @@ export class CollectionsService {
       );
     }
 
-    let relatedCollection: Doc;
+    let relatedCollection!: CollectionsDoc;
     if (type === AttributeType.Relationship) {
-      options['side'] = Database.RELATION_SIDE_PARENT;
+      options['side'] = RelationSide.Parent;
       relatedCollection = await db.getDocument(
         `collections`,
         options['relatedCollection'] ?? '',
@@ -1250,16 +1183,15 @@ export class CollectionsService {
     }
 
     try {
-      const newAttribute = new Doc({
-        $id: ID.custom(`${collection.getSequence()}_${key}`),
+      const newAttribute = new Doc<Attributes>({
+        $id: this.getAttrId(collection.getSequence(), key),
         key,
         collectionInternalId: collection.getSequence(),
         collectionId,
         type,
-        status: 'processing',
+        status: Status.PENDING,
         size,
         required,
-        signed,
         default: defaultValue,
         array,
         format,
@@ -1268,7 +1200,7 @@ export class CollectionsService {
         options,
       });
 
-      db.checkAttribute(collection, newAttribute);
+      db.checkAttribute(collection as any, newAttribute as any);
       attribute = await db.createDocument('attributes', newAttribute);
     } catch (error) {
       if (error instanceof DuplicateException) {
@@ -1284,27 +1216,26 @@ export class CollectionsService {
     }
 
     db.purgeCachedDocument(`collections`, collectionId);
-    db.purgeCachedCollection(`collection_${collection.getSequence()}`);
+    db.purgeCachedCollection(this.getCollectionName(collection.getSequence()));
 
     if (type === AttributeType.Relationship && options['twoWay']) {
       const twoWayKey = options['twoWayKey'];
       options['relatedCollection'] = collection.getId();
       options['twoWayKey'] = key;
-      options['side'] = Database.RELATION_SIDE_CHILD;
+      options['side'] = RelationSide.Child;
 
       try {
-        const twoWayAttribute = new Doc({
+        const twoWayAttribute = new Doc<Attributes>({
           $id: ID.custom(
-            `related_${relatedCollection.getSequence()}_${twoWayKey}`,
+            this.getRelatedAttrId(relatedCollection.getSequence(), twoWayKey),
           ),
           key: twoWayKey,
           collectionInternalId: relatedCollection.getSequence(),
           collectionId: relatedCollection.getId(),
           type,
-          status: 'processing',
+          status: Status.PENDING,
           size,
           required,
-          signed,
           default: defaultValue,
           array,
           format,
@@ -1313,7 +1244,7 @@ export class CollectionsService {
           options,
         });
 
-        db.checkAttribute(relatedCollection, twoWayAttribute);
+        db.checkAttribute(relatedCollection as any, twoWayAttribute as any);
         await db.createDocument('attributes', twoWayAttribute);
       } catch (error) {
         await db.deleteDocument('attributes', attribute.getId());
@@ -1335,8 +1266,8 @@ export class CollectionsService {
       );
     }
 
-    let _res = await this.schemasQueue.add(DATABASE_TYPE_CREATE_ATTRIBUTE, {
-      database: db.getDatabase(),
+    await this.collectionsQueue.add(CollectionsJob.CREATE_ATTRIBUTE, {
+      database: db.schema,
       collection,
       attribute,
       project,
@@ -1354,7 +1285,7 @@ export class CollectionsService {
     key: string;
     type: string;
     size?: number;
-    filter?: string;
+    format?: string;
     defaultValue?: string | boolean | number | null;
     required?: boolean;
     min?: number;
@@ -1369,7 +1300,7 @@ export class CollectionsService {
       key,
       type,
       size,
-      filter,
+      format,
       defaultValue,
       required,
       min,
@@ -1386,14 +1317,14 @@ export class CollectionsService {
 
     let attribute = await db.getDocument(
       'attributes',
-      `${collection.getSequence()}_${key}`,
+      this.getAttrId(collection.getSequence(), key),
     );
 
     if (attribute.empty()) {
       throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
     }
 
-    if (attribute.get('status') !== 'available') {
+    if (attribute.get('status') !== Status.AVAILABLE) {
       throw new Exception(Exception.ATTRIBUTE_NOT_AVAILABLE);
     }
 
@@ -1402,9 +1333,9 @@ export class CollectionsService {
     }
 
     if (
-      attribute.get('type') === 'string' &&
-      filter &&
-      attribute.get('filters') !== filter
+      attribute.get('type') === AttributeType.String &&
+      format &&
+      attribute.get('format') !== format
     ) {
       throw new Exception(Exception.ATTRIBUTE_TYPE_INVALID);
     }
@@ -1427,7 +1358,7 @@ export class CollectionsService {
       );
     }
 
-    const collectionIdWithPrefix = `collection_${collection.getSequence()}`;
+    const collectionIdWithPrefix = this.getCollectionName(collection.getSequence());
 
     attribute
       .set('default', defaultValue)
@@ -1438,9 +1369,12 @@ export class CollectionsService {
     }
 
     switch (attribute.get('format')) {
-      case APP_DATABASE_ATTRIBUTE_INT_RANGE:
-      case APP_DATABASE_ATTRIBUTE_FLOAT_RANGE:
-        if ((min ?? null) !== null && (max ?? null) !== null) {
+      case AttributeFormat.INTEGER:
+      case AttributeFormat.FLOAT:
+        if (
+          min !== undefined && max !== undefined
+          && min !== null && max !== null
+        ) {
           if (min > max) {
             throw new Exception(
               Exception.ATTRIBUTE_VALUE_INVALID,
@@ -1450,14 +1384,14 @@ export class CollectionsService {
 
           const validator =
             attribute.get('format') ===
-              APP_DATABASE_ATTRIBUTE_INT_RANGE
-              ? new RangeValidator(min, max, 'integer')
-              : new RangeValidator(min, max, 'float');
+              AttributeFormat.INTEGER
+              ? new RangeValidator(min, max, NumericType.INTEGER)
+              : new RangeValidator(min, max, NumericType.FLOAT);
 
-          if (defaultValue !== undefined && !validator.isValid(defaultValue)) {
+          if (defaultValue !== undefined && !validator.$valid(defaultValue)) {
             throw new Exception(
               Exception.ATTRIBUTE_VALUE_INVALID,
-              validator.getDescription(),
+              validator.$description,
             );
           }
 
@@ -1465,7 +1399,7 @@ export class CollectionsService {
           attribute.set('formatOptions', options);
         }
         break;
-      case APP_DATABASE_ATTRIBUTE_ENUM:
+      case AttributeFormat.ENUM:
         if (!elements || elements.length === 0) {
           throw new Exception(
             Exception.ATTRIBUTE_VALUE_INVALID,
@@ -1504,12 +1438,12 @@ export class CollectionsService {
       };
       attribute.set('options', primaryDocumentOptions);
 
-      await db.updateRelationship(
-        collectionIdWithPrefix,
-        key,
+      await db.updateRelationship({
+        collectionId: collectionIdWithPrefix,
+        id: key,
         newKey,
-        primaryDocumentOptions['onDelete'],
-      );
+        onDelete: primaryDocumentOptions['onDelete']
+      });
 
       if (primaryDocumentOptions['twoWay']) {
         const relatedCollection = await db.getDocument(
@@ -1519,7 +1453,7 @@ export class CollectionsService {
 
         const relatedAttribute = await db.getDocument(
           'attributes',
-          `related_${relatedCollection.getSequence()}_${primaryDocumentOptions['twoWayKey']}`,
+          this.getRelatedAttrId(relatedCollection.getSequence(), primaryDocumentOptions['twoWayKey']),
         );
 
         if (newKey && newKey !== key) {
@@ -1533,7 +1467,7 @@ export class CollectionsService {
         relatedAttribute.set('options', relatedOptions);
         await db.updateDocument(
           'attributes',
-          `related_${relatedCollection.getSequence()}_${primaryDocumentOptions['twoWayKey']}`,
+          relatedAttribute.getId(),
           relatedAttribute,
         );
 
@@ -1541,13 +1475,11 @@ export class CollectionsService {
       }
     } else {
       try {
-        await db.updateAttribute({
-          collection: collectionIdWithPrefix,
-          id: key,
+        await db.updateAttribute(collectionIdWithPrefix, key, {
           size,
-          type,
+          type: type as AttributeType,
           required,
-          defaultValue,
+          default: defaultValue,
           formatOptions: options,
           newKey,
         });
@@ -1565,7 +1497,7 @@ export class CollectionsService {
       await db.deleteDocument('attributes', attribute.getId());
 
       attribute
-        .set('$id', `${collection.getSequence()}_${newKey}`)
+        .set('$id', this.getAttrId(collection.getSequence(), newKey))
         .set('key', newKey);
 
       try {
@@ -1576,7 +1508,7 @@ export class CollectionsService {
     } else {
       attribute = await db.updateDocument(
         'attributes',
-        `${collection.getSequence()}_${key}`,
+        this.getAttrId(collection.getSequence(), key),
         attribute,
       );
     }
@@ -1584,7 +1516,7 @@ export class CollectionsService {
     db.purgeCachedDocument(`collections`, collection.getId());
 
     this.event.emit(
-      `database.${db.getDatabase()}.collection.${collectionId}.attribute.${key}.updated`,
+      `schema.${db.schema}.collection.${collectionId}.attribute.${key}.updated`,
       attribute.toObject(),
     );
 
@@ -1598,7 +1530,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     key: string,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
@@ -1608,7 +1540,7 @@ export class CollectionsService {
 
     const attribute = await db.getDocument(
       'attributes',
-      `${collection.getSequence()}_${key}`,
+      this.getAttrId(collection.getSequence(), key),
     );
 
     if (attribute.empty()) {
@@ -1616,16 +1548,16 @@ export class CollectionsService {
     }
 
     // Only update status if removing available attribute
-    if (attribute.get('status') === 'available') {
+    if (attribute.get('status') === Status.AVAILABLE) {
       await db.updateDocument(
         'attributes',
         attribute.getId(),
-        attribute.set('status', 'deleting'),
+        attribute.set('status', Status.DELETING),
       );
     }
 
     db.purgeCachedDocument(`collections`, collectionId);
-    db.purgeCachedCollection(`collection_${collection.getSequence()}`);
+    db.purgeCachedCollection(this.getCollectionName(collection.getSequence()));
 
     if (attribute.get('type') === AttributeType.Relationship) {
       const options = attribute.get('options');
@@ -1641,18 +1573,17 @@ export class CollectionsService {
 
         const relatedAttribute = await db.getDocument(
           'attributes',
-          `related_${relatedCollection.getSequence()}_${options['twoWayKey']}`,
+          this.getRelatedAttrId(relatedCollection.getSequence(), options['twoWayKey']),
         );
-
         if (relatedAttribute.empty()) {
           throw new Exception(Exception.ATTRIBUTE_NOT_FOUND);
         }
 
-        if (relatedAttribute.get('status') === 'available') {
+        if (relatedAttribute.get('status') === Status.AVAILABLE) {
           await db.updateDocument(
             'attributes',
             relatedAttribute.getId(),
-            relatedAttribute.set('status', 'deleting'),
+            relatedAttribute.set('status', Status.DELETING),
           );
         }
 
@@ -1663,14 +1594,14 @@ export class CollectionsService {
       }
     }
 
-    await this.schemasQueue.add(DATABASE_TYPE_DELETE_ATTRIBUTE, {
-      database: db.getDatabase(),
+    await this.collectionsQueue.add(CollectionsJob.DELETE_ATTRIBUTE, {
+      database: db.schema,
       collection,
       attribute,
       project,
     });
 
-    return {};
+    return;
   }
 
   /**
@@ -1680,7 +1611,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     input: CreateIndexDTO,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const { key, type, attributes, orders } = input;
 
@@ -1696,8 +1627,7 @@ export class CollectionsService {
       61,
     );
 
-    const limit = db.getLimitForIndexes();
-
+    const limit = db.getAdapter().$limitForIndexes;
     if (count >= limit) {
       throw new Exception(
         Exception.INDEX_LIMIT_EXCEEDED,
@@ -1789,7 +1719,7 @@ export class CollectionsService {
     }
 
     let index = new Doc({
-      $id: ID.custom(`${collection.getSequence()}_${key}`),
+      $id: ID.custom(this.getAttrId(collection.getSequence(), key)),
       key,
       status: 'processing',
       collectionInternalId: collection.getSequence(),
@@ -1805,8 +1735,8 @@ export class CollectionsService {
       db.getAdapter().getMaxIndexLength(),
     );
 
-    if (!validator.isValid(index)) {
-      throw new Exception(Exception.INDEX_INVALID, validator.getDescription());
+    if (!validator.$valid(index)) {
+      throw new Exception(Exception.INDEX_INVALID, validator.$description);
     }
 
     try {
@@ -1820,8 +1750,8 @@ export class CollectionsService {
 
     await db.purgeCachedDocument(`collections`, collectionId);
 
-    await this.schemasQueue.add(DATABASE_TYPE_CREATE_INDEX, {
-      database: db.getDatabase(),
+    await this.collectionsQueue.add(DATABASE_TYPE_CREATE_INDEX, {
+      database: db.schema,
       collection,
       index: index.toObject(),
       project,
@@ -1907,7 +1837,7 @@ export class CollectionsService {
     db: Database,
     collectionId: string,
     key: string,
-    project: Doc,
+    project: ProjectsDoc,
   ) {
     const collection = await db.getDocument(`collections`, collectionId);
 
@@ -1917,7 +1847,7 @@ export class CollectionsService {
 
     const index = await db.getDocument(
       'indexes',
-      `${collection.getSequence()}_${key}`,
+      this.getAttrId(collection.getSequence(), key),
     );
 
     if (index.empty()) {
@@ -1935,8 +1865,8 @@ export class CollectionsService {
 
     await db.purgeCachedDocument(`collections`, collectionId);
 
-    await this.schemasQueue.add(DATABASE_TYPE_DELETE_INDEX, {
-      database: db.getDatabase(),
+    await this.collectionsQueue.add(DATABASE_TYPE_DELETE_INDEX, {
+      database: db.schema,
       collection,
       index: index.toObject(),
       project,
@@ -2007,7 +1937,7 @@ export class CollectionsService {
       );
       const validator = new Authorization(permission);
 
-      const valid = validator.isValid(
+      const valid = validator.$valid(
         collection.getPermissionsByType(permission),
       );
       if (
@@ -2018,7 +1948,7 @@ export class CollectionsService {
       }
 
       if (permission === Database.PERMISSION_UPDATE) {
-        const validUpdate = validator.isValid(document.getUpdate());
+        const validUpdate = validator.$valid(document.getUpdate());
         if (documentSecurity && !validUpdate) {
           throw new Exception(Exception.USER_UNAUTHORIZED);
         }
@@ -2085,7 +2015,7 @@ export class CollectionsService {
 
     try {
       const createdDocument = await db.createDocument(
-        `collection_${collection.getSequence()}`,
+        this.getCollectionName(collection.getSequence()),
         document,
       );
 
@@ -2133,7 +2063,7 @@ export class CollectionsService {
 
     try {
       const document = await db.getDocument(
-        `collection_${collection.getSequence()}`,
+        this.getCollectionName(collection.getSequence()),
         documentId,
         queries,
       );
@@ -2161,7 +2091,7 @@ export class CollectionsService {
     collection: Doc,
     document: Doc,
   ): Promise<void> => {
-    document.set('$database', db.getDatabase());
+    document.set('$database', db.schema);
     document.set('$collectionId', collection.getId());
 
     const relationships = collection
@@ -2252,7 +2182,7 @@ export class CollectionsService {
     const document = await Authorization.skip(
       async () =>
         await db.getDocument(
-          `collection_${collection.getSequence()}`,
+          this.getCollectionName(collection.getSequence()),
           documentId,
         ),
     );
@@ -2340,7 +2270,7 @@ export class CollectionsService {
 
     try {
       const updatedDocument = await db.updateDocument(
-        `collection_${collection.getSequence()}`,
+        this.getCollectionName(collection.getSequence()),
         document.getId(),
         newDocument,
       );
@@ -2373,7 +2303,7 @@ export class CollectionsService {
     collectionId: string,
     documentId: string,
     mode: string,
-    timestamp: Date,
+    timestamp?: Date,
   ) {
     const isAPIKey = Auth.isAppUser(Authorization.getRoles());
     const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
@@ -2394,7 +2324,7 @@ export class CollectionsService {
     const document = await Authorization.skip(
       async () =>
         await db.getDocument(
-          `collection_${collection.getSequence()}`,
+          this.getCollectionName(collection.getSequence()),
           documentId,
         ),
     );
@@ -2405,7 +2335,7 @@ export class CollectionsService {
 
     await db.withRequestTimestamp(timestamp, async () => {
       await db.deleteDocument(
-        `collection_${collection.getSequence()}`,
+        this.getCollectionName(collection.getSequence()),
         documentId,
       );
     });
