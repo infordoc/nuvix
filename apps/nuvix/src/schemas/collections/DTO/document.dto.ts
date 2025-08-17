@@ -1,5 +1,5 @@
 import { OmitType, PartialType } from '@nestjs/swagger';
-import { IsString, IsJSON, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsObject } from 'class-validator';
 import { IsCustomID } from '@nuvix/core/validators/input.validator';
 
 export class CreateDocumentDTO {
@@ -7,7 +7,8 @@ export class CreateDocumentDTO {
   @IsCustomID()
   documentId!: string;
 
-  data!: object;
+  @IsObject()
+  data!: Record<string, any>;
 
   @IsOptional()
   @IsArray()

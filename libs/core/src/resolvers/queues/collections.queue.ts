@@ -10,7 +10,7 @@ import { Queue } from './queue';
 import { Exception } from '@nuvix/core/extend/exception';
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-import { QueueFor } from '@nuvix/utils';
+import { QueueFor, SchemaMeta } from '@nuvix/utils';
 import { Logger } from '@nestjs/common';
 import type {
   Attributes,
@@ -76,11 +76,6 @@ export class CollectionsQueue extends Queue {
   }
 
   /** @see collectionService */
-  getCollectionName(sequence: number): string {
-    return `collection_${sequence}`;
-  }
-
-  /** @see collectionService */
   getRelatedAttrId(collectionSequence: number, key: string): string {
     return `related_${collectionSequence}_${key}`;
   }
@@ -120,7 +115,7 @@ export class CollectionsQueue extends Queue {
     try {
       await Authorization.skip(async () => {
         attribute = await dbForProject.getDocument(
-          'attributes',
+          SchemaMeta.attributes,
           attribute.getId(),
         );
 
@@ -147,7 +142,7 @@ export class CollectionsQueue extends Queue {
           switch (type) {
             case AttributeType.Relationship:
               relatedCollection = await dbForProject.getDocument(
-                'collections',
+                SchemaMeta.collections,
                 options['relatedCollection'],
               );
               if (relatedCollection.empty()) {
@@ -157,12 +152,8 @@ export class CollectionsQueue extends Queue {
               }
               if (
                 !(await dbForProject.createRelationship({
-                  collectionId: this.getCollectionName(
-                    collection.getSequence(),
-                  ),
-                  relatedCollectionId: this.getCollectionName(
-                    relatedCollection.getSequence(),
-                  ),
+                  collectionId: collection.getId(),
+                  relatedCollectionId: relatedCollection.getId(),
                   type: options['relationType'],
                   twoWay: options['twoWay'],
                   id: key,
@@ -175,14 +166,14 @@ export class CollectionsQueue extends Queue {
 
               if (options['twoWay']) {
                 relatedAttribute = await dbForProject.getDocument(
-                  'attributes',
+                  SchemaMeta.attributes,
                   this.getRelatedAttrId(
                     relatedCollection.getSequence(),
                     options['twoWayKey'],
                   ),
                 );
                 await dbForProject.updateDocument(
-                  'attributes',
+                  SchemaMeta.attributes,
                   relatedAttribute.getId(),
                   relatedAttribute.set('status', Status.AVAILABLE),
                 );
@@ -191,7 +182,7 @@ export class CollectionsQueue extends Queue {
             default:
               if (
                 !(await dbForProject.createAttribute(
-                  this.getCollectionName(collection.getSequence()),
+                  collection.getId(),
                   {
                     $id: key,
                     key,
@@ -211,7 +202,7 @@ export class CollectionsQueue extends Queue {
           }
 
           await dbForProject.updateDocument(
-            'attributes',
+            SchemaMeta.attributes,
             attribute.getId(),
             attribute.set('status', Status.AVAILABLE),
           );
@@ -225,14 +216,14 @@ export class CollectionsQueue extends Queue {
           }
 
           await dbForProject.updateDocument(
-            'attributes',
+            SchemaMeta.attributes,
             attribute.getId(),
             attribute.set('status', Status.FAILED),
           );
 
           if (relatedAttribute) {
             await dbForProject.updateDocument(
-              'attributes',
+              SchemaMeta.attributes,
               relatedAttribute.getId(),
               relatedAttribute.set('status', Status.FAILED),
             );
@@ -243,12 +234,12 @@ export class CollectionsQueue extends Queue {
 
         if (type === AttributeType.Relationship && options['twoWay']) {
           await dbForProject.purgeCachedDocument(
-            `collections`,
+            SchemaMeta.collections,
             relatedCollection.getId(),
           );
         }
 
-        await dbForProject.purgeCachedDocument('collections', collectionId);
+        await dbForProject.purgeCachedDocument(SchemaMeta.collections, collectionId);
       });
     } finally {
       await this.coreService.releaseDatabaseClient(client);
@@ -298,14 +289,14 @@ export class CollectionsQueue extends Queue {
             if (type === AttributeType.Relationship) {
               if (options['twoWay']) {
                 relatedCollection = await dbForProject.getDocument(
-                  'collections',
+                  SchemaMeta.collections,
                   options['relatedCollection'],
                 );
                 if (relatedCollection.empty()) {
                   throw new DatabaseException('Collection not found');
                 }
                 relatedAttribute = await dbForProject.getDocument(
-                  'attributes',
+                  SchemaMeta.attributes,
                   this.getRelatedAttrId(
                     relatedCollection.getSequence(),
                     options['twoWayKey'],
@@ -318,12 +309,12 @@ export class CollectionsQueue extends Queue {
 
               if (
                 !(await dbForProject.deleteRelationship(
-                  this.getCollectionName(collection.getSequence()),
+                  collection.getId(),
                   key,
                 ))
               ) {
                 await dbForProject.updateDocument(
-                  'attributes',
+                  SchemaMeta.attributes,
                   relatedAttribute!.getId(),
                   relatedAttribute!.set('status', Status.STUCK),
                 );
@@ -331,7 +322,7 @@ export class CollectionsQueue extends Queue {
               }
             } else if (
               !(await dbForProject.deleteAttribute(
-                this.getCollectionName(collection.getSequence()),
+                collection.getId(),
                 key,
               ))
             ) {
@@ -339,11 +330,11 @@ export class CollectionsQueue extends Queue {
             }
           }
 
-          await dbForProject.deleteDocument('attributes', attribute.getId());
+          await dbForProject.deleteDocument(SchemaMeta.attributes, attribute.getId());
 
           if (relatedAttribute && !relatedAttribute.empty()) {
             await dbForProject.deleteDocument(
-              'attributes',
+              SchemaMeta.attributes,
               relatedAttribute.getId(),
             );
           }
@@ -357,13 +348,13 @@ export class CollectionsQueue extends Queue {
             }
           }
           await dbForProject.updateDocument(
-            'attributes',
+            SchemaMeta.attributes,
             attribute.getId(),
             attribute.set('status', Status.STUCK),
           );
           if (relatedAttribute && !relatedAttribute.empty()) {
             await dbForProject.updateDocument(
-              'attributes',
+              SchemaMeta.attributes,
               relatedAttribute.getId(),
               relatedAttribute.set('status', Status.STUCK),
             );
@@ -372,7 +363,7 @@ export class CollectionsQueue extends Queue {
           // this.trigger(database, collection, attribute, projectDoc, projectId, events);
         }
 
-        const indexes = collection.get('indexes', []) as IndexesDoc[];
+        const indexes = collection.get(SchemaMeta.indexes, []) as IndexesDoc[];
 
         for (const index of indexes) {
           const attributes = index.get('attributes');
@@ -385,7 +376,7 @@ export class CollectionsQueue extends Queue {
             if (orders[found]) orders.splice(found, 1);
 
             if (attributes.length === 0) {
-              await dbForProject.deleteDocument('indexes', index.getId());
+              await dbForProject.deleteDocument(SchemaMeta.indexes, index.getId());
             } else {
               index.set('attributes', attributes);
               index.set('orders', orders);
@@ -395,9 +386,9 @@ export class CollectionsQueue extends Queue {
                 if (
                   existing.get('key') !== index.get('key') &&
                   existing.get('attributes').toString() ===
-                    index.get('attributes').toString() &&
+                  index.get('attributes').toString() &&
                   existing.get('orders').toString() ===
-                    index.get('orders').toString()
+                  index.get('orders').toString()
                 ) {
                   exists = true;
                   break;
@@ -416,7 +407,7 @@ export class CollectionsQueue extends Queue {
                 );
               } else {
                 await dbForProject.updateDocument(
-                  'indexes',
+                  SchemaMeta.indexes,
                   index.getId(),
                   index,
                 );
@@ -425,9 +416,9 @@ export class CollectionsQueue extends Queue {
           }
         }
 
-        await dbForProject.purgeCachedDocument('collections', collectionId);
+        await dbForProject.purgeCachedDocument(SchemaMeta.collections, collectionId);
         await dbForProject.purgeCachedCollection(
-          this.getCollectionName(collection.getSequence()),
+          collection.getId(),
         );
 
         if (
@@ -437,11 +428,11 @@ export class CollectionsQueue extends Queue {
           !relatedAttribute.empty()
         ) {
           await dbForProject.purgeCachedDocument(
-            'collections',
+            SchemaMeta.collections,
             relatedCollection.getId(),
           );
           await dbForProject.purgeCachedCollection(
-            this.getCollectionName(relatedCollection.getSequence()),
+            relatedCollection.getId(),
           );
         }
       });
@@ -488,7 +479,7 @@ export class CollectionsQueue extends Queue {
         try {
           if (
             !(await dbForProject.createIndex(
-              this.getCollectionName(collection.getSequence()),
+              collection.getId(),
               key,
               type,
               attributes,
@@ -498,7 +489,7 @@ export class CollectionsQueue extends Queue {
             throw new DatabaseException('Failed to create Index');
           }
           await dbForProject.updateDocument(
-            'indexes',
+            SchemaMeta.indexes,
             index.getId(),
             index.set('status', Status.AVAILABLE),
           );
@@ -507,7 +498,7 @@ export class CollectionsQueue extends Queue {
             index.set('error', e.message);
           }
           await dbForProject.updateDocument(
-            'indexes',
+            SchemaMeta.indexes,
             index.getId(),
             index.set('status', Status.FAILED),
           );
@@ -515,7 +506,7 @@ export class CollectionsQueue extends Queue {
           // this.trigger(database, collection, index, projectDoc, projectId, events);
         }
 
-        await dbForProject.purgeCachedDocument('collections', collectionId);
+        await dbForProject.purgeCachedDocument(SchemaMeta.collections, collectionId);
       });
     } finally {
       await this.coreService.releaseDatabaseClient(client);
@@ -566,22 +557,20 @@ export class CollectionsQueue extends Queue {
           if (
             status !== Status.FAILED &&
             !(await dbForProject.deleteIndex(
-              this.getCollectionName(collection.getSequence()),
+              collection.getId(),
               key,
             ))
           ) {
             throw new DatabaseException('Failed to delete index');
           }
-          await dbForProject.deleteDocument('indexes', index.getId());
+          await dbForProject.deleteDocument(SchemaMeta.indexes, index.getId());
           index.set('status', Status.DELETED);
         } catch (e: any) {
-          console.error(e.message);
-
           if (e instanceof DatabaseException) {
             index.set('error', e.message);
           }
           await dbForProject.updateDocument(
-            'indexes',
+            SchemaMeta.indexes,
             index.getId(),
             index.set('status', Status.STUCK),
           );
@@ -590,7 +579,7 @@ export class CollectionsQueue extends Queue {
         }
 
         await dbForProject.purgeCachedDocument(
-          'collections',
+          SchemaMeta.collections,
           collection.getId(),
         );
       });
@@ -621,37 +610,25 @@ export class CollectionsQueue extends Queue {
         const collectionInternalId = collection.getSequence();
 
         const relationships = await dbForProject.find(
-          'attributes',
+          SchemaMeta.attributes,
           qb =>
             qb
               .equal('type', AttributeType.Relationship)
-              .equal('collectionInternalId', collectionInternalId),
-          // TODO: will back here after json filter support
+              .equal('collectionInternalId', collectionInternalId)
+              .equal('options->>relatedCollection' as any, collection.getId())
         );
 
-        const internalCollectionName =
-          this.getCollectionName(collectionInternalId);
-        // TODO: -----------------
         for (const relationship of relationships) {
-          await dbForProject.deleteRelationship(
-            internalCollectionName,
-            relationship.get('key'),
+          await dbForProject.deleteDocument(
+            relationship.getCollection(),
+            relationship.getId(),
           );
-          if (relationship.get('options', {})['twoWay']) {
-            const relatedCollectionId = relationship.get('options', {})[
-              'relatedCollection'
-            ];
-            await dbForProject.deleteDocument(
-              relatedCollectionId,
-              relationship.get('options')['twoWayKey'],
-            );
-            await dbForProject.purgeCachedDocument(
-              'collections',
-              relatedCollectionId,
-            );
-          }
+          await dbForProject.purgeCachedDocument(
+            SchemaMeta.collections,
+            relationship.getCollection(),
+          );
         }
-        await dbForProject.deleteCollection(internalCollectionName);
+        await dbForProject.deleteCollection(collection.getId());
         await dbForProject.deleteDocuments('attributes', qb =>
           qb.equal('collectionInternalId', collectionInternalId),
         );

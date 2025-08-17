@@ -175,8 +175,8 @@ export const bucketCollections: Record<string, Collection> = {
 
 export const dbCollections: Record<string, Collection> = {
   collections: {
-    $collection: ID.custom('databases'),
-    $id: ID.custom('collections'),
+    $collection: ID.custom(Database.METADATA),
+    $id: ID.custom('_collections'),
     name: 'Collections',
     attributes: [
       {
@@ -259,7 +259,7 @@ export const dbCollections: Record<string, Collection> = {
 
   attributes: {
     $collection: ID.custom(Database.METADATA),
-    $id: ID.custom('attributes'),
+    $id: ID.custom('_attributes'),
     name: 'Attributes',
     attributes: [
       {
@@ -328,12 +328,6 @@ export const dbCollections: Record<string, Collection> = {
         filters: ['casting'],
       },
       {
-        $id: ID.custom('signed'),
-        key: 'signed',
-        type: AttributeType.Boolean,
-        default: null,
-      },
-      {
         $id: ID.custom('array'),
         key: 'array',
         type: AttributeType.Boolean,
@@ -382,7 +376,7 @@ export const dbCollections: Record<string, Collection> = {
 
   indexes: {
     $collection: ID.custom(Database.METADATA),
-    $id: ID.custom('indexes'),
+    $id: ID.custom('_indexes'),
     name: 'Indexes',
     attributes: [
       {

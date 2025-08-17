@@ -52,6 +52,7 @@ import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
 import { CreateIndexDTO } from './DTO/indexes.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
+import type { ProjectsDoc } from '@nuvix/utils/types';
 
 @Controller({ version: ['1'], path: 'schemas/:schemaId/collections' })
 @UseGuards(ProjectGuard, DocSchemaGuard)
@@ -137,7 +138,7 @@ export class CollectionsController {
   async removeCollection(
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.removeCollection(
       db,
@@ -180,7 +181,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateStringAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createStringAttribute(
       db,
@@ -196,7 +197,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateEmailAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createEmailAttribute(
       db,
@@ -212,7 +213,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateEnumAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createEnumAttribute(
       db,
@@ -228,7 +229,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateIpAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createIPAttribute(
       db,
@@ -244,7 +245,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateURLAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createURLAttribute(
       db,
@@ -260,7 +261,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateIntegerAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createIntegerAttribute(
       db,
@@ -276,7 +277,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateFloatAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createFloatAttribute(
       db,
@@ -292,7 +293,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateBooleanAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createBooleanAttribute(
       db,
@@ -308,7 +309,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateDatetimeAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createDateAttribute(
       db,
@@ -324,7 +325,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() createAttributeDTO: CreateRelationAttributeDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createRelationshipAttribute(
       db,
@@ -514,7 +515,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Param('attributeId') attributeId: string,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.deleteAttribute(
       db,
@@ -530,7 +531,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Body() input: CreateIndexDTO,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.createIndex(
       db,
@@ -566,7 +567,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
     @Param('indexId') indexId: string,
-    @Project() project: Doc,
+    @Project() project: ProjectsDoc,
   ) {
     return await this.collectionsService.deleteIndex(
       db,

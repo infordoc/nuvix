@@ -440,6 +440,12 @@ export enum Schemas {
   System = 'system',
 }
 
+export enum SchemaMeta {
+  collections = '_collections',
+  attributes = '_attributes',
+  indexes = '_indexes',
+}
+
 export enum QueueFor {
   AUDITS = 'audits',
   PROJECTS = 'projects',

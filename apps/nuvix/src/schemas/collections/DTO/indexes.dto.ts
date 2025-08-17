@@ -17,5 +17,5 @@ export class CreateIndexDTO {
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
   @IsIn(Object.values(Order), { each: true })
-  orders!: string[];
+  orders!: (string | null)[];
 }
