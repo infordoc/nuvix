@@ -1,22 +1,16 @@
 {
-    "name": "api",
+    "name": "@nuvix/api",
     "version": "1.0.0",
     "description": "Nuvix is a Backend as a Service (BaaS) platform that provides a set of tools and services to help developers build and deploy applications quickly and efficiently.",
-    "author": "Ravikant Saini",
     "private": true,
-    "license": "UNLICENSED",
     "type": "module",
     "engines": {
         "node": ">=18.0.0",
         "npm": ">=9.0.0"
     },
     "scripts": {
-        "build": "nest build",
-        "dev": "nest start --watch",
-        "start": "nest start",
-        "start:dev": "nest start --watch",
-        "start:debug": "nest start --debug --watch",
-        "start:prod": "node dist/main",
+        "build": "tsup",
+        "dev": "tsup --watch",
         "lint": "eslint \"src/**/*.ts\" --fix",
         "typecheck": "tsc --noEmit",
         "test": "jest",
