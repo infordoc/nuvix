@@ -18,11 +18,11 @@ import { IsCustomID } from '@nuvix/core/validators/input.validator';
 export class CreateBucketDTO {
   @IsString()
   @IsCustomID()
-  bucketId: string;
+  bucketId!: string;
 
   @IsString()
   @MaxLength(128)
-  name: string;
+  name!: string;
 
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)

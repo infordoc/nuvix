@@ -60,7 +60,7 @@ export class SchemasController {
       limit,
       offset,
       schema,
-      url: request.raw.url,
+      url: request.raw.url || request.url,
     });
   }
 
@@ -84,7 +84,7 @@ export class SchemasController {
       table,
       input,
       columns,
-      url: request.raw.url,
+      url: request.raw.url || request.url,
     });
   }
 
@@ -114,7 +114,7 @@ export class SchemasController {
       table,
       input,
       columns,
-      url: request.raw.url,
+      url: request.raw.url || request.url,
       limit,
       offset,
       force,
@@ -151,7 +151,7 @@ export class SchemasController {
       pg,
       schema,
       table,
-      url: request.raw.url,
+      url: request.raw.url || request.url,
       limit,
       offset,
       force,
@@ -179,7 +179,7 @@ export class SchemasController {
       pg,
       schema,
       functionName,
-      url: request.raw.url,
+      url: request.raw.url || request.url,
       limit,
       offset,
       args,

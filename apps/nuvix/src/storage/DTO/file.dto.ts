@@ -13,7 +13,7 @@ import { APP_LIMIT_ARRAY_PARAMS_SIZE } from '@nuvix/utils';
 export class CreateFileDTO {
   @IsString()
   @IsCustomID()
-  fileId: string;
+  fileId!: string;
 
   @IsArray()
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
@@ -25,5 +25,5 @@ export class UpdateFileDTO extends OmitType(CreateFileDTO, ['fileId']) {
   @IsString()
   @Length(1, 255)
   @IsOptional()
-  name: string;
+  name!: string;
 }

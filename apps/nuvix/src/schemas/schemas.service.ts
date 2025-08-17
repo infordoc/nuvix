@@ -41,15 +41,16 @@ export class SchemasService {
       const error = transformPgError(e);
       if (!error || error.status >= 500) {
         throw new Exception(
-          error.type ?? Exception.GENERAL_SERVER_ERROR,
-          error.message ?? 'Database error',
-          error.status,
+          error?.type ?? Exception.GENERAL_SERVER_ERROR,
+          error?.message ?? 'Database error',
+          error?.status,
         );
       }
-      throw new Exception(error.type, error.message, error.status).addDetails({
-        hint: error.details.hint,
-        detail: error.details.detail,
-      });
+      throw new Exception(error.type, error.message, error.status)
+        .addDetails({
+          hint: error.details.hint,
+          detail: error.details.detail,
+        });
     }
   }
 
@@ -103,15 +104,16 @@ export class SchemasService {
       const error = transformPgError(e);
       if (!error || error.status >= 500) {
         throw new Exception(
-          error.type ?? Exception.GENERAL_SERVER_ERROR,
-          error.message ?? 'Database error',
-          error.status,
+          error?.type ?? Exception.GENERAL_SERVER_ERROR,
+          error?.message ?? 'Database error',
+          error?.status,
         );
       }
-      throw new Exception(error.type, error.message, error.status).addDetails({
-        hint: error.details.hint,
-        detail: error.details.detail,
-      });
+      throw new Exception(error.type, error.message, error.status)
+        .addDetails({
+          hint: error.details.hint,
+          detail: error.details.detail,
+        });
     }
   }
 
@@ -175,15 +177,16 @@ export class SchemasService {
       const error = transformPgError(e);
       if (!error || error.status >= 500) {
         throw new Exception(
-          error.type ?? Exception.GENERAL_SERVER_ERROR,
-          error.message ?? 'Database error',
-          error.status,
+          error?.type ?? Exception.GENERAL_SERVER_ERROR,
+          error?.message ?? 'Database error',
+          error?.status,
         );
       }
-      throw new Exception(error.type, error.message, error.status).addDetails({
-        hint: error.details.hint,
-        detail: error.details.detail,
-      });
+      throw new Exception(error.type, error.message, error.status)
+        .addDetails({
+          hint: error.details.hint,
+          detail: error.details.detail,
+        });
     }
   }
 
@@ -216,15 +219,16 @@ export class SchemasService {
       const error = transformPgError(e);
       if (!error || error.status >= 500) {
         throw new Exception(
-          error.type ?? Exception.GENERAL_SERVER_ERROR,
-          error.message ?? 'Database error',
-          error.status,
+          error?.type ?? Exception.GENERAL_SERVER_ERROR,
+          error?.message ?? 'Database error',
+          error?.status,
         );
       }
-      throw new Exception(error.type, error.message, error.status).addDetails({
-        hint: error.details.hint,
-        detail: error.details.detail,
-      });
+      throw new Exception(error.type, error.message, error.status)
+        .addDetails({
+          hint: error.details.hint,
+          detail: error.details.detail,
+        });
     }
   }
 
@@ -267,15 +271,16 @@ export class SchemasService {
       const error = transformPgError(e);
       if (!error || error.status >= 500) {
         throw new Exception(
-          error.type ?? Exception.GENERAL_SERVER_ERROR,
-          error.message ?? 'Database error',
-          error.status,
+          error?.type ?? Exception.GENERAL_SERVER_ERROR,
+          error?.message ?? 'Database error',
+          error?.status,
         );
       }
-      throw new Exception(error.type, error.message, error.status).addDetails({
-        hint: error.details.hint,
-        detail: error.details.detail,
-      });
+      throw new Exception(error.type, error.message, error.status)
+        .addDetails({
+          hint: error.details.hint,
+          detail: error.details.detail,
+        });
     }
   }
 

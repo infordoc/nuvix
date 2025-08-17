@@ -6,19 +6,18 @@ import {
   DuplicateException,
   ID,
   Permission,
+  PermissionType,
   Query,
+  Role,
 } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
   APP_LIMIT_COUNT,
   APP_STORAGE_LIMIT,
   APP_STORAGE_READ_BUFFER,
-  APP_STORAGE_UPLOADS,
-  GET_DEVICE_FOR_PROJECT,
   MAX_OUTPUT_CHUNK_SIZE,
 } from '@nuvix/utils';
 import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
-import collections from '@nuvix/core/collections';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { CreateFileDTO, UpdateFileDTO } from './DTO/file.dto';
 
@@ -26,52 +25,36 @@ import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import usageConfig from '@nuvix/core/config/usage';
 import sharp from 'sharp';
-import { MultipartFile, SavedMultipartFile } from '@fastify/multipart';
+import { SavedMultipartFile } from '@fastify/multipart';
 import { CreateFolderDTO } from './DTO/object.dto';
 import { logos } from '@nuvix/core/config/storage/logos';
 import path from 'path';
 import * as fs from 'fs/promises';
-import { GetProjectDeviceFn } from '@nuvix/core';
+import { CoreService } from '@nuvix/core';
 import { FileExt, FileSize } from '@nuvix/storage';
+import collections from '@nuvix/utils/collections/index.js';
+import type { Files, FilesDoc } from '@nuvix/utils/types';
 
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
 
   constructor(
-    @Inject(GET_DEVICE_FOR_PROJECT)
-    private readonly getDeviceForFiles: GetProjectDeviceFn,
+    private readonly coreService: CoreService,
     private readonly jwtService: JwtService,
-  ) { }
+  ) {}
+
+  private getCollectionName(s: number) {
+    return `bucket_${s}`;
+  }
 
   /**
    * Get buckets.
    */
-  async getBuckets(db: Database, queries: any, search?: string) {
+  async getBuckets(db: Database, queries: Query[], search?: string) {
     if (search) {
       queries.push(Query.search('search', search));
     }
-
-    const cursor = queries.find((query: Query) =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const bucketId = cursor.getValue();
-      const cursorDocument = await db.getDocument('buckets', bucketId);
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Bucket '${bucketId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries).filters;
 
     return {
@@ -83,46 +66,24 @@ export class StorageService {
   /**
    * Create bucket.
    */
-  async createBucket(db: Database, input: CreateBucketDTO) {
-    const bucketId =
-      input.bucketId === 'unique()' ? ID.unique() : input.bucketId;
-
-    // Map aggregate permissions into the multiple permissions they represent.
-    const permissions = Permission.aggregate(input.permissions ?? []);
+  async createBucket(db: Database, { bucketId, permissions: _perms, ...data }: CreateBucketDTO) {
+    bucketId = bucketId === 'unique()' ? ID.unique() : bucketId;
+    const permissions = Permission.aggregate(_perms ?? []);
 
     try {
-      const files = (collections['buckets'] ?? {})['files'] ?? {};
-      if (!files) {
+      const filesCollection = collections.bucket['files'];
+      if (!filesCollection) {
         throw new Exception(
           Exception.GENERAL_SERVER_ERROR,
           'Files collection is not configured.',
         );
       }
 
-      const attributes = files['attributes'].map(
-        (attribute: any) =>
-          new Doc({
-            $id: attribute.$id,
-            type: attribute.type,
-            size: attribute.size,
-            required: attribute.required,
-            signed: attribute.signed,
-            array: attribute.array,
-            filters: attribute.filters,
-            default: attribute.default ?? null,
-            format: attribute.format ?? '',
-          }),
+      const attributes = filesCollection.attributes.map(
+        (attribute) => new Doc(attribute),
       );
-
-      const indexes = files['indexes'].map(
-        (index: any) =>
-          new Doc({
-            $id: index.$id,
-            type: index.type,
-            attributes: index.attributes,
-            lengths: index.lengths,
-            orders: index.orders,
-          }),
+      const indexes = filesCollection.indexes?.map(
+        (index) => new Doc(index),
       );
 
       await db.createDocument(
@@ -130,27 +91,26 @@ export class StorageService {
         new Doc({
           $id: bucketId,
           $collection: 'buckets',
-          $permissions: permissions,
-          name: input.name,
-          maximumFileSize: input.maximumFileSize,
-          allowedFileExtensions: input.allowedFileExtensions,
-          fileSecurity: input.fileSecurity,
-          enabled: input.enabled,
-          compression: input.compression,
-          encryption: input.encryption,
-          antivirus: input.antivirus,
-          search: [bucketId, input.name].join(' '),
+          $permissions: permissions ?? [],
+          name: data.name,
+          maximumFileSize: data.maximumFileSize,
+          allowedFileExtensions: data.allowedFileExtensions,
+          fileSecurity: data.fileSecurity,
+          enabled: data.enabled,
+          compression: data.compression,
+          encryption: data.encryption,
+          antivirus: data.antivirus,
+          search: [bucketId, data.name].join(' '),
         }),
       );
 
       const bucket = await db.getDocument('buckets', bucketId);
-
       await db.createCollection({
-        id: 'bucket_' + bucket.getSequence(),
+        id: this.getCollectionName(bucket.getSequence()),
         attributes,
         indexes,
         permissions: permissions ?? [],
-        documentSecurity: input.fileSecurity,
+        documentSecurity: data.fileSecurity,
       });
 
       return bucket;
@@ -186,7 +146,7 @@ export class StorageService {
 
     const permissions = Permission.aggregate(
       input.permissions ?? bucket.getPermissions(),
-    );
+    )!;
     const maximumFileSize =
       input.maximumFileSize ??
       bucket.get('maximumFileSize', APP_LIMIT_COUNT);
@@ -216,11 +176,11 @@ export class StorageService {
         .set('antivirus', antivirus),
     );
 
-    await db.updateCollection(
-      'bucket_' + bucket.getSequence(),
+    await db.updateCollection({
+      id: this.getCollectionName(bucket.getSequence()),
       permissions,
-      input.fileSecurity,
-    );
+      documentSecurity: input.fileSecurity ?? bucket.get('fileSecurity', false),
+    });
 
     return updatedBucket;
   }
@@ -242,8 +202,8 @@ export class StorageService {
       );
     }
 
-    await db.deleteCollection('bucket_' + bucket.getSequence()); // TODO: use queues to delete
-    return {};
+    await db.deleteCollection(this.getCollectionName(bucket.getSequence())); // TODO: use queues to delete
+    return;
   }
 
   /**
@@ -268,8 +228,8 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
+    const validator = new Authorization(PermissionType.Read);
+    const valid = validator.$valid(bucket.getRead());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
@@ -278,246 +238,19 @@ export class StorageService {
       queries.push(Query.search('search', search));
     }
 
-    const cursor = queries.find((query: Query) =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const fileId = cursor.getValue();
-
-      const cursorDocument =
-        fileSecurity && !valid
-          ? await db.getDocument('bucket_' + bucket.getSequence(), fileId)
-          : await Authorization.skip(() =>
-            db.getDocument('bucket_' + bucket.getSequence(), fileId),
-          );
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `File '${fileId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
     const filterQueries = Query.groupByType(queries).filters;
+    const files = db.find(this.getCollectionName(bucket.getSequence()), queries);
 
-    const files =
-      fileSecurity && !valid
-        ? await db.find('bucket_' + bucket.getSequence(), queries)
-        : await Authorization.skip(() =>
-          db.find('bucket_' + bucket.getSequence(), queries),
-        );
-
-    const total =
-      fileSecurity && !valid
-        ? await db.count(
-          'bucket_' + bucket.getSequence(),
-          filterQueries,
-          APP_LIMIT_COUNT,
-        )
-        : await Authorization.skip(() =>
-          db.count(
-            'bucket_' + bucket.getSequence(),
-            filterQueries,
-            APP_LIMIT_COUNT,
-          ),
-        );
+    const total = await db.count(
+      this.getCollectionName(bucket.getSequence()),
+      filterQueries,
+      APP_LIMIT_COUNT,
+    );
 
     return {
       files,
       total,
     };
-  }
-
-  /**
-   * Get Objects
-   * @ignore Not Used in Current Structure
-   */
-  async getObjects(
-    db: Database,
-    bucketId: string,
-    queries: Query[],
-    search?: string,
-    path?: string,
-  ) {
-    const bucket = await db.getDocument('buckets', bucketId);
-
-    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
-    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
-
-    if (
-      bucket.empty() ||
-      (!bucket.get('enabled') && !isAPIKey && !isPrivilegedUser)
-    ) {
-      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
-    }
-
-    const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
-    if (!fileSecurity && !valid) {
-      throw new Exception(Exception.USER_UNAUTHORIZED);
-    }
-
-    if (search) {
-      queries.push(Query.search('search', search));
-    }
-
-    if (path) {
-      queries.push(Query.startsWith('name', path));
-    }
-
-    const cursor = queries.find((query: Query) =>
-      [Query.TYPE_CURSOR_AFTER, Query.TYPE_CURSOR_BEFORE].includes(
-        query.getMethod(),
-      ),
-    );
-
-    if (cursor) {
-      const objectId = cursor.getValue();
-
-      const cursorDocument =
-        fileSecurity && !valid
-          ? await db.getDocument('bucket_' + bucket.getSequence(), objectId)
-          : await Authorization.skip(() =>
-            db.getDocument('bucket_' + bucket.getSequence(), objectId),
-          );
-
-      if (cursorDocument.empty()) {
-        throw new Exception(
-          Exception.GENERAL_CURSOR_NOT_FOUND,
-          `Object '${objectId}' for the 'cursor' value not found.`,
-        );
-      }
-
-      cursor.setValue(cursorDocument);
-    }
-
-    const filterQueries = Query.groupByType(queries).filters;
-
-    const objects =
-      fileSecurity && !valid
-        ? await db.find('bucket_' + bucket.getSequence(), queries)
-        : await Authorization.skip(() =>
-          db.find('bucket_' + bucket.getSequence(), queries),
-        );
-
-    const total =
-      fileSecurity && !valid
-        ? await db.count(
-          'bucket_' + bucket.getSequence(),
-          filterQueries,
-          APP_LIMIT_COUNT,
-        )
-        : await Authorization.skip(() =>
-          db.count(
-            'bucket_' + bucket.getSequence(),
-            filterQueries,
-            APP_LIMIT_COUNT,
-          ),
-        );
-
-    return {
-      objects,
-      total,
-    };
-  }
-
-  /**
-   * Create folder.
-   * @ignore Not Used in Current Structure
-   */
-  async createFolder(
-    db: Database,
-    user: Doc,
-    bucketId: string,
-    data: CreateFolderDTO,
-  ) {
-    const bucket = await Authorization.skip(() =>
-      db.getDocument('buckets', bucketId),
-    );
-
-    const isAPIKey = Auth.isAppUser(Authorization.getRoles());
-    const isPrivilegedUser = Auth.isPrivilegedUser(Authorization.getRoles());
-
-    if (
-      bucket.empty() ||
-      (!bucket.get('enabled') && !isAPIKey && !isPrivilegedUser)
-    ) {
-      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
-    }
-
-    const validator = new Authorization(Database.PERMISSION_CREATE);
-    if (!validator.isValid(bucket.getCreate())) {
-      throw new Exception(Exception.USER_UNAUTHORIZED);
-    }
-
-    const allowedPermissions = [
-      Database.PERMISSION_READ,
-      Database.PERMISSION_UPDATE,
-      Database.PERMISSION_DELETE,
-    ];
-
-    let permissions = Permission.aggregate(
-      data.permissions,
-      allowedPermissions,
-    );
-    if (!permissions || permissions.length === 0) {
-      permissions = user.getId()
-        ? allowedPermissions.map(permission =>
-          new Permission(permission, 'user', user.getId()).toString(),
-        )
-        : [];
-    }
-
-    const roles = Authorization.getRoles();
-    if (!Auth.isAppUser(roles) && !Auth.isPrivilegedUser(roles)) {
-      permissions.forEach(permission => {
-        const parsedPermission = Permission.parse(permission);
-        if (!Authorization.isRole(parsedPermission.toString())) {
-          throw new Exception(
-            Exception.USER_UNAUTHORIZED,
-            `Permissions must be one of: (${roles.join(', ')})`,
-          );
-        }
-      });
-    }
-
-    const folderId = ID.unique();
-    const tokens = data.name
-      .split('/')
-      .filter(Boolean)
-      .map((token: string) => {
-        return token.replace(/[^a-zA-Z0-9-_]/g, '');
-      });
-    tokens.push('.empty');
-
-    const folder = await db.createDocument(
-      `bucket_${bucket.getSequence()}`,
-      new Doc({
-        $id: folderId,
-        name: `${data.name}/.empty`,
-        $permissions: permissions,
-        metadata: {
-          content_type: 'application/x-directory',
-          size: 0,
-          sizeActual: 0,
-          signature: '',
-          mimeType: 'application/x-directory',
-          chunksTotal: 0,
-          chunksUploaded: 0,
-        },
-        tokens,
-        version: crypto.randomUUID(),
-        user_metadata: data.metadata,
-      }),
-    );
-    return folder;
   }
 
   /**
@@ -532,7 +265,7 @@ export class StorageService {
     user: Doc,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -547,25 +280,26 @@ export class StorageService {
       throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
     }
 
-    const validator = new Authorization(Database.PERMISSION_CREATE);
-    if (!validator.isValid(bucket.getCreate())) {
+    const validator = new Authorization(PermissionType.Create);
+    if (!validator.$valid(bucket.getCreate())) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const allowedPermissions = [
-      Database.PERMISSION_READ,
-      Database.PERMISSION_UPDATE,
-      Database.PERMISSION_DELETE,
+      PermissionType.Read,
+      PermissionType.Update,
+      PermissionType.Delete,
     ];
 
     let permissions = Permission.aggregate(
-      input.permissions,
+      input.permissions ?? [],
       allowedPermissions,
     );
+    // TODO: i saw their is a issue (perms related), recheck
     if (!permissions || permissions.length === 0) {
       permissions = user.getId()
         ? allowedPermissions.map(permission =>
-          new Permission(permission, 'user', user.getId()).toString(),
+          new Permission(permission, Role.user(user.getId())).toString(),
         )
         : [];
     }
@@ -626,7 +360,7 @@ export class StorageService {
       const [, start, end, size] = match.map(Number);
       const headerFileId = request.headers['x-nuvix-id'];
       if (headerFileId) {
-        fileId = Array.isArray(headerFileId) ? headerFileId[0] : headerFileId;
+        fileId = (Array.isArray(headerFileId) ? headerFileId[0] : headerFileId) as string;
         if (!/^(?:[a-zA-Z0-9][a-zA-Z0-9._-]{0,35})$/.test(fileId)) {
           throw new Exception(
             Exception.INVALID_PARAMS,
@@ -635,7 +369,10 @@ export class StorageService {
         }
       }
 
-      if (start > end || end >= size || start < 0) {
+      if (
+        (start === undefined || end === undefined || size === undefined)
+        || (start > end || end >= size || start < 0)
+      ) {
         throw new Exception(
           Exception.STORAGE_INVALID_CONTENT_RANGE,
           'Invalid range values',
@@ -673,14 +410,14 @@ export class StorageService {
       path.join(bucket.getId(), fileId + '.' + fileExt),
     );
 
-    let fileDocument: Doc;
-    let metadata = { content_type: file.mimetype };
+    let fileDocument: FilesDoc;
+    let metadata: Record<string, any> = { content_type: file.mimetype };
     let chunksUploaded = 0;
 
     try {
       // Fetch existing document
-      fileDocument = await db.getDocument(
-        'bucket_' + bucket.getSequence(),
+      fileDocument = await db.getDocument<Files>(
+        this.getCollectionName(bucket.getSequence()),
         fileId,
       );
       if (!fileDocument.empty()) {
@@ -694,7 +431,7 @@ export class StorageService {
           throw new Exception(Exception.STORAGE_FILE_ALREADY_EXISTS);
         }
       }
-      this.logger.debug('path', _path, 'OOPATH', file.filepath);
+
       chunksUploaded = await deviceForFiles.upload(
         file.filepath,
         _path,
@@ -728,8 +465,8 @@ export class StorageService {
 
         // Create or update file document
         if (fileDocument.empty()) {
-          fileDocument = await db.createDocument(
-            'bucket_' + bucket.getSequence(),
+          fileDocument = await db.createDocument<Files>(
+            this.getCollectionName(bucket.getSequence()),
             new Doc({
               $id: fileId,
               $permissions: permissions,
@@ -756,21 +493,21 @@ export class StorageService {
             .set('metadata', metadata)
             .set('chunksUploaded', chunksUploaded);
 
-          const updateValidator = new Authorization(Database.PERMISSION_UPDATE);
-          if (!updateValidator.isValid(bucket.getUpdate())) {
+          const updateValidator = new Authorization(PermissionType.Update);
+          if (!updateValidator.$valid(bucket.getUpdate())) {
             throw new Exception(Exception.USER_UNAUTHORIZED);
           }
 
           fileDocument = await db.updateDocument(
-            'bucket_' + bucket.getSequence(),
+            this.getCollectionName(bucket.getSequence()),
             fileId,
             fileDocument,
           );
         }
       } else {
         if (fileDocument.empty()) {
-          fileDocument = await db.createDocument(
-            'bucket_' + bucket.getSequence(),
+          fileDocument = await db.createDocument<Files>(
+            this.getCollectionName(bucket.getSequence()),
             new Doc({
               $id: fileId,
               $permissions: permissions,
@@ -790,7 +527,7 @@ export class StorageService {
           );
         } else {
           fileDocument = await db.updateDocument(
-            'bucket_' + bucket.getSequence(),
+            this.getCollectionName(bucket.getSequence()),
             fileId,
             fileDocument
               .set('chunksUploaded', chunksUploaded)
@@ -824,18 +561,19 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
+    const validator = new Authorization(PermissionType.Read);
+    const valid = validator.$valid(bucket.getRead());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
+    // TODO: i think i should recheck the logic
     const file =
-      fileSecurity && !valid
-        ? await db.getDocument('bucket_' + bucket.getSequence(), fileId)
+      (fileSecurity && !valid
+        ? await db.getDocument(this.getCollectionName(bucket.getSequence()), fileId)
         : await Authorization.skip(() =>
-          db.getDocument('bucket_' + bucket.getSequence(), fileId),
-        );
+          db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
+        )) as FilesDoc;
 
     if (file.empty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
@@ -855,7 +593,7 @@ export class StorageService {
     params: PreviewParams,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const {
       width,
       height,
@@ -885,18 +623,18 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
+    const validator = new Authorization(PermissionType.Read);
+    const valid = validator.$valid(bucket.getRead());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const file =
       fileSecurity && !valid
-        ? await db.getDocument('bucket_' + bucket.getSequence(), fileId)
+        ? await db.getDocument(this.getCollectionName(bucket.getSequence()), fileId)
         : await Authorization.skip(
           async () =>
-            await db.getDocument('bucket_' + bucket.getSequence(), fileId),
+            await db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
         );
 
     if (file.empty()) {
@@ -920,7 +658,7 @@ export class StorageService {
 
     // Unsupported file types or files larger then 10 MB
     if (!mimeType.startsWith('image/') || size / 1024 > 10 * 1024) {
-      let path = logos[mimeType] ?? logos.default;
+      let path = logos[mimeType as keyof typeof logos] ?? logos.default;
       const buffer = await deviceForFiles.read(path);
       return new StreamableFile(buffer, {
         type: `image/png`,
@@ -1008,7 +746,7 @@ export class StorageService {
     request: NuvixRequest,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1024,17 +762,17 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
+    const validator = new Authorization(PermissionType.Read);
+    const valid = validator.$valid(bucket.getRead());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const file =
       fileSecurity && !valid
-        ? await db.getDocument('bucket_' + bucket.getSequence(), fileId)
+        ? await db.getDocument(this.getCollectionName(bucket.getSequence()), fileId)
         : await Authorization.skip(() =>
-          db.getDocument('bucket_' + bucket.getSequence(), fileId),
+          db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
         );
 
     if (file.empty()) {
@@ -1061,12 +799,12 @@ export class StorageService {
     let end = size - 1;
 
     if (rangeHeader) {
-      const [unit, range] = rangeHeader.split('=');
+      const [unit, range] = rangeHeader.split('=') as [string, string];
       if (unit !== 'bytes') {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      const [rangeStart, rangeEnd] = range.split('-').map(Number);
+      const [rangeStart, rangeEnd] = range.split('-').map(Number) as [number, number];
       start = rangeStart;
       end = rangeEnd || end;
 
@@ -1140,7 +878,7 @@ export class StorageService {
     request: NuvixRequest,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1156,17 +894,17 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_READ);
-    const valid = validator.isValid(bucket.getRead());
+    const validator = new Authorization(PermissionType.Read);
+    const valid = validator.$valid(bucket.getRead());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const file =
       fileSecurity && !valid
-        ? await db.getDocument('bucket_' + bucket.getSequence(), fileId)
+        ? await db.getDocument(this.getCollectionName(bucket.getSequence()), fileId)
         : await Authorization.skip(() =>
-          db.getDocument('bucket_' + bucket.getSequence(), fileId),
+          db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
         );
 
     if (file.empty()) {
@@ -1193,12 +931,12 @@ export class StorageService {
     let end = size - 1;
 
     if (rangeHeader) {
-      const [unit, range] = rangeHeader.split('=');
+      const [unit, range] = rangeHeader.split('=') as [string, string];
       if (unit !== 'bytes') {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      const [rangeStart, rangeEnd] = range.split('-').map(Number);
+      const [rangeStart, rangeEnd] = range.split('-').map(Number) as [number, number];
       start = rangeStart;
       end = rangeEnd || end;
 
@@ -1270,7 +1008,7 @@ export class StorageService {
     response: NuvixRes,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1301,7 +1039,7 @@ export class StorageService {
     }
 
     const file = await Authorization.skip(() =>
-      db.getDocument('bucket_' + bucket.getSequence(), fileId),
+      db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
     );
 
     if (file.empty()) {
@@ -1333,12 +1071,12 @@ export class StorageService {
 
     const rangeHeader = request.headers['range'];
     if (rangeHeader) {
-      const [unit, range] = rangeHeader.split('=');
+      const [unit, range] = rangeHeader.split('=') as [string, string];
       if (unit !== 'bytes') {
         throw new Exception(Exception.STORAGE_INVALID_RANGE);
       }
 
-      const [start, end] = range.split('-').map(Number);
+      const [start, end] = range.split('-').map(Number) as [number, number];
       const finalEnd = end || size - 1;
 
       if (start >= finalEnd || finalEnd >= size) {
@@ -1392,14 +1130,14 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_UPDATE);
-    const valid = validator.isValid(bucket.getUpdate());
+    const validator = new Authorization(PermissionType.Update);
+    const valid = validator.$valid(bucket.getUpdate());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const file = await Authorization.skip(() =>
-      db.getDocument('bucket_' + bucket.getSequence(), fileId),
+      db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
     );
 
     if (file.empty()) {
@@ -1407,9 +1145,9 @@ export class StorageService {
     }
 
     let permissions = Permission.aggregate(input.permissions ?? [], [
-      Database.PERMISSION_READ,
-      Database.PERMISSION_UPDATE,
-      Database.PERMISSION_DELETE,
+      PermissionType.Read,
+      PermissionType.Update,
+      PermissionType.Delete,
     ]);
 
     const roles = Authorization.getRoles();
@@ -1441,13 +1179,13 @@ export class StorageService {
 
     if (fileSecurity && !valid) {
       return await db.updateDocument(
-        'bucket_' + bucket.getSequence(),
+        this.getCollectionName(bucket.getSequence()),
         fileId,
         file,
       );
     } else {
       return await Authorization.skip(() =>
-        db.updateDocument('bucket_' + bucket.getSequence(), fileId, file),
+        db.updateDocument(this.getCollectionName(bucket.getSequence()), fileId, file),
       );
     }
   }
@@ -1461,7 +1199,7 @@ export class StorageService {
     fileId: string,
     project: Doc,
   ) {
-    const deviceForFiles = this.getDeviceForFiles(project.getId());
+    const deviceForFiles = this.coreService.getProjectDevice(project.getId());
     const bucket = await Authorization.skip(() =>
       db.getDocument('buckets', bucketId),
     );
@@ -1477,21 +1215,21 @@ export class StorageService {
     }
 
     const fileSecurity = bucket.get('fileSecurity', false);
-    const validator = new Authorization(Database.PERMISSION_DELETE);
-    const valid = validator.isValid(bucket.getDelete());
+    const validator = new Authorization(PermissionType.Delete);
+    const valid = validator.$valid(bucket.getDelete());
     if (!fileSecurity && !valid) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
     const file = await Authorization.skip(() =>
-      db.getDocument('bucket_' + bucket.getSequence(), fileId),
+      db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
     );
 
     if (file.empty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND);
     }
 
-    if (fileSecurity && !valid && !validator.isValid(file.getDelete())) {
+    if (fileSecurity && !valid && !validator.$valid(file.getDelete())) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }
 
@@ -1512,11 +1250,11 @@ export class StorageService {
     if (deviceDeleted) {
       const deleted =
         fileSecurity && !valid
-          ? await db.deleteDocument('bucket_' + bucket.getSequence(), fileId)
+          ? await db.deleteDocument(this.getCollectionName(bucket.getSequence()), fileId)
           : await Authorization.skip(
             async () =>
               await db.deleteDocument(
-                'bucket_' + bucket.getSequence(),
+                this.getCollectionName(bucket.getSequence()),
                 fileId,
               ),
           );
@@ -1540,12 +1278,12 @@ export class StorageService {
   /**
    * Get Storage Usage.
    */
-  async getStorageUsage(db: Database, range?: string) {
+  async getStorageUsage(db: Database, range: string = '7d') {
     const periods = usageConfig;
 
     const stats: any = {};
     const usage: any = {};
-    const days = periods[range];
+    const days = periods[range as keyof typeof periods];
     const metrics = ['buckets', 'files', 'filesStorage'];
 
     await Authorization.skip(async () => {
@@ -1558,13 +1296,13 @@ export class StorageService {
         stats[metric] = { total: result.get('value') ?? 0, data: {} };
         const results = await db.find('stats', [
           Query.equal('metric', [metric]),
-          Query.equal('period', days.period),
+          Query.equal('period', [days.period]),
           Query.limit(days.limit),
           Query.orderDesc('time'),
         ]);
 
         for (const res of results) {
-          stats[metric].data[res.get('time')] = {
+          stats[metric].data[res.get('time') as string] = {
             value: res.get('value'),
           };
         }
@@ -1605,7 +1343,7 @@ export class StorageService {
   /**
    * Get Storage Usage of bucket.
    */
-  async getBucketStorageUsage(db: Database, bucketId: string, range?: string) {
+  async getBucketStorageUsage(db: Database, bucketId: string, range: string = '7d') {
     const bucket = await db.getDocument('buckets', bucketId);
 
     if (bucket.empty()) {
@@ -1616,7 +1354,7 @@ export class StorageService {
 
     const stats: any = {};
     const usage: any = {};
-    const days = periods[range];
+    const days = periods[range as keyof typeof periods];
     const metrics = [
       `bucket_${bucket.getSequence()}_files`,
       `bucket_${bucket.getSequence()}_filesStorage`,
@@ -1632,13 +1370,13 @@ export class StorageService {
         stats[metric] = { total: result.get('value') ?? 0, data: {} };
         const results = await db.find('stats', [
           Query.equal('metric', [metric]),
-          Query.equal('period', days.period),
+          Query.equal('period', [days.period]),
           Query.limit(days.limit),
           Query.orderDesc('time'),
         ]);
 
         for (const res of results) {
-          stats[metric].data[res.get('time')] = {
+          stats[metric].data[res.get('time') as string] = {
             value: res.get('value'),
           };
         }
@@ -1667,10 +1405,10 @@ export class StorageService {
 
     return {
       range,
-      filesTotal: usage[metrics[0]]?.total,
-      filesStorageTotal: usage[metrics[1]]?.total,
-      files: usage[metrics[0]]?.data,
-      storage: usage[metrics[1]]?.data,
+      filesTotal: usage[metrics[0]!]?.total,
+      filesStorageTotal: usage[metrics[1]!]?.total,
+      files: usage[metrics[0]!]?.data,
+      storage: usage[metrics[1]!]?.data,
     };
   }
 }
