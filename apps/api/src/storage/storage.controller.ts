@@ -20,12 +20,10 @@ import { StorageService } from './storage.service';
 import { Models } from '@nuvix/core/helper/response.helper';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { Database, Doc, Query as Queries } from '@nuvix-tech/db';
-import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import {
   MultipartParam,
   ResModel,
-  Scope,
   ProjectDatabase,
   UploadedFile,
   Project,
@@ -36,9 +34,7 @@ import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
 import {
-  MultipartFile,
-  MultipartValue,
-  SavedMultipartFile,
+  type SavedMultipartFile,
 } from '@fastify/multipart';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
 import { Exception } from '@nuvix/core/extend/exception';
@@ -48,7 +44,7 @@ import { Exception } from '@nuvix/core/extend/exception';
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
-  constructor(private readonly storageService: StorageService) { }
+  constructor(private readonly storageService: StorageService) {}
 
   @Get('buckets')
   @ResModel({ type: Models.BUCKET, list: true })

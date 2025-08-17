@@ -48,7 +48,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { LocaleTranslator, Models } from '@nuvix/core/helper';
 import { getOAuth2Class, OAuth2 } from '@nuvix/core/OAuth2';
-import { OAuthProviders } from '@nuvix/core/config/authProviders';
+import { type OAuthProviders } from '@nuvix/core/config/authProviders';
 import { URLValidator } from '@nuvix/core/validators/url.validator';
 import {
   CreateEmailTokenDTO,

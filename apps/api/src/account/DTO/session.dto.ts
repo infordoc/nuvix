@@ -1,5 +1,5 @@
 import {
-  OAuthProviders,
+  type OAuthProviders,
   oAuthProvidersList,
 } from '@nuvix/core/config/authProviders';
 import { IsUID } from '@nuvix/core/validators/input.validator.js';

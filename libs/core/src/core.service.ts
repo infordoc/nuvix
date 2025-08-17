@@ -162,7 +162,7 @@ export class CoreService {
       const buffer = readFileSync(
         path.resolve(
           this.appConfig.assetConfig.root,
-          'assets/dbip/dbip-country-lite-2024-09.mmdb',
+          'dbip/dbip-country-lite-2024-09.mmdb',
         ),
       );
       return new Reader<CountryResponse>(buffer);

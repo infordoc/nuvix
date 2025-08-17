@@ -35,7 +35,7 @@ import {
 } from '@nuvix/core/validators';
 import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers/queues/mails.queue';
 import { getOAuth2Class, OAuth2 } from '@nuvix/core/OAuth2';
-import { OAuthProviders, type OAuthProviderType } from '@nuvix/core/config/authProviders';
+import { type OAuthProviders, type OAuthProviderType } from '@nuvix/core/config/authProviders';
 
 // Nuvix utils
 import {

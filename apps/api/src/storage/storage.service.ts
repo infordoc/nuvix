@@ -21,12 +21,10 @@ import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { CreateFileDTO, UpdateFileDTO } from './DTO/file.dto';
 
-import * as crypto from 'crypto';
 import { JwtService } from '@nestjs/jwt';
 import usageConfig from '@nuvix/core/config/usage';
 import sharp from 'sharp';
-import { SavedMultipartFile } from '@fastify/multipart';
-import { CreateFolderDTO } from './DTO/object.dto';
+import { type SavedMultipartFile } from '@fastify/multipart';
 import { logos } from '@nuvix/core/config/storage/logos';
 import path from 'path';
 import * as fs from 'fs/promises';
