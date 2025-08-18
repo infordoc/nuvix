@@ -4,7 +4,6 @@ export * from './detector.helper';
 export * from './ID.helper';
 export * from './key.helper';
 export * from './locale.helper';
-export * from './open-api.helper';
 export * from './params.helper';
 export * from './response.helper';
 export * from './vary.helper';

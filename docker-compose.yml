@@ -50,8 +50,9 @@ services:
       target: runtime
       args:
         - NPM_TOKEN=${GITHUB_TOKEN}
+        - APP_NAME=api
     container_name: api
-    command: ['bun', 'dist/api/main.js']
+    command: ['bun', 'main.js']
     env_file:
       - .env
       - .env.api
@@ -81,8 +82,9 @@ services:
       target: runtime
       args:
         - NPM_TOKEN=${GITHUB_TOKEN}
+        - APP_NAME=platform
     container_name: platform
-    command: ['bun', 'dist/platform/main.js']
+    command: ['bun', 'main.js']
     env_file:
       - .env
       - .env.platform

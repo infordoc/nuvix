@@ -11,7 +11,8 @@ export class AppService {
   private readonly db: Database;
   constructor(
     private readonly coreService: CoreService,
-    @InjectQueue(QueueFor.MAILS) private readonly mailsQueue: Queue<MailQueueOptions, unknown, MailJob>,
+    @InjectQueue(QueueFor.MAILS)
+    private readonly mailsQueue: Queue<MailQueueOptions, unknown, MailJob>,
   ) {
     this.db = this.coreService.getPlatformDb();
   }
@@ -27,8 +28,8 @@ export class AppService {
           ip: request.ip || '',
           query: request.query || {},
         },
-        notified: true
-      })
+        notified: true,
+      }),
     );
 
     await this.mailsQueue.add(MailJob.SEND_EMAIL, {
@@ -45,5 +46,4 @@ export class AppService {
       message: 'You have been added to the waitlist successfully.',
     };
   }
-
 }

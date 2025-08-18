@@ -6,11 +6,9 @@ import { JWT_SECRET, QueueFor } from '@nuvix/utils';
 import { ProjectController } from './project.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { ProjectsQueue } from '@nuvix/core/resolvers/queues/projects.queue';
-import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
-    HttpModule,
     JwtModule.register({
       secret: JWT_SECRET,
       signOptions: { expiresIn: '15m' },

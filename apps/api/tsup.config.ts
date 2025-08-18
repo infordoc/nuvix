@@ -30,6 +30,7 @@ function printStylizedNuvix() {
 
 export default defineConfig(() => {
   printStylizedNuvix();
+
   return {
     entry: ['src/main.ts'],
     format: ['cjs', 'esm'],

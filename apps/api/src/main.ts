@@ -27,7 +27,6 @@ import {
 import { Authorization, Role, storage } from '@nuvix-tech/db';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
-import { openApiSetup } from '@nuvix/core/helper';
 import QueryString from 'qs';
 import path from 'path';
 import fs from 'fs/promises';
@@ -35,6 +34,7 @@ import metadata from './metadata';
 import { SwaggerModule } from '@nestjs/swagger';
 import { ErrorFilter } from '@nuvix/core/filters';
 import { AppConfigService } from '@nuvix/core';
+import { openApiSetup } from './core';
 
 config({
   path: [

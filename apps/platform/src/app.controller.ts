@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
@@ -23,7 +31,7 @@ export class AppController {
   @Public()
   async joinWaitlist(
     @Body('email') email: string,
-    @Req() request: NuvixRequest
+    @Req() request: NuvixRequest,
   ) {
     return this.appService.joinWaitlist(email, request);
   }
