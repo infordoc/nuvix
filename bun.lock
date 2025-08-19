@@ -18,7 +18,7 @@
         "@nestjs/platform-socket.io": "^11.1.3",
         "@nestjs/schedule": "^6.0.0",
         "@nestjs/swagger": "^11.2.0",
-        "@nuvix-tech/db": "^0.1.26-alpha.3",
+        "@nuvix-tech/db": "^0.1.26-alpha.4",
         "@nuvix/audit": "^1.0.2",
         "@nuvix/cache": "^1.0.3-alpha.1",
         "@nuvix/messaging": "^1.0.0",
@@ -638,7 +638,7 @@
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
 
-    "@nuvix-tech/db": ["@nuvix-tech/db@0.1.26-alpha.3", "https://npm.pkg.github.com/download/@nuvix-tech/db/0.1.26-alpha.3/280fb586202745247a06b8b7ac21d84024666fba", { "dependencies": { "chalk": "^5.5.0" }, "bin": { "nuvix-db": "dist/cli/generate-types.js" } }, "sha512-4Jtv1KT7MOTUVUjQ2MMCIHURVPn42QgdR2tm4Q8sf93QJSHVKBLKsQcJONPVA8X4YG9k7em0UL910SDPj5vz/A=="],
+    "@nuvix-tech/db": ["@nuvix-tech/db@0.1.26-alpha.4", "https://npm.pkg.github.com/download/@nuvix-tech/db/0.1.26-alpha.4/2d876268a6faa59a5438158534e6d01ffa392a2c", { "dependencies": { "chalk": "^5.5.0" }, "bin": { "nuvix-db": "dist/cli/generate-types.js" } }, "sha512-GMTIoNRAN1WhKLLK5a86EUPF/x2AazQ/1lWkMAk0GPyazedXHkN1nAuTmJ7RoqKbpAblL9gqR9D8ffQilBr56Q=="],
 
     "@nuvix/api": ["@nuvix/api@workspace:apps/api"],
 

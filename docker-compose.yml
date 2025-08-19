@@ -11,8 +11,8 @@ services:
       - nuvix_paltform_data:/var/lib/postgresql/data
     networks:
       - nuvix
-    # ports:
-    #   - '5432:5432'
+    ports:
+      - '5432:5432'
     healthcheck:
       test:
         [

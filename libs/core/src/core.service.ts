@@ -122,7 +122,18 @@ export class CoreService {
   }
 
   public getPlatform(): Doc<Platform> {
-    return new Doc() as Doc<Platform>;
+    const data: Platform = {
+      auths: {
+        limit: 1,
+        personalDataCheck: true,
+        passwordHistory: 10,
+        duration: undefined,
+        sessionAlerts: true,
+      },
+      oAuthProviders: [],
+    };
+
+    return new Doc(data);
   }
 
   getProjectDb(client: Client, projectId: string) {

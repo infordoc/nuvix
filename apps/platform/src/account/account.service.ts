@@ -920,7 +920,7 @@ export class AccountService {
 
     if (this.platform.get('auths').sessionAlerts ?? false) {
       const sessionCount = await this.db.count('sessions', qb =>
-        qb.equal('userId', user.getSequence()),
+        qb.equal('userId', user.getId()),
       );
 
       if (sessionCount !== 1) {

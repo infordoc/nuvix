@@ -4,6 +4,7 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  Logger,
 } from '@nestjs/common';
 import { errorCodes, Exception } from '../extend/exception';
 
@@ -46,6 +47,8 @@ export class ErrorFilter implements ExceptionFilter {
         type = Exception.GENERAL_SERVER_ERROR;
         break;
     }
+
+    Logger.error(exception);
 
     response.status(status).send({
       code: status,

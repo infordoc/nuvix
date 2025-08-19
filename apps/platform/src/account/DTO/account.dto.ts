@@ -1,4 +1,4 @@
-import { IsUID } from '@nuvix/core/validators/input.validator.js';
+import { IsCustomID, IsUID } from '@nuvix/core/validators/input.validator.js';
 import {
   IsEmail,
   IsString,
@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 
 export class CreateAccountDTO {
-  @IsUID()
+  @IsCustomID()
   declare userId: string;
 
   @IsEmail({}, { message: 'Invalid email address.' })
