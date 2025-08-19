@@ -1,7 +1,7 @@
 api.nuvix.in {
-  reverse_proxy nuvix-api:4000
+  reverse_proxy api:4000
 }
 
 server.nuvix.in {
-  reverse_proxy console-api:4100
+  reverse_proxy platform:4100
 }
