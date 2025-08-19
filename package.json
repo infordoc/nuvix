@@ -135,6 +135,7 @@
     "@nestjs/core",
     "@scarf/scarf",
     "@swc/core",
+    "esbuild",
     "msgpackr-extract"
   ]
 }

@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "pg-format": "^1.0.4",
-    "pgsql-parser": "^13.16.0",
+    "pgsql-parser": "^17.8.2",
     "prettier-plugin-sql": "^0.19.1"
   },
   "devDependencies": {
