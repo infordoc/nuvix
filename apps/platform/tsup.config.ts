@@ -1,12 +1,12 @@
 import { defineConfig } from 'tsup';
 
-export default defineConfig(() => {
+export default defineConfig(options => {
   return {
     entry: ['src/main.ts'],
     format: ['cjs', 'esm'],
     dts: false,
     sourcemap: true,
-    clean: true,
+    clean: !!!options.watch,
     outDir: '../../dist/platform',
     noExternal: [],
     splitting: false,
@@ -16,5 +16,6 @@ export default defineConfig(() => {
     shims: true,
     tsconfig: './tsconfig.app.json',
     plugins: [],
+    watch: ['src/**', '../../libs/**'],
   };
 });

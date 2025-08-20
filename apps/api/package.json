@@ -10,7 +10,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsup --watch 'src/**' --watch '../../libs/**/*.ts'",
     "prebuild": "../../scripts/merge-pkg.js api",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "typecheck": "tsc --noEmit",

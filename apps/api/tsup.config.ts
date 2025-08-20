@@ -28,7 +28,7 @@ function printStylizedNuvix() {
   console.log('\x1b[38;5;208m' + logo + '\x1b[0m');
 }
 
-export default defineConfig(() => {
+export default defineConfig(options => {
   printStylizedNuvix();
 
   return {
@@ -36,7 +36,7 @@ export default defineConfig(() => {
     format: ['cjs', 'esm'],
     dts: false,
     sourcemap: true,
-    clean: true,
+    clean: !!!options.watch,
     outDir: '../../dist/api',
     noExternal: [],
     splitting: false,

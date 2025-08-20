@@ -68,6 +68,7 @@ export class AuditsQueue
 
     try {
       this.logger.log(`Flushing ${logsToFlush.length} audit logs`);
+      this.logger.debug(logsToFlush, '<-------------------------!');
       await this.audit.logBatch(logsToFlush);
     } catch (error) {
       this.logger.error('Error flushing audit logs:', error);
@@ -80,7 +81,7 @@ export class AuditsQueue
     const { resource, mode, userAgent, ip, data } = job.data;
     const user = job.data.user;
     const log: AuditLog = {
-      userId: user.$sequence,
+      userId: user.$sequence ?? -1,
       event: job.name,
       resource,
       userAgent: userAgent || '',

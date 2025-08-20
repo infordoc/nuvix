@@ -59,7 +59,7 @@ export async function initSetup(config: AppConfigService) {
         if (collection.$collection !== Database.METADATA) {
           continue;
         }
-        if (!(await dbForPlatform.getCollection(collection.$id)).empty()) {
+        if (await dbForPlatform.exists(dbForPlatform.schema, collection.$id)) {
           continue;
         }
 
