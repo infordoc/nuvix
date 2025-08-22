@@ -45,7 +45,7 @@ export class ResponseInterceptor implements NestInterceptor {
     @Inject(REFLECTOR) protected readonly reflector: any,
     @Optional()
     protected readonly defaultOptions: ClassSerializerInterceptorOptions = {
-      excludePrefixes: ['$internalId', '$tenant'],
+      excludePrefixes: ['$tenant'],
     },
   ) {
     classTransformer =

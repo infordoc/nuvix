@@ -63,7 +63,6 @@ async function bootstrap() {
       },
     }),
     {
-      rawBody: true,
       abortOnError: false,
       logger: new ConsoleLogger({
         json: APP_DEBUG_FORMAT,
@@ -123,17 +122,20 @@ async function bootstrap() {
 
   fastify.decorateRequest('hooks_args', null as any);
   fastify.addHook('onRequest', (req, res, done) => {
-    let size: number = 0;
-    req.raw.on('data', chunk => {
-      size += chunk.length;
-    });
-    req.raw.on('end', () => {
-      req['hooks_args'] = {
-        onRequest: {
-          size,
-        },
-      };
-    });
+    let size = 0;
+
+    // Patch the raw stream push method
+    const origPush = req.raw.push;
+    req.raw.push = function (chunk: any, encoding?: BufferEncoding) {
+      if (chunk) {
+        size += Buffer.isBuffer(chunk)
+          ? chunk.length
+          : Buffer.byteLength(chunk, encoding);
+      }
+      return origPush.call(this, chunk, encoding);
+    };
+
+    req['hooks_args'] = { onRequest: { sizeRef: () => size } };
     storage.run(new Map(), () => {
       Authorization.setDefaultStatus(true); // Set per-request default status
       Authorization.cleanRoles(); // Reset roles per request

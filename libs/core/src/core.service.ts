@@ -53,7 +53,7 @@ export class CoreService {
         database: options.database,
         user: options.user,
         password: options.password,
-        ssl: true ? { rejectUnauthorized: false } : undefined,
+        ssl: false ? { rejectUnauthorized: false } : undefined,
       };
     }
 

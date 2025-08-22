@@ -172,7 +172,7 @@ export class AuthHook implements Hook {
         const team = await Authorization.skip(
           async () =>
             await this.dbForPlatform.findOne('teams', [
-              Query.equal('$internalId', [teamInternalId]),
+              Query.equal('$sequence', [teamInternalId]),
             ]),
         );
         req[Context.Team] = team;

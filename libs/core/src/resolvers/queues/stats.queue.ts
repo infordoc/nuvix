@@ -95,7 +95,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
       this.buffer.set(projectId, {
         project: new Doc({
           $id: project.getId(),
-          $internalId: projectId,
+          $sequence: projectId,
           database: project.get('database'),
         }) as unknown as ProjectsDoc,
         keys: {},

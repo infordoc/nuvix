@@ -341,7 +341,7 @@ export const filters: Record<string, SecondArgType> = {
 
       if (targetIds.length > 0) {
         return database.skipValidation(() =>
-          database.find('targets', [Query.equal('$internalId', targetIds)]),
+          database.find('targets', [Query.equal('$sequence', targetIds)]),
         );
       }
       return [];

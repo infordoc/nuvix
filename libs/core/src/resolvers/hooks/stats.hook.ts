@@ -28,7 +28,8 @@ export class StatsHook implements Hook {
     )
       return;
 
-    const reqBodySize: number = req['hooks_args']['onRequest']?.size || 0;
+    const reqBodySize: number =
+      req['hooks_args']['onRequest']?.sizeRef?.() ?? 0;
     const resBodySize: number = Number(reply.getHeader('Content-Length')) || 0;
 
     await this.statsQueue.addBulk([
