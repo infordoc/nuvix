@@ -48,13 +48,14 @@ export class ProjectHook implements Hook {
 
     if (!project.empty()) {
       // For testing & demo purpose (until infra. setup)
+      const dbConfig = this.appConfig.getDatabaseConfig().postgres;
       project.set('database', {
         ...(project.get('database') as unknown as Record<string, any>),
-        name: 'postgres',
-        host: '35.244.24.126',
+        name: dbConfig.database,
+        host: dbConfig.host,
         port: 6432,
         adminRole: 'nuvix_admin',
-        password: this.appConfig.getDatabaseConfig().postgres.password,
+        password: dbConfig.password,
         userRole: 'postgres',
         userPassword: 'testpassword',
       });
