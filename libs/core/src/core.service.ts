@@ -147,6 +147,8 @@ export class CoreService {
     connection.setMeta({
       // cacheId: `${projectId}:core`
       schema: options.schema ?? Schemas.Core,
+      namespace: 'nx',
+      metadata: { project: projectId },
     });
     return connection;
   }
