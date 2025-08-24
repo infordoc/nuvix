@@ -17,7 +17,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Database, Doc } from '@nuvix-tech/db';
+import { Database } from '@nuvix-tech/db';
 import { Query as Queries } from '@nuvix-tech/db';
 
 import {
@@ -30,7 +30,7 @@ import {
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
 import {
-  ProjectDatabase,
+  AuthDatabase,
   Project,
 } from '@nuvix/core/decorators/project.decorator';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
@@ -105,7 +105,7 @@ export class AccountController {
     userId: '{res.$id}',
   })
   async createAccount(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() input: CreateAccountDTO,
     @User() user: UsersDoc,
     @Project() project: ProjectsDoc,
@@ -139,7 +139,7 @@ export class AccountController {
   @Label('res.type', 'JSON')
   @ResModel(Models.NONE)
   @AuditEvent('user.delete', 'user/{res.$id}')
-  async deleteAccount(@ProjectDatabase() db: Database, @User() user: UsersDoc) {
+  async deleteAccount(@AuthDatabase() db: Database, @User() user: UsersDoc) {
     return this.accountService.deleteAccount(db, user);
   }
 
@@ -162,7 +162,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSessions(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -197,7 +197,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Param('id') id: string,
     @Req() request: NuvixRequest,
@@ -221,7 +221,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.update', 'user/{res.userId}')
   async updateSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Param('id') id: string,
     @Project() project: ProjectsDoc,
@@ -240,7 +240,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createEmailSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateEmailSessionDTO,
     @Req() request: NuvixRequest,
@@ -271,7 +271,7 @@ export class AccountController {
     name: 'createAnonymousSession',
   })
   async createAnonymousSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -300,7 +300,7 @@ export class AccountController {
     name: 'createSession',
   })
   async createSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
@@ -399,7 +399,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async OAuth2Redirect(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Query() input: OAuth2CallbackDTO,
     @Req() request: NuvixRequest,
@@ -451,7 +451,7 @@ export class AccountController {
     name: 'createMagicURLToken',
   })
   async createMagicURLToken(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateMagicURLTokenDTO,
     @Req() request: NuvixRequest,
@@ -487,7 +487,7 @@ export class AccountController {
     @Res() response: NuvixRes,
     @Project() project: ProjectsDoc,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Locale() locale: LocaleTranslator,
   ) {
     return this.accountService.createEmailToken({
@@ -512,7 +512,7 @@ export class AccountController {
     name: 'updateMagicURLSession',
   })
   async updateMagicURLSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
@@ -543,7 +543,7 @@ export class AccountController {
     name: 'updatePhoneSession',
   })
   async updatePhoneSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
@@ -574,7 +574,7 @@ export class AccountController {
     name: 'createPhoneToken',
   })
   async createPhoneToken(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreatePhoneTokenDTO,
     @Req() request: NuvixRequest,
@@ -623,7 +623,7 @@ export class AccountController {
   @ResModel(Models.PREFERENCES)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updatePrefs(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: UpdatePrefsDTO,
   ) {
@@ -638,7 +638,7 @@ export class AccountController {
     name: 'updateName',
   })
   async updateName(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { name }: UpdateNameDTO,
   ) {
@@ -653,7 +653,7 @@ export class AccountController {
     name: 'updatePassword',
   })
   async updatePassword(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { password, oldPassword }: UpdatePasswordDTO,
     @Project() project: ProjectsDoc,
@@ -674,7 +674,7 @@ export class AccountController {
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updateEmail(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() updateEmailDTO: UpdateEmailDTO,
   ) {
@@ -689,7 +689,7 @@ export class AccountController {
     name: 'updatePhone',
   })
   async updatePhone(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { password, phone }: UpdatePhoneDTO,
     @Project() project: ProjectsDoc,
@@ -711,7 +711,7 @@ export class AccountController {
     name: 'updateStatus',
   })
   async updateStatus(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
@@ -732,7 +732,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async createRecovery(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: CreateRecoveryDTO,
     @Locale() locale: LocaleTranslator,
@@ -760,7 +760,7 @@ export class AccountController {
     userId: '{res.userId}',
   })
   async updateRecovery(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: UpdateRecoveryDTO,
     @Project() project: ProjectsDoc,
@@ -792,7 +792,7 @@ export class AccountController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Project() project: ProjectsDoc,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Locale() locale: LocaleTranslator,
   ) {
     return this.accountService.createEmailVerification({
@@ -821,7 +821,7 @@ export class AccountController {
     @Body() { userId, secret }: UpdateEmailVerificationDTO,
     @Res({ passthrough: true }) response: NuvixRes,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.updateEmailVerification({
       userId,
@@ -846,7 +846,7 @@ export class AccountController {
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Project() project: ProjectsDoc,
     @Locale() locale: LocaleTranslator,
   ) {
@@ -874,7 +874,7 @@ export class AccountController {
   async updatePhoneVerification(
     @Body() { userId, secret }: UpdatePhoneVerificationDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.updatePhoneVerification({
       userId,
@@ -898,7 +898,7 @@ export class AccountController {
     @Body() { mfa }: UpdateAccountMfaDTO,
     @User() user: UsersDoc,
     @Session() session: SessionsDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.updateMfa({
       mfa,
@@ -932,7 +932,7 @@ export class AccountController {
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @Project() project: ProjectsDoc,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.createMfaAuthenticator({
       type,
@@ -957,7 +957,7 @@ export class AccountController {
     @Body() { otp }: VerifyMfaAuthenticatorDTO,
     @User() user: UsersDoc,
     @Session() session: SessionsDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.verifyMfaAuthenticator({
       type,
@@ -980,7 +980,7 @@ export class AccountController {
   })
   async createMfaRecoveryCodes(
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.createMfaRecoveryCodes({ user, db });
   }
@@ -996,7 +996,7 @@ export class AccountController {
     name: 'updateMfaRecoveryCodes',
   })
   async updateMfaRecoveryCodes(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
   ) {
     return this.accountService.updateMfaRecoveryCodes({ db, user });
@@ -1034,7 +1034,7 @@ export class AccountController {
   async deleteMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.deleteMfaAuthenticator({
       type,
@@ -1054,7 +1054,7 @@ export class AccountController {
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Project() project: ProjectsDoc,
     @Locale() locale: LocaleTranslator,
   ) {
@@ -1078,7 +1078,7 @@ export class AccountController {
   async updateMfaChallenge(
     @Body() input: VerifyMfaChallengeDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Session() session: SessionsDoc,
   ) {
     return this.accountService.updateMfaChallenge({
@@ -1102,7 +1102,7 @@ export class AccountController {
   async createPushTarget(
     @Body() input: CreatePushTargetDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Req() request: NuvixRequest,
   ) {
     return this.accountService.createPushTarget({
@@ -1127,7 +1127,7 @@ export class AccountController {
     @Param() { targetId }: TargetIdParamDTO,
     @Body() input: UpdatePushTargetDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Req() request: NuvixRequest,
   ) {
     return this.accountService.updatePushTarget({
@@ -1153,7 +1153,7 @@ export class AccountController {
   async deletePushTarget(
     @Param() { targetId }: TargetIdParamDTO,
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.deletePushTarget({
       targetId,
@@ -1171,7 +1171,7 @@ export class AccountController {
   async getIdentities(
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @User() user: UsersDoc,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.getIdentities({ user, db, queries });
   }
@@ -1190,7 +1190,7 @@ export class AccountController {
   })
   async deleteIdentity(
     @Param() { identityId }: IdentityIdParamDTO,
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
   ) {
     return this.accountService.deleteIdentity({
       identityId,

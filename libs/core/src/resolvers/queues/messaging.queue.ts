@@ -24,7 +24,7 @@ import {
 import { Device } from '@nuvix/storage';
 import { Database, Doc, Query } from '@nuvix-tech/db';
 import { Injectable, Logger } from '@nestjs/common';
-import { CORE_SCHEMA, QueueFor, MessageType } from '@nuvix/utils';
+import { Schemas, QueueFor, MessageType } from '@nuvix/utils';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import type {
   Messages,
@@ -56,7 +56,7 @@ export class MessagingQueue extends Queue {
         const message = new Doc(data.message as Messages);
         const { client, dbForProject } =
           await this.coreService.createProjectDatabase(project, {
-            schema: CORE_SCHEMA,
+            schema: Schemas.Core,
           });
         const deviceForFiles = this.coreService.getProjectDevice(
           project.getId(),
@@ -200,20 +200,24 @@ export class MessagingQueue extends Queue {
     let attachments = data['attachments'] || [];
 
     if (ccTargets.length > 0) {
-      const ccTargetDocs = await dbForProject.find('targets', [
-        Query.equal('$id', ccTargets),
-        Query.limit(ccTargets.length),
-      ]);
+      const ccTargetDocs = await dbForProject.withSchema(Schemas.Auth, () =>
+        dbForProject.find('targets', [
+          Query.equal('$id', ccTargets),
+          Query.limit(ccTargets.length),
+        ]),
+      );
       for (const ccTarget of ccTargetDocs) {
         cc.push({ email: ccTarget.get('identifier') });
       }
     }
 
     if (bccTargets.length > 0) {
-      const bccTargetDocs = await dbForProject.find('targets', [
-        Query.equal('$id', bccTargets),
-        Query.limit(bccTargets.length),
-      ]);
+      const bccTargetDocs = await dbForProject.withSchema(Schemas.Auth, () =>
+        dbForProject.find('targets', [
+          Query.equal('$id', bccTargets),
+          Query.limit(bccTargets.length),
+        ]),
+      );
       for (const bccTarget of bccTargetDocs) {
         bcc.push({ email: bccTarget.get('identifier') });
       }
@@ -370,10 +374,12 @@ export class MessagingQueue extends Queue {
     }
 
     if (userIds.length > 0) {
-      const users = await dbForProject.find('users', [
-        Query.equal('$id', userIds),
-        Query.limit(userIds.length),
-      ]);
+      const users = await dbForProject.withSchema(Schemas.Auth, () =>
+        dbForProject.find('users', [
+          Query.equal('$id', userIds),
+          Query.limit(userIds.length),
+        ]),
+      );
       for (const user of users) {
         const targets = (user.get('targets') as TargetsDoc[]).filter(
           target => target.get('providerType') === providerType,
@@ -383,11 +389,13 @@ export class MessagingQueue extends Queue {
     }
 
     if (targetIds.length > 0) {
-      const targets = await dbForProject.find('targets', [
-        Query.equal('$id', targetIds),
-        Query.equal('providerType', [providerType]),
-        Query.limit(targetIds.length),
-      ]);
+      const targets = await dbForProject.withSchema(Schemas.Auth, () =>
+        dbForProject.find('targets', [
+          Query.equal('$id', targetIds),
+          Query.equal('providerType', [providerType]),
+          Query.limit(targetIds.length),
+        ]),
+      );
       allTargets.push(...targets);
     }
 

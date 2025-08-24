@@ -3,11 +3,13 @@ import { Queue } from './queue';
 import { Job } from 'bullmq';
 
 import { Logger } from '@nestjs/common';
-import { Database, Doc, DuplicateException, type Collection } from '@nuvix-tech/db';
 import {
-  QueueFor,
-  Schemas,
-} from '@nuvix/utils';
+  Database,
+  Doc,
+  DuplicateException,
+  type Collection,
+} from '@nuvix-tech/db';
+import { QueueFor, Schemas } from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Audit } from '@nuvix/audit';
 import { CoreService } from '@nuvix/core/core.service.js';
@@ -88,12 +90,16 @@ export class ProjectsQueue extends Queue {
 
       // Setup database and collections
       // until infrastructure setup is done, we use the root client to initialize the project (test only)
-      const coreSchema = this.coreService.getProjectDb(client, project.getId());
-      coreSchema.setMeta({ schema: Schemas.Core });
+      const coreSchema = this.coreService.getProjectDb(client, {
+        projectId: project.getId(),
+        schema: Schemas.Core,
+      });
       await coreSchema.create(Schemas.Core);
 
-      const authSchema = this.coreService.getProjectDb(client, project.getId());
-      authSchema.setMeta({ schema: Schemas.Auth });
+      const authSchema = this.coreService.getProjectDb(client, {
+        projectId: project.getId(),
+        schema: Schemas.Auth,
+      });
       await authSchema.create(Schemas.Auth);
       // TODO: flush cache to ensure schema is recognized (after lib update)
 
@@ -114,7 +120,11 @@ export class ProjectsQueue extends Queue {
         );
       }
 
-      ({ failed } = await this.createCollections(coreSchema, $collections, project));
+      ({ failed } = await this.createCollections(
+        coreSchema,
+        $collections,
+        project,
+      ));
 
       if (failed > 0) {
         this.logger.error(
@@ -146,7 +156,7 @@ export class ProjectsQueue extends Queue {
     db: Database,
     collections: [string, Collection][],
     project: ProjectsDoc,
-  ): Promise<{ successful: number; failed: number; }> {
+  ): Promise<{ successful: number; failed: number }> {
     let successfulCollections = 0;
     let failedCollections = 0;
 
@@ -165,8 +175,10 @@ export class ProjectsQueue extends Queue {
       const colId = collection.$id;
 
       const attributes =
-        (collection['attributes'] || []).map((attribute) => new Doc(attribute)) || [];
-      const indexes = (collection['indexes'] || []).map((index) => new Doc(index)) || [];
+        (collection['attributes'] || []).map(attribute => new Doc(attribute)) ||
+        [];
+      const indexes =
+        (collection['indexes'] || []).map(index => new Doc(index)) || [];
 
       this.logger.log(
         `Creating collection ${colId} in schema ${db.schema} for project ${project.getId()}`,
@@ -204,7 +216,7 @@ export class ProjectsQueue extends Queue {
             this.logger.warn(
               `Attempt ${attempt} failed creating collection ${colId} for project ${project.getId()}. Retrying in ${delay}ms. Error: ${err?.message ?? err}`,
             );
-            await new Promise((res) => setTimeout(res, delay));
+            await new Promise(res => setTimeout(res, delay));
             continue;
           }
 

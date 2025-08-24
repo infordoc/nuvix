@@ -165,7 +165,7 @@ export const GET_PROJECT_DB = Symbol('getProjectDb');
 export const GET_PROJECT_PG = Symbol('getProjectPostgreDb');
 /** Symbol used to identify the project database client instance. */
 export const PROJECT_DB_CLIENT = Symbol('project-db-client');
-/** Symbol used to identify the project database instance. */
+/**@deprecated Symbol used to identify the project database instance. */
 export const PROJECT_DB = Symbol('project-db');
 /** Symbol used to identify the project PostgreSQL database instance. */
 export const PROJECT_PG = Symbol('project-pg');
@@ -190,10 +190,11 @@ export const HOOKS = 'hooks';
 export const APP_COLOR = '#f67520';
 
 export const CORE_SCHEMA_DB = Symbol('coreSchemaDb');
+export const AUTH_SCHEMA_DB = Symbol('authSchemaDb');
 export const CURRENT_SCHEMA_DB = Symbol('currentSchemaDb');
 export const CURRENT_SCHEMA_PG = Symbol('currentSchemaPg');
 
-export const INTERNAL_SCHEMAS = ['system', 'core'] as const;
+/**@deprecated */ export const INTERNAL_SCHEMAS = ['system', 'core'] as const;
 
 /**@deprecated */ export const SYSTEM_SCHEMA = 'system' as const;
 /**@deprecated */ export const CORE_SCHEMA = 'core' as const;

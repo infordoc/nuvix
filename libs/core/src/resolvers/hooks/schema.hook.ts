@@ -30,6 +30,7 @@ export class SchemaHook implements Hook {
       (request.params as { schemaId: string | undefined }).schemaId ?? 'public';
     if (schemaId === undefined) return;
     const schema = await pg.getSchema(schemaId);
+    // TODO: we have to throw error if schema not enabled based on app mode
     if (schema) {
       const pg = this.coreService.getProjectPg(
         client,
@@ -39,10 +40,9 @@ export class SchemaHook implements Hook {
       );
       request[CURRENT_SCHEMA_PG] = pg;
       if (schema.type === 'document') {
-        const db = this.coreService.getProjectDb(client, project.getId());
-        db.setMeta({
+        const db = this.coreService.getProjectDb(client, {
+          projectId: project.getId(),
           schema: schema.name,
-          // cacheId: `${project.getId()}:${schemaId}`, // Uncomment after implementing cache
         });
         request[CURRENT_SCHEMA_DB] = db;
       }

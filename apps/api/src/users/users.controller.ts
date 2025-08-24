@@ -3,7 +3,6 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
   Param,
   Patch,
   Post,
@@ -38,7 +37,7 @@ import {
   ResModel,
   Scope,
   AuthType,
-  ProjectDatabase,
+  AuthDatabase,
   Sdk,
 } from '@nuvix/core/decorators';
 
@@ -48,8 +47,6 @@ import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import type { Database, Doc, Query as Queries } from '@nuvix-tech/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { CACHE } from '@nuvix/utils';
-import { Cache } from '@nuvix/cache';
 import type { ProjectsDoc } from '@nuvix/utils/types';
 
 @Namespace('users')
@@ -65,7 +62,7 @@ export class UsersController {
   @Label('res.status', 'OK')
   @ResModel(Models.USER, { list: true })
   async findAll(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
@@ -79,7 +76,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async create(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -93,7 +90,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithArgon2(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -107,7 +104,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithBcrypt(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -121,7 +118,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithMd5(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -135,7 +132,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithSha(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -149,7 +146,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithPhpass(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -163,7 +160,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScrypt(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -177,7 +174,7 @@ export class UsersController {
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScryptModified(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
@@ -186,7 +183,7 @@ export class UsersController {
 
   @Get('usage')
   @ResModel({ type: Models.USAGE_USERS })
-  async getUsage(@ProjectDatabase() db: Database) {
+  async getUsage(@AuthDatabase() db: Database) {
     return this.usersService.getUsage(db);
   }
 
@@ -194,7 +191,7 @@ export class UsersController {
   @Scope('users.read')
   @ResModel({ type: Models.IDENTITY, list: true })
   async getIdentities(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
@@ -203,24 +200,21 @@ export class UsersController {
 
   @Delete('identities/:id')
   @Scope('users.read')
-  async deleteIdentity(
-    @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
+  async deleteIdentity(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.deleteIdentity(db, id);
   }
 
   @Get(':id')
   @Scope('users.read')
   @ResModel(Models.USER)
-  async findOne(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async findOne(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.findOne(db, id);
   }
 
   @Get(':id/prefs')
   @Scope('users.read')
   @ResModel(Models.PREFERENCES)
-  async getPrefs(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async getPrefs(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.getPrefs(db, id);
   }
 
@@ -228,7 +222,7 @@ export class UsersController {
   @Scope('users.update')
   @ResModel(Models.USER)
   async updatePrefs(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() { prefs }: UpdateUserPrefsDTO,
   ) {
@@ -239,7 +233,7 @@ export class UsersController {
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateStatus(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() status: UpdateUserStatusDTO,
   ) {
@@ -250,7 +244,7 @@ export class UsersController {
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateLabels(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserLabelDTO,
   ) {
@@ -261,7 +255,7 @@ export class UsersController {
   @Scope('users.update')
   @ResModel({ type: Models.USER })
   async updateName(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserNameDTO,
   ) {
@@ -271,7 +265,7 @@ export class UsersController {
   @Patch(':id/password')
   @ResModel({ type: Models.USER })
   async updatePassword(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPasswordDTO,
     @Project() project: ProjectsDoc,
@@ -282,7 +276,7 @@ export class UsersController {
   @Patch(':id/email')
   @ResModel({ type: Models.USER })
   async updateEmail(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserEmailDTO,
   ) {
@@ -292,7 +286,7 @@ export class UsersController {
   @Patch(':id/phone')
   @ResModel({ type: Models.USER })
   async updatePhone(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPhoneDTO,
   ) {
@@ -302,7 +296,7 @@ export class UsersController {
   @Patch(':id/mfa')
   @ResModel({ type: Models.USER })
   async updateMfa(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateMfaStatusDTO,
   ) {
@@ -316,7 +310,7 @@ export class UsersController {
   @ResModel(Models.TARGET)
   @AuditEvent('target.create', 'target/{res.$id}')
   async addTarget(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() createTargetDTO: CreateTargetDTO,
   ): Promise<any> {
@@ -326,7 +320,7 @@ export class UsersController {
   @Get(':id/targets')
   @ResModel({ type: Models.TARGET, list: true })
   async getTargets(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
     return this.usersService.getTargets(db, id);
@@ -335,7 +329,7 @@ export class UsersController {
   @Post(':id/jwts')
   @ResModel({ type: Models.JWT })
   async createJwt(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateJwtDTO,
   ): Promise<any> {
@@ -345,7 +339,7 @@ export class UsersController {
   @Get(':id/sessions')
   @ResModel({ type: Models.SESSION, list: true })
   async getSessions(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
     return this.usersService.getSessions(db, id);
@@ -354,7 +348,7 @@ export class UsersController {
   @Post(':id/sessions')
   @ResModel({ type: Models.SESSION })
   async createSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Req() req: any,
     @Project() project: ProjectsDoc,
@@ -363,17 +357,14 @@ export class UsersController {
   }
 
   @Delete(':id/sessions')
-  async deleteSessions(
-    @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
+  async deleteSessions(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.deleteSessions(db, id);
   }
 
   @Get(':id/memberships')
   @ResModel({ type: Models.MEMBERSHIP, list: true })
   async getMemberships(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
     return this.usersService.getMemberships(db, id);
@@ -382,7 +373,7 @@ export class UsersController {
   @Post(':id/tokens')
   @ResModel({ type: Models.TOKEN })
   async createToken(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateTokenDTO,
     @Req() req: NuvixRequest,
@@ -393,7 +384,7 @@ export class UsersController {
   @Get(':id/logs')
   @ResModel({ type: Models.LOG, list: true })
   async getLogs(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Query('queries') queries: Queries[],
   ): Promise<any> {
@@ -403,7 +394,7 @@ export class UsersController {
   @Patch(':id/verification')
   @ResModel({ type: Models.USER })
   async verify(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserEmailVerificationDTO,
   ) {
@@ -413,7 +404,7 @@ export class UsersController {
   @Patch(':id/verification/phone')
   @ResModel({ type: Models.USER })
   async verifyPhone(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateUserPoneVerificationDTO,
   ) {
@@ -423,7 +414,7 @@ export class UsersController {
   @Get(':id/targets/:targetId')
   @ResModel({ type: Models.TARGET })
   async getTarget(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ): Promise<any> {
@@ -433,7 +424,7 @@ export class UsersController {
   @Patch(':id/targets/:targetId')
   @ResModel({ type: Models.TARGET })
   async updateTarget(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
     @Body() input: UpdateTargetDTO,
@@ -443,17 +434,14 @@ export class UsersController {
 
   @Get(':id/mfa/factors')
   @ResModel({ type: Models.MFA_FACTORS })
-  async getMfaFactors(
-    @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
+  async getMfaFactors(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.getMfaFactors(db, id);
   }
 
   @Get(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async getMfaRecoveryCodes(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ) {
     return this.usersService.getMfaRecoveryCodes(db, id);
@@ -462,7 +450,7 @@ export class UsersController {
   @Patch(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async generateMfaRecoveryCodes(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ) {
     return this.usersService.generateMfaRecoveryCodes(db, id);
@@ -471,7 +459,7 @@ export class UsersController {
   @Put(':id/mfa/recovery-codes')
   @ResModel({ type: Models.MFA_RECOVERY_CODES })
   async regenerateMfaRecoveryCodes(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
   ) {
     return this.usersService.regenerateMfaRecoveryCodes(db, id);
@@ -479,7 +467,7 @@ export class UsersController {
 
   @Delete(':id/mfa/authenticators/:type')
   async deleteMfaAuthenticator(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('type') type: string,
   ) {
@@ -488,7 +476,7 @@ export class UsersController {
 
   @Delete(':id/session/:sessionId')
   async deleteSession(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('sessionId') sessionId: string,
   ) {
@@ -497,7 +485,7 @@ export class UsersController {
 
   @Delete(':id/targets/:targetId')
   async deleteTarget(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ) {
@@ -505,7 +493,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  async remove(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async remove(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.remove(db, id);
   }
 }

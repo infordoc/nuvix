@@ -33,7 +33,7 @@ import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { Mode } from '@nuvix/core/decorators/mode.decorator';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import {
-  ProjectDatabase,
+  AuthDatabase,
   Project,
 } from '@nuvix/core/decorators/project.decorator';
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
@@ -51,7 +51,7 @@ export class TeamsController {
   @Scope('teams.read')
   @ResModel({ type: Models.TEAM, list: true })
   async findAll(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search?: string,
   ) {
@@ -61,7 +61,7 @@ export class TeamsController {
   @Post()
   @ResModel({ type: Models.TEAM })
   async create(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @User() user: any,
     @Body() input: CreateTeamDTO,
     @Mode() mode: string,
@@ -71,14 +71,14 @@ export class TeamsController {
 
   @Get(':id')
   @ResModel({ type: Models.TEAM })
-  async findOne(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async findOne(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.teamsService.findOne(db, id);
   }
 
   @Put(':id')
   @ResModel({ type: Models.TEAM })
   async update(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateTeamDTO,
   ) {
@@ -87,18 +87,18 @@ export class TeamsController {
 
   @Delete(':id')
   @ResModel({ type: Models.NONE })
-  async remove(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async remove(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.teamsService.remove(db, id);
   }
 
   @Get(':id/prefs')
-  async getPrefs(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async getPrefs(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.teamsService.getPrefs(db, id);
   }
 
   @Put(':id/prefs')
   async setPrefs(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: UpdateTeamPrefsDTO,
   ) {
@@ -107,7 +107,7 @@ export class TeamsController {
 
   @Get(':id/logs')
   @ResModel({ type: Models.LOG, list: true })
-  async teamLogs(@ProjectDatabase() db: Database, @Param('id') id: string) {
+  async teamLogs(@AuthDatabase() db: Database, @Param('id') id: string) {
     return {
       total: 0,
       logs: [],
@@ -117,7 +117,7 @@ export class TeamsController {
   @Post(':id/memberships')
   @ResModel({ type: Models.MEMBERSHIP })
   async addMember(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Body() input: CreateMembershipDTO,
     @Project() project: ProjectsDoc,
@@ -130,7 +130,7 @@ export class TeamsController {
   @Get(':id/memberships')
   @ResModel({ type: Models.MEMBERSHIP, list: true })
   async getMembers(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Query('queries', ParseQueryPipe) queries: Queries[],
     @Query('search') search?: string,
@@ -141,7 +141,7 @@ export class TeamsController {
   @Get(':id/memberships/:memberId')
   @ResModel({ type: Models.MEMBERSHIP })
   async getMember(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
   ) {
@@ -151,7 +151,7 @@ export class TeamsController {
   @Patch(':id/memberships/:memberId')
   @ResModel({ type: Models.MEMBERSHIP })
   async updateMember(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
     @Body() input: UpdateMembershipDTO,
@@ -162,7 +162,7 @@ export class TeamsController {
   @Patch(':id/memberships/:memberId/status')
   @ResModel({ type: Models.MEMBERSHIP })
   async updateMemberStatus(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
     @Body() input: UpdateMembershipStatusDTO,
@@ -173,7 +173,7 @@ export class TeamsController {
   @Delete(':id/memberships/:memberId')
   @ResModel({ type: Models.NONE })
   async removeMember(
-    @ProjectDatabase() db: Database,
+    @AuthDatabase() db: Database,
     @Param('id') id: string,
     @Param('memberId') memberId: string,
   ) {

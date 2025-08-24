@@ -3,7 +3,8 @@ import { Authorization, Database, Doc } from '@nuvix-tech/db';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
 
 import {
-  CORE_SCHEMA,
+  Schemas,
+  AUTH_SCHEMA_DB,
   CORE_SCHEMA_DB,
   AUDITS_FOR_PROJECT,
   AppMode,
@@ -85,17 +86,20 @@ export class ProjectHook implements Hook {
         });
 
         req[PROJECT_DB] = this.coreService.getProjectDb(
+          // lets keep it for backward compatibility
           client,
-          project.getId(),
+          { projectId: project.getId() },
         );
         req[PROJECT_PG] = this.coreService.getProjectPg(client);
-        const coreDatabase = this.coreService.getProjectDb(
-          client,
-          project.getId(),
-        );
-        coreDatabase.setMeta({
-          schema: CORE_SCHEMA,
+        const coreDatabase = this.coreService.getProjectDb(client, {
+          projectId: project.getId(),
+          schema: Schemas.Core,
         });
+        const authDatabase = this.coreService.getProjectDb(client, {
+          projectId: project.getId(),
+          schema: Schemas.Auth,
+        });
+        req[AUTH_SCHEMA_DB] = authDatabase;
         req[CORE_SCHEMA_DB] = coreDatabase;
         req[AUDITS_FOR_PROJECT] = new Audit(coreDatabase);
       } catch (e) {

@@ -5,15 +5,18 @@ const config: NuvixDBConfig = {
   collections: Array.from(
     new Set(
       [
+        ...Object.values(collections.auth),
         ...Object.values(collections.project),
         ...Object.values(collections.database),
         ...Object.values(collections.bucket),
         ...Object.values(collections.console).map(collection =>
           collection.$id === 'teams'
             ? { ...collection, $id: 'organizations', name: 'organizations' }
-            : collection,
+            : Object.keys({ ...collections.auth, ...collections.common }).includes(collection.$id)
+              ? undefined as any
+              : collection,
         ),
-      ].filter(c => c.attributes?.length > 0),
+      ].filter(Boolean).filter(c => c.attributes?.length > 0),
     ),
   ),
 

@@ -312,9 +312,7 @@ export class Exception extends HttpException {
   protected publish: boolean;
   protected details: Record<string, any> = {};
 
-  constructor(
-    message: string,
-  );
+  constructor(message: string);
   constructor(
     type?: string,
     message?: string,
@@ -331,7 +329,10 @@ export class Exception extends HttpException {
     // like a human-readable message (contains spaces, uppercase letters or any
     // characters other than lowercase letters, digits and underscores),
     // treat that string as the message and fall back to a default error type.
-    if ((message === undefined || message === null) && !/^[a-z0-9_]+$/.test(type)) {
+    if (
+      (message === undefined || message === null) &&
+      !/^[a-z0-9_]+$/.test(type)
+    ) {
       message = type;
       type = Exception.GENERAL_UNKNOWN;
     }

@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Authorization, Database, Doc, Role } from '@nuvix-tech/db';
 import { ApiKey, AppMode, Context, PROJECT_DB_CLIENT } from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';

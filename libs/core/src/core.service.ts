@@ -136,7 +136,7 @@ export class CoreService {
     return new Doc(data);
   }
 
-  getProjectDb(client: Client, projectId: string) {
+  getProjectDb(client: Client, { projectId, ...options }: GetProjectDBOptions) {
     const adapter = new Adapter(client);
     adapter.setMeta({
       metadata: {
@@ -146,7 +146,7 @@ export class CoreService {
     const connection = new Database(adapter, this.cache);
     connection.setMeta({
       // cacheId: `${projectId}:core`
-      schema: Schemas.Core,
+      schema: options.schema ?? Schemas.Core,
     });
     return connection;
   }
@@ -199,10 +199,9 @@ export class CoreService {
       port: dbOptions['port'],
       host: dbOptions['host'],
     });
-    const dbForProject = this.getProjectDb(client, project.getId());
-    dbForProject.setMeta({
-      schema: options?.schema || Schemas.Core,
-      // cacheId: `${project.getId()}:core`,
+    const dbForProject = this.getProjectDb(client, {
+      projectId: project.getId(),
+      schema: options?.schema,
     });
     return { client, dbForProject };
   }
@@ -224,6 +223,11 @@ interface PoolOptions {
   password: string;
   host: string;
   port?: number;
+}
+
+interface GetProjectDBOptions {
+  projectId: string;
+  schema?: string;
 }
 
 interface CreateProjectDatabaseOptions {

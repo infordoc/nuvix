@@ -4,7 +4,7 @@ import { Authorization, Database, Doc, Query } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import ParamsHelper from '@nuvix/core/helper/params.helper';
-import { AppMode, Context, CORE_SCHEMA_DB } from '@nuvix/utils';
+import { AppMode, AUTH_SCHEMA_DB, Context } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';
 import { Key } from '@nuvix/core/helper/key.helper';
 import { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types';
@@ -24,7 +24,7 @@ export class AuthHook implements Hook {
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req);
     const project = req[Context.Project] as ProjectsDoc;
-    const dbForProject = req[CORE_SCHEMA_DB] as Database;
+    const dbForProject = req[AUTH_SCHEMA_DB] as Database;
     const mode = req[Context.Mode] as AppMode;
 
     Authorization.setDefaultStatus(true);

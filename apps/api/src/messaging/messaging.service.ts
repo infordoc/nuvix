@@ -47,7 +47,12 @@ import {
   Role,
 } from '@nuvix-tech/db';
 import { Exception } from '@nuvix/core/extend/exception';
-import { MessageType, QueueFor, ScheduleResourceType } from '@nuvix/utils';
+import {
+  MessageType,
+  QueueFor,
+  ScheduleResourceType,
+  Schemas,
+} from '@nuvix/utils';
 import { MessageStatus } from '@nuvix/core/messaging/status';
 import { JwtService } from '@nestjs/jwt';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -914,7 +919,7 @@ export class MessagingService {
     }
 
     const target = await Authorization.skip(() =>
-      db.getDocument('targets', targetId),
+      db.withSchema(Schemas.Auth, () => db.getDocument('targets', targetId)),
     );
 
     if (target.empty()) {
@@ -922,7 +927,9 @@ export class MessagingService {
     }
 
     const user = await Authorization.skip(() =>
-      db.getDocument('users', target.get('userId')),
+      db.withSchema(Schemas.Auth, () =>
+        db.getDocument('users', target.get('userId')),
+      ),
     );
 
     const subscriber = new Doc<Subscribers>({
@@ -1009,10 +1016,14 @@ export class MessagingService {
     const enrichedSubscribers = await Promise.all(
       subscribers.map(async subscriber => {
         const target = await Authorization.skip(() =>
-          db.getDocument('targets', subscriber.get('targetId')),
+          db.withSchema(Schemas.Auth, () =>
+            db.getDocument('targets', subscriber.get('targetId')),
+          ),
         );
         const user = await Authorization.skip(() =>
-          db.getDocument('users', target.get('userId')),
+          db.withSchema(Schemas.Auth, () =>
+            db.getDocument('users', target.get('userId')),
+          ),
         );
 
         return subscriber
@@ -1046,10 +1057,14 @@ export class MessagingService {
     }
 
     const target = await Authorization.skip(() =>
-      db.getDocument('targets', subscriber.get('targetId')),
+      db.withSchema(Schemas.Auth, () =>
+        db.getDocument('targets', subscriber.get('targetId')),
+      ),
     );
     const user = await Authorization.skip(() =>
-      db.getDocument('users', target.get('userId')),
+      db.withSchema(Schemas.Auth, () =>
+        db.getDocument('users', target.get('userId')),
+      ),
     );
 
     subscriber.set('target', target).set('userName', user.get('name'));
@@ -1075,7 +1090,9 @@ export class MessagingService {
       throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
     }
 
-    const target = await db.getDocument('targets', subscriber.get('targetId'));
+    const target = await db.withSchema(Schemas.Auth, () =>
+      db.getDocument('targets', subscriber.get('targetId')),
+    );
 
     await db.deleteDocument('subscribers', subscriberId);
 
@@ -1148,11 +1165,13 @@ export class MessagingService {
     const mergedTargets = [...targets, ...cc, ...bcc];
 
     if (mergedTargets.length > 0) {
-      const foundTargets = await db.find('targets', qb =>
-        qb
-          .equal('$id', ...mergedTargets)
-          .equal('providerType', MessageType.EMAIL)
-          .limit(mergedTargets.length),
+      const foundTargets = await db.withSchema(Schemas.Auth, () =>
+        db.find('targets', qb =>
+          qb
+            .equal('$id', ...mergedTargets)
+            .equal('providerType', MessageType.EMAIL)
+            .limit(mergedTargets.length),
+        ),
       );
 
       if (foundTargets.length !== mergedTargets.length) {
@@ -1285,11 +1304,13 @@ export class MessagingService {
     }
 
     if (targets.length > 0) {
-      const foundTargets = await db.find('targets', qb =>
-        qb
-          .equal('$id', ...targets)
-          .equal('providerType', MessageType.SMS)
-          .limit(targets.length),
+      const foundTargets = await db.withSchema(Schemas.Auth, () =>
+        db.find('targets', qb =>
+          qb
+            .equal('$id', ...targets)
+            .equal('providerType', MessageType.SMS)
+            .limit(targets.length),
+        ),
       );
 
       if (foundTargets.length !== targets.length) {
@@ -1404,11 +1425,13 @@ export class MessagingService {
     }
 
     if (targets.length > 0) {
-      const foundTargets = await db.find('targets', qb =>
-        qb
-          .equal('$id', ...targets)
-          .equal('providerType', MessageType.PUSH)
-          .limit(targets.length),
+      const foundTargets = await db.withSchema(Schemas.Auth, () =>
+        db.find('targets', qb =>
+          qb
+            .equal('$id', ...targets)
+            .equal('providerType', MessageType.PUSH)
+            .limit(targets.length),
+        ),
       );
 
       if (foundTargets.length !== targets.length) {
@@ -1594,8 +1617,11 @@ export class MessagingService {
     }
 
     queries.push(Query.equal('$id', targetIDs));
-    const targets = await db.find('targets', queries);
-    const total = await db.count('targets', queries);
+    const { targets, total } = await db.withSchema(Schemas.Auth, async () => {
+      const targets = await db.find('targets', queries);
+      const total = await db.count('targets', queries);
+      return { targets, total };
+    });
 
     return {
       targets,
