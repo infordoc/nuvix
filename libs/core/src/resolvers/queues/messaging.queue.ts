@@ -52,8 +52,8 @@ export class MessagingQueue extends Queue {
     switch (job.name) {
       case MessagingJob.EXTERNAL:
         const data = job.data;
-        const project = new Doc(data.project as Projects);
-        const message = new Doc(data.message as Messages);
+        const project = new Doc(data.project as unknown as Projects);
+        const message = new Doc(data.message as unknown as Messages);
         const { client, dbForProject } =
           await this.coreService.createProjectDatabase(project, {
             schema: Schemas.Core,
@@ -613,6 +613,6 @@ export enum MessagingJob {
 }
 
 export interface MessagingJobData {
-  message: MessagesDoc | Object;
-  project: ProjectsDoc | Object;
+  message: MessagesDoc;
+  project: ProjectsDoc;
 }

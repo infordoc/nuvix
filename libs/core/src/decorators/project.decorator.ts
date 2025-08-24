@@ -21,7 +21,7 @@ export const Project = createParamDecorator<ProjectsDoc>(
   (data: unknown, ctx: ExecutionContext) => {
     const request: NuvixRequest = ctx.switchToHttp().getRequest();
 
-    const project = request[Context.User] as ProjectsDoc;
+    const project = request[Context.Project] as ProjectsDoc;
 
     if (project.empty() || project.getId() === 'console') {
       return new Doc();

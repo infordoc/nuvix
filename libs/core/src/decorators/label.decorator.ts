@@ -53,5 +53,6 @@ export type LabelValue = {
   'res.status': keyof typeof ResStatus;
 };
 
+/**@deprecated use `Sdk` instead */
 export const Label = <K extends LabelKey>(key: K, value: LabelValue[K]) =>
   SetMetadata(key, value);

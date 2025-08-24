@@ -41,6 +41,7 @@ import {
   UpdatePushMessageDTO,
   UpdateSmsMessageDTO,
 } from './DTO/message.dto';
+import type { ProjectsDoc } from '@nuvix/utils/types';
 
 interface DB {
   db: Database;
@@ -56,7 +57,7 @@ interface User {
 }
 
 interface Project {
-  project: Doc;
+  project: ProjectsDoc;
 }
 
 interface Locale {
