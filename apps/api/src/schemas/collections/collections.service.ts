@@ -1836,34 +1836,35 @@ export class CollectionsService {
     data['$permissions'] = aggregatedPermissions;
 
     const document = new Doc(data);
-    const checkPermissions = async (
-      collection: CollectionsDoc,
-      document: Doc,
-      permission: PermissionType,
-    ) => {
-      const documentSecurity = collection.get('documentSecurity', false);
-      const validator = new Authorization(permission);
-      const valid = validator.$valid(
-        collection.getPermissionsByType(permission),
-      );
+    // Recheck & remove the below commeted code
+    // const checkPermissions = async (
+    //   collection: CollectionsDoc,
+    //   document: Doc,
+    //   permission: PermissionType,
+    // ) => {
+    //   const documentSecurity = collection.get('documentSecurity', false);
+    //   const validator = new Authorization(permission);
+    //   const valid = validator.$valid(
+    //     collection.getPermissionsByType(permission),
+    //   );
 
-      if (
-        (permission === PermissionType.Update && !documentSecurity) ||
-        !valid
-      ) {
-        throw new Exception(Exception.USER_UNAUTHORIZED);
-      }
+    //   if (
+    //     (permission === PermissionType.Update && !documentSecurity) ||
+    //     !valid
+    //   ) {
+    //     throw new Exception(Exception.USER_UNAUTHORIZED);
+    //   }
 
-      if (permission === PermissionType.Update) {
-        const validUpdate = validator.$valid(document.getUpdate());
-        if (documentSecurity && !validUpdate) {
-          throw new Exception(Exception.USER_UNAUTHORIZED);
-        }
-      }
-    };
+    //   if (permission === PermissionType.Update) {
+    //     const validUpdate = validator.$valid(document.getUpdate());
+    //     if (documentSecurity && !validUpdate) {
+    //       throw new Exception(Exception.USER_UNAUTHORIZED);
+    //     }
+    //   }
+    // };
 
     // I DON"T THINK WE NEED TO DO IT, because our lib do very well
-    await checkPermissions(collection, document, PermissionType.Update);
+    // await checkPermissions(collection, document, PermissionType.Update);
 
     try {
       const createdDocument = await db.createDocument(
