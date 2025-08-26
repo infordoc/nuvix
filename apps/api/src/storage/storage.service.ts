@@ -228,7 +228,7 @@ export class StorageService {
     }
 
     const filterQueries = Query.groupByType(queries).filters;
-    const files = db.find(
+    const files = await db.find(
       this.getCollectionName(bucket.getSequence()),
       queries,
     );
