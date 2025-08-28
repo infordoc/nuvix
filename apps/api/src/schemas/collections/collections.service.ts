@@ -1868,6 +1868,7 @@ export class CollectionsService {
     document: Doc,
     permission: PermissionType,
   ) {
+    if (Auth.isTrustedActor) return;
     const documentSecurity = collection.get('documentSecurity', false);
     const validator = new Authorization(permission);
     const valid = validator.$valid(collection.getPermissionsByType(permission));
@@ -1913,7 +1914,7 @@ export class CollectionsService {
     permissions = Permission.aggregate(permissions, allowedPermissions);
 
     // Add permissions for current user if none were provided
-    if (permissions === null) {
+    if (permissions === null && !Auth.isTrustedActor) {
       permissions = [];
       if (user.getId()) {
         for (const perm of allowedPermissions) {
@@ -1927,7 +1928,7 @@ export class CollectionsService {
     // Users can only manage their own roles, API keys and Admin users can manage any
     if (!Auth.isTrustedActor) {
       for (const type of Database.PERMISSIONS) {
-        for (const p of permissions) {
+        for (const p of permissions ?? []) {
           const parsed = Permission.parse(p);
           if (parsed.getPermission() !== type) continue;
 
@@ -2044,11 +2045,10 @@ export class CollectionsService {
       throw new Exception(Exception.DOCUMENT_NOT_FOUND);
     }
 
-    const aggregatedPermissions = Permission.aggregate(permissions!, [
-      PermissionType.Read,
-      PermissionType.Update,
-      PermissionType.Delete,
-    ]);
+    const aggregatedPermissions = Permission.aggregate(
+      permissions ?? document.getPermissions(),
+      [PermissionType.Read, PermissionType.Update, PermissionType.Delete],
+    );
     if (!aggregatedPermissions) {
       throw new Exception(Exception.USER_UNAUTHORIZED);
     }

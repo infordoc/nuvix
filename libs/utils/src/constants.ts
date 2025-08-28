@@ -444,7 +444,7 @@ export enum Schemas {
 
 export enum SchemaType {
   Managed = 'managed',
-  UnMnanaged = 'unmanaged',
+  Unmanaged = 'unmanaged',
   Document = 'document',
 }
 

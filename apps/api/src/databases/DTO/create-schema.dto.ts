@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SchemaType } from '@nuvix/utils';
 import {
-  IsIn,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -18,8 +18,8 @@ export class CreateSchema {
     maxLength: 255,
     pattern: '^[a-z][a-z0-9_]{0,254}$',
   })
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   @Matches(/^[a-z][a-z0-9_]{0,254}$/, {
     message:
       'name must start with a lowercase letter, may contain lowercase letters, numbers and underscores, and must not start with an underscore',
@@ -40,10 +40,9 @@ export class CreateSchema {
 
   @ApiProperty({
     description: 'Schema type, either managed, unmanaged or document',
-    enum: [Object.values(SchemaType)],
+    enum: SchemaType,
     example: 'managed',
   })
-  @IsIn([Object.values(SchemaType)])
-  @IsNotEmpty()
-  type: SchemaType = SchemaType.Managed;
+  @IsEnum(SchemaType)
+  declare type: SchemaType;
 }

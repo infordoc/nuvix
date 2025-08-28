@@ -19,9 +19,9 @@ import { AttributeFormat } from '@nuvix/utils';
 @Exclude()
 export class CollectionModel extends BaseModel {
   /**
-   * Database ID.
+   * Schema ID.
    */
-  @Expose() databaseId: string = '';
+  @Expose() $schema: string = '';
 
   /**
    * Collection name.

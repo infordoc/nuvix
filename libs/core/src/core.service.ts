@@ -150,6 +150,7 @@ export class CoreService {
       namespace: 'nx',
       metadata: { project: projectId },
     });
+    connection.setAttachSchemaInDocument(true);
     return connection;
   }
 
