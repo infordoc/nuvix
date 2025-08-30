@@ -38,7 +38,10 @@ export class ParseQueryPipe
     }
     super(options.validators, options.maxLength);
     this.fields = fields;
-    this.options = options;
+    this.options = {
+      ...options,
+      validate: options.validate ?? true,
+    };
   }
 
   transform(value: any, metadata: ArgumentMetadata): Query[] {
@@ -57,10 +60,10 @@ export class ParseQueryPipe
 
     try {
       const parsedQueries = Query.parseQueries(queries);
-      if (!this.$valid(parsedQueries)) {
+      if (this.options.validate && !this.$valid(queries)) {
         throw new Exception(Exception.GENERAL_QUERY_INVALID, this.$description);
       }
-      return queries;
+      return parsedQueries;
     } catch (error) {
       if (error instanceof Exception) {
         throw error;
