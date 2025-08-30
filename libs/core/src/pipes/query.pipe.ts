@@ -1,10 +1,19 @@
 import { ArgumentMetadata, PipeTransform } from '@nestjs/common';
 import { Exception } from '../extend/exception';
-import { Query, QueryException } from '@nuvix-tech/db';
+import {
+  QueriesValidator,
+  Query,
+  QueryException,
+  type BaseValidator,
+} from '@nuvix-tech/db';
 
-interface Options {}
+interface Options {
+  validators?: BaseValidator[];
+  maxLength?: number;
+}
 
 export class ParseQueryPipe
+  extends QueriesValidator
   implements PipeTransform<string | string[], Query[]>
 {
   private readonly options: Options;
@@ -12,17 +21,23 @@ export class ParseQueryPipe
 
   constructor(...fields: string[]);
   constructor(fields: string[], options?: Options);
-  constructor(...fieldsOrOptions: (string | string[] | Options)[]) {
+  constructor(options: Options);
+  constructor(...fieldsOrOptions: any[]) {
+    let fields: string[];
+    let options: Options;
     if (Array.isArray(fieldsOrOptions[0])) {
-      this.fields = fieldsOrOptions[0] as string[];
-      this.options = (fieldsOrOptions[1] as Options) || {};
+      fields = fieldsOrOptions[0] as string[];
+      options = (fieldsOrOptions[1] as Options) || {};
     } else if (typeof fieldsOrOptions[0] === 'string') {
-      this.fields = fieldsOrOptions as string[];
-      this.options = {};
+      fields = fieldsOrOptions as string[];
+      options = {};
     } else {
-      this.fields = [];
-      this.options = (fieldsOrOptions[0] as Options) || {};
+      fields = [];
+      options = (fieldsOrOptions[0] as Options) || {};
     }
+    super(options.validators, options.maxLength);
+    this.fields = fields;
+    this.options = options;
   }
 
   transform(value: any, metadata: ArgumentMetadata): Query[] {
@@ -40,8 +55,17 @@ export class ParseQueryPipe
     const queries = Array.isArray(value) ? value : [value];
 
     try {
+      if (!this.$valid) {
+        throw new Exception(
+          Exception.GENERAL_QUERY_INVALID,
+          this.$description
+        );
+      }
       return Query.parseQueries(queries);
     } catch (error) {
+      if (error instanceof Exception) {
+        throw error;
+      }
       throw new Exception(
         Exception.GENERAL_QUERY_INVALID,
         error instanceof QueryException
