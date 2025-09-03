@@ -10,8 +10,9 @@ import {
   AppMode,
   Context,
   PROJECT_DB_CLIENT,
-  PROJECT_DB,
   PROJECT_PG,
+  type DatabaseConfig,
+  DatabaseRole,
 } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';
 import { Exception } from '@nuvix/core/extend/exception';
@@ -25,6 +26,8 @@ import { AppConfigService } from '@nuvix/core/config.service.js';
 export class ProjectHook implements Hook {
   private readonly logger = new Logger(ProjectHook.name);
   private readonly db: Database;
+  protected dbRole: DatabaseRole = DatabaseRole.ADMIN;
+
   constructor(
     private readonly coreService: CoreService,
     private readonly appConfig: AppConfigService,
@@ -48,7 +51,7 @@ export class ProjectHook implements Hook {
     );
 
     if (!project.empty()) {
-      // For testing & demo purpose (until infra. setup)
+      // we have to remove sensitive info
       const dbConfig = this.appConfig.getDatabaseConfig().postgres;
       project.set('database', {
         ...(project.get('database') as unknown as Record<string, any>),
@@ -60,11 +63,12 @@ export class ProjectHook implements Hook {
         userRole: 'postgres',
         userPassword: 'testpassword',
       });
+      // also setup dev db if project env is dev
+      // then we need to get data from dev key vault
+      // this will done using cloudflare tunnel
       try {
-        const dbOptions = project.get('database') as unknown as Record<
-          string,
-          any
-        >;
+        // I will back here
+        const dbOptions = project.get('database') as unknown as DatabaseConfig;
         const client = await this.coreService.createProjectDbClient(
           project.getId(),
           {
@@ -85,11 +89,6 @@ export class ProjectHook implements Hook {
           request: req,
         });
 
-        req[PROJECT_DB] = this.coreService.getProjectDb(
-          // lets keep it for backward compatibility
-          client,
-          { projectId: project.getId() },
-        );
         req[PROJECT_PG] = this.coreService.getProjectPg(client);
         const coreDatabase = this.coreService.getProjectDb(client, {
           projectId: project.getId(),
@@ -122,6 +121,10 @@ export class ProjectHook implements Hook {
 
         // Clear the reference to prevent potential memory leaks
         req[PROJECT_PG] = undefined;
+        req[PROJECT_DB_CLIENT] = undefined;
+        req[AUTH_SCHEMA_DB] = undefined;
+        req[CORE_SCHEMA_DB] = undefined;
+        req[AUDITS_FOR_PROJECT] = undefined;
       } catch (error) {
         this.logger.error('An error occured while ending the client: ', error);
       }

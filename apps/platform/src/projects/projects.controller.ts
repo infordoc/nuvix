@@ -50,7 +50,6 @@ import { CreatePlatformDTO, UpdatePlatformDTO } from './DTO/platform.dto';
 import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { Models } from '@nuvix/core/helper/response.helper';
-import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import type { Query as Queries } from '@nuvix-tech/db';
 import { AuthGuard } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';

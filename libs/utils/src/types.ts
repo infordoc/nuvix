@@ -14,3 +14,17 @@ export interface ServerConfig {
 }
 
 export type Configuration = ReturnType<typeof configuration>;
+
+export type DatabaseConfig = {
+  postgres: {
+    host: string;
+    port: number;
+    database: string;
+    // ssl
+  };
+  pool: {
+    host: string;
+    port: number;
+    database: string;
+  };
+};

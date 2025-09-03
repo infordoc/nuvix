@@ -663,3 +663,11 @@ export enum AuthFactor {
   PHONE = 'phone',
   TOKEN = 'token',
 }
+
+export enum DatabaseRole {
+  ADMIN = 'nuvix_admin',
+  NUVIX = 'nuvix',
+  POSTGRES = 'postgres',
+  ANON = 'anon',
+  AUTHENTICATED = 'authenticated',
+}

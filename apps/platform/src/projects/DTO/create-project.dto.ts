@@ -1,4 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, Length } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Length,
+  IsIn,
+} from 'class-validator';
 
 export class CreateProjectDTO {
   @IsString()
@@ -36,25 +42,6 @@ export class CreateProjectDTO {
 
   @IsOptional()
   @IsString()
-  legalName?: string;
-
-  @IsOptional()
-  @IsString()
-  legalCountry?: string;
-
-  @IsOptional()
-  @IsString()
-  legalState?: string;
-
-  @IsOptional()
-  @IsString()
-  legalCity?: string;
-
-  @IsOptional()
-  @IsString()
-  legalAddress?: string;
-
-  @IsOptional()
-  @IsString()
-  legalTaxId?: string;
+  @IsIn(['dev', 'prod'])
+  env?: 'dev' | 'prod' = 'dev';
 }

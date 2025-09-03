@@ -77,6 +77,19 @@ export class ProjectService {
   }: CreateProjectDTO): Promise<Doc<Projects>> {
     const projectId = _projectId === 'unique()' ? ID.unique() : _projectId;
 
+    const mainConfig = this.appConfig.get('app');
+    if (mainConfig.projects.disabled) {
+      throw new Exception(
+        Exception.GENERAL_API_DISABLED,
+        'Projects are disabled',
+      );
+    } else if (!mainConfig.projects.allowedProdCreate && rest.env === 'prod') {
+      throw new Exception(
+        Exception.GENERAL_BAD_REQUEST,
+        'Creating production projects is not allowed',
+      );
+    }
+
     try {
       const org = await this.db.getDocument('teams', teamId);
 
@@ -133,12 +146,15 @@ export class ProjectService {
         auths: auths,
         services: defaultServices,
         accessedAt: new Date(),
-        version: this.appConfig.get('app').version,
+        environment: rest.env || 'dev',
         database: {
-          password,
-          // Will set in the project queue
-          // name
-          // host, port,
+          postgres: {
+            password,
+          },
+          pool: {
+            password,
+          },
+          // other details will be set in queue worker
         } as any,
         enabled: true,
         status: 'pending',
@@ -146,9 +162,13 @@ export class ProjectService {
 
       project = await this.db.createDocument('projects', project);
 
-      await this.projectQueue.add(ProjectJob.INIT, {
-        project,
-      });
+      // In case if project env is not dev then we need to init the project
+      // dev projects will be initialized while envtoken creation
+      if (project.get('environment') !== 'dev') {
+        await this.projectQueue.add(ProjectJob.INIT, {
+          project,
+        });
+      }
 
       return project;
     } catch (error) {
@@ -188,12 +208,6 @@ export class ProjectService {
       .set('description', updateProjectDTO.description)
       .set('logo', updateProjectDTO.logo)
       .set('url', updateProjectDTO.url)
-      .set('legalName', updateProjectDTO.legalName)
-      .set('legalCity', updateProjectDTO.legalCity)
-      .set('legalAddress', updateProjectDTO.legalAddress)
-      .set('legalCountry', updateProjectDTO.legalCountry)
-      .set('legalState', updateProjectDTO.legalState)
-      .set('legalTaxId', updateProjectDTO.legalTaxId)
       .set('search', [id, updateProjectDTO.name].join(' '));
 
     project = await this.db.updateDocument(

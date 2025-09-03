@@ -22,6 +22,11 @@ export default () => ({
       colors: process.env['APP_DEBUG_COLORS'] === 'true',
       format: process.env['APP_DEBUG_FORMAT'] === 'json',
     },
+    projects: {
+      allowedProdCreate:
+        (process.env['APP_PROJECTS_ALLOWED_PROD_CREATE'] ?? 'false') === 'true',
+      disabled: (process.env['APP_PROJECTS_DISABLED'] ?? 'false') === 'true',
+    },
   },
 
   assets: {
