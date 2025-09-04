@@ -92,7 +92,10 @@ export class ProjectsController {
   @Post('env_tokens')
   @Scope('project.read')
   @ResModel(Models.ENV_TOKEN)
-  async createEnvToken(@Body() body: CreateEnvTokenDTO, @Req() req: NuvixRequest) {
+  async createEnvToken(
+    @Body() body: CreateEnvTokenDTO,
+    @Req() req: NuvixRequest,
+  ) {
     return this.projectService.createEnvToken(body, req);
   }
 

@@ -56,24 +56,28 @@ export class ProjectHook implements Hook {
       const environment = project.get('environment');
 
       if (environment === 'dev') {
-        const envToken = await Authorization.skip(
-          () => this.db.findOne('envtokens',
-            qb => {
-              qb = qb.equal('projectInternalId', project.getSequence());
-              return devKey ? qb.equal('token', devKey) : qb;
-            }
-          )
+        const envToken = await Authorization.skip(() =>
+          this.db.findOne('envtokens', qb => {
+            qb = qb.equal('projectInternalId', project.getSequence());
+            return devKey ? qb.equal('token', devKey) : qb;
+          }),
         );
 
         if (envToken.empty()) {
-          throw new Exception(Exception.GENERAL_BAD_REQUEST, 'Invalid environment token. Please ensure dev mode is properly configured and the token is correct.');
+          throw new Exception(
+            Exception.GENERAL_BAD_REQUEST,
+            'Invalid environment token. Please ensure dev mode is properly configured and the token is correct.',
+          );
         }
 
         const dbConfig = project.get('database') as unknown as DatabaseConfig;
         const metadata = envToken.get('metadata');
 
         if (!metadata['host'] || !metadata['port'])
-          throw new Exception(Exception.GENERAL_UNKNOWN, 'Missing required metadata: host or port for dev environment.');
+          throw new Exception(
+            Exception.GENERAL_UNKNOWN,
+            'Missing required metadata: host or port for dev environment.',
+          );
 
         dbConfig.pool['host'] = metadata['host'];
         dbConfig.pool['port'] = metadata['pool_port'];
@@ -119,8 +123,9 @@ export class ProjectHook implements Hook {
       } catch (e) {
         // TODO: improve the error handling
         this.logger.error('Something went wrong while connecting database.', e);
-        throw new Exception(Exception.GENERAL_SERVER_ERROR,
-          'Database connection faild.'
+        throw new Exception(
+          Exception.GENERAL_SERVER_ERROR,
+          'Database connection faild.',
         );
       }
     }

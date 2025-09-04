@@ -37,11 +37,14 @@ export class SchemaHook implements Hook {
     try {
       await client.query(`SET ROLE ${role}`);
     } catch (e) {
-      throw new Exception(Exception.GENERAL_SERVER_ERROR, 'Unable to set request role.'); // TODO: improve message
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        'Unable to set request role.',
+      ); // TODO: improve message
     }
 
     const schemaId =
-      (request.params as { schemaId: string | undefined; }).schemaId ?? 'public';
+      (request.params as { schemaId: string | undefined }).schemaId ?? 'public';
     if (schemaId === undefined) return;
     const schema = await pg.getSchema(schemaId);
     // TODO: we have to throw error if schema not enabled based on app mode

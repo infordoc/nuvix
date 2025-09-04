@@ -337,7 +337,7 @@ export class ProjectModel extends BaseModel {
    */
   @Expose() declare enabled: boolean;
   /**
-   * Environment 
+   * Environment
    */
   @Expose() declare environment: string;
   /**
@@ -357,11 +357,12 @@ export class ProjectModel extends BaseModel {
         port: value['pool']['port'] || 6432,
         database: value['pool']['database'] || 'postgres',
         user: value['pool']['user'] || 'postgres',
-      }
+      },
     };
     return dbConfig;
   })
-  @Expose() declare database: Record<string, any>;
+  @Expose()
+  declare database: Record<string, any>;
 
   constructor() {
     super();

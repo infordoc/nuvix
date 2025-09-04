@@ -9,7 +9,13 @@ import {
   DuplicateException,
   type Collection,
 } from '@nuvix-tech/db';
-import { DatabaseRole, DEFAULT_DATABASE, QueueFor, Schemas, type DatabaseConfig } from '@nuvix/utils';
+import {
+  DatabaseRole,
+  DEFAULT_DATABASE,
+  QueueFor,
+  Schemas,
+  type DatabaseConfig,
+} from '@nuvix/utils';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Audit } from '@nuvix/audit';
 import { CoreService } from '@nuvix/core/core.service.js';
@@ -40,7 +46,8 @@ export class ProjectsQueue extends Queue {
         await this.initProject(project);
         return { success: true };
       case ProjectJob.DEV_INIT:
-        if (!job.data.dbConfig) throw Error('Db config is required in dev env.');
+        if (!job.data.dbConfig)
+          throw Error('Db config is required in dev env.');
         await this.devInit(project, job.data.dbConfig);
         return { success: true };
       default:
@@ -61,7 +68,7 @@ export class ProjectsQueue extends Queue {
     }
 
     // Must update,
-    // we have to init new database instance & all here for project then do the setup 
+    // we have to init new database instance & all here for project then do the setup
     const dbName = 'postgres';
     const client = await this.coreService.createProjectDbClient('root');
     const databases = this.appConfig.getDatabaseConfig();
@@ -158,7 +165,10 @@ export class ProjectsQueue extends Queue {
     }
   }
 
-  private async devInit(project: ProjectsDoc, dbConfig: Record<string, any>): Promise<void> {
+  private async devInit(
+    project: ProjectsDoc,
+    dbConfig: Record<string, any>,
+  ): Promise<void> {
     if (project.get('status') === 'active') {
       this.logger.warn(
         `Project ${project.getId()} is already initialized, skipping...`,
@@ -168,16 +178,20 @@ export class ProjectsQueue extends Queue {
 
     const dbName = DEFAULT_DATABASE;
     const databaseConfig = {
-      password: (project.get('database') as unknown as DatabaseConfig).pool.password,
+      password: (project.get('database') as unknown as DatabaseConfig).pool
+        .password,
       database: dbName,
       host: dbConfig['host'],
       port: dbConfig['port'],
       user: DatabaseRole.ADMIN,
     };
 
-    const client = await this.coreService.createProjectDbClient(project.getId(), {
-      ...databaseConfig,
-    });
+    const client = await this.coreService.createProjectDbClient(
+      project.getId(),
+      {
+        ...databaseConfig,
+      },
+    );
 
     try {
       await this.db.getCache().flush();
@@ -260,7 +274,7 @@ export class ProjectsQueue extends Queue {
     db: Database,
     collections: [string, Collection][],
     project: ProjectsDoc,
-  ): Promise<{ successful: number; failed: number; }> {
+  ): Promise<{ successful: number; failed: number }> {
     let successfulCollections = 0;
     let failedCollections = 0;
 
