@@ -11,7 +11,12 @@ import { Reader, CountryResponse } from 'maxmind';
 import { readFileSync } from 'fs';
 import path from 'path';
 import type { ProjectsDoc } from '@nuvix/utils/types';
-import { Schemas } from '@nuvix/utils';
+import {
+  DatabaseConfig,
+  DatabaseRole,
+  DEFAULT_DATABASE,
+  Schemas,
+} from '@nuvix/utils';
 import type { OAuthProviderType } from './config/authProviders.js';
 
 @Injectable()
@@ -192,15 +197,13 @@ export class CoreService {
     project: ProjectsDoc,
     options?: CreateProjectDatabaseOptions,
   ) {
-    const dbOptions = project.get('database') as unknown as Record<string, any>;
+    const dbOptions = project.get('database') as unknown as DatabaseConfig;
     const client = await this.createProjectDbClient(project.getId(), {
-      database: dbOptions['name'],
-      user: dbOptions['adminRole'],
-      password:
-        dbOptions['adminPassword'] ||
-        this.appConfig.get('database')['postgres']['password'],
-      port: dbOptions['port'],
-      host: dbOptions['host'],
+      database: DEFAULT_DATABASE,
+      user: DatabaseRole.ADMIN,
+      password: dbOptions?.pool?.password,
+      port: dbOptions?.pool?.port,
+      host: dbOptions?.pool?.host,
     });
     const dbForProject = this.getProjectDb(client, {
       projectId: project.getId(),

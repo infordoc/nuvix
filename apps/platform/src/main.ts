@@ -45,6 +45,7 @@ async function bootstrap() {
   const adapter = new NuvixAdapter({
     trustProxy: true,
     skipMiddie: true,
+    maxParamLength: 250,
     querystringParser(str) {
       return QueryString.parse(str);
     },

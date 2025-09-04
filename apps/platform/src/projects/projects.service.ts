@@ -290,7 +290,7 @@ export class ProjectService {
 
     const token = await this.db.findOne('envtokens', qb =>
       qb
-        .equal('$id', tokenId)
+        .equal('token', tokenId)
         .equal('projectInternalId', project.getSequence()),
     );
 

@@ -99,7 +99,7 @@ export class ProjectsController {
     return this.projectService.createEnvToken(body, req);
   }
 
-  @Patch('env_tokens/:tokenId')
+  @Put('env_tokens/:tokenId')
   @Scope('project.read')
   @ResModel(Models.ENV_TOKEN)
   async updateEnvToken(
