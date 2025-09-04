@@ -81,6 +81,7 @@ export class ProjectService {
     teamId,
     password,
     name,
+    env,
     ...rest
   }: CreateProjectDTO): Promise<Doc<Projects>> {
     const projectId = _projectId === 'unique()' ? ID.unique() : _projectId;
@@ -91,7 +92,7 @@ export class ProjectService {
         Exception.GENERAL_API_DISABLED,
         'Projects are disabled',
       );
-    } else if (!mainConfig.projects.allowedProdCreate && rest.env === 'prod') {
+    } else if (!mainConfig.projects.allowedProdCreate && env === 'prod') {
       throw new Exception(
         Exception.GENERAL_BAD_REQUEST,
         'Creating production projects is not allowed',
@@ -154,7 +155,7 @@ export class ProjectService {
         auths: auths,
         services: defaultServices,
         accessedAt: new Date(),
-        environment: rest.env || 'dev',
+        environment: env || 'dev',
         database: {
           postgres: {
             password,
@@ -260,13 +261,10 @@ export class ProjectService {
       ],
     });
 
-    const createdToken = await this.db.createDocument(
-      'environmentTokens',
-      token,
-    );
+    const createdToken = await this.db.createDocument('envtokens', token);
 
     // if this is the first token, then we need to initialize the project
-    // const tokens = await this.db.find('environmentTokens',
+    // const tokens = await this.db.find('envtokens',
     //   qb => qb.equal('projectInternalId', project.getSequence())
     // );
 
@@ -290,7 +288,7 @@ export class ProjectService {
     const project = await this.db.getDocument('projects', projectId);
     if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND);
 
-    const token = await this.db.findOne('environmentTokens', qb =>
+    const token = await this.db.findOne('envtokens', qb =>
       qb
         .equal('$id', tokenId)
         .equal('projectInternalId', project.getSequence()),
@@ -307,7 +305,7 @@ export class ProjectService {
       port,
       pool_port: port,
     });
-    return this.db.updateDocument('environmentTokens', token.getId(), token);
+    return this.db.updateDocument('envtokens', token.getId(), token);
   }
 
   async listEnvTokens() {
