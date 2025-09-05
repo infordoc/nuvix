@@ -881,7 +881,7 @@ export class AccountService {
     const failure = input.failure || '';
     const scopes = input.scopes || [];
 
-    const callback = `${protocol}://${request.hostname}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
+    const callback = `${protocol}://${request.host}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
     const providerInfo = this.getProviderConfig(project, provider);
 
     if (!providerInfo.enabled) {
@@ -907,9 +907,9 @@ export class AccountService {
 
     const AuthClass = await getOAuth2Class(provider);
     const consoleDomain =
-      request.hostname.split('.').length === 3
-        ? `console.${request.hostname.split('.', 2)[1]}`
-        : request.hostname;
+      request.host.split('.').length === 3
+        ? `console.${request.host.split('.', 2)[1]}`
+        : request.host;
     const finalSuccess =
       success ||
       `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
@@ -930,6 +930,7 @@ export class AccountService {
     );
 
     response
+      .status(302)
       .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       .header('Pragma', 'no-cache')
       .redirect(oauth2.getLoginURL());
@@ -956,7 +957,7 @@ export class AccountService {
     project: ProjectsDoc;
   }) {
     const protocol = request.protocol;
-    const callback = `${protocol}://${request.hostname}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
+    const callback = `${protocol}://${request.host}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
     const defaultState = {
       success: project.get('url', ''),
       failure: '',
@@ -1003,7 +1004,7 @@ export class AccountService {
             code: code ?? exception.getStatus(),
           }),
         );
-        response.redirect(failureUrl.toString());
+        response.status(302).redirect(failureUrl.toString());
         return;
       }
       throw exception;
@@ -1413,6 +1414,7 @@ export class AccountService {
     const finalSuccessUrl = parsedState.toString();
 
     response
+      .status(302)
       .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       .header('Pragma', 'no-cache')
       .redirect(finalSuccessUrl);
@@ -1439,7 +1441,7 @@ export class AccountService {
     const failure = input.failure || '';
     const scopes = input.scopes || [];
 
-    const callback = `${protocol}://${request.hostname}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
+    const callback = `${protocol}://${request.host}/v1/account/sessions/oauth2/callback/${provider}/${project.getId()}`;
     const providerInfo = this.getProviderConfig(project, provider);
     const providerEnabled = providerInfo.enabled ?? false;
 
@@ -1470,9 +1472,9 @@ export class AccountService {
     }
 
     const consoleDomain =
-      request.hostname.split('.').length === 3
-        ? `console.${request.hostname.split('.', 2)[1]}`
-        : request.hostname;
+      request.host.split('.').length === 3
+        ? `console.${request.host.split('.', 2)[1]}`
+        : request.host;
     const finalSuccess =
       success ||
       `${protocol}://${consoleDomain}${AccountService.oauthDefaultSuccess}`;
@@ -1493,6 +1495,7 @@ export class AccountService {
     );
 
     response
+      .status(302)
       .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       .header('Pragma', 'no-cache')
       .redirect(oauth2.getLoginURL());
@@ -1612,7 +1615,7 @@ export class AccountService {
     await db.purgeCachedDocument('users', user.getId());
 
     if (!url) {
-      url = `${request.protocol}://${request.hostname}/console/auth/magic-url`;
+      url = `${request.protocol}://${request.host}/console/auth/magic-url`;
     }
 
     // Parse and merge URL query parameters
@@ -2917,7 +2920,7 @@ export class AccountService {
     );
 
     await db.purgeCachedDocument('users', user.getId());
-    url ??= `${request.protocol}://${request.hostname}`;
+    url ??= `${request.protocol}://${request.host}`;
 
     // Parse and merge URL query parameters
     const urlObj = new URL(url);

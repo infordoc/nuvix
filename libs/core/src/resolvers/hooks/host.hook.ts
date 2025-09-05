@@ -15,7 +15,7 @@ export class HostHook implements Hook {
   }
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
-    const host = req.hostname ?? SERVER_CONFIG.host;
+    const host = req.host ?? SERVER_CONFIG.host;
     const project = req[Context.Project] as ProjectsDoc;
 
     if (host === SERVER_CONFIG.host) {

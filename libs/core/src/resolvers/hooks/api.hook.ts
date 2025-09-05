@@ -80,7 +80,7 @@ export class ApiHook implements Hook {
           $id: '',
           status: true,
           type: AuthActivity.APP,
-          email: 'app.' + project.getId() + '@service.' + req.hostname,
+          email: 'app.' + project.getId() + '@service.' + req.host,
           password: '',
           name: apiKey.getName(),
         }) as unknown as UsersDoc;

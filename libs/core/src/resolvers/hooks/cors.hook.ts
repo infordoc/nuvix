@@ -35,10 +35,10 @@ export class CorsHook implements Hook {
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     try {
-      const hostname = req.hostname;
+      const host = req.host;
       const project = req[Context.Project] as ProjectsDoc;
       const isConsoleRequest =
-        project.getId() === 'console' || hostname === SERVER_CONFIG.host;
+        project.getId() === 'console' || host === SERVER_CONFIG.host;
 
       const origin = req.headers.origin;
       this.logger.log(`Origin: ${origin}`);

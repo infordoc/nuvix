@@ -207,7 +207,7 @@ export const getOAuth2Class = async <T extends OAuth2>(
     // Dynamic import of OAuth2 provider class
     const authModule = await import(
       /* webpackChunkName: "OAuth2" */
-      `@nuvix/core/OAuth2/${provider.toLowerCase()}`
+      `./OAuth2/${provider.toLowerCase()}.ts`
     );
 
     const className = `${provider.charAt(0).toUpperCase() + provider.slice(1)}OAuth2`;

@@ -85,6 +85,7 @@ export class AccountController {
   @Post()
   @Scope('sessions.create')
   @ResModel(Models.USER)
+  @Throttle(10)
   @AuditEvent('user.create', {
     resource: 'user/{res.$id}',
     userId: '{res.$id}',
@@ -185,6 +186,7 @@ export class AccountController {
   @Post(['sessions/email', 'sessions'])
   @Scope('sessions.create')
   @ResModel(Models.SESSION)
+  @Throttle(100)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -238,7 +240,7 @@ export class AccountController {
     @Res() response: NuvixRes,
     @Param() { provider }: ProviderParamDTO,
   ) {
-    return this.accountService.createOAuth2Session({
+    this.accountService.createOAuth2Session({
       input,
       request,
       response,
@@ -257,7 +259,7 @@ export class AccountController {
     @Param('projectId') projectId: string,
     @Param() { provider }: ProviderParamDTO,
   ) {
-    const domain = request.hostname;
+    const domain = request.host;
     const protocol = request.protocol;
 
     const params: Record<string, any> = { ...input };
@@ -265,6 +267,7 @@ export class AccountController {
     params['project'] = projectId;
 
     response
+      .status(302)
       .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
       .header('Pragma', 'no-cache')
       .redirect(
@@ -346,7 +349,7 @@ export class AccountController {
   async createEmailToken(
     @Body() input: CreateEmailTokenDTO,
     @Req() request: NuvixRequest,
-    @Res() response: NuvixRes,
+    @Res({ passthrough: true }) response: NuvixRes,
     @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
@@ -370,7 +373,7 @@ export class AccountController {
     @User() user: UsersDoc,
     @Body() input: CreateSessionDTO,
     @Req() request: NuvixRequest,
-    @Res() response: NuvixRes,
+    @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
   ) {
     return this.accountService.createSession({
@@ -465,7 +468,7 @@ export class AccountController {
     @Body() input: CreateRecoveryDTO,
     @Locale() locale: LocaleTranslator,
     @Req() request: NuvixRequest,
-    @Res() response: NuvixRes,
+    @Res({ passthrough: true }) response: NuvixRes,
   ) {
     return this.accountService.createRecovery({
       user,
@@ -487,7 +490,7 @@ export class AccountController {
   async updateRecovery(
     @User() user: UsersDoc,
     @Body() input: UpdateRecoveryDTO,
-    @Res() response: NuvixRes,
+    @Res({ passthrough: true }) response: NuvixRes,
   ) {
     return this.accountService.updateRecovery({
       user,

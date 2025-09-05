@@ -74,7 +74,7 @@ export class AuditHook implements Hook {
         status: true,
         $sequence: -1,
         type: AuthActivity.GUEST,
-        email: 'guest.' + project.getId() + '@service.' + req.hostname,
+        email: 'guest.' + project.getId() + '@service.' + req.host,
         password: '',
         name: 'Guest',
       }) as unknown as UsersDoc;
