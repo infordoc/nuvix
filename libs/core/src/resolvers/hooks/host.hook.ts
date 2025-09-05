@@ -5,20 +5,22 @@ import { Context, SERVER_CONFIG } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';
 import { ProjectsDoc } from '@nuvix/utils/types';
 import { CoreService } from '@nuvix/core/core.service.js';
+import { AppConfigService } from '@nuvix/core/config.service';
 
 @Injectable()
 export class HostHook implements Hook {
   private readonly logger = new Logger(HostHook.name);
   private readonly dbForPlatform: Database;
-  constructor(readonly coreService: CoreService) {
+  constructor(readonly coreService: CoreService, readonly appConfig: AppConfigService) {
     this.dbForPlatform = coreService.getPlatformDb();
   }
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
-    const host = req.host ?? SERVER_CONFIG.host;
+    const serverConfig = this.appConfig.get('server');
+    const host = req.host ?? serverConfig.host;
     const project = req[Context.Project] as ProjectsDoc;
 
-    if (host === SERVER_CONFIG.host) {
+    if (host === serverConfig.host) {
       return;
     }
 
@@ -35,7 +37,7 @@ export class HostHook implements Hook {
       )) ?? null;
 
     if (route === null) {
-      if (host === SERVER_CONFIG.functionsDomain) {
+      if (host === serverConfig.functionsDomain) {
         throw new Exception(
           Exception.GENERAL_ACCESS_FORBIDDEN,
           'This domain cannot be used for security reasons. Please use any subdomain instead.',
@@ -43,8 +45,8 @@ export class HostHook implements Hook {
       }
 
       if (
-        SERVER_CONFIG.functionsDomain &&
-        host.endsWith(SERVER_CONFIG.functionsDomain)
+        serverConfig.functionsDomain &&
+        host.endsWith(serverConfig.functionsDomain)
       ) {
         throw new Exception(
           Exception.GENERAL_ACCESS_FORBIDDEN,

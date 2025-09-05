@@ -51,7 +51,7 @@ export default () => ({
   },
 
   server: {
-    host: process.env['APP_HOSTNAME'] ?? 'localhost',
+    host: process.env['APP_HOST'] ?? 'localhost',
     methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
     allowedOrigins: (process.env['CORS_ORIGIN'] ?? '')
       .split(',')

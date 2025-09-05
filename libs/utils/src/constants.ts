@@ -228,7 +228,7 @@ const allowedHeaders = [
 /**@deprecated */ export const CONSOLE_CONFIG: any = {
   auths: {},
 };
-export const SERVER_CONFIG: ServerConfig = {
+/**@deprecated */ export const SERVER_CONFIG: ServerConfig = {
   host: process.env['APP_HOSTNAME'] ?? 'localhost',
   methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
   allowedOrigins: (process.env['CORS_ORIGIN'] ?? '').split(',').map(origin => {
