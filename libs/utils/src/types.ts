@@ -48,6 +48,6 @@ type KeyArgs = {
 
 export type ThrottleOptions = {
   limit: number;
-  ttl: number; // time to live in seconds
+  ttl?: number; // time to live in seconds
   key?: string | ((args: KeyArgs) => string | string[]);
 };

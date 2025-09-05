@@ -26,6 +26,7 @@ import {
   Label,
   Scope,
   Sdk,
+  Throttle,
 } from '@nuvix/core/decorators';
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
@@ -100,6 +101,7 @@ export class AccountController {
   @Label('res.status', 'CREATED')
   @Label('res.type', 'JSON')
   @ResModel(Models.USER)
+  @Throttle(10)
   @AuditEvent('user.create', {
     resource: 'user/{res.$id}',
     userId: '{res.$id}',
@@ -160,6 +162,7 @@ export class AccountController {
   @Label('res.status', 'NO_CONTENT')
   @Label('res.type', 'JSON')
   @ResModel(Models.NONE)
+  @Throttle(100)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSessions(
     @AuthDatabase() db: Database,
@@ -195,6 +198,7 @@ export class AccountController {
   @Label('res.status', 'NO_CONTENT')
   @Label('res.type', 'JSON')
   @ResModel(Models.NONE)
+  @Throttle(100)
   @AuditEvent('session.delete', 'user/{user.$id}')
   async deleteSession(
     @AuthDatabase() db: Database,
@@ -219,6 +223,7 @@ export class AccountController {
   @Label('res.status', 'OK')
   @Label('res.type', 'JSON')
   @ResModel(Models.SESSION)
+  @Throttle(10)
   @AuditEvent('session.update', 'user/{res.userId}')
   async updateSession(
     @AuthDatabase() db: Database,
@@ -235,6 +240,10 @@ export class AccountController {
   @Label('res.status', 'CREATED')
   @Label('res.type', 'JSON')
   @ResModel(Models.SESSION)
+  @Throttle({
+    limit: 10,
+    key: 'email:{param-email}',
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -263,6 +272,10 @@ export class AccountController {
   @Post('sessions/anonymous')
   @Scope('sessions.create')
   @ResModel(Models.SESSION)
+  @Throttle({
+    limit: 50,
+    key: 'ip:{ip}',
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -292,6 +305,10 @@ export class AccountController {
   @Post('sessions/token')
   @Scope('sessions.update')
   @ResModel(Models.SESSION)
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('session.update', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -322,6 +339,10 @@ export class AccountController {
   @Public()
   @Get('sessions/oauth2/:provider')
   @Scope('sessions.create')
+  @Throttle({
+    limit: 50,
+    key: 'ip:{ip}',
+  })
   @Sdk({
     name: 'createOAuth2Session',
   })
@@ -394,6 +415,10 @@ export class AccountController {
   @Public()
   @Get('sessions/oauth2/:provider/redirect')
   @Scope('public')
+  @Throttle({
+    limit: 50,
+    key: 'ip:{ip}',
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -421,6 +446,10 @@ export class AccountController {
   @Public()
   @Get('tokens/oauth2/:provider')
   @Scope('sessions.create')
+  @Throttle({
+    limit: 50,
+    key: 'ip:{ip}',
+  })
   @Sdk({
     name: 'createOAuth2Token',
   })
@@ -443,6 +472,10 @@ export class AccountController {
   @Public()
   @Post('tokens/magic-url')
   @ResModel(Models.TOKEN)
+  @Throttle({
+    limit: 60,
+    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -474,6 +507,10 @@ export class AccountController {
   @Post('tokens/email')
   @Scope('sessions.create')
   @ResModel(Models.TOKEN)
+  @Throttle({
+    limit: 10,
+    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -504,6 +541,10 @@ export class AccountController {
   @Public()
   @Put('sessions/magic-url')
   @ResModel(Models.SESSION)
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -533,6 +574,10 @@ export class AccountController {
 
   @Public()
   @Put('sessions/phone')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @Scope('sessions.update')
   @ResModel(Models.SESSION)
   @AuditEvent('session.create', {
@@ -565,6 +610,10 @@ export class AccountController {
   @Public()
   @Post(['tokens/phone', 'sessions/phone'])
   @Scope('sessions.create')
+  @Throttle({
+    limit: 10,
+    key: ({ body, ip }) => [`phone:${body['phone']}`, `ip:${ip}`],
+  })
   @ResModel(Models.TOKEN)
   @AuditEvent('session.create', {
     resource: 'user/{res.userId}',
@@ -596,6 +645,10 @@ export class AccountController {
   @Post(['jwts', 'jwt'])
   @Scope('account')
   @ResModel(Models.JWT)
+  @Throttle({
+    limit: 100,
+    key: 'userId:{userId}',
+  })
   @Sdk({
     name: 'createJWT',
     auth: AuthType.JWT,
@@ -647,6 +700,7 @@ export class AccountController {
 
   @Patch('password')
   @Scope('account')
+  @Throttle(10)
   @ResModel(Models.USER)
   @AuditEvent('user.update', 'user/{res.$id}')
   @Sdk({
@@ -727,6 +781,10 @@ export class AccountController {
   @Public()
   @Post('recovery')
   @Scope('sessions.update')
+  @Throttle({
+    limit: 10,
+    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+  })
   @AuditEvent('recovery.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -753,8 +811,13 @@ export class AccountController {
 
   @Public()
   @Put('recovery')
-  @Post('recovery') // Note: PHP has this as App::put, but also a Post. Assuming both are meant or Put is primary.
+  @Post('recovery')
   @Scope('sessions.update')
+  @ResModel(Models.TOKEN)
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('recovery.update', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -778,6 +841,10 @@ export class AccountController {
 
   @Post('verification')
   @Scope('account')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('verification.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -809,6 +876,10 @@ export class AccountController {
   @Public()
   @Put('verification')
   @Scope('public')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('verification.update', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -834,6 +905,10 @@ export class AccountController {
 
   @Post('verification/phone')
   @Scope('account')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('verification.create', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -863,6 +938,10 @@ export class AccountController {
   @Public()
   @Put('verification/phone')
   @Scope('public')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{param-userId}',
+  })
   @AuditEvent('verification.update', {
     resource: 'user/{res.userId}',
     userId: '{res.userId}',
@@ -1045,6 +1124,10 @@ export class AccountController {
 
   @Post('mfa/challenge')
   @Scope('account')
+  @Throttle({
+    limit: 10,
+    key: 'ip:{ip},userId:{userId}',
+  })
   @ResModel(Models.MFA_CHALLENGE)
   @Sdk({
     name: 'createMfaChallenge',
@@ -1072,6 +1155,10 @@ export class AccountController {
   @Put('mfa/challenge')
   @Scope('account')
   @ResModel(Models.SESSION)
+  @Throttle({
+    limit: 10,
+    key: 'challengeId:{param-challengeId}',
+  })
   @Sdk({
     name: 'updateMfaChallenge',
   })

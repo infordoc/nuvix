@@ -51,7 +51,7 @@ export class ThrottlerGuard implements CanActivate {
       );
       const result = await this.ratelimitService.checkRateLimit(rateLimitKey, {
         limit: rateLimitOptions.limit,
-        window: rateLimitOptions.ttl,
+        window: rateLimitOptions.ttl ?? 3600,
       });
 
       if (!closestResult || result.remaining < closestResult.remaining) {
@@ -124,6 +124,8 @@ export class ThrottlerGuard implements CanActivate {
           return request.ip;
         case 'url':
           return request.routeOptions.config.url;
+        case 'userId':
+          return (request[Context.User]?.getId() || 'anonymous').toString();
         default:
           return this.processCustomKey(key, request);
       }
@@ -143,11 +145,25 @@ export class ThrottlerGuard implements CanActivate {
   }
 
   private getParamValue(paramName: string, request: NuvixRequest): string {
-    const value = (request.params as any)?.[paramName];
-    if (Array.isArray(value)) {
-      return JSON.stringify(value);
+    // Check params first
+    const paramValue = (request.params as any)?.[paramName];
+    if (paramValue !== undefined) {
+      if (Array.isArray(paramValue)) {
+        return JSON.stringify(paramValue);
+      }
+      return paramValue;
     }
-    return value || 'unknown';
+
+    // If not found in params, check body
+    const bodyValue = (request.body as any)?.[paramName];
+    if (bodyValue !== undefined) {
+      if (Array.isArray(bodyValue)) {
+        return JSON.stringify(bodyValue);
+      }
+      return bodyValue;
+    }
+
+    return 'unknown';
   }
 
   private getHeaderValue(headerName: string, request: NuvixRequest): string {
