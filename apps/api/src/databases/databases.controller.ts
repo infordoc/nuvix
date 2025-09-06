@@ -29,6 +29,7 @@ import {
 import { CreateSchema } from './DTO/create-schema.dto';
 import type { ProjectsDoc } from '@nuvix/utils/types';
 import { SchemaType } from '@nuvix/utils';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller({ version: ['1'], path: 'databases' })
 @UseGuards(ProjectGuard)
@@ -43,10 +44,12 @@ export class DatabasesController {
     code: HttpStatus.OK,
   })
   @ResModel(Models.SCHEMA, { list: true })
-  async getSchemas(
-    @ProjectPg() pg: DataSource,
-    @Query('type') type?: SchemaType,
-  ) {
+  @ApiQuery({
+    name: 'type',
+    enum: SchemaType,
+    required: false,
+  })
+  async getSchemas(@ProjectPg() pg: DataSource, @Query('type') type?: any) {
     const schemas = await this.databaseService.getSchemas(pg, type);
     return schemas;
   }

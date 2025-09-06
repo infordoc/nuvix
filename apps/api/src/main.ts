@@ -30,7 +30,6 @@ import fastifyMultipart from '@fastify/multipart';
 import QueryString from 'qs';
 import path from 'path';
 import fs from 'fs/promises';
-import metadata from './metadata';
 import { SwaggerModule } from '@nestjs/swagger';
 import { ErrorFilter } from '@nuvix/core/filters';
 import { AppConfigService } from '@nuvix/core';
@@ -153,7 +152,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new ErrorFilter(config));
-  await SwaggerModule.loadPluginMetadata(metadata);
+  await SwaggerModule.loadPluginMetadata((await import('./metadata')).default);
   openApiSetup(app);
 
   // TODO: create a separate function to handle setup

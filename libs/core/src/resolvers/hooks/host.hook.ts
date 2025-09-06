@@ -11,7 +11,10 @@ import { AppConfigService } from '@nuvix/core/config.service';
 export class HostHook implements Hook {
   private readonly logger = new Logger(HostHook.name);
   private readonly dbForPlatform: Database;
-  constructor(readonly coreService: CoreService, readonly appConfig: AppConfigService) {
+  constructor(
+    readonly coreService: CoreService,
+    readonly appConfig: AppConfigService,
+  ) {
     this.dbForPlatform = coreService.getPlatformDb();
   }
 

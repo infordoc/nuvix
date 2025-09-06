@@ -870,6 +870,23 @@ export default async () => {
             },
           },
         ],
+        [import('./realtime/entities/realtime.entity'), { Realtime: {} }],
+        [
+          import('./schemas/collections/DTO/database.dto'),
+          {
+            CreateDatabaseDTO: {
+              databaseId: { required: true, type: () => String },
+              name: {
+                required: true,
+                type: () => String,
+                minLength: 1,
+                maxLength: 128,
+              },
+              enabled: { required: true, type: () => Boolean },
+            },
+            UpdateDatabaseDTO: {},
+          },
+        ],
         [
           import('./storage/DTO/object.dto'),
           {
@@ -914,23 +931,6 @@ export default async () => {
                 description: 'permissions',
               },
             },
-          },
-        ],
-        [import('./realtime/entities/realtime.entity'), { Realtime: {} }],
-        [
-          import('./schemas/collections/DTO/database.dto'),
-          {
-            CreateDatabaseDTO: {
-              databaseId: { required: true, type: () => String },
-              name: {
-                required: true,
-                type: () => String,
-                minLength: 1,
-                maxLength: 128,
-              },
-              enabled: { required: true, type: () => Boolean },
-            },
-            UpdateDatabaseDTO: {},
           },
         ],
       ],
@@ -1161,11 +1161,11 @@ export default async () => {
           import('./schemas/schemas.controller'),
           {
             SchemasController: {
-              queryTable: { type: [Object] },
-              insertIntoTable: { type: [Object] },
-              updateTables: { type: [Object] },
+              queryTable: { type: Object },
+              insertIntoTable: { type: Object },
+              updateTables: { type: Object },
               upsertTable: {},
-              deleteTables: { type: [Object] },
+              deleteTables: { type: Object },
               callFunction: { type: Object },
             },
           },
