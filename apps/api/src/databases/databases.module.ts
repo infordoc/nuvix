@@ -1,7 +1,6 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { DatabasesService } from './databases.service';
 import { DatabasesController } from './databases.controller';
-import { SchemaHook } from '@nuvix/core/resolvers/hooks/schema.hook';
 import { BullModule } from '@nestjs/bullmq';
 import { DatabasesQueue } from '@nuvix/core/resolvers/queues/databases.queue';
 import { QueueFor } from '@nuvix/utils';
@@ -19,8 +18,4 @@ import { QueueFor } from '@nuvix/utils';
     }),
   ],
 })
-export class DatabasesModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(SchemaHook).forRoutes(DatabasesController);
-  }
-}
+export class DatabasesModule {}
