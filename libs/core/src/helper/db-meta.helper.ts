@@ -49,14 +49,26 @@ export const setupDatabaseMeta = async ({
   }
 
   if (extra) {
-    for (const [key, value] of Object.entries(extra)) {
-      if (key && value != null) {
-        const fullKey = `${extraPrefix ? extraPrefix + '.' : ''}"${key}"`;
-        sqlChunks.push(
-          `SET LOCAL ${fullKey} = ${escapeString(String(value))};`,
-        );
+    const processValue = (obj: any, prefix: string = '') => {
+      for (const [key, value] of Object.entries(obj)) {
+        if (key && value != null) {
+          const fullKey = prefix ? `${prefix}.${key}` : key;
+
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            // Recursively process nested objects
+            processValue(value, fullKey);
+          } else {
+            // Set the value for primitive types and arrays
+            const finalKey = extraPrefix
+              ? `"${extraPrefix}.${fullKey}"`
+              : `"${fullKey}"`;
+            sqlChunks.push(`SET ${finalKey} = ${escapeString(String(value))};`);
+          }
+        }
       }
-    }
+    };
+
+    processValue(extra);
   }
 
   if (!sqlChunks.length) return;

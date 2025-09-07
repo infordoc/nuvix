@@ -7,11 +7,11 @@ import {
 } from '@nestjs/core';
 import { HooksModule } from './hooks/module';
 import { HooksContainer } from './hooks/container';
-import { optionalRequire } from '@nestjs/core/helpers/optional-require';
+import { optionalRequire } from '@nestjs/core/helpers/optional-require.js';
 
 const { MicroservicesModule } = optionalRequire(
   '@nestjs/microservices/microservices-module',
-  () => require('@nestjs/microservices/microservices-module'),
+  () => require('@nestjs/microservices/microservices-module.js'),
 );
 
 // @ts-ignore

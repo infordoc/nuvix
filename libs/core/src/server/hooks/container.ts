@@ -1,9 +1,9 @@
 import { InjectionToken, Type } from '@nestjs/common';
 import { MiddlewareConfiguration } from '@nestjs/common/interfaces/middleware/middleware-configuration.interface';
-import { getClassScope } from '@nestjs/core/helpers/get-class-scope';
-import { isDurable } from '@nestjs/core/helpers/is-durable';
-import { NestContainer } from '@nestjs/core/injector/container';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
+import { getClassScope } from '@nestjs/core/helpers/get-class-scope.js';
+import { isDurable } from '@nestjs/core/helpers/is-durable.js';
+import { NestContainer } from '@nestjs/core/injector/container.js';
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
 
 export class HooksContainer {
   private readonly middleware = new Map<

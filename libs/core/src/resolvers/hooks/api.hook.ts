@@ -188,16 +188,31 @@ export class ApiHook implements Hook {
         extra: {
           user:
             user && !user.empty()
-              ? JSON.stringify({
-                  $id: user.getId(),
+              ? {
+                  id: user.getId(),
                   name: user.get('name'),
                   email: user.get('email'),
-                })
+                }
               : undefined,
-          session: session ? JSON.stringify(session) : undefined,
+          team:
+            team && !team.empty()
+              ? {
+                  id: team.getId(),
+                  name: team.get('name'),
+                }
+              : undefined,
+          session: session
+            ? JSON.stringify({
+                id: session.getId(),
+                userId: session.get('userId'),
+                provider: session.get('provider'),
+                ip: session.get('ip'),
+                userAgent: session.get('userAgent'),
+              })
+            : undefined,
           roles: JSON.stringify(Authorization.getRoles()),
         },
-        extraPrefix: 'app',
+        extraPrefix: 'request.auth',
       });
     }
 

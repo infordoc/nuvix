@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { isObject } from '@nestjs/common/utils/shared.utils';
-import { loadPackage } from '@nestjs/common/utils/load-package.util';
+import { isObject } from '@nestjs/common/utils/shared.utils.js';
+import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface';
 import { TransformerPackage } from '@nestjs/common/interfaces/external/transformer-package.interface';
 import { Doc } from '@nuvix-tech/db';

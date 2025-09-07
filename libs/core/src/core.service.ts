@@ -171,7 +171,7 @@ export class CoreService {
     const connection = new DataSource(
       client as any,
       {},
-      { context: ctx, listenForUpdates: true },
+      { context: ctx, listenForUpdates: false },
     );
     return connection;
   }

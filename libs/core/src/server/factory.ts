@@ -19,22 +19,22 @@ import {
   NestContainer,
 } from '@nestjs/core';
 import { NestMicroserviceOptions } from '@nestjs/common/interfaces/microservices/nest-microservice-options.interface';
-import { loadPackage } from '@nestjs/common/utils/load-package.util';
+import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface';
 
-import { MESSAGES } from '@nestjs/core/constants';
-import { ExceptionsZone } from '@nestjs/core/errors/exceptions-zone';
-import { loadAdapter } from '@nestjs/core/helpers/load-adapter';
-import { rethrow } from '@nestjs/core/helpers/rethrow';
-import { Injector } from '@nestjs/core/injector/injector';
-import { InstanceLoader } from '@nestjs/core/injector/instance-loader';
-import { NoopGraphInspector } from '@nestjs/core/inspector/noop-graph-inspector';
+import { MESSAGES } from '@nestjs/core/constants.js';
+import { ExceptionsZone } from '@nestjs/core/errors/exceptions-zone.js';
+import { loadAdapter } from '@nestjs/core/helpers/load-adapter.js';
+import { rethrow } from '@nestjs/core/helpers/rethrow.js';
+import { Injector } from '@nestjs/core/injector/injector.js';
+import { InstanceLoader } from '@nestjs/core/injector/instance-loader.js';
+import { NoopGraphInspector } from '@nestjs/core/inspector/noop-graph-inspector.js';
 import {
   UuidFactory,
   UuidFactoryMode,
-} from '@nestjs/core/inspector/uuid-factory';
-import { DependenciesScanner } from '@nestjs/core/scanner';
-import { isFunction, isNil } from '@nestjs/common/utils/shared.utils';
+} from '@nestjs/core/inspector/uuid-factory.js';
+import { DependenciesScanner } from '@nestjs/core/scanner.js';
+import { isFunction, isNil } from '@nestjs/common/utils/shared.utils.js';
 import { NuvixApplication } from './application';
 
 type IEntryNestModule =

@@ -1,37 +1,37 @@
 import { HttpServer, InjectionToken, Logger } from '@nestjs/common';
-import { RequestMethod } from '@nestjs/common/enums/request-method.enum';
+import { RequestMethod } from '@nestjs/common/enums/request-method.enum.js';
 import {
   MiddlewareConfiguration,
   RouteInfo,
 } from '@nestjs/common/interfaces/middleware';
 import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface';
-import { isUndefined } from '@nestjs/common/utils/shared.utils';
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
 import { ApplicationConfig } from '@nestjs/core/application-config';
-import { RuntimeException } from '@nestjs/core/errors/exceptions/runtime.exception';
-import { ContextIdFactory } from '@nestjs/core/helpers/context-id-factory';
-import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host';
-import { STATIC_CONTEXT } from '@nestjs/core/injector/constants';
-import { NestContainer } from '@nestjs/core/injector/container';
-import { Injector } from '@nestjs/core/injector/injector';
+import { RuntimeException } from '@nestjs/core/errors/exceptions/runtime.exception.js';
+import { ContextIdFactory } from '@nestjs/core/helpers/context-id-factory.js';
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host.js';
+import { STATIC_CONTEXT } from '@nestjs/core/injector/constants.js';
+import { NestContainer } from '@nestjs/core/injector/container.js';
+import { Injector } from '@nestjs/core/injector/injector.js';
 import {
   ContextId,
   InstanceWrapper,
-} from '@nestjs/core/injector/instance-wrapper';
-import { Module } from '@nestjs/core/injector/module';
-import { GraphInspector } from '@nestjs/core/inspector/graph-inspector';
+} from '@nestjs/core/injector/instance-wrapper.js';
+import { Module } from '@nestjs/core/injector/module.js';
+import { GraphInspector } from '@nestjs/core/inspector/graph-inspector.js';
 import {
   Entrypoint,
   MiddlewareEntrypointMetadata,
-} from '@nestjs/core/inspector/interfaces/entrypoint.interface';
-import { REQUEST_CONTEXT_ID } from '@nestjs/core/router/request/request-constants';
-import { RouterExceptionFilters } from '@nestjs/core/router/router-exception-filters';
-import { RouterProxy } from '@nestjs/core/router/router-proxy';
-import { isRequestMethodAll } from '@nestjs/core/router/utils';
-import { MiddlewareBuilder } from '@nestjs/core/middleware/builder';
+} from '@nestjs/core/inspector/interfaces/entrypoint.interface.js';
+import { REQUEST_CONTEXT_ID } from '@nestjs/core/router/request/request-constants.js';
+import { RouterExceptionFilters } from '@nestjs/core/router/router-exception-filters.js';
+import { RouterProxy } from '@nestjs/core/router/router-proxy.js';
+import { isRequestMethodAll } from '@nestjs/core/router/utils/index.js';
+import { MiddlewareBuilder } from '@nestjs/core/middleware/builder.js';
 import { HooksContainer } from './container';
-import { MiddlewareResolver } from '@nestjs/core/middleware/resolver';
-import { RouteInfoPathExtractor } from '@nestjs/core/middleware/route-info-path-extractor';
-import { RoutesMapper } from '@nestjs/core/middleware/routes-mapper';
+import { MiddlewareResolver } from '@nestjs/core/middleware/resolver.js';
+import { RouteInfoPathExtractor } from '@nestjs/core/middleware/route-info-path-extractor.js';
+import { RoutesMapper } from '@nestjs/core/middleware/routes-mapper.js';
 import { Hook, HookMethods } from './interface';
 
 export class HooksModule<

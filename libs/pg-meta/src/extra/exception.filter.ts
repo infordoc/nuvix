@@ -1,6 +1,7 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
 
 import { PgMetaException } from './execption';
+import { Exception } from '@nuvix/core/extend/exception';
 
 @Catch(PgMetaException)
 export class PgMetaExceptionFilter implements ExceptionFilter {
@@ -18,7 +19,7 @@ export class PgMetaExceptionFilter implements ExceptionFilter {
       exception.stack ?? exception.message,
       PgMetaExceptionFilter.name,
     );
-    const errorCode = exception.extra?.errorCode ?? 'DEFAULT_ERROR_CODE';
+    const errorCode = exception.extra?.errorCode ?? Exception.GENERAL_UNKNOWN;
     const responseBody: Record<string, string | number | boolean> = {
       code: status,
       message: exception.message,
@@ -38,11 +39,6 @@ export class PgMetaExceptionFilter implements ExceptionFilter {
         responseBody['routine'] = exception.extra['routine'];
       if (exception.extra['hint'])
         responseBody['hint'] = exception.extra['hint'];
-    }
-
-    // Add stack trace in non-production environments
-    if (process.env['NODE_ENV'] !== 'production' && exception.stack) {
-      responseBody['stack'] = exception.stack;
     }
 
     response.status(status).send(responseBody);
