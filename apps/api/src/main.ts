@@ -142,7 +142,12 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new ErrorFilter(config));
-  await SwaggerModule.loadPluginMetadata((await import('./metadata')).default);
+  await SwaggerModule.loadPluginMetadata(async () => {
+    try {
+      // @ts-expect-error -- Ignore
+      return (await import('./metadata')).default;
+    } catch { return {}; }
+  });
   openApiSetup(app);
 
   // TODO: create a separate function to handle setup

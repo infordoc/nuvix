@@ -52,7 +52,7 @@ export class CreateOAuth2SessionDTO {
   @IsString({ each: true })
   @MaxLength(APP_LIMIT_ARRAY_ELEMENT_SIZE, { each: true })
   @ArrayMaxSize(APP_LIMIT_ARRAY_PARAMS_SIZE)
-  scopes: string[] = [];
+  scopes?: string[] = [];
 }
 
 @Expose()

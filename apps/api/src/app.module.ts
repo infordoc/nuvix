@@ -40,18 +40,17 @@ import { SchemasModule } from './schemas/schemas.module';
 import { BaseController } from './base/base.controller';
 import { UsersController } from './users/users.controller';
 import { TeamsController } from './teams/teams.controller';
-import { AccountController } from './account/account.controller';
 import { AvatarsController } from './avatars/avatars.controller';
 import { FunctionsController } from './functions/functions.controller';
 import { SchemasController } from './schemas/schemas.controller';
 import { StorageController } from './storage/storage.controller';
 import { MessagingController } from './messaging/messaging.controller';
 import { DatabasesController } from './databases/databases.controller';
+import { CollectionsController } from './schemas/collections/collections.controller';
 
 import { Key } from '@nuvix/core/helper/key.helper';
 import { StatsQueue } from '@nuvix/core/resolvers/queues';
 import { AppConfigService } from '@nuvix/core';
-import { CollectionsController } from './schemas/collections/collections.controller';
 
 @Module({
   imports: [
@@ -126,7 +125,6 @@ export class AppModule implements NestModule, OnModuleInit {
         BaseController,
         UsersController,
         TeamsController,
-        AccountController,
         DatabasesController,
         AvatarsController,
         FunctionsController,
@@ -139,7 +137,6 @@ export class AppModule implements NestModule, OnModuleInit {
       .forRoutes(
         UsersController,
         TeamsController,
-        AccountController,
         DatabasesController,
         FunctionsController,
         SchemasController,
