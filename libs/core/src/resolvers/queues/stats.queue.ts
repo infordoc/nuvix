@@ -1,7 +1,7 @@
 import { Processor } from '@nestjs/bullmq';
 import { Queue } from './queue';
 import {
-  createMd5Hash,
+  fnv1a128,
   MetricFor,
   MetricPeriod,
   QueueFor,
@@ -9,7 +9,7 @@ import {
 } from '@nuvix/utils';
 import { Job } from 'bullmq';
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { Doc } from '@nuvix-tech/db';
+import { Doc, type Database } from '@nuvix-tech/db';
 import { CoreService } from '@nuvix/core/core.service.js';
 import type { ProjectsDoc, Stats } from '@nuvix/utils/types';
 import { AppConfigService } from '@nuvix/core/config.service';
@@ -84,7 +84,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
 
           for (const period of StatsQueue.periods) {
             const time = StatsQueue.formatDate(period, receivedAt);
-            const id = createMd5Hash(`${time}|${period}|${key}`);
+            const id = fnv1a128(`${time}|${period}|${key}`);
 
             const doc = new Doc<Stats>({
               $id: id,
@@ -135,42 +135,73 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async process(job: Job<StatsQueueOptions, any, MetricFor>): Promise<any> {
-    const { value } = job.data;
-    const matric = job.name;
-    const project = new Doc(job.data.project);
+  async process(job: Job<StatsQueueOptions, any, StatsQueueJob>): Promise<any> {
+    const { metrics: _metrics, reduce } = job.data;
+    const project = new Doc(job.data.project) as ProjectsDoc;
     const projectId = project.getSequence();
 
-    if (!this.buffer.has(projectId)) {
-      this.buffer.set(projectId, {
-        project: new Doc({
-          $id: project.getId(),
-          $sequence: projectId,
-          database: project.get('database'),
-        }) as unknown as ProjectsDoc,
-        keys: {},
-        receivedAt: new Date(),
-      });
-    }
+    switch (job.name) {
+      case StatsQueueJob.ADD_METRIC:
+        if (!this.buffer.has(projectId)) {
+          this.buffer.set(projectId, {
+            project: new Doc({
+              $id: project.getId(),
+              $sequence: projectId,
+              database: project.get('database'),
+            }) as unknown as ProjectsDoc,
+            keys: {},
+            receivedAt: new Date(),
+          });
+        }
 
-    // TODO: ---- we have to reduce here
+        const metrics = [..._metrics];
+        if (reduce && reduce.length > 0) {
+          let _client;
+          try {
+            const { client, dbForProject } =
+              await this.coreService.createProjectDatabase(project, {
+                schema: Schemas.Core,
+              });
+            _client = client;
 
-    const meta = this.buffer.get(projectId)!;
-    if (Object.hasOwn(meta.keys, matric)) {
-      meta.keys[matric] = meta.keys[matric]! + value;
-    } else {
-      meta.keys[matric] = value;
-    }
+            for (const doc of reduce) {
+              await this.reduce(project, doc, metrics, dbForProject);
+            }
+          } finally {
+            if (_client) {
+              await this.coreService
+                .releaseDatabaseClient(_client)
+                .catch(() => {
+                  /* ignore */
+                });
+            }
+          }
+        }
 
-    if (
-      Object.keys(this.buffer.get(projectId)!.keys).length >=
-      StatsQueue.BATCH_SIZE
-    ) {
-      // Temporarily stop the timer to avoid a race condition where the timer
-      // and a full buffer try to flush at the same exact time.
-      clearInterval(this.interval);
-      await this.flushBuffer();
-      this.startTimer();
+        for (const metric of metrics) {
+          const meta = this.buffer.get(projectId)!;
+          if (Object.hasOwn(meta.keys, metric.key)) {
+            meta.keys[metric.key] = meta.keys[metric.key]! + metric.value;
+          } else {
+            meta.keys[metric.key] = metric.value;
+          }
+        }
+
+        if (
+          Object.keys(this.buffer.get(projectId)!.keys).length >=
+          StatsQueue.BATCH_SIZE
+        ) {
+          // Temporarily stop the timer to avoid a race condition where the timer
+          // and a full buffer try to flush at the same exact time.
+          clearInterval(this.interval);
+          await this.flushBuffer();
+          this.startTimer();
+        }
+        break;
+
+      default:
+        this.logger.warn(`Unknown job name: ${job.name}`);
+        break;
     }
 
     return;
@@ -188,15 +219,281 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
         throw new Error(`Unsupported period: ${period}`);
     }
   }
+
+  private async reduce(
+    project: ProjectsDoc,
+    document: Doc,
+    metrics: Array<{ key: MetricFor; value: number }>,
+    dbForProject: Database,
+  ): Promise<void> {
+    if (document.empty()) return;
+
+    try {
+      const collection = document.getCollection();
+
+      switch (true) {
+        case collection === 'users': {
+          const sessions = document.get('sessions', [])?.length || 0;
+          if (sessions > 0) {
+            metrics.push({
+              key: MetricFor.SESSIONS,
+              value: sessions * -1,
+            });
+          }
+          break;
+        }
+
+        // case collection === 'databases': {
+        //   const collectionsDoc = await dbForProject.getDocument('stats', fnv1a128(`${MetricPeriod.INF}|${MetricFor.DATABASE_ID_COLLECTIONS.replace('{databaseInternalId}', document.getSequence().toString())}`));
+        //   const documentsDoc = await dbForProject.getDocument('stats', fnv1a128(`${MetricPeriod.INF}|${MetricFor.DATABASE_ID_DOCUMENTS.replace('{databaseInternalId}', document.getSequence().toString())}`));
+
+        //   if (collectionsDoc?.value) {
+        //     metrics.push({
+        //       key: MetricFor.COLLECTIONS,
+        //       value: collectionsDoc.value * -1,
+        //     });
+        //   }
+
+        //   if (documentsDoc?.value) {
+        //     metrics.push({
+        //       key: MetricFor.DOCUMENTS,
+        //       value: documentsDoc.value * -1,
+        //     });
+        //   }
+        //   break;
+        // }
+
+        // case collection.startsWith('database_') && !collection.includes('collection'): {
+        //   const parts = collection.split('_');
+        //   const databaseInternalId = parts[1] || '0';
+        //   const documentsDoc = await dbForProject.getDocument('stats', fnv1a128(`${MetricPeriod.INF}|${MetricFor.DATABASE_ID_COLLECTION_ID_DOCUMENTS
+        //     .replace('{databaseInternalId}', databaseInternalId)
+        //     .replace('{collectionInternalId}', document.getSequence().toString())}`));
+
+        //   if (documentsDoc?.value) {
+        //     metrics.push({
+        //       key: MetricFor.DOCUMENTS,
+        //       value: documentsDoc.value * -1,
+        //     });
+        //     metrics.push({
+        //       key: MetricFor.DATABASE_ID_DOCUMENTS.replace('{databaseInternalId}', databaseInternalId) as MetricFor,
+        //       value: documentsDoc.value * -1,
+        //     });
+        //   }
+        //   break;
+        // }
+
+        case collection === 'buckets': {
+          const filesDoc = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.BUCKET_ID_FILES.replace('{bucketInternalId}', document.getSequence().toString())}`,
+            ),
+          );
+          const storageDoc = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.BUCKET_ID_FILES_STORAGE.replace('{bucketInternalId}', document.getSequence().toString())}`,
+            ),
+          );
+
+          if (filesDoc?.get('value')) {
+            metrics.push({
+              key: MetricFor.FILES,
+              value: filesDoc.get('value') * -1,
+            });
+          }
+
+          if (storageDoc?.get('value')) {
+            metrics.push({
+              key: MetricFor.FILES_STORAGE,
+              value: storageDoc.get('value') * -1,
+            });
+          }
+          break;
+        }
+
+        case collection === 'functions': {
+          const resourceType = collection;
+          const resourceInternalId = document.getSequence().toString();
+
+          const deployments = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_DEPLOYMENTS.replace('{resourceType}', resourceType).replace('{resourceInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const deploymentsStorage = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_DEPLOYMENTS_STORAGE.replace('{resourceType}', resourceType).replace('{resourceInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const builds = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_BUILDS.replace('{functionInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const buildsStorage = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_BUILDS_STORAGE.replace('{functionInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const buildsCompute = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_BUILDS_COMPUTE.replace('{functionInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const executions = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_EXECUTIONS.replace('{functionInternalId}', resourceInternalId)}`,
+            ),
+          );
+          const executionsCompute = await dbForProject.getDocument(
+            'stats',
+            fnv1a128(
+              `${MetricPeriod.INF}|${MetricFor.FUNCTION_ID_EXECUTIONS_COMPUTE.replace('{functionInternalId}', resourceInternalId)}`,
+            ),
+          );
+
+          if (deployments?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.DEPLOYMENTS,
+                value: deployments.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_DEPLOYMENTS.replace(
+                  '{resourceType}',
+                  resourceType,
+                ) as MetricFor,
+                value: deployments.get('value') * -1,
+              },
+            );
+          }
+
+          if (deploymentsStorage?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.DEPLOYMENTS_STORAGE,
+                value: deploymentsStorage.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_DEPLOYMENTS_STORAGE.replace(
+                  '{resourceType}',
+                  resourceType,
+                ) as MetricFor,
+                value: deploymentsStorage.get('value') * -1,
+              },
+            );
+          }
+
+          if (builds?.get('value')) {
+            metrics.push(
+              { key: MetricFor.BUILDS, value: builds.get('value') * -1 },
+              {
+                key: MetricFor.FUNCTION_ID_BUILDS.replace(
+                  '{functionInternalId}',
+                  resourceType,
+                ) as MetricFor,
+                value: builds.get('value') * -1,
+              },
+            );
+          }
+
+          if (buildsStorage?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.BUILDS_STORAGE,
+                value: buildsStorage.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_BUILDS_STORAGE.replace(
+                  '{functionInternalId}',
+                  resourceType,
+                ) as MetricFor,
+                value: buildsStorage.get('value') * -1,
+              },
+            );
+          }
+
+          if (buildsCompute?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.BUILDS_COMPUTE,
+                value: buildsCompute.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_BUILDS_COMPUTE.replace(
+                  '{functionInternalId}',
+                  resourceType,
+                ) as MetricFor,
+                value: buildsCompute.get('value') * -1,
+              },
+            );
+          }
+
+          if (executions?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.EXECUTIONS,
+                value: executions.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_EXECUTIONS.replace(
+                  '{functionInternalId}',
+                  resourceType,
+                ) as MetricFor,
+                value: executions.get('value') * -1,
+              },
+            );
+          }
+
+          if (executionsCompute?.get('value')) {
+            metrics.push(
+              {
+                key: MetricFor.EXECUTIONS_COMPUTE,
+                value: executionsCompute.get('value') * -1,
+              },
+              {
+                key: MetricFor.FUNCTION_ID_EXECUTIONS_COMPUTE.replace(
+                  '{functionInternalId}',
+                  resourceType,
+                ) as MetricFor,
+                value: executionsCompute.get('value') * -1,
+              },
+            );
+          }
+          break;
+        }
+
+        default:
+          break;
+      }
+    } catch (error) {
+      this.logger.error(
+        `[reducer] ${new Date().toISOString()} ${project.getSequence()} ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 }
 
 export interface StatsQueueOptions {
   project: object;
-  value: number;
+  metrics: Array<{ key: MetricFor; value: number }>;
+  reduce?: Doc<any>[];
 }
 
 interface StatsBuffer {
   project: ProjectsDoc;
   receivedAt: Date;
   keys: Record<string, number>;
+}
+
+export enum StatsQueueJob {
+  ADD_METRIC = 'add-metric',
 }

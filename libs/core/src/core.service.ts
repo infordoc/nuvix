@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  type OnModuleDestroy,
-  type OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { AppConfigService } from './config.service.js';
 import { Client } from 'pg';
 import IORedis from 'ioredis';
@@ -26,17 +21,15 @@ import type { OAuthProviderType } from './config/authProviders.js';
 import { Exception } from './extend/exception.js';
 
 @Injectable()
-export class CoreService implements OnModuleInit, OnModuleDestroy {
+export class CoreService implements OnModuleDestroy {
   private readonly logger = new Logger(CoreService.name);
   private cache: Cache | null = null;
   private platformDb: Database | null = null;
   private geoDb: Reader<CountryResponse> | null = null;
-  constructor(private readonly appConfig: AppConfigService) {}
-
-  onModuleInit() {
+  constructor(private readonly appConfig: AppConfigService) {
+    this.geoDb = this.createGeoDb();
     this.cache = this.createCache();
     this.platformDb = this.createPlatformDb();
-    this.geoDb = this.createGeoDb();
   }
 
   async onModuleDestroy() {

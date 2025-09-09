@@ -680,12 +680,12 @@ export enum RouteContext {
 }
 
 export enum MetricPeriod {
-  INF = '_inf_',
-  HOUR = 'hour',
-  DAY = 'day',
-  WEEK = 'week',
-  MONTH = 'month',
-  YEAR = 'year',
+  INF = 'inf',
+  HOUR = '1h',
+  DAY = '1d',
+  WEEK = '1w',
+  MONTH = '1m',
+  YEAR = '1y',
 }
 
 export enum MetricDateFormat {
