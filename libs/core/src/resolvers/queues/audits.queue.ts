@@ -6,7 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { Queue } from './queue';
-import { AppMode, CORE_SCHEMA, QueueFor } from '@nuvix/utils';
+import { AppMode, QueueFor, Schemas } from '@nuvix/utils';
 import { Doc } from '@nuvix-tech/db';
 import { Audit } from '@nuvix/audit';
 import { Job } from 'bullmq';
@@ -67,7 +67,7 @@ export class AuditsQueue
 
       const { client, dbForProject } =
         await this.coreService.createProjectDatabase(project, {
-          schema: CORE_SCHEMA,
+          schema: Schemas.Core,
         });
       try {
         const audits = new Audit(dbForProject);
@@ -75,7 +75,7 @@ export class AuditsQueue
         this.logger.log(
           `Flushing ${logs.length} audit logs for project ${projectId}`,
         );
-        await audits.logBatch(logs as any[]);
+        await audits.logBatch(logs);
       } catch (error) {
         this.logger.error(
           `Error flushing audit logs for project ${projectId}:`,

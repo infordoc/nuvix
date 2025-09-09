@@ -144,7 +144,7 @@ async function bootstrap() {
   app.useGlobalFilters(new ErrorFilter(config));
   await SwaggerModule.loadPluginMetadata(async () => {
     try {
-      // @ts-expect-error -- Ignore
+      // @ts-ignore
       return (await import('./metadata')).default;
     } catch {
       return {};

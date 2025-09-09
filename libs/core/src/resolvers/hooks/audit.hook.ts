@@ -4,7 +4,13 @@ import { AuditEventType } from '@nuvix/core/decorators';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
 import { Doc } from '@nuvix-tech/db';
-import { QueueFor, AppMode, Context, AuthActivity } from '@nuvix/utils';
+import {
+  QueueFor,
+  AppMode,
+  Context,
+  AuthActivity,
+  RouteContext,
+} from '@nuvix/utils';
 import { Queue } from 'bullmq';
 import { AuditsQueueJobData } from '../queues/audits.queue';
 import { Auth } from '@nuvix/core/helper';
@@ -19,9 +25,8 @@ export class AuditHook implements Hook {
   ) {}
 
   async preSerialization(req: NuvixRequest, reply: NuvixRes) {
-    const audit: AuditEventType | undefined = (
-      req.routeOptions?.config as any
-    )?.['audit']; // TODO: Improve type safety
+    const audit: AuditEventType | undefined =
+      req.routeOptions?.config[RouteContext.AUDIT];
     if (!audit || !audit.event || reply.statusCode >= 400) {
       return;
     }

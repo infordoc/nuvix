@@ -678,3 +678,21 @@ export enum RouteContext {
   AUDIT = 'audit',
   RATE_LIMIT = 'rateLimit',
 }
+
+export enum MetricPeriod {
+  INF = '_inf_',
+  HOUR = 'hour',
+  DAY = 'day',
+  WEEK = 'week',
+  MONTH = 'month',
+  YEAR = 'year',
+}
+
+export enum MetricDateFormat {
+  INF = '0000-00-00 00:00:00',
+  HOUR = 'YYYY-MM-DD HH:00:00',
+  DAY = 'YYYY-MM-DD 00:00:00',
+  WEEK = 'YYYY-MM-DD 00:00:00',
+  MONTH = 'YYYY-MM-01 00:00:00',
+  YEAR = 'YYYY-01-01 00:00:00',
+}

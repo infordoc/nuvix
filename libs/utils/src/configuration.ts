@@ -28,6 +28,7 @@ export default () => ({
       disabled: (process.env['APP_PROJECTS_DISABLED'] ?? 'false') === 'true',
     },
     devProject: process.env['APP_DEV_PROJECT'],
+    region: process.env['APP_REGION'] || 'default',
   },
 
   assets: {

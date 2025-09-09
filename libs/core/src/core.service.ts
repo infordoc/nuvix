@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  type OnModuleDestroy,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { AppConfigService } from './config.service.js';
 import { Client } from 'pg';
 import IORedis from 'ioredis';
@@ -18,28 +23,48 @@ import {
   Schemas,
 } from '@nuvix/utils';
 import type { OAuthProviderType } from './config/authProviders.js';
+import { Exception } from './extend/exception.js';
 
 @Injectable()
-export class CoreService {
+export class CoreService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CoreService.name);
-  private readonly cache: Cache;
-  private readonly platformDb: Database;
-  private readonly geoDb: Reader<CountryResponse>;
-  constructor(private readonly appConfig: AppConfigService) {
+  private cache: Cache | null = null;
+  private platformDb: Database | null = null;
+  private geoDb: Reader<CountryResponse> | null = null;
+  constructor(private readonly appConfig: AppConfigService) {}
+
+  onModuleInit() {
     this.cache = this.createCache();
     this.platformDb = this.createPlatformDb();
     this.geoDb = this.createGeoDb();
   }
 
+  async onModuleDestroy() {
+    const client = this.platformDb?.getAdapter().$client;
+    if (client) {
+      try {
+        await client.disconnect();
+      } catch (error) {
+        this.logger.error(
+          'Failed to disconnect platform database client',
+          error,
+        );
+      }
+    }
+  }
+
   public getCache(): Cache {
+    if (!this.cache) throw new Exception('Cache not initialized');
     return this.cache;
   }
 
   public getPlatformDb(): Database {
+    if (!this.platformDb) throw new Exception('Platform DB not initialized');
     return this.platformDb;
   }
 
   public getGeoDb(): Reader<CountryResponse> {
+    if (!this.geoDb) throw new Exception('Geo DB not initialized');
     return this.geoDb;
   }
 
@@ -114,7 +139,7 @@ export class CoreService {
       database: platformDbConfig.name,
       max: 100,
     });
-    const connection = new Database(adapter, this.cache).setMeta({
+    const connection = new Database(adapter, this.getCache()).setMeta({
       schema: 'public',
       sharedTables: false,
       namespace: 'platform',
@@ -123,7 +148,7 @@ export class CoreService {
   }
 
   public getPlatformAudit() {
-    return new Audit(this.platformDb);
+    return new Audit(this.getPlatformDb());
   }
 
   public getPlatform(): Doc<Platform> {
@@ -148,7 +173,7 @@ export class CoreService {
         projectId: projectId,
       },
     });
-    const connection = new Database(adapter, this.cache);
+    const connection = new Database(adapter, this.getCache());
     connection.setMeta({
       // cacheId: `${projectId}:core`
       schema: options.schema ?? Schemas.Core,
