@@ -20,7 +20,6 @@ interface CorsOptions {
   origin?: string | false;
 }
 
-// TODO: make this system more secure and dynamic for production
 @Injectable()
 export class CorsHook implements Hook {
   private readonly logger = new Logger(CorsHook.name);
@@ -42,16 +41,18 @@ export class CorsHook implements Hook {
 
   async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
     try {
-      const host = req.host;
       const project: ProjectsDoc | null = req[Context.Project] ?? null;
-
       const origin = req.headers.origin;
+      const host = req.host;
+
+      // Validate origin against console or project rules
       const validOrigin = this.determineOrigin(origin, project, host);
       const options = { ...this.defaultOptions, origin: validOrigin };
 
-      this.addCorsHeaders(reply, origin, options);
+      this.addCorsHeaders(reply, options);
       this.handleVaryHeaders(reply, options);
 
+      // Handle OPTIONS preflight
       if (req.method.toUpperCase() === 'OPTIONS' && options.preflight) {
         this.handlePreflight(req, reply, options);
       }
@@ -61,114 +62,93 @@ export class CorsHook implements Hook {
     }
   }
 
+  /**
+   * Validate the request origin:
+   * - Console / platform requests use global server.allowedOrigins
+   * - Project requests use project.platforms
+   */
   private determineOrigin(
     origin: string | undefined,
     project: ProjectsDoc | null,
     host: string,
   ): string | false {
+    if (!origin) return false;
+
     const serverConfig = this.appConfig.get('server');
-    if (!project || project.empty()) return false;
-
     const isConsoleRequest =
-      project.getId() === 'console' || host === serverConfig.host;
-
-    if (!origin) return false; // No origin provided
+      !project ||
+      project.empty() ||
+      project.getId() === 'console' ||
+      host === serverConfig.host;
 
     if (isConsoleRequest) {
-      return this.matchOrigin(
-        origin,
-        this.appConfig.get('server').allowedOrigins,
-        host,
-      )
-        ? host
+      return this.matchOrigin(origin, serverConfig.allowedOrigins, host)
+        ? origin
         : false;
     }
 
+    // Project-specific validation
     const validator = new Origin(project.get('platforms', []));
-    if (validator.$valid(origin)) {
-      return host; // TODO: validate against project-specific allowed origins
-    }
-
-    return false;
+    return validator.$valid(origin) ? origin : false;
   }
 
+  /**
+   * Match origin against server allowed origins
+   * Supports exact, subdomain, and wildcard matching
+   */
   private matchOrigin(
     origin: string,
     allowedOrigins: string[],
     requestHost: string,
   ): boolean {
-    if (!origin) {
-      return false;
-    }
+    if (!allowedOrigins?.length) return false;
 
-    // Allow all origins if wildcard is present
-    if (allowedOrigins.includes('*')) {
-      return true;
-    }
+    // Allow all if wildcard present (use request origin if credentials are enabled)
+    if (allowedOrigins.includes('*')) return true;
 
     // Exact match
-    if (allowedOrigins.includes(origin)) {
-      return true;
-    }
+    if (allowedOrigins.includes(origin)) return true;
 
     try {
-      const originUrl = new URL(origin);
-      const originHostname = originUrl.hostname;
+      const { hostname } = new URL(origin);
 
-      // Check if origin hostname matches request host
-      if (originHostname === requestHost) {
-        return true;
-      }
+      // Allow same-host requests
+      if (hostname === requestHost) return true;
 
-      // Check wildcard patterns
-      for (const allowedOrigin of allowedOrigins) {
-        if (allowedOrigin.startsWith('*.')) {
-          const wildcardDomain = allowedOrigin.slice(2); // Remove '*.'
+      // Wildcard subdomains: *.example.com
+      for (const allowed of allowedOrigins) {
+        if (allowed.startsWith('*.') && hostname.endsWith(allowed.slice(1))) {
+          return true;
+        }
 
-          // Check if origin ends with the wildcard domain
-          if (originHostname.endsWith(wildcardDomain)) {
-            // Ensure it's a proper subdomain match (not partial match)
-            const beforeDomain = originHostname.slice(
-              0,
-              -wildcardDomain.length,
-            );
-            if (beforeDomain === '' || beforeDomain.endsWith('.')) {
-              return true;
-            }
-          }
-        } else if (allowedOrigin.includes('*')) {
-          // Handle other wildcard patterns using regex
-          const regexPattern = allowedOrigin
-            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special chars
-            .replace(/\\\*/g, '.*'); // Replace escaped * with .*
-
-          const regex = new RegExp(`^${regexPattern}$`, 'i');
-          if (regex.test(origin)) {
+        if (allowed.includes('*')) {
+          // Convert wildcard to regex
+          const regexPattern = allowed
+            .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            .replace(/\\\*/g, '.*');
+          if (new RegExp(`^${regexPattern}$`, 'i').test(origin)) {
             return true;
           }
         }
       }
 
       return false;
-    } catch (error) {
-      this.logger.warn(`Invalid origin URL: ${origin}`);
+    } catch {
+      this.logger.warn(`Invalid origin: ${origin}`);
       return false;
     }
   }
 
-  private addCorsHeaders(
-    reply: NuvixRes,
-    origin: string | undefined,
-    options: CorsOptions,
-  ) {
-    if (options.origin && origin) {
-      reply.raw.setHeader('Access-Control-Allow-Origin', origin);
+  private addCorsHeaders(reply: NuvixRes, options: CorsOptions) {
+    if (options.origin) {
+      reply.raw.setHeader('Access-Control-Allow-Origin', options.origin);
+
+      // If credentials are enabled, must reflect request origin
+      if (options.credentials) {
+        reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+      }
     } else {
       reply.raw.setHeader('Access-Control-Allow-Origin', 'null');
-    }
-
-    if (options.credentials) {
-      reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
     }
 
     if (options.exposedHeaders?.length) {
@@ -179,11 +159,8 @@ export class CorsHook implements Hook {
     }
   }
 
-  private handleVaryHeaders(
-    reply: NuvixRes,
-    options: typeof this.defaultOptions,
-  ) {
-    if (typeof options.origin === 'string' && options.origin !== '*') {
+  private handleVaryHeaders(reply: NuvixRes, options: CorsOptions) {
+    if (options.origin && options.origin !== '*') {
       addOriginToVaryHeader(reply);
     }
     addAccessControlRequestHeadersToVaryHeader(reply);
@@ -192,28 +169,18 @@ export class CorsHook implements Hook {
   private handlePreflight(
     req: NuvixRequest,
     reply: NuvixRes,
-    options: typeof this.defaultOptions,
+    options: CorsOptions,
   ) {
-    const origin = req.headers.origin;
-    if (
-      !origin ||
-      !this.appConfig.get('server').allowedOrigins.includes(origin)
-    ) {
-      reply
-        .status(403)
-        .header('Content-Type', 'text/plain')
-        .send('Origin not allowed');
+    if (!options.origin) {
+      reply.status(403).send('Origin not allowed');
       return;
     }
 
     if (
       options.strictPreflight &&
-      (!origin || !req.headers['access-control-request-method'])
+      !req.headers['access-control-request-method']
     ) {
-      reply
-        .status(400)
-        .header('Content-Type', 'text/plain')
-        .send('Invalid Preflight Request');
+      reply.status(400).send('Invalid Preflight Request');
       return;
     }
 
