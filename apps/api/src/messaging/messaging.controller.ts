@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   Patch,
@@ -26,44 +27,11 @@ import {
   ResModel,
   Scope,
   Sdk,
+  Auth,
 } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
 
-import {
-  CreateMailgunProviderDTO,
-  UpdateMailgunProviderDTO,
-} from './DTO/mailgun.dto';
 import { Database, Query as Queries } from '@nuvix-tech/db';
-import {
-  CreateSendgridProviderDTO,
-  UpdateSendgridProviderDTO,
-} from './DTO/sendgrid.dto';
-import { CreateSMTPProviderDTO, UpdateSMTPProviderDTO } from './DTO/smtp.dto';
-import {
-  CreateMsg91ProviderDTO,
-  UpdateMsg91ProviderDTO,
-} from './DTO/msg91.dto';
-import {
-  CreateTwilioProviderDTO,
-  UpdateTwilioProviderDTO,
-} from './DTO/twilio.dto';
-import {
-  CreateTelesignProviderDTO,
-  UpdateTelesignProviderDTO,
-} from './DTO/telesign.dto';
-import {
-  CreateTextmagicProviderDTO,
-  UpdateTextmagicProviderDTO,
-} from './DTO/textmagic.dto';
-import {
-  CreateVonageProviderDTO,
-  UpdateVonageProviderDTO,
-} from './DTO/vonage.dto';
-import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
-import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
-import { ParseQueryPipe } from '@nuvix/core/pipes';
-import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto';
-import { CreateSubscriberDTO } from './DTO/subscriber.dto';
 import {
   CreateEmailMessageDTO,
   CreatePushMessageDTO,
@@ -73,678 +41,22 @@ import {
   UpdateSmsMessageDTO,
 } from './DTO/message.dto';
 import type { ProjectsDoc } from '@nuvix/utils/types';
-import {
-  MessagesQueryPipe,
-  ProvidersQueryPipe,
-  SubscribersQueryPipe,
-  TargetsQueryPipe,
-  TopicsQueryPipe,
-} from '@nuvix/core/pipes/queries';
+import { MessagesQueryPipe, TargetsQueryPipe } from '@nuvix/core/pipes/queries';
 
-@Controller({ path: 'messaging', version: ['1'] })
 @Namespace('messaging')
 @UseGuards(ProjectGuard)
+@Auth([AuthType.ADMIN, AuthType.KEY])
+@Controller({ path: 'messaging/messages', version: ['1'] })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class MessagingController {
   constructor(private readonly messagingService: MessagingService) {}
 
-  @Post('providers/mailgun')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createMailgunProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Mailgun provider',
-  })
-  async createMailgunProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateMailgunProviderDTO,
-  ) {
-    return this.messagingService.createMailgunProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/sendgrid')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createSendgridProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Sendgrid provider',
-  })
-  async createSendgridProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateSendgridProviderDTO,
-  ) {
-    return this.messagingService.createSendGridProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/smtp')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createSmtpProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a SMTP provider',
-  })
-  async createSMTPProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateSMTPProviderDTO,
-  ) {
-    return this.messagingService.createSmtpProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/msg91')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createMsg91Provider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Msg91 provider',
-  })
-  async createMsg91Provider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateMsg91ProviderDTO,
-  ) {
-    return this.messagingService.createMsg91Provider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/telesign')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createTelesignProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Telesign provider',
-  })
-  async createTelesignProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateTelesignProviderDTO,
-  ) {
-    return this.messagingService.createTelesignProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/textmagic')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createTextmagicProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Textmagic provider',
-  })
-  async createTextmagicProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateTextmagicProviderDTO,
-  ) {
-    return this.messagingService.createTextMagicProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/twilio')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createTwilioProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Twilio provider',
-  })
-  async createTwilioProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateTwilioProviderDTO,
-  ) {
-    return this.messagingService.createTwilioProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/vonage')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createVonageProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a Vonage provider',
-  })
-  async createVonageProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateVonageProviderDTO,
-  ) {
-    return this.messagingService.createVonageProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/fcm')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createFcmProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a FCM provider',
-  })
-  async createFcmProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateFcmProviderDTO,
-  ) {
-    return this.messagingService.createFcmProvider({
-      db,
-      input,
-    });
-  }
-
-  @Post('providers/apns')
-  @Scope('providers.create')
-  @AuditEvent('provider.create', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'createApnsProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a APNs provider',
-  })
-  async createApnsProvider(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateApnsProviderDTO,
-  ) {
-    return this.messagingService.createApnsProvider({
-      db,
-      input,
-    });
-  }
-
-  @Get('providers')
-  @Scope('providers.read')
-  @ResModel(Models.PROVIDER, { list: true })
-  @Sdk({
-    name: 'listProviders',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'List all providers',
-  })
-  async listProviders(
-    @ProjectDatabase() db: Database,
-    @Query('queries', ProvidersQueryPipe) queries: Queries[],
-    @Query('search') search?: string,
-  ) {
-    return this.messagingService.listProviders({
-      db,
-      queries,
-      search,
-    });
-  }
-
-  @Get('providers/:providerId')
-  @Scope('providers.read')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'getProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Get provider',
-  })
-  async getProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.getProvider(db, providerId);
-  }
-
-  @Patch('providers/mailgun/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateMailgunProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Mailgun provider',
-  })
-  async updateMailgunProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateMailgunProviderDTO,
-  ) {
-    return this.messagingService.updateMailgunProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/sendgrid/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateSendgridProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Sendgrid provider',
-  })
-  async updateSendgridProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateSendgridProviderDTO,
-  ) {
-    return this.messagingService.updateSendGridProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/smtp/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateSmtpProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update SMTP provider',
-  })
-  async updateSmtpProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateSMTPProviderDTO,
-  ) {
-    return this.messagingService.updateSmtpProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/msg91/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateMsg91Provider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Msg91 provider',
-  })
-  async updateMsg91Provider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateMsg91ProviderDTO,
-  ) {
-    return this.messagingService.updateMsg91Provider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/telesign/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateTelesignProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Telesign provider',
-  })
-  async updateTelesignProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateTelesignProviderDTO,
-  ) {
-    return this.messagingService.updateTelesignProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/textmagic/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateTextmagicProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Textmagic provider',
-  })
-  async updateTextmagicProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateTextmagicProviderDTO,
-  ) {
-    return this.messagingService.updateTextMagicProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/twilio/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateTwilioProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Twilio provider',
-  })
-  async updateTwilioProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateTwilioProviderDTO,
-  ) {
-    return this.messagingService.updateTwilioProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/vonage/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateVonageProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update Vonage provider',
-  })
-  async updateVonageProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateVonageProviderDTO,
-  ) {
-    return this.messagingService.updateVonageProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/fcm/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateFcmProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update FCM provider',
-  })
-  async updateFcmProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateFcmProviderDTO,
-  ) {
-    return this.messagingService.updateFcmProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Patch('providers/apns/:providerId')
-  @Scope('providers.update')
-  @AuditEvent('provider.update', 'provider/{res.$id}')
-  @ResModel(Models.PROVIDER)
-  @Sdk({
-    name: 'updateApnsProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update APNs provider',
-  })
-  async updateApnsProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateApnsProviderDTO,
-  ) {
-    return this.messagingService.updateApnsProvider({
-      db,
-      providerId,
-      input,
-    });
-  }
-
-  @Delete('providers/:providerId')
-  @Scope('providers.delete')
-  @AuditEvent('provider.delete', 'provider/{params.providerId}')
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deleteProvider',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.NO_CONTENT,
-    description: 'Delete provider',
-  })
-  async deleteProvider(
-    @Param('providerId') providerId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.deleteProvider(db, providerId);
-  }
-
-  @Post('topics')
-  @Scope('topics.create')
-  @AuditEvent('topic.create', 'topic/{res.$id}')
-  @ResModel(Models.TOPIC)
-  @Sdk({
-    name: 'createTopic',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a topic',
-  })
-  async createTopic(
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateTopicDTO,
-  ) {
-    return this.messagingService.createTopic({
-      db,
-      input,
-    });
-  }
-
-  @Get('topics')
-  @Scope('topics.read')
-  @ResModel(Models.TOPIC, { list: true })
-  @Sdk({
-    name: 'listTopics',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'List all topics',
-  })
-  async listTopics(
-    @ProjectDatabase() db: Database,
-    @Query('queries', TopicsQueryPipe) queries: Queries[],
-    @Query('search') search?: string,
-  ) {
-    return this.messagingService.listTopics({
-      db,
-      queries,
-      search,
-    });
-  }
-
-  @Get('topics/:topicId')
-  @Scope('topics.read')
-  @ResModel(Models.TOPIC)
-  @Sdk({
-    name: 'getTopic',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Get topic',
-  })
-  async getTopic(
-    @Param('topicId') topicId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.getTopic(db, topicId);
-  }
-
-  @Patch('topics/:topicId')
-  @Scope('topics.update')
-  @AuditEvent('topic.update', 'topic/{res.$id}')
-  @ResModel(Models.TOPIC)
-  @Sdk({
-    name: 'updateTopic',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Update topic',
-  })
-  async updateTopic(
-    @Param('topicId') topicId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: UpdateTopicDTO,
-  ) {
-    return this.messagingService.updateTopic({
-      db,
-      topicId,
-      input,
-    });
-  }
-
-  @Delete('topics/:topicId')
-  @Scope('topics.delete')
-  @AuditEvent('topic.delete', 'topic/{params.topicId}')
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deleteTopic',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.NO_CONTENT,
-    description: 'Delete topic',
-  })
-  async deleteTopic(
-    @Param('topicId') topicId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.deleteTopic(db, topicId);
-  }
-
-  @Post('topics/:topicId/subscribers')
-  @Scope('subscribers.create')
-  @AuditEvent('subscriber.create', 'subscriber/{res.$id}')
-  @ResModel(Models.SUBSCRIBER)
-  @Sdk({
-    name: 'createSubscriber',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.CREATED,
-    description: 'Create a subscriber for a topic',
-  })
-  async createSubscriber(
-    @Param('topicId') topicId: string,
-    @ProjectDatabase() db: Database,
-    @Body() input: CreateSubscriberDTO,
-  ) {
-    return this.messagingService.createSubscriber({
-      db,
-      topicId,
-      input,
-    });
-  }
-
-  @Get('topics/:topicId/subscribers')
-  @Scope('subscribers.read')
-  @ResModel(Models.SUBSCRIBER, { list: true })
-  @Sdk({
-    name: 'listSubscribers',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'List all subscribers for a topic',
-  })
-  async listSubscribers(
-    @Param('topicId') topicId: string,
-    @ProjectDatabase() db: Database,
-    @Query('queries', SubscribersQueryPipe) queries: Queries[],
-    @Query('search') search?: string,
-  ) {
-    return this.messagingService.listSubscribers({
-      db,
-      topicId,
-      queries,
-      search,
-    });
-  }
-
-  @Get('topics/:topicId/subscribers/:subscriberId')
-  @Scope('subscribers.read')
-  @ResModel(Models.SUBSCRIBER)
-  @Sdk({
-    name: 'getSubscriber',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.OK,
-    description: 'Get a subscriber for a topic',
-  })
-  async getSubscriber(
-    @Param('topicId') topicId: string,
-    @Param('subscriberId') subscriberId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.getSubscriber(db, topicId, subscriberId);
-  }
-
-  @Delete('topics/:topicId/subscribers/:subscriberId')
-  @Scope('subscribers.delete')
-  @AuditEvent('subscriber.delete', 'subscriber/{params.subscriberId}')
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deleteSubscriber',
-    auth: [AuthType.ADMIN, AuthType.KEY],
-    code: HttpStatus.NO_CONTENT,
-    description: 'Delete a subscriber for a topic',
-  })
-  async deleteSubscriber(
-    @Param('topicId') topicId: string,
-    @Param('subscriberId') subscriberId: string,
-    @ProjectDatabase() db: Database,
-  ) {
-    return this.messagingService.deleteSubscriber(db, topicId, subscriberId);
-  }
-
-  @Post('messages/email')
+  @Post('email')
   @Scope('messages.create')
   @AuditEvent('message.create', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'createEmail',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.CREATED,
     description: 'Create email',
   })
@@ -760,13 +72,12 @@ export class MessagingController {
     });
   }
 
-  @Post('messages/sms')
+  @Post('sms')
   @Scope('messages.create')
   @AuditEvent('message.create', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'createSms',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.CREATED,
     description: 'Create SMS',
   })
@@ -782,13 +93,12 @@ export class MessagingController {
     });
   }
 
-  @Post('messages/push')
+  @Post('push')
   @Scope('messages.create')
   @AuditEvent('message.create', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'createPush',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.CREATED,
     description: 'Create push notification',
   })
@@ -804,12 +114,11 @@ export class MessagingController {
     });
   }
 
-  @Get('messages')
+  @Get()
   @Scope('messages.read')
   @ResModel(Models.MESSAGE, { list: true })
   @Sdk({
     name: 'listMessages',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'List all messages',
   })
@@ -825,12 +134,11 @@ export class MessagingController {
     });
   }
 
-  @Get('messages/:messageId')
+  @Get(':messageId')
   @Scope('messages.read')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'getMessage',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'Get message',
   })
@@ -841,12 +149,11 @@ export class MessagingController {
     return this.messagingService.getMessage(db, messageId);
   }
 
-  @Get('messages/:messageId/targets')
+  @Get(':messageId/targets')
   @Scope('messages.read')
   @ResModel(Models.TARGET, { list: true })
   @Sdk({
     name: 'listTargets',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'List all targets for a message',
   })
@@ -862,13 +169,12 @@ export class MessagingController {
     });
   }
 
-  @Patch('messages/email/:messageId')
+  @Patch('email/:messageId')
   @Scope('messages.update')
   @AuditEvent('message.update', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'updateEmail',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'Update email',
   })
@@ -886,13 +192,12 @@ export class MessagingController {
     });
   }
 
-  @Patch('messages/sms/:messageId')
+  @Patch('sms/:messageId')
   @Scope('messages.update')
   @AuditEvent('message.update', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'updateSms',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'Update SMS',
   })
@@ -910,13 +215,12 @@ export class MessagingController {
     });
   }
 
-  @Patch('messages/push/:messageId')
+  @Patch('push/:messageId')
   @Scope('messages.update')
   @AuditEvent('message.update', 'message/{res.$id}')
   @ResModel(Models.MESSAGE)
   @Sdk({
     name: 'updatePush',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.OK,
     description: 'Update push notification',
   })
@@ -934,16 +238,16 @@ export class MessagingController {
     });
   }
 
-  @Delete('messages/:messageId')
+  @Delete(':messageId')
   @Scope('messages.delete')
   @AuditEvent('message.delete', 'message/{params.messageId}')
   @ResModel(Models.NONE)
   @Sdk({
     name: 'deleteMessage',
-    auth: [AuthType.ADMIN, AuthType.KEY],
     code: HttpStatus.NO_CONTENT,
     description: 'Delete message',
   })
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteMessage(
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,

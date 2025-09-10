@@ -1,0 +1,114 @@
+import { Injectable } from '@nestjs/common';
+import type { CreateTopic, ListTopics, UpdateTopic } from './topics.types';
+import { Database, Doc, DuplicateException, ID, Query } from '@nuvix-tech/db';
+import { Exception } from '@nuvix/core/extend/exception';
+import type { Topics } from '@nuvix/utils/types';
+
+@Injectable()
+export class TopicsService {
+  /**
+   * Create Topic
+   */
+  async createTopic({ input, db }: CreateTopic) {
+    const { topicId: inputTopicId, name, subscribe } = input;
+    const topicId = inputTopicId === 'unique()' ? ID.unique() : inputTopicId;
+
+    const topic = new Doc<Topics>({
+      $id: topicId,
+      name,
+      subscribe,
+    });
+
+    try {
+      const createdTopic = await db.createDocument('topics', topic);
+      // TODO: queue for events
+      // this.queueForEvents.setParam('topicId', createdTopic.getId());
+      return createdTopic;
+    } catch (error) {
+      if (error instanceof DuplicateException) {
+        throw new Exception(Exception.TOPIC_ALREADY_EXISTS);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Lists all topics.
+   */
+  async listTopics({ db, queries = [], search }: ListTopics) {
+    if (search) {
+      queries.push(Query.search('search', search));
+    }
+
+    const { filters } = Query.groupByType(queries);
+
+    const topics = await db.find('topics', queries);
+    const total = await db.count('topics', filters);
+
+    return {
+      topics,
+      total,
+    };
+  }
+
+  /**
+   * Get Topic
+   */
+  async getTopic(db: Database, id: string) {
+    const topic = await db.getDocument('topics', id);
+
+    if (topic.empty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    return topic;
+  }
+
+  /**
+   * Updates a topic.
+   */
+  async updateTopic({ topicId, db, input }: UpdateTopic) {
+    const topic = await db.getDocument('topics', topicId);
+
+    if (topic.empty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    if (input.name !== undefined && input.name !== null) {
+      topic.set('name', input.name);
+    }
+
+    if (input.subscribe !== undefined && input.subscribe !== null) {
+      topic.set('subscribe', input.subscribe);
+    }
+
+    const updatedTopic = await db.updateDocument('topics', topicId, topic);
+
+    // TODO: queue for events
+    // this.queueForEvents.setParam('topicId', updatedTopic.getId());
+
+    return updatedTopic;
+  }
+
+  /**
+   * Deletes a topic.
+   */
+  async deleteTopic(db: Database, topicId: string) {
+    const topic = await db.getDocument('topics', topicId);
+
+    if (topic.empty()) {
+      throw new Exception(Exception.TOPIC_NOT_FOUND);
+    }
+
+    await db.deleteDocument('topics', topicId);
+
+    // queueForDeletes
+    //         .setType(DELETE_TYPE_TOPIC)
+    //         .setDocument(topic);
+
+    // queueForEvents
+    //   .setParam('topicId', topic.getId());
+
+    return;
+  }
+}
