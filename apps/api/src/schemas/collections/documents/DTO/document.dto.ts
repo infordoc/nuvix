@@ -12,7 +12,7 @@ export class CreateDocumentDTO {
 
   @IsOptional()
   @IsArray()
-  permissions!: string[];
+  permissions: string[] = [];
 }
 
 export class UpdateDocumentDTO extends PartialType(

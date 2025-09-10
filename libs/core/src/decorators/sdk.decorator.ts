@@ -20,7 +20,7 @@ export enum AuthType {
 export const Auth = Reflector.createDecorator<AuthType | AuthType[]>();
 
 interface SdkOptions {
-  name: string;
+  name?: string;
   auth?: AuthType | AuthType[];
   code?: HttpStatus | number;
   description?: string;
@@ -34,4 +34,8 @@ interface SdkOptions {
   isHidden?: boolean;
 }
 
-export const Sdk = Reflector.createDecorator<SdkOptions>();
+interface RouteOptions {}
+
+const Route = Reflector.createDecorator<SdkOptions & RouteOptions>();
+
+export { Route, Route as Sdk };

@@ -21,7 +21,9 @@ import {
   ApiHook,
   AuditHook,
   AuthHook,
+  CorsHook,
   HostHook,
+  LogsHook,
   ProjectHook,
   StatsHook,
 } from '@nuvix/core/resolvers';
@@ -63,6 +65,8 @@ export class AccountModule implements NestModule {
         SessionsController,
         TargetsController,
       )
+      .apply(CorsHook)
+      .forRoutes('*')
       .apply(AuthHook, ApiHook, StatsHook, AuditHook)
       .forRoutes(
         AccountController,
@@ -71,6 +75,8 @@ export class AccountModule implements NestModule {
         RecoveryController,
         SessionsController,
         TargetsController,
-      );
+      )
+      .apply(LogsHook)
+      .forRoutes('*');
   }
 }

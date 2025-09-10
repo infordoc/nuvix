@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Database } from '@nuvix-tech/db';
+import { Exception } from '@nuvix/core/extend/exception';
 import { CURRENT_SCHEMA_DB } from '@nuvix/utils';
 
 @Injectable()
@@ -12,6 +13,9 @@ export class DocSchemaGuard implements CanActivate {
       return true;
     }
 
-    return false;
+    throw new Exception(
+      Exception.GENERAL_BAD_REQUEST,
+      'Only `document` type schemas allowed to access this route.',
+    );
   }
 }

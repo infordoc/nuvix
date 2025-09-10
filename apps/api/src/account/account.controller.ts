@@ -15,7 +15,7 @@ import { Database } from '@nuvix-tech/db';
 import {
   AuditEvent,
   AuthType,
-  Label,
+  Route,
   Scope,
   Sdk,
   Throttle,
@@ -59,8 +59,7 @@ export class AccountController {
   @Public()
   @Post()
   @Scope('sessions.create')
-  @Label('res.status', 'CREATED')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.ACCOUNT)
   @Throttle(10)
   @AuditEvent('user.create', {
@@ -86,8 +85,7 @@ export class AccountController {
 
   @Get()
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.ACCOUNT)
   async getAccount(@User() user: UsersDoc) {
     if (user.empty()) {
@@ -98,8 +96,7 @@ export class AccountController {
 
   @Delete()
   @Scope('account')
-  @Label('res.status', 'NO_CONTENT')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.NONE)
   @AuditEvent('user.delete', 'user/{res.$id}')
   async deleteAccount(@AuthDatabase() db: Database, @User() user: UsersDoc) {
@@ -126,8 +123,7 @@ export class AccountController {
 
   @Get('prefs')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.PREFERENCES)
   getPrefs(@User() user: UsersDoc) {
     return user.get('prefs', {});
@@ -135,8 +131,7 @@ export class AccountController {
 
   @Patch('prefs')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.PREFERENCES)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updatePrefs(
@@ -187,8 +182,7 @@ export class AccountController {
 
   @Patch('email')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.ACCOUNT)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updateEmail(

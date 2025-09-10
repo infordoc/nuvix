@@ -3,9 +3,18 @@ import { SchemasService } from './schemas.service';
 import { SchemasController } from './schemas.controller';
 import { SchemaHook } from '@nuvix/core/resolvers/hooks/schema.hook';
 import { CollectionsModule } from './collections/collections.module';
-import { CollectionsController } from './collections/collections.controller';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueFor } from '@nuvix/utils';
+import {
+  ProjectHook,
+  HostHook,
+  CorsHook,
+  AuthHook,
+  ApiHook,
+  StatsHook,
+  AuditHook,
+  LogsHook,
+} from '@nuvix/core/resolvers';
 
 @Module({
   imports: [
@@ -18,7 +27,13 @@ import { QueueFor } from '@nuvix/utils';
 export class SchemasModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(SchemaHook)
-      .forRoutes(SchemasController, CollectionsController);
+      .apply(ProjectHook, HostHook)
+      .forRoutes(SchemasController)
+      .apply(CorsHook)
+      .forRoutes('*')
+      .apply(AuthHook, ApiHook, SchemaHook, StatsHook, AuditHook)
+      .forRoutes(SchemasController)
+      .apply(LogsHook)
+      .forRoutes('*');
   }
 }

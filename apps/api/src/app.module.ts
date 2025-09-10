@@ -121,19 +121,8 @@ export class AppModule implements NestModule, OnModuleInit {
 
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectHook, HostHook)
-      .forRoutes(
-        BaseController,
-        UsersController,
-        TeamsController,
-        DatabasesController,
-        AvatarsController,
-        FunctionsController,
-        SchemasController,
-        StorageController,
-        MessagingController,
-        CollectionsController,
-      )
+      .apply(ProjectHook, HostHook, CorsHook)
+      .forRoutes('*')
       .apply(CorsHook)
       .forRoutes('*')
       .apply(AuthHook, ApiHook, StatsHook)

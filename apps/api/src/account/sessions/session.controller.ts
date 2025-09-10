@@ -17,7 +17,7 @@ import {
 import { Database } from '@nuvix-tech/db';
 import {
   AuditEvent,
-  Label,
+  Route,
   Scope,
   Sdk,
   Throttle,
@@ -60,8 +60,7 @@ export class SessionsController {
 
   @Get('sessions')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.SESSION, { list: true })
   async getSessions(
     @User() user: UsersDoc,
@@ -72,8 +71,7 @@ export class SessionsController {
 
   @Delete('sessions')
   @Scope('account')
-  @Label('res.status', 'NO_CONTENT')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.NONE)
   @Throttle(100)
   @AuditEvent('session.delete', 'user/{user.$id}')
@@ -95,8 +93,7 @@ export class SessionsController {
 
   @Get('sessions/:id')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.SESSION)
   async getSession(
     @User() user: UsersDoc,
@@ -108,8 +105,7 @@ export class SessionsController {
 
   @Delete('sessions/:id')
   @Scope('account')
-  @Label('res.status', 'NO_CONTENT')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.NONE)
   @Throttle(100)
   @AuditEvent('session.delete', 'user/{user.$id}')
@@ -133,8 +129,7 @@ export class SessionsController {
 
   @Patch('sessions/:id')
   @Scope('account')
-  @Label('res.status', 'OK')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.SESSION)
   @Throttle(10)
   @AuditEvent('session.update', 'user/{res.userId}')
@@ -150,8 +145,7 @@ export class SessionsController {
   @Public()
   @Post(['sessions/email', 'sessions'])
   @Scope('sessions.create')
-  @Label('res.status', 'CREATED')
-  @Label('res.type', 'JSON')
+  @Route()
   @ResModel(Models.SESSION)
   @Throttle({
     limit: 10,

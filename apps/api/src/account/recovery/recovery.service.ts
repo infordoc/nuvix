@@ -103,14 +103,12 @@ export class RecoveryService {
 
     Authorization.setRole(Role.user(profile.getId()).toString());
 
-    const createdRecovery = await db.createDocument(
-      'tokens',
-      recovery.set('$permissions', [
-        Permission.read(Role.user(profile.getId())),
-        Permission.update(Role.user(profile.getId())),
-        Permission.delete(Role.user(profile.getId())),
-      ]),
-    );
+    recovery.set('$permissions', [
+      Permission.read(Role.user(profile.getId())),
+      Permission.update(Role.user(profile.getId())),
+      Permission.delete(Role.user(profile.getId())),
+    ]);
+    const createdRecovery = await db.createDocument('tokens', recovery);
 
     await db.purgeCachedDocument('users', profile.getId());
 
