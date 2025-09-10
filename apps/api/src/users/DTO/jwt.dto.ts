@@ -1,5 +1,5 @@
 import { IsUID } from '@nuvix/core/validators/input.validator.js';
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsInt, Min, Max } from 'class-validator';
 
 export class CreateJwtDTO {
   @IsUID()

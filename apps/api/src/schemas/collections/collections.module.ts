@@ -9,14 +9,10 @@ import { QueueFor } from '@nuvix/utils';
 import { CollectionsController } from './collections.controller';
 import { CollectionsService } from './collections.service';
 import {
-  ProjectHook,
-  HostHook,
-  CorsHook,
   AuthHook,
   ApiHook,
   StatsHook,
   AuditHook,
-  LogsHook,
   SchemaHook,
 } from '@nuvix/core/resolvers';
 import { DocumentsController } from './documents/documents.controller';
@@ -52,23 +48,12 @@ import { DocumentsService } from './documents/documents.service';
 export class CollectionsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectHook, HostHook)
-      .forRoutes(
-        CollectionsController,
-        AttributesController,
-        IndexesController,
-        DocumentsController,
-      )
-      .apply(CorsHook)
-      .forRoutes('*')
       .apply(AuthHook, ApiHook, SchemaHook, StatsHook, AuditHook)
       .forRoutes(
         CollectionsController,
         AttributesController,
         IndexesController,
         DocumentsController,
-      )
-      .apply(LogsHook)
-      .forRoutes('*');
+      );
   }
 }

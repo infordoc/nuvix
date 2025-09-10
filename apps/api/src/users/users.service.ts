@@ -17,22 +17,19 @@ import {
 import {
   APP_LIMIT_COUNT,
   HashAlgorithm,
-  MessageType,
-  SessionProvider,
+  MetricFor,
+  MetricPeriod,
   TokenType,
 } from '@nuvix/utils';
 import { Auth } from '@nuvix/core/helper/auth.helper';
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto';
-import { EmailValidator } from '@nuvix/core/validators/email.validator';
-import { PhoneValidator } from '@nuvix/core/validators/phone.validator';
 import { PasswordHistoryValidator } from '@nuvix/core/validators/password-history.validator';
-import { MfaType, TOTP } from '@nuvix/core/validators/MFA.validator';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 
 import { CreateTokenDTO } from './DTO/token.dto';
 import { CreateJwtDTO } from './DTO/jwt.dto';
 import { JwtService } from '@nestjs/jwt';
 import {
+  Authorization,
   Database,
   Doc,
   DuplicateException,
@@ -46,13 +43,16 @@ import { CoreService } from '@nuvix/core';
 import type {
   MembershipsDoc,
   ProjectsDoc,
-  ProvidersDoc,
   SessionsDoc,
   TargetsDoc,
   Tokens,
   Users,
   UsersDoc,
 } from '@nuvix/utils/types';
+import { Audit } from '@nuvix/audit';
+import type { LocaleTranslator } from '@nuvix/core/helper';
+import usageConfig from '@nuvix/core/config/usage';
+import { StatsQueue } from '@nuvix/core/resolvers';
 
 @Injectable()
 export class UsersService {
@@ -64,7 +64,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly event: EventEmitter2,
   ) {
-    this.geoDb = coreService.getGeoDb();
+    this.geoDb = this.coreService.getGeoDb();
   }
 
   /**
@@ -461,39 +461,19 @@ export class UsersService {
   }
 
   /**
-   * Update Mfa Status
-   */
-  async updateMfaStatus(db: Database, id: string, mfa: boolean) {
-    const user = await db.getDocument('users', id);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    user.set('mfa', mfa);
-
-    const updatedUser = await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', updatedUser.getId());
-
-    return updatedUser;
-  }
-
-  /**
    * Create a new user
    */
   create(db: Database, createUserDTO: CreateUserDTO, project: ProjectsDoc) {
     return this.createUser(
       db,
-      'plaintext',
+      project,
+      HashAlgorithm.PLAINTEXT,
       {},
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -507,14 +487,14 @@ export class UsersService {
   ) {
     return this.createUser(
       db,
-      'argon2',
+      project,
+      HashAlgorithm.ARGON2,
       {},
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -528,14 +508,14 @@ export class UsersService {
   ) {
     return this.createUser(
       db,
-      'bcrypt',
+      project,
+      HashAlgorithm.BCRYPT,
       {},
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -549,14 +529,14 @@ export class UsersService {
   ) {
     return this.createUser(
       db,
-      'md5',
+      project,
+      HashAlgorithm.MD5,
       {},
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -574,14 +554,14 @@ export class UsersService {
     }
     return this.createUser(
       db,
-      'sha',
+      project,
+      HashAlgorithm.SHA,
       hashOptions,
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -595,14 +575,14 @@ export class UsersService {
   ) {
     return this.createUser(
       db,
-      'phpass',
+      project,
+      HashAlgorithm.PHPASS,
       {},
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -623,14 +603,14 @@ export class UsersService {
     };
     return this.createUser(
       db,
-      'scrypt',
+      project,
+      HashAlgorithm.SCRYPT,
       hashOptions,
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
   }
 
@@ -649,274 +629,15 @@ export class UsersService {
     };
     return this.createUser(
       db,
-      'scryptMod',
+      project,
+      HashAlgorithm.SCRYPT_MOD,
       hashOptions,
       createUserDTO.userId,
       createUserDTO.email,
       createUserDTO.password,
       createUserDTO.phone,
       createUserDTO.name,
-      project,
     );
-  }
-
-  /**
-   * Create a new target
-   */
-  async createTarget(
-    db: Database,
-    userId: string,
-    { targetId, providerId, ...input }: CreateTargetDTO,
-  ) {
-    targetId = targetId === 'unique()' ? ID.unique() : targetId;
-
-    let provider!: ProvidersDoc;
-    if (providerId) {
-      provider = await db.getDocument('providers', providerId);
-    }
-
-    switch (input.providerType as MessageType) {
-      case MessageType.EMAIL:
-        if (!new EmailValidator().$valid(input.identifier)) {
-          throw new Exception(Exception.GENERAL_INVALID_EMAIL);
-        }
-        break;
-      case MessageType.PUSH:
-        break;
-      case MessageType.SMS:
-        if (!new PhoneValidator().$valid(input.identifier)) {
-          throw new Exception(Exception.GENERAL_INVALID_PHONE);
-        }
-        break;
-      default:
-        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
-    }
-
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const existingTarget = await db.getDocument('targets', targetId);
-
-    if (!existingTarget.empty()) {
-      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
-    }
-
-    try {
-      const target = await db.createDocument(
-        'targets',
-        new Doc({
-          $id: targetId,
-          $permissions: [
-            Permission.read(Role.user(user.getId())),
-            Permission.update(Role.user(user.getId())),
-            Permission.delete(Role.user(user.getId())),
-          ],
-          providerId: provider?.getId(),
-          providerInternalId: provider?.getSequence(),
-          providerType: input.providerType,
-          userId: userId,
-          userInternalId: user.getSequence(),
-          identifier: input.identifier,
-          name: input.name,
-        }),
-      );
-
-      await db.purgeCachedDocument('users', user.getId());
-      this.event.emit(
-        `user.${user.getId()}.target.${target.getId()}.create`,
-        target,
-      );
-
-      return target;
-    } catch (error) {
-      if (error instanceof DuplicateException) {
-        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Get all targets for a user
-   */
-  async getTargets(db: Database, userId: string, queries: Query[] = []) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-    queries.push(Query.equal('userId', [userId]));
-
-    return {
-      targets: await db.find('targets', queries),
-      total: await db.count('targets', queries, APP_LIMIT_COUNT),
-    };
-  }
-
-  /**
-   * Update a target
-   */
-  async updateTarget(
-    db: Database,
-    userId: string,
-    targetId: string,
-    input: UpdateTargetDTO,
-  ) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const target = await db.getDocument('targets', targetId);
-
-    if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
-    }
-
-    if (user.getId() !== target.get('userId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
-    }
-
-    if (input.identifier) {
-      const providerType = target.get('providerType');
-
-      switch (providerType as MessageType) {
-        case MessageType.EMAIL:
-          if (!new EmailValidator().$valid(input.identifier)) {
-            throw new Exception(Exception.GENERAL_INVALID_EMAIL);
-          }
-          break;
-        case MessageType.PUSH:
-          break;
-        case MessageType.SMS:
-          if (!new PhoneValidator().$valid(input.identifier)) {
-            throw new Exception(Exception.GENERAL_INVALID_PHONE);
-          }
-          break;
-        default:
-          throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
-      }
-
-      target.set('identifier', input.identifier);
-    }
-
-    if (input.providerId) {
-      const provider = await db.getDocument('providers', input.providerId);
-
-      if (provider.empty()) {
-        throw new Exception(Exception.PROVIDER_NOT_FOUND);
-      }
-
-      if (provider.get('type') !== target.get('providerType')) {
-        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
-      }
-
-      target.set('providerId', provider.getId());
-      target.set('providerInternalId', provider.getSequence());
-    }
-
-    if (input.name) {
-      target.set('name', input.name);
-    }
-
-    const updatedTarget = await db.updateDocument(
-      'targets',
-      target.getId(),
-      target,
-    );
-    await db.purgeCachedDocument('users', user.getId());
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
-    // queueForEvents.setParam('targetId', target.getId());
-
-    return updatedTarget;
-  }
-
-  /**
-   * Get A target
-   */
-  async getTarget(db: Database, userId: string, targetId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const target = await db.getDocument('targets', targetId);
-
-    if (target.empty() || target.get('userId') !== userId) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
-    }
-
-    return target;
-  }
-
-  /**
-   * Delete a target
-   */
-  async deleteTarget(db: Database, userId: string, targetId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const target = await db.getDocument('targets', targetId);
-
-    if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
-    }
-
-    if (user.getId() !== target.get('userId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
-    }
-
-    await db.deleteDocument('targets', target.getId());
-    await db.purgeCachedDocument('users', user.getId());
-
-    // TODO: Implement queue for deletes
-    // queueForDeletes
-    //   .setType(DELETE_TYPE_TARGET)
-    //   .setDocument(target);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('targetId', target.getId());
-
-    return {};
-  }
-
-  /**
-   * Get all sessions
-   */
-  async getSessions(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const sessions = user.get('sessions', []) as SessionsDoc[];
-
-    for (const session of sessions) {
-      const countryCode = session.get('countryCode', '');
-      // TODO: Implement proper locale/translation service
-      const countryName = countryCode ? countryCode.toLowerCase() : 'unknown';
-
-      session.set('countryName', countryName);
-      session.set('current', false);
-    }
-
-    return {
-      sessions: sessions,
-      total: sessions.length,
-    };
   }
 
   /**
@@ -946,145 +667,28 @@ export class UsersService {
   }
 
   /**
-   * Get Mfa factors
-   */
-  async getMfaFactors(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const totp = TOTP.getAuthenticatorFromUser(user);
-
-    return new Doc({
-      [MfaType.TOTP]: totp !== null && totp.get('verified', false),
-      [MfaType.EMAIL]:
-        user.get('email', false) && user.get('emailVerification', false),
-      [MfaType.PHONE]:
-        user.get('phone', false) && user.get('phoneVerification', false),
-    });
-  }
-
-  /**
-   * Get Mfa Recovery Codes
-   */
-  async getMfaRecoveryCodes(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
-
-    if (!mfaRecoveryCodes.length) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
-    }
-
-    return new Doc({
-      recoveryCodes: mfaRecoveryCodes,
-    });
-  }
-
-  /**
-   * Generate Mfa Recovery Codes
-   */
-  async generateMfaRecoveryCodes(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
-
-    if (mfaRecoveryCodes.length > 0) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_ALREADY_EXISTS);
-    }
-
-    const newRecoveryCodes = TOTP.generateBackupCodes();
-    user.set('mfaRecoveryCodes', newRecoveryCodes);
-    await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
-
-    return new Doc({
-      recoveryCodes: newRecoveryCodes,
-    });
-  }
-
-  /**
-   * Regenerate Mfa Recovery Codes
-   */
-  async regenerateMfaRecoveryCodes(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
-    if (!mfaRecoveryCodes.length) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
-    }
-
-    const newRecoveryCodes = TOTP.generateBackupCodes();
-    user.set('mfaRecoveryCodes', newRecoveryCodes);
-    await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
-
-    return new Doc({
-      recoveryCodes: newRecoveryCodes,
-    });
-  }
-
-  /**
-   * Delete Mfa Authenticator
-   */
-  async deleteMfaAuthenticator(db: Database, userId: string, type: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const authenticator = TOTP.getAuthenticatorFromUser(user);
-
-    if (authenticator === null) {
-      throw new Exception(Exception.USER_AUTHENTICATOR_NOT_FOUND);
-    }
-
-    await db.deleteDocument('authenticators', authenticator.getId());
-    await db.purgeCachedDocument('users', user.getId());
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
-
-    return {};
-  }
-
-  /**
    * Get all logs
    */
-  async getLogs(db: Database, userId: string, queries: Query[]) {
+  async getLogs(
+    db: Database,
+    userId: string,
+    locale: LocaleTranslator,
+    queries: Query[] = [],
+  ) {
     const user = await db.getDocument('users', userId);
 
     if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND);
     }
 
-    // Parse and group queries
     const grouped = Query.groupByType(queries);
-    const limit = grouped['limit'] ?? APP_LIMIT_COUNT;
-    const offset = grouped['offset'] ?? 0;
+    const limit = grouped['limit'];
+    if (limit === undefined) {
+      queries.push(Query.limit(APP_LIMIT_COUNT));
+    }
 
-    // Get logs from audit service
-    // const audit = new Audit(db);
-    const logs: any[] = []; //await audit.getLogsByUser(user.getSequence(), limit, offset);
+    const audit = new Audit(db);
+    const logs: any[] = await audit.getLogsByUser(user.getSequence(), queries);
     const output = [];
 
     for (const log of logs) {
@@ -1095,6 +699,12 @@ export class UsersService {
       const os = detector.getOS();
       const client = detector.getClient();
       const device = detector.getDevice();
+
+      const countryCode = this.geoDb.get(log.ip)?.country?.iso_code;
+      const countryName = locale.getText(
+        `countries.${countryCode}`,
+        locale.getText('locale.country.unknown'),
+      );
 
       output.push(
         new Doc({
@@ -1116,14 +726,14 @@ export class UsersService {
           deviceName: device['deviceName'],
           deviceBrand: device['deviceBrand'],
           deviceModel: device['deviceModel'],
-          countryCode: '--', // TODO: Implement geodb lookup
-          countryName: 'Unknown', // TODO: Implement locale translations
+          countryCode,
+          countryName,
         }),
       );
     }
 
     return {
-      total: 0, // await audit.countLogsByUser(user.getSequence()),
+      total: await audit.countLogsByUser(user.getSequence()),
       logs: output,
     };
   }
@@ -1160,8 +770,6 @@ export class UsersService {
     //   .setParam('userId', identity.get('userId'))
     //   .setParam('identityId', identity.getId())
     //   .setPayload(identity); // TODO: Implement proper response formatter
-
-    return {};
   }
 
   /**
@@ -1171,7 +779,8 @@ export class UsersService {
     db: Database,
     userId: string,
     input: CreateTokenDTO,
-    req: NuvixRequest,
+    userAgent: string,
+    ip: string,
   ) {
     const user = await db.getDocument('users', userId);
 
@@ -1194,8 +803,8 @@ export class UsersService {
       type: TokenType.GENERIC,
       secret: Auth.hash(secret),
       expire: expire,
-      userAgent: req.headers['user-agent'] || 'UNKNOWN',
-      ip: req.ip,
+      userAgent: userAgent,
+      ip: ip,
     });
 
     const createdToken = await db.createDocument('tokens', token);
@@ -1250,113 +859,6 @@ export class UsersService {
   }
 
   /**
-   * Create User Session
-   */
-  async createSession(
-    db: Database,
-    userId: string,
-    req: NuvixRequest,
-    project: ProjectsDoc,
-  ) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
-    const detector = new Detector(req.headers['user-agent'] || 'UNKNOWN');
-    const record = this.geoDb.get(req.ip);
-
-    const duration =
-      project.get('auths', {})['duration'] ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
-    const expire = new Date(Date.now() + duration * 1000);
-
-    const session = new Doc<any>({
-      $id: ID.unique(),
-      $permissions: [
-        Permission.read(Role.user(userId)),
-        Permission.update(Role.user(userId)),
-        Permission.delete(Role.user(userId)),
-      ],
-      userId: user.getId(),
-      userInternalId: user.getSequence(),
-      provider: SessionProvider.SERVER,
-      secret: Auth.hash(secret),
-      userAgent: req.headers['user-agent'] || 'UNKNOWN',
-      ip: req.ip,
-      countryCode: record?.country?.iso_code.toLowerCase(),
-      expire: expire,
-      ...detector.getOS(),
-      ...detector.getClient(),
-      ...detector.getDevice(),
-    });
-
-    // TODO: Implement proper locale/translation service
-    const countryName = 'Unknown';
-
-    const createdSession = await db.createDocument('sessions', session);
-    createdSession.set('secret', secret).set('countryName', countryName);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //     .setParam('userId', user.getId())
-    //     .setParam('sessionId', createdSession.getId())
-    //     .setPayload(session); // TODO: Implement proper response formatter
-
-    return createdSession;
-  }
-
-  /**
-   * Delete User Session
-   */
-  async deleteSession(db: Database, userId: string, sessionId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const session = await db.getDocument('sessions', sessionId);
-
-    if (session.empty()) {
-      throw new Exception(Exception.USER_SESSION_NOT_FOUND);
-    }
-
-    await db.deleteDocument('sessions', session.getId());
-    await db.purgeCachedDocument('users', user.getId());
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('sessionId', sessionId)
-    //   .setPayload(session); // TODO: Implement proper response formatter
-
-    return {};
-  }
-
-  /**
-   * Delete User Sessions
-   */
-  async deleteSessions(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
-
-    if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
-    }
-
-    const sessions = user.get('sessions', []) as SessionsDoc[];
-
-    for (const session of sessions) {
-      await db.deleteDocument('sessions', session.getId());
-    }
-
-    await db.purgeCachedDocument('users', user.getId());
-
-    return {};
-  }
-
-  /**
    * Delete User
    */
   async remove(db: Database, userId: string) {
@@ -1368,7 +870,6 @@ export class UsersService {
 
     // Clone user object to send to workers
     const clone = user.clone();
-
     await db.deleteDocument('users', userId);
 
     // TODO: Implement queue for deletes
@@ -1380,8 +881,6 @@ export class UsersService {
     // queueForEvents
     //   .setParam('userId', user.getId())
     //   .setPayload(clone); // TODO: Implement proper response formatter
-
-    return {};
   }
 
   /**
@@ -1396,14 +895,14 @@ export class UsersService {
    */
   async createUser(
     db: Database,
-    hash: string,
-    hashOptions: any,
-    userId: string,
-    email: string | null,
-    password: string | null,
-    phone: string | null,
-    name: string,
     project: ProjectsDoc,
+    hash: HashAlgorithm,
+    hashOptions: any,
+    userId?: string,
+    email?: string,
+    password?: string | null,
+    phone?: string,
+    name?: string,
   ): Promise<UsersDoc> {
     const plaintextPassword = password;
     const hashOptionsObject =
@@ -1424,7 +923,8 @@ export class UsersService {
     }
 
     try {
-      userId = userId === 'unique()' ? ID.unique() : ID.custom(userId);
+      userId =
+        !userId || userId === 'unique()' ? ID.unique() : ID.custom(userId);
 
       if (auths?.['personalDataCheck'] ?? false) {
         const personalDataValidator = new PersonalDataValidator(
@@ -1444,7 +944,7 @@ export class UsersService {
         ? hash === HashAlgorithm.PLAINTEXT
           ? await Auth.passwordHash(password, hash, hashOptionsObject)
           : password
-        : null;
+        : undefined;
 
       const user = new Doc<Users>({
         $id: userId,
@@ -1556,42 +1056,40 @@ export class UsersService {
    * Get usage statistics
    */
   async getUsage(db: Database, range: string = '1d') {
-    const periods = {
-      '1d': { limit: 24, period: '1h', factor: 3600 },
-      '7d': { limit: 7, period: '1d', factor: 86400 },
-    };
-
+    const periods = usageConfig;
     const stats: Record<string, any> = {};
     const usage: Record<string, any> = {};
     const days = periods[range as keyof typeof periods];
-    const metrics = ['users', 'sessions'];
+    const metrics = [MetricFor.USERS, MetricFor.SESSIONS];
 
-    // Skip authorization check as per PHP version
-    for (const metric of metrics) {
-      const result = await db.findOne('stats', [
-        Query.equal('metric', [metric]),
-        Query.equal('period', ['inf']),
-      ]);
+    await Authorization.skip(async () => {
+      for (const metric of metrics) {
+        const result = await db.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', MetricPeriod.INF),
+        );
 
-      stats[metric] = { total: result?.get('value') ?? 0, data: {} };
+        stats[metric] = { total: result?.get('value') ?? 0, data: {} };
 
-      const results = await db.find('stats', [
-        Query.equal('metric', [metric]),
-        Query.equal('period', [days.period]),
-        Query.limit(days.limit),
-        Query.orderDesc('time'),
-      ]);
+        const results = await db.find('stats', qb =>
+          qb
+            .equal('metric', metric)
+            .equal('period', days.period)
+            .limit(days.limit)
+            .orderDesc('time'),
+        );
 
-      stats[metric].data = {};
-      for (const result of results) {
-        stats[metric].data[result.get('time') as string] = {
-          value: result.get('value'),
-        };
+        stats[metric].data = {};
+        for (const result of results) {
+          const time = StatsQueue.formatDate(
+            days.period,
+            result.get('time') as string,
+          )!;
+          stats[metric].data[time] = {
+            value: result.get('value'),
+          };
+        }
       }
-    }
-
-    const format =
-      days.period === '1h' ? 'Y-m-d\\TH:00:00.000P' : 'Y-m-d\\T00:00:00.000P';
+    });
 
     for (const metric of metrics) {
       usage[metric] = {
@@ -1603,7 +1101,10 @@ export class UsersService {
 
       while (leap < Math.floor(Date.now() / 1000)) {
         leap += days.factor;
-        const formatDate = new Date(leap * 1000).toISOString();
+        const formatDate = StatsQueue.formatDate(
+          days.period,
+          new Date(leap * 1000),
+        )!;
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,

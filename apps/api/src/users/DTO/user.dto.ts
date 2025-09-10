@@ -15,24 +15,24 @@ import { IsCustomID } from '@nuvix/core/validators/input.validator';
 export class CreateUserDTO {
   @IsOptional()
   @IsCustomID()
-  userId!: string;
+  userId?: string;
 
   @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @IsOptional()
   @IsPhoneNumber()
-  phone!: string;
+  phone?: string;
 
   @IsOptional()
   @Length(8)
-  password!: string;
+  password?: string;
 
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  name!: string;
+  name?: string;
 }
 
 export class CreateUserWithShaDTO extends CreateUserDTO {
@@ -142,10 +142,4 @@ export class UpdateUserPrefsDTO {
   @IsOptional()
   @IsObject()
   prefs?: Record<string, any>;
-}
-
-export class UpdateMfaStatusDTO {
-  @IsNotEmpty()
-  @IsBoolean()
-  mfa!: boolean;
 }

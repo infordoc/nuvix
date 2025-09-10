@@ -5,16 +5,7 @@ import { SchemaHook } from '@nuvix/core/resolvers/hooks/schema.hook';
 import { CollectionsModule } from './collections/collections.module';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueFor } from '@nuvix/utils';
-import {
-  ProjectHook,
-  HostHook,
-  CorsHook,
-  AuthHook,
-  ApiHook,
-  StatsHook,
-  AuditHook,
-  LogsHook,
-} from '@nuvix/core/resolvers';
+import { AuthHook, ApiHook, StatsHook, AuditHook } from '@nuvix/core/resolvers';
 
 @Module({
   imports: [
@@ -27,13 +18,7 @@ import {
 export class SchemasModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectHook, HostHook)
-      .forRoutes(SchemasController)
-      .apply(CorsHook)
-      .forRoutes('*')
       .apply(AuthHook, ApiHook, SchemaHook, StatsHook, AuditHook)
-      .forRoutes(SchemasController)
-      .apply(LogsHook)
-      .forRoutes('*');
+      .forRoutes(SchemasController);
   }
 }

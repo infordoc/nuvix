@@ -123,8 +123,6 @@ export class AppModule implements NestModule, OnModuleInit {
     consumer
       .apply(ProjectHook, HostHook, CorsHook)
       .forRoutes('*')
-      .apply(CorsHook)
-      .forRoutes('*')
       .apply(AuthHook, ApiHook, StatsHook)
       .forRoutes(
         BaseController,

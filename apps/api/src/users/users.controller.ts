@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -15,7 +17,6 @@ import {
 import { UsersService } from './users.service';
 import {
   CreateUserDTO,
-  UpdateMfaStatusDTO,
   UpdateUserEmailDTO,
   UpdateUserEmailVerificationDTO,
   UpdateUserLabelDTO,
@@ -26,40 +27,44 @@ import {
   UpdateUserPrefsDTO,
   UpdateUserStatusDTO,
 } from './DTO/user.dto';
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto';
 import { Models } from '@nuvix/core/helper/response.helper';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import {
   AuditEvent,
-  Label,
   Namespace,
   Project,
   ResModel,
   Scope,
   AuthType,
   AuthDatabase,
-  Sdk,
+  Locale,
+  Route,
+  Auth,
 } from '@nuvix/core/decorators';
-
 import { CreateTokenDTO } from './DTO/token.dto';
 import { CreateJwtDTO } from './DTO/jwt.dto';
 import type { Database, Query as Queries } from '@nuvix-tech/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import type { ProjectsDoc } from '@nuvix/utils/types';
-import { IdentitiesQueryPipe, UsersQueryPipe } from '@nuvix/core/pipes/queries';
+import {
+  IdentitiesQueryPipe,
+  LogsQueryPipe,
+  UsersQueryPipe,
+} from '@nuvix/core/pipes/queries';
+import type { LocaleTranslator } from '@nuvix/core/helper';
 
 @Namespace('users')
 @Controller({ version: ['1'], path: 'users' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.ADMIN, AuthType.KEY])
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
   @Scope('users.read')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'OK')
+  @Route()
   @ResModel(Models.USER, { list: true })
   async findAll(
     @AuthDatabase() db: Database,
@@ -71,8 +76,7 @@ export class UsersController {
 
   @Post()
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async create(
@@ -85,8 +89,7 @@ export class UsersController {
 
   @Post('argon2')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithArgon2(
@@ -99,8 +102,7 @@ export class UsersController {
 
   @Post('bcrypt')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithBcrypt(
@@ -113,8 +115,7 @@ export class UsersController {
 
   @Post('md5')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithMd5(
@@ -127,8 +128,7 @@ export class UsersController {
 
   @Post('sha')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithSha(
@@ -141,8 +141,7 @@ export class UsersController {
 
   @Post('phpass')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithPhpass(
@@ -155,8 +154,7 @@ export class UsersController {
 
   @Post('scrypt')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScrypt(
@@ -169,8 +167,7 @@ export class UsersController {
 
   @Post('scrypt-modified')
   @Scope('users.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
+  @Route()
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScryptModified(
@@ -200,6 +197,7 @@ export class UsersController {
 
   @Delete('identities/:id')
   @Scope('users.read')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async deleteIdentity(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.deleteIdentity(db, id);
   }
@@ -293,39 +291,6 @@ export class UsersController {
     return this.usersService.updatePhone(db, id, input.phone);
   }
 
-  @Patch(':id/mfa')
-  @ResModel({ type: Models.USER })
-  async updateMfa(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Body() input: UpdateMfaStatusDTO,
-  ) {
-    return this.usersService.updateMfaStatus(db, id, input.mfa);
-  }
-
-  @Post(':id/targets')
-  @Scope('targets.create')
-  @Label('res.type', 'JSON')
-  @Label('res.status', 'CREATED')
-  @ResModel(Models.TARGET)
-  @AuditEvent('target.create', 'target/{res.$id}')
-  async addTarget(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Body() createTargetDTO: CreateTargetDTO,
-  ): Promise<any> {
-    return this.usersService.createTarget(db, id, createTargetDTO);
-  }
-
-  @Get(':id/targets')
-  @ResModel({ type: Models.TARGET, list: true })
-  async getTargets(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ): Promise<any> {
-    return this.usersService.getTargets(db, id);
-  }
-
   @Post(':id/jwts')
   @ResModel({ type: Models.JWT })
   async createJwt(
@@ -334,31 +299,6 @@ export class UsersController {
     @Body() input: CreateJwtDTO,
   ): Promise<any> {
     return this.usersService.createJwt(db, id, input);
-  }
-
-  @Get(':id/sessions')
-  @ResModel({ type: Models.SESSION, list: true })
-  async getSessions(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ): Promise<any> {
-    return this.usersService.getSessions(db, id);
-  }
-
-  @Post(':id/sessions')
-  @ResModel({ type: Models.SESSION })
-  async createSession(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Req() req: any,
-    @Project() project: ProjectsDoc,
-  ): Promise<any> {
-    return this.usersService.createSession(db, id, req, project);
-  }
-
-  @Delete(':id/sessions')
-  async deleteSessions(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.deleteSessions(db, id);
   }
 
   @Get(':id/memberships')
@@ -378,7 +318,13 @@ export class UsersController {
     @Body() input: CreateTokenDTO,
     @Req() req: NuvixRequest,
   ): Promise<any> {
-    return this.usersService.createToken(db, id, input, req);
+    return this.usersService.createToken(
+      db,
+      id,
+      input,
+      req.headers['user-agent'] ?? 'UNKNOWN',
+      req.ip,
+    );
   }
 
   @Get(':id/logs')
@@ -386,9 +332,10 @@ export class UsersController {
   async getLogs(
     @AuthDatabase() db: Database,
     @Param('id') id: string,
-    @Query('queries') queries: Queries[],
+    @Locale() locale: LocaleTranslator,
+    @Query('queries', LogsQueryPipe) queries?: Queries[],
   ): Promise<any> {
-    return this.usersService.getLogs(db, id, queries);
+    return this.usersService.getLogs(db, id, locale, queries);
   }
 
   @Patch(':id/verification')
@@ -411,88 +358,8 @@ export class UsersController {
     return this.usersService.updatePhoneVerification(db, id, input);
   }
 
-  @Get(':id/targets/:targetId')
-  @ResModel({ type: Models.TARGET })
-  async getTarget(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
-  ): Promise<any> {
-    return this.usersService.getTarget(db, id, targetId);
-  }
-
-  @Patch(':id/targets/:targetId')
-  @ResModel({ type: Models.TARGET })
-  async updateTarget(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
-    @Body() input: UpdateTargetDTO,
-  ): Promise<any> {
-    return this.usersService.updateTarget(db, id, targetId, input);
-  }
-
-  @Get(':id/mfa/factors')
-  @ResModel({ type: Models.MFA_FACTORS })
-  async getMfaFactors(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.getMfaFactors(db, id);
-  }
-
-  @Get(':id/mfa/recovery-codes')
-  @ResModel({ type: Models.MFA_RECOVERY_CODES })
-  async getMfaRecoveryCodes(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
-    return this.usersService.getMfaRecoveryCodes(db, id);
-  }
-
-  @Patch(':id/mfa/recovery-codes')
-  @ResModel({ type: Models.MFA_RECOVERY_CODES })
-  async generateMfaRecoveryCodes(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
-    return this.usersService.generateMfaRecoveryCodes(db, id);
-  }
-
-  @Put(':id/mfa/recovery-codes')
-  @ResModel({ type: Models.MFA_RECOVERY_CODES })
-  async regenerateMfaRecoveryCodes(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ) {
-    return this.usersService.regenerateMfaRecoveryCodes(db, id);
-  }
-
-  @Delete(':id/mfa/authenticators/:type')
-  async deleteMfaAuthenticator(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('type') type: string,
-  ) {
-    return this.usersService.deleteMfaAuthenticator(db, id, type);
-  }
-
-  @Delete(':id/session/:sessionId')
-  async deleteSession(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('sessionId') sessionId: string,
-  ) {
-    return this.usersService.deleteSession(db, id, sessionId);
-  }
-
-  @Delete(':id/targets/:targetId')
-  async deleteTarget(
-    @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
-  ) {
-    return this.usersService.deleteTarget(db, id, targetId);
-  }
-
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@AuthDatabase() db: Database, @Param('id') id: string) {
     return this.usersService.remove(db, id);
   }

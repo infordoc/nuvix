@@ -207,7 +207,11 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
     return;
   }
 
-  public static formatDate(period: MetricPeriod, date: Date): string | null {
+  public static formatDate(
+    period: MetricPeriod,
+    date: Date | string,
+  ): string | null {
+    date = typeof date === 'string' ? new Date(date) : date;
     switch (period) {
       case MetricPeriod.INF:
         return null;

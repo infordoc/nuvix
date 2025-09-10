@@ -17,16 +17,7 @@ import { MfaService } from './mfa/mfa.service';
 import { RecoveryService } from './recovery/recovery.service';
 import { SessionService } from './sessions/session.service';
 import { TargetsService } from './targets/targets.service';
-import {
-  ApiHook,
-  AuditHook,
-  AuthHook,
-  CorsHook,
-  HostHook,
-  LogsHook,
-  ProjectHook,
-  StatsHook,
-} from '@nuvix/core/resolvers';
+import { ApiHook, AuditHook, AuthHook, StatsHook } from '@nuvix/core/resolvers';
 
 @Module({
   imports: [
@@ -56,17 +47,6 @@ import {
 export class AccountModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(ProjectHook, HostHook)
-      .forRoutes(
-        AccountController,
-        IdentityController,
-        MfaController,
-        RecoveryController,
-        SessionsController,
-        TargetsController,
-      )
-      .apply(CorsHook)
-      .forRoutes('*')
       .apply(AuthHook, ApiHook, StatsHook, AuditHook)
       .forRoutes(
         AccountController,
@@ -75,8 +55,6 @@ export class AccountModule implements NestModule {
         RecoveryController,
         SessionsController,
         TargetsController,
-      )
-      .apply(LogsHook)
-      .forRoutes('*');
+      );
   }
 }
