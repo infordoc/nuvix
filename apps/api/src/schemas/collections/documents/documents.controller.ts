@@ -19,7 +19,7 @@ import { Models } from '@nuvix/core/helper/response.helper';
 import type { Database, Query as Queries } from '@nuvix-tech/db';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { CurrentDatabase } from '@nuvix/core/decorators/project.decorator';
-import { ResModel, AuthUser as User } from '@nuvix/core/decorators';
+import { Auth, AuthType, ResModel, AuthUser as User } from '@nuvix/core/decorators';
 
 // DTOs
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
@@ -80,22 +80,6 @@ export class DocumentsController {
     );
   }
 
-  @Get(':documentId/logs')
-  @ResModel({ type: Models.LOG, list: true })
-  async findDocumentLogs(
-    @CurrentDatabase() db: Database,
-    @Param('collectionId') collectionId: string,
-    @Param('documentId') documentId: string,
-    @Query('queries', ParseQueryPipe) queries?: Queries[],
-  ) {
-    return this.documentsService.getDocumentLogs(
-      db,
-      collectionId,
-      documentId,
-      queries,
-    );
-  }
-
   @Patch(':documentId')
   @ResModel(Models.DOCUMENT)
   async updateDocument(
@@ -121,5 +105,22 @@ export class DocumentsController {
     @Param('documentId') documentId: string,
   ) {
     return this.documentsService.deleteDocument(db, collectionId, documentId);
+  }
+
+  @Get(':documentId/logs')
+  @ResModel({ type: Models.LOG, list: true })
+  @Auth([AuthType.ADMIN, AuthType.KEY])
+  async findDocumentLogs(
+    @CurrentDatabase() db: Database,
+    @Param('collectionId') collectionId: string,
+    @Param('documentId') documentId: string,
+    @Query('queries', ParseQueryPipe) queries?: Queries[],
+  ) {
+    return this.documentsService.getDocumentLogs(
+      db,
+      collectionId,
+      documentId,
+      queries,
+    );
   }
 }

@@ -22,7 +22,7 @@ import {
   CurrentDatabase,
   Project,
 } from '@nuvix/core/decorators/project.decorator';
-import { ResModel } from '@nuvix/core/decorators';
+import { Auth, AuthType, ResModel } from '@nuvix/core/decorators';
 
 // DTOs
 import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto';
@@ -34,6 +34,7 @@ import { CollectionsQueryPipe } from '@nuvix/core/pipes/queries';
 @Controller({ version: ['1'], path: 'schemas/:schemaId/collections' })
 @UseGuards(ProjectGuard, DocSchemaGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.ADMIN, AuthType.KEY])
 export class CollectionsController {
   constructor(private readonly collectionsService: CollectionsService) {}
 

@@ -20,7 +20,7 @@ import {
   CurrentDatabase,
   Project,
 } from '@nuvix/core/decorators/project.decorator';
-import { ResModel } from '@nuvix/core/decorators';
+import { Auth, AuthType, ResModel } from '@nuvix/core/decorators';
 import { CreateIndexDTO } from './DTO/indexes.dto';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
@@ -33,6 +33,7 @@ import { IndexesQueryPipe } from '@nuvix/core/pipes/queries';
 })
 @UseGuards(ProjectGuard, DocSchemaGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.ADMIN, AuthType.KEY])
 export class IndexesController {
   constructor(private readonly indexesService: IndexesService) {}
 
