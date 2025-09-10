@@ -1,571 +1,248 @@
 import {
   Controller,
   UseInterceptors,
-  ClassSerializerInterceptor,
   Get,
+  Query,
+  ParseDatePipe,
+  UseGuards,
 } from '@nestjs/common';
+import { Authorization, type Database } from '@nuvix-tech/db';
+import { ProjectDatabase, ResModel } from '@nuvix/core/decorators';
+import { Models } from '@nuvix/core/helper';
+import {
+  ProjectGuard,
+  ResponseInterceptor,
+  StatsQueue,
+} from '@nuvix/core/resolvers';
+import { MetricFor, MetricPeriod } from '@nuvix/utils';
 
 @Controller({ version: ['1'], path: 'project' })
-@UseInterceptors(ClassSerializerInterceptor)
+@UseInterceptors(ResponseInterceptor)
+@UseGuards(ProjectGuard)
 export class ProjectController {
   constructor() {}
 
   @Get('usage')
-  async getUsage() {
+  @ResModel(Models.USAGE_PROJECT)
+  async getUsage(
+    @ProjectDatabase() projectDb: Database,
+    @Query('startDate', new ParseDatePipe()) startDate: Date,
+    @Query('endDate', new ParseDatePipe()) endDate: Date,
+    @Query('period') period: MetricPeriod = MetricPeriod.DAY,
+  ) {
+    const stats: Record<string, any> = {};
+    const total: Record<string, number> = {};
+    const usage: Record<string, any[]> = {};
+
+    const firstDay =
+      new Date(startDate).toISOString().split('T')[0] + ' 00:00:00';
+    const lastDay = new Date(endDate).toISOString().split('T')[0] + ' 00:00:00';
+
+    const metrics = {
+      total: [
+        MetricFor.EXECUTIONS,
+        MetricFor.EXECUTIONS_MB_SECONDS,
+        MetricFor.BUILDS_MB_SECONDS,
+        MetricFor.DOCUMENTS,
+        MetricFor.USERS,
+        MetricFor.BUCKETS,
+        MetricFor.FILES_STORAGE,
+        MetricFor.DEPLOYMENTS_STORAGE,
+        MetricFor.BUILDS_STORAGE,
+      ],
+      period: [
+        MetricFor.REQUESTS,
+        MetricFor.INBOUND,
+        MetricFor.OUTBOUND,
+        MetricFor.USERS,
+        MetricFor.EXECUTIONS,
+        MetricFor.EXECUTIONS_MB_SECONDS,
+        MetricFor.BUILDS_MB_SECONDS,
+      ],
+    };
+
+    const factor = period === '1h' ? 3600 : 86400;
+    const limit =
+      period === '1h'
+        ? Math.floor(
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+              (1000 * 60 * 60 * 24),
+          ) * 24
+        : Math.floor(
+            (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+              (1000 * 60 * 60 * 24),
+          );
+
+    await Authorization.skip(async () => {
+      // Fetch total metrics
+      for (const metric of metrics.total) {
+        const result = await projectDb.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', MetricPeriod.INF),
+        );
+        total[metric] = result?.get('value') ?? 0;
+      }
+
+      // Fetch period metrics
+      for (const metric of metrics.period) {
+        const results = await projectDb.find('stats', qb =>
+          qb
+            .equal('metric', metric)
+            .equal('period', period)
+            .greaterThanEqual('time', firstDay)
+            .lessThan('time', lastDay)
+            .limit(limit)
+            .orderDesc('time'),
+        );
+        console.log('results', results);
+        stats[metric] = {};
+        for (const result of results) {
+          const time = result.get('time') as string;
+          console.log('time', time);
+          const formatDate = StatsQueue.formatDate(period, new Date(time))!;
+          stats[metric][formatDate] = {
+            value: result.get('value'),
+          };
+        }
+      }
+    });
+
+    // Generate usage data
+    const now = Math.floor(Date.now() / 1000);
+    for (const metric of metrics.period) {
+      usage[metric] = [];
+      let leap = now - limit * factor;
+      while (leap < now) {
+        leap += factor;
+        const date = new Date(leap * 1000);
+        const formatDate = StatsQueue.formatDate(period, date)!;
+        usage[metric].push({
+          value: stats[metric]?.[formatDate]?.value ?? 0,
+          date: formatDate,
+        });
+      }
+    }
+
+    // Create breakdowns
+    const functions = await projectDb.find('functions');
+    const buckets = await projectDb.find('buckets');
+
+    const executionsBreakdown = await Promise.all(
+      functions.map(async func => {
+        const id = func.getId();
+        const name = func.get('name');
+        const metric = MetricFor.FUNCTION_ID_EXECUTIONS.replace(
+          '{functionInternalId}',
+          func.getSequence().toString(),
+        );
+        const result = await projectDb.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', 'inf'),
+        );
+
+        return {
+          resourceId: id,
+          name: name,
+          value: result?.get('value') ?? 0,
+        };
+      }),
+    );
+
+    const executionsMbSecondsBreakdown = await Promise.all(
+      functions.map(async func => {
+        const id = func.getId();
+        const name = func.get('name');
+        const metric = MetricFor.FUNCTION_ID_EXECUTIONS_MB_SECONDS.replace(
+          '{functionInternalId}',
+          func.getSequence().toString(),
+        );
+        const result = await projectDb.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', 'inf'),
+        );
+
+        return {
+          resourceId: id,
+          name: name,
+          value: result?.get('value') ?? 0,
+        };
+      }),
+    );
+
+    const buildsMbSecondsBreakdown = await Promise.all(
+      functions.map(async func => {
+        const id = func.getId();
+        const name = func.get('name');
+        const metric = MetricFor.FUNCTION_ID_BUILDS_MB_SECONDS.replace(
+          '{functionInternalId}',
+          func.getSequence().toString(),
+        );
+        const result = await projectDb.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', 'inf'),
+        );
+
+        return {
+          resourceId: id,
+          name: name,
+          value: result?.get('value') ?? 0,
+        };
+      }),
+    );
+
+    const bucketsBreakdown = await Promise.all(
+      buckets.map(async bucket => {
+        const id = bucket.getId();
+        const name = bucket.get('name');
+        const metric = MetricFor.BUCKET_ID_FILES_STORAGE.replace(
+          '{bucketInternalId}',
+          bucket.getSequence().toString(),
+        );
+        const result = await projectDb.findOne('stats', qb =>
+          qb.equal('metric', metric).equal('period', 'inf'),
+        );
+
+        return {
+          resourceId: id,
+          name: name,
+          value: result?.get('value') ?? 0,
+        };
+      }),
+    );
+
+    // Merge network inbound + outbound
+    const projectBandwidth: Record<string, number> = {};
+    usage[MetricFor.INBOUND]?.forEach(item => {
+      projectBandwidth[item.date] =
+        (projectBandwidth[item.date] || 0) + item.value;
+    });
+    usage[MetricFor.OUTBOUND]?.forEach(item => {
+      projectBandwidth[item.date] =
+        (projectBandwidth[item.date] || 0) + item.value;
+    });
+
+    const network = Object.entries(projectBandwidth).map(([date, value]) => ({
+      date,
+      value,
+    }));
+
     return {
-      executionsTotal: 0,
-      documentsTotal: 2,
-      databasesTotal: 1,
-      databasesStorageTotal: 262144,
-      usersTotal: 3,
-      filesStorageTotal: 546,
-      functionsStorageTotal: 0,
-      buildsStorageTotal: 0,
-      deploymentsStorageTotal: 0,
-      bucketsTotal: 1,
-      executionsMbSecondsTotal: 0,
-      buildsMbSecondsTotal: 0,
-      requests: [
-        {
-          value: 25,
-          date: '2024-12-11T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-12T00:00:00.000+00:00',
-        },
-        {
-          value: 50,
-          date: '2024-12-13T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-14T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-15T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-16T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-17T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-18T00:00:00.000+00:00',
-        },
-        {
-          value: 22,
-          date: '2024-12-19T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-20T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-21T00:00:00.000+00:00',
-        },
-        {
-          value: 25,
-          date: '2024-12-22T00:00:00.000+00:00',
-        },
-        {
-          value: 34,
-          date: '2024-12-23T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-24T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-25T00:00:00.000+00:00',
-        },
-        {
-          value: 12,
-          date: '2024-12-26T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-27T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-28T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-29T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-30T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2024-12-31T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2025-01-01T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-02T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2025-01-03T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2025-01-04T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2025-01-05T00:00:00.000+00:00',
-        },
-        {
-          value: 26,
-          date: '2025-01-06T00:00:00.000+00:00',
-        },
-        {
-          value: 29,
-          date: '2025-01-07T00:00:00.000+00:00',
-        },
-        {
-          value: 28,
-          date: '2025-01-08T00:00:00.000+00:00',
-        },
-        {
-          value: 28,
-          date: '2025-01-09T00:00:00.000+00:00',
-        },
-        {
-          value: 28,
-          date: '2025-01-10T00:00:00.000+00:00',
-        },
-        {
-          value: 28,
-          date: '2025-01-11T00:00:00.000+00:00',
-        },
-      ],
-      network: [
-        {
-          date: '2024-12-11T00:00:00.000+00:00',
-          value: 36300,
-        },
-        {
-          date: '2024-12-12T00:00:00.000+00:00',
-          value: 37681,
-        },
-        {
-          date: '2024-12-13T00:00:00.000+00:00',
-          value: 79524,
-        },
-        {
-          date: '2024-12-14T00:00:00.000+00:00',
-          value: 41838,
-        },
-        {
-          date: '2024-12-15T00:00:00.000+00:00',
-          value: 43228,
-        },
-        {
-          date: '2024-12-16T00:00:00.000+00:00',
-          value: 43227,
-        },
-        {
-          date: '2024-12-17T00:00:00.000+00:00',
-          value: 43229,
-        },
-        {
-          date: '2024-12-18T00:00:00.000+00:00',
-          value: 43227,
-        },
-        {
-          date: '2024-12-19T00:00:00.000+00:00',
-          value: 37555,
-        },
-        {
-          date: '2024-12-20T00:00:00.000+00:00',
-          value: 43228,
-        },
-        {
-          date: '2024-12-21T00:00:00.000+00:00',
-          value: 43229,
-        },
-        {
-          date: '2024-12-22T00:00:00.000+00:00',
-          value: 43223,
-        },
-        {
-          date: '2024-12-23T00:00:00.000+00:00',
-          value: 77395,
-        },
-        {
-          date: '2024-12-24T00:00:00.000+00:00',
-          value: 51394,
-        },
-        {
-          date: '2024-12-25T00:00:00.000+00:00',
-          value: 52762,
-        },
-        {
-          date: '2024-12-26T00:00:00.000+00:00',
-          value: 25727,
-        },
-        {
-          date: '2024-12-27T00:00:00.000+00:00',
-          value: 51373,
-        },
-        {
-          date: '2024-12-28T00:00:00.000+00:00',
-          value: 51396,
-        },
-        {
-          date: '2024-12-29T00:00:00.000+00:00',
-          value: 51392,
-        },
-        {
-          date: '2024-12-30T00:00:00.000+00:00',
-          value: 52782,
-        },
-        {
-          date: '2024-12-31T00:00:00.000+00:00',
-          value: 51394,
-        },
-        {
-          date: '2025-01-01T00:00:00.000+00:00',
-          value: 51389,
-        },
-        {
-          date: '2025-01-02T00:00:00.000+00:00',
-          value: 0,
-        },
-        {
-          date: '2025-01-03T00:00:00.000+00:00',
-          value: 51980,
-        },
-        {
-          date: '2025-01-04T00:00:00.000+00:00',
-          value: 51977,
-        },
-        {
-          date: '2025-01-05T00:00:00.000+00:00',
-          value: 51979,
-        },
-        {
-          date: '2025-01-06T00:00:00.000+00:00',
-          value: 53364,
-        },
-        {
-          date: '2025-01-07T00:00:00.000+00:00',
-          value: 53796,
-        },
-        {
-          date: '2025-01-08T00:00:00.000+00:00',
-          value: 58338,
-        },
-        {
-          date: '2025-01-09T00:00:00.000+00:00',
-          value: 58340,
-        },
-        {
-          date: '2025-01-10T00:00:00.000+00:00',
-          value: 59727,
-        },
-        {
-          date: '2025-01-11T00:00:00.000+00:00',
-          value: 58338,
-        },
-      ],
-      users: [
-        {
-          value: 0,
-          date: '2024-12-11T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-12T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-13T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-14T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-15T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-16T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-17T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-18T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-19T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-20T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-21T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-22T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-23T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-24T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-25T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-26T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-27T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-28T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-29T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-30T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-31T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-01T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-02T00:00:00.000+00:00',
-        },
-        {
-          value: 1,
-          date: '2025-01-03T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-04T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-05T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-06T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-07T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-08T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-09T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-10T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-11T00:00:00.000+00:00',
-        },
-      ],
-      executions: [
-        {
-          value: 0,
-          date: '2024-12-11T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-12T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-13T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-14T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-15T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-16T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-17T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-18T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-19T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-20T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-21T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-22T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-23T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-24T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-25T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-26T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-27T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-28T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-29T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-30T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2024-12-31T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-01T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-02T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-03T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-04T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-05T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-06T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-07T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-08T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-09T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-10T00:00:00.000+00:00',
-        },
-        {
-          value: 0,
-          date: '2025-01-11T00:00:00.000+00:00',
-        },
-      ],
-      executionsBreakdown: [],
-      bucketsBreakdown: [
-        {
-          resourceId: '677d15310010f991be6e',
-          name: 'TEST (((',
-          value: 546,
-        },
-      ],
-      databasesStorageBreakdown: [
-        {
-          resourceId: '6753f09e000574701965',
-          name: 'class2',
-          value: 262144,
-        },
-      ],
-      executionsMbSecondsBreakdown: [],
-      buildsMbSecondsBreakdown: [],
-      functionsStorageBreakdown: [],
-      authPhoneTotal: 0,
-      authPhoneEstimate: 0,
-      authPhoneCountryBreakdown: [],
+      requests: usage[MetricFor.REQUESTS] || [],
+      network,
+      users: usage[MetricFor.USERS] || [],
+      executions: usage[MetricFor.EXECUTIONS] || [],
+      executionsTotal: total[MetricFor.EXECUTIONS] || 0,
+      executionsMbSecondsTotal: total[MetricFor.EXECUTIONS_MB_SECONDS] || 0,
+      buildsMbSecondsTotal: total[MetricFor.BUILDS_MB_SECONDS] || 0,
+      documentsTotal: total[MetricFor.DOCUMENTS] || 0,
+      usersTotal: total[MetricFor.USERS] || 0,
+      bucketsTotal: total[MetricFor.BUCKETS] || 0,
+      filesStorageTotal: total[MetricFor.FILES_STORAGE] || 0,
+      functionsStorageTotal:
+        (total[MetricFor.DEPLOYMENTS_STORAGE] || 0) +
+        (total[MetricFor.BUILDS_STORAGE] || 0),
+      buildsStorageTotal: total[MetricFor.BUILDS_STORAGE] || 0,
+      deploymentsStorageTotal: total[MetricFor.DEPLOYMENTS_STORAGE] || 0,
+      executionsBreakdown,
+      bucketsBreakdown,
+      executionsMbSecondsBreakdown,
+      buildsMbSecondsBreakdown,
     };
   }
 
