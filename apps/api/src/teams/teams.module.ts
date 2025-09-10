@@ -1,4 +1,8 @@
-import { Module, type MiddlewareConsumer, type NestModule } from '@nestjs/common';
+import {
+  Module,
+  type MiddlewareConsumer,
+  type NestModule,
+} from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { TeamsController } from './teams.controller';
 import { BullModule } from '@nestjs/bullmq';
@@ -21,9 +25,6 @@ export class TeamsModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(AuthHook, ApiHook, StatsHook, AuditHook)
-      .forRoutes(
-        TeamsController,
-        MembershipsController,
-      );
+      .forRoutes(TeamsController, MembershipsController);
   }
 }

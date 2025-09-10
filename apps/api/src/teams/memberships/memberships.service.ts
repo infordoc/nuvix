@@ -263,7 +263,7 @@ export class MembershipsService {
         );
         const customTemplate =
           project.get('templates', {})?.[
-          'email.invitation-' + locale.default
+            'email.invitation-' + locale.default
           ] ?? {};
         const templatePath =
           this.appConfig.assetConfig.templates + '/email-inner-base.tpl';

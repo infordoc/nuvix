@@ -12,7 +12,13 @@ import {
 } from '@nestjs/common';
 import { MembershipsService } from './memberships.service';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { Auth, AuthType, Namespace, ResModel, Scope } from '@nuvix/core/decorators';
+import {
+  Auth,
+  AuthType,
+  Namespace,
+  ResModel,
+  Scope,
+} from '@nuvix/core/decorators';
 
 import { Models } from '@nuvix/core/helper/response.helper';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
@@ -51,7 +57,14 @@ export class MembershipsController {
     @Locale() locale: LocaleTranslator,
     @User() user: UsersDoc,
   ) {
-    return this.membershipsService.addMember(db, id, input, project, user, locale);
+    return this.membershipsService.addMember(
+      db,
+      id,
+      input,
+      project,
+      user,
+      locale,
+    );
   }
 
   @Get()

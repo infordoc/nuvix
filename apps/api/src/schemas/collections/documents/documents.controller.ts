@@ -19,7 +19,12 @@ import { Models } from '@nuvix/core/helper/response.helper';
 import type { Database, Query as Queries } from '@nuvix-tech/db';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { CurrentDatabase } from '@nuvix/core/decorators/project.decorator';
-import { Auth, AuthType, ResModel, AuthUser as User } from '@nuvix/core/decorators';
+import {
+  Auth,
+  AuthType,
+  ResModel,
+  AuthUser as User,
+} from '@nuvix/core/decorators';
 
 // DTOs
 import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';

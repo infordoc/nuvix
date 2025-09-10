@@ -14,7 +14,13 @@ import {
 } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { Auth, AuthType, Namespace, ResModel, Scope } from '@nuvix/core/decorators';
+import {
+  Auth,
+  AuthType,
+  Namespace,
+  ResModel,
+  Scope,
+} from '@nuvix/core/decorators';
 
 import { Models } from '@nuvix/core/helper/response.helper';
 import {
@@ -26,12 +32,8 @@ import { User } from '@nuvix/core/decorators/project-user.decorator';
 import { Database, Query as Queries } from '@nuvix-tech/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import {
-  AuthDatabase,
-} from '@nuvix/core/decorators/project.decorator';
-import {
-  TeamsQueryPipe,
-} from '@nuvix/core/pipes/queries';
+import { AuthDatabase } from '@nuvix/core/decorators/project.decorator';
+import { TeamsQueryPipe } from '@nuvix/core/pipes/queries';
 
 @Namespace('teams')
 @UseGuards(ProjectGuard)

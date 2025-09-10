@@ -19,7 +19,6 @@ import type { UsersDoc } from '@nuvix/utils/types';
 
 @Injectable()
 export class TeamsService {
-
   /**
    * Find all teams
    */

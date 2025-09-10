@@ -38,15 +38,9 @@ import { MessagingModule } from './messaging/messaging.module';
 import { SchemasModule } from './schemas/schemas.module';
 // Controllers
 import { BaseController } from './base/base.controller';
-import { UsersController } from './users/users.controller';
-import { TeamsController } from './teams/teams.controller';
 import { AvatarsController } from './avatars/avatars.controller';
 import { FunctionsController } from './functions/functions.controller';
-import { SchemasController } from './schemas/schemas.controller';
-import { StorageController } from './storage/storage.controller';
-import { MessagingController } from './messaging/messaging.controller';
 import { DatabasesController } from './databases/databases.controller';
-import { CollectionsController } from './schemas/collections/collections.controller';
 
 import { Key } from '@nuvix/core/helper/key.helper';
 import { StatsQueue } from '@nuvix/core/resolvers/queues';
@@ -65,8 +59,8 @@ import { ApiLogsQueue } from '@nuvix/core/resolvers/queues/logs.queue';
             ...redisConfig,
             tls: redisConfig.secure
               ? {
-                  rejectUnauthorized: false,
-                }
+                rejectUnauthorized: false,
+              }
               : undefined,
             enableOfflineQueue: false, // Disable offline queue to avoid job accumulation when Redis is down
             enableReadyCheck: true,
@@ -126,26 +120,14 @@ export class AppModule implements NestModule, OnModuleInit {
       .apply(AuthHook, ApiHook, StatsHook)
       .forRoutes(
         BaseController,
-        UsersController,
-        TeamsController,
         DatabasesController,
         AvatarsController,
         FunctionsController,
-        SchemasController,
-        StorageController,
-        MessagingController,
-        CollectionsController,
       )
       .apply(AuditHook)
       .forRoutes(
-        UsersController,
-        TeamsController,
         DatabasesController,
         FunctionsController,
-        SchemasController,
-        StorageController,
-        MessagingController,
-        CollectionsController,
       )
       .apply(LogsHook)
       .forRoutes('*');

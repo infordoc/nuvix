@@ -3,7 +3,6 @@ import {
   IsString,
   IsArray,
   ArrayMaxSize,
-  IsIn,
   IsOptional,
   Length,
 } from 'class-validator';
@@ -22,8 +21,8 @@ export class CreateFileDTO {
 }
 
 export class UpdateFileDTO extends OmitType(CreateFileDTO, ['fileId']) {
+  @IsOptional()
   @IsString()
   @Length(1, 255)
-  @IsOptional()
-  name!: string;
+  name?: string;
 }
