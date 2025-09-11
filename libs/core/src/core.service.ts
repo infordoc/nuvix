@@ -147,7 +147,7 @@ export class CoreService implements OnModuleDestroy {
   public getPlatform(): Doc<Platform> {
     const data: Platform = {
       auths: {
-        limit: 1,
+        limit: 0,
         personalDataCheck: true,
         passwordHistory: 10,
         duration: undefined,

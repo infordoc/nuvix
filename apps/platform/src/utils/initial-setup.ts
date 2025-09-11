@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { Cache, Memory } from '@nuvix/cache';
 import {
   Database,
   Doc,
@@ -12,10 +11,15 @@ import {
 import collections from '@nuvix/utils/collections';
 import { Audit } from '@nuvix/audit';
 import { Client } from 'pg';
-import { AppConfigService } from '@nuvix/core';
+import { AppConfigService, CoreService } from '@nuvix/core';
+import { NestFastifyApplication } from '@nestjs/platform-fastify';
 
-export async function initSetup(config: AppConfigService) {
+export async function initSetup(
+  app: NestFastifyApplication,
+  config: AppConfigService,
+) {
   const logger = new Logger('Setup');
+  const coreService = app.get(CoreService);
   try {
     const { host, password, port, user, name } =
       config.getDatabaseConfig().platform;
@@ -35,8 +39,7 @@ export async function initSetup(config: AppConfigService) {
     }
 
     const adapter = new Adapter(client);
-    const cacheAdapter = new Memory();
-    const cache = new Cache(cacheAdapter);
+    const cache = coreService.getCache();
     const dbForPlatform = new Database(adapter, cache);
     dbForPlatform.setMeta({
       schema: 'public',
@@ -74,6 +77,8 @@ export async function initSetup(config: AppConfigService) {
           id: collection.$id,
           attributes,
           indexes,
+          permissions: [Permission.create(Role.any())],
+          documentSecurity: true,
         });
       }
 

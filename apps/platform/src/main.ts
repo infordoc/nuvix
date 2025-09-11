@@ -126,7 +126,7 @@ async function bootstrap() {
   });
 
   app.useGlobalFilters(new ErrorFilter(config));
-  await initSetup(config as AppConfigService);
+  await initSetup(app, config as AppConfigService);
 
   const port = parseInt(config.root.get('APP_PLATFORM_PORT', '4100'), 10);
   const host = '0.0.0.0';

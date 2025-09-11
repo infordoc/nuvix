@@ -10,6 +10,7 @@ import { Authorization, type Database } from '@nuvix-tech/db';
 import { ProjectDatabase, ResModel } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
 import {
+  ConsoleInterceptor,
   ProjectGuard,
   ResponseInterceptor,
   StatsQueue,
@@ -17,7 +18,7 @@ import {
 import { MetricFor, MetricPeriod } from '@nuvix/utils';
 
 @Controller({ version: ['1'], path: 'project' })
-@UseInterceptors(ResponseInterceptor)
+@UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 @UseGuards(ProjectGuard)
 export class ProjectController {
   constructor() {}

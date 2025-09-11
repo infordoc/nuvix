@@ -20,8 +20,8 @@ import { JWT_SECRET, QueueFor } from '@nuvix/utils';
 import {
   HostHook,
   AuthHook,
-  ApiHook,
   CorsHook,
+  ApiHook,
 } from '@nuvix/core/resolvers/hooks';
 import { ProjectHook } from './resolvers/hooks/project.hook';
 import { PgMetaController, PgMetaModule } from '@nuvix/pg-meta';

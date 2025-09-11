@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
 import { Models } from '@nuvix/core/helper/response.helper';
-import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { Query as Queries } from '@nuvix-tech/db';
 import { User } from '@nuvix/core/decorators/user.decorator';
