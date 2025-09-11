@@ -1,8 +1,10 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { All, Controller, Query, Res } from '@nestjs/common';
+import { All, Controller, Get, Query, Res } from '@nestjs/common';
+import { ProjectPg } from '@nuvix/core/decorators';
 import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { MailJob, type MailQueueOptions } from '@nuvix/core/resolvers/index.js';
-import { QueueFor } from '@nuvix/utils';
+import type { DataSource } from '@nuvix/pg';
+import { QueueFor, Schemas } from '@nuvix/utils';
 import { Queue } from 'bullmq';
 
 @Controller({ version: ['1'] })
@@ -196,5 +198,10 @@ export class BaseController {
     return {
       success: true,
     };
+  }
+
+  @Get('logs')
+  getLogs(@Query('lines') lines = 100, @ProjectPg() dataSource: DataSource) {
+    return dataSource.table('api_logs').withSchema(Schemas.System);
   }
 }
