@@ -36,6 +36,8 @@ import { Key } from '@nuvix/core/helper/key.helper';
 import { AppConfigService } from '@nuvix/core';
 import { CliModule } from './cli/cli.module';
 import { CliController } from './cli/cli.controller';
+import { InternalModule } from './internal/internal.module';
+import { InternalController } from './internal/internal.controller';
 
 @Module({
   imports: [
@@ -80,6 +82,7 @@ import { CliController } from './cli/cli.controller';
     ProjectModule,
     PgMetaModule,
     CliModule,
+    InternalModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailsQueue, AuditsQueue],
@@ -104,6 +107,7 @@ export class AppModule implements NestModule, OnModuleInit {
         ProjectsController,
         PgMetaController,
         CliController,
+        InternalController,
       );
   }
 }

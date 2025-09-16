@@ -10,11 +10,10 @@ import {
 import { AppService } from './app.service';
 import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
 
 @Controller()
 @UseGuards(AuthGuard)
-@UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
+@UseInterceptors(ResponseInterceptor)
 export class AppController {
   constructor(private readonly appService: AppService) {}
 

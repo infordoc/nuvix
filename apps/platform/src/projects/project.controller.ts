@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Authorization, type Database } from '@nuvix-tech/db';
-import { ProjectDatabase, ResModel } from '@nuvix/core/decorators';
+import { ProjectDatabase, ResModel, Scope } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
 import {
   ConsoleInterceptor,
@@ -24,6 +24,7 @@ export class ProjectController {
   constructor() {}
 
   @Get('usage')
+  @Scope('project.read')
   @ResModel(Models.USAGE_PROJECT)
   async getUsage(
     @ProjectDatabase() projectDb: Database,

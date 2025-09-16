@@ -149,7 +149,8 @@ export class AuthHook implements Hook {
         teamInternalId = project.get('teamInternalId');
       } // TODO: we have to use another approch, or we should pass teamId in headers
       else if (
-        req.url.startsWith('/v1/projects/') &&
+        (req.url.startsWith('/projects/') ||
+          req.url.startsWith('/v1/projects/')) &&
         (req.params as any)['projectId']
       ) {
         const p = await Authorization.skip(
@@ -161,7 +162,8 @@ export class AuthHook implements Hook {
         );
         teamInternalId = p.get('teamInternalId');
       } else if (
-        req.url.startsWith('/v1/projects') &&
+        (req.url.startsWith('/projects') ||
+          req.url.startsWith('/v1/projects')) &&
         params.getFromQuery('teamId')
       ) {
         const teamId = params.getFromQuery('teamId') as string;

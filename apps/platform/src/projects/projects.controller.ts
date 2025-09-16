@@ -64,7 +64,7 @@ export class ProjectsController {
   constructor(private readonly projectService: ProjectService) {}
 
   @Post()
-  @Scope('project.create')
+  @Scope('projects.create')
   @ResModel(Models.PROJECT)
   async create(@Body() createProjectDTO: CreateProjectDTO) {
     const project = await this.projectService.create(createProjectDTO);
@@ -72,7 +72,7 @@ export class ProjectsController {
   }
 
   @Get()
-  @Scope('project.read')
+  @Scope('projects.read')
   @ResModel(Models.PROJECT, { list: true })
   async findAll(
     @Query('queries', ProjectsQueryPipe) queries: Queries[],
@@ -83,14 +83,14 @@ export class ProjectsController {
   }
 
   @Get('env_tokens')
-  @Scope('project.read')
+  @Scope('projects.read')
   @ResModel(Models.ENV_TOKEN, { list: true })
   async listEnvTokens() {
     return this.projectService.listEnvTokens();
   }
 
   @Post('env_tokens')
-  @Scope('project.read')
+  @Scope('projects.read')
   @ResModel(Models.ENV_TOKEN)
   async createEnvToken(
     @Body() body: CreateEnvTokenDTO,
@@ -100,7 +100,7 @@ export class ProjectsController {
   }
 
   @Put('env_tokens/:tokenId')
-  @Scope('project.read')
+  @Scope('projects.read')
   @ResModel(Models.ENV_TOKEN)
   async updateEnvToken(
     @Param('tokenId') tokenId: string,
