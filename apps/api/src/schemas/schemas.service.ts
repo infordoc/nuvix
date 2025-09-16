@@ -21,7 +21,12 @@ import { ASTToQueryBuilder } from '@nuvix/utils/query/builder';
 import { Exception } from '@nuvix/core/extend/exception';
 import { transformPgError } from '@nuvix/utils/database/pg-error';
 import { Raw } from '@nuvix/pg';
-import { Doc, Permission, PermissionsValidator } from '@nuvix-tech/db';
+import {
+  Doc,
+  Permission,
+  PermissionsValidator,
+  PermissionType,
+} from '@nuvix-tech/db';
 import { Database } from '@nuvix-tech/db';
 
 @Injectable()
@@ -275,17 +280,16 @@ export class SchemasService {
     permissions,
     rowId,
   }: UpdatePermissions) {
-    let _permissions = Permission.aggregate(permissions);
-
-    if (_permissions === null) {
-      throw new Exception(
-        Exception.GENERAL_BAD_REQUEST,
-        'Permissions are not valid.',
-      );
+    const allowed = [
+      PermissionType.Read,
+      PermissionType.Update,
+      PermissionType.Delete,
+    ];
+    if (rowId !== undefined && rowId !== null) {
+      allowed.push(PermissionType.Create);
     }
-    permissions = _permissions;
-    const validator = new PermissionsValidator();
 
+    const validator = new PermissionsValidator(undefined, allowed);
     if (!validator.$valid(permissions)) {
       throw new Exception(
         Exception.GENERAL_BAD_REQUEST,
@@ -365,7 +369,7 @@ export class SchemasService {
           }
 
           await updQuery.update({
-            _permissions: newPermissions,
+            roles: newPermissions,
           });
         } else {
           // Insert new row
@@ -380,6 +384,8 @@ export class SchemasService {
         }
       }
     }
+
+    return permissions;
   }
 
   async getPermissions({
@@ -387,7 +393,7 @@ export class SchemasService {
     tableId,
     rowId,
     schema,
-  }: GetPermissions): Promise<Record<string, string[]>> {
+  }: GetPermissions): Promise<string[]> {
     const query = pg
       .table(`${tableId}_perms`)
       .withSchema(schema)
@@ -404,13 +410,17 @@ export class SchemasService {
       roles: string[];
     }>;
 
-    // Normalize result into { type -> permissions[] }
-    const permissions: Record<string, string[]> = {};
-    for (const type of Database.PERMISSIONS) {
-      const row = rows.find(r => r.permission === type);
-      permissions[type] = row ? (row.roles ?? []) : [];
+    const result: string[] = [];
+
+    for (const row of rows) {
+      const type = row.permission; // e.g. "read" | "update" | "delete"
+      const perms: string[] = Array.isArray(row.roles) ? row.roles : [];
+
+      for (const p of perms) {
+        result.push(`${type}("${p}")`);
+      }
     }
 
-    return permissions;
+    return result;
   }
 }

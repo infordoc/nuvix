@@ -58,8 +58,8 @@ export class LogsHook implements Hook {
       team: req[Context.Team]?.empty()
         ? null
         : {
-            $id: req[Context.Team].getId(),
-            name: req[Context.Team].get('name'),
+            $id: req[Context.Team]?.getId(),
+            name: req[Context.Team]?.get('name'),
           },
       auth_type: req[Context.AuthType] || AuthType.SESSION,
       api_key: req[Context.ApiKey]
