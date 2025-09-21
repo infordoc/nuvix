@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Database } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
 import { AuditEvent, Scope, Sdk } from '@nuvix/core/decorators';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
 import { AuthDatabase } from '@nuvix/core/decorators/project.decorator';

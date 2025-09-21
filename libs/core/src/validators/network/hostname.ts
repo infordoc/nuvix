@@ -1,4 +1,4 @@
-import type { Validator } from '@nuvix-tech/db';
+import type { Validator } from '@nuvix/db';
 
 export class Hostname implements Validator {
   private allowList: string[] = [];

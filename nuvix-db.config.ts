@@ -1,4 +1,4 @@
-import { NuvixDBConfig } from '@nuvix-tech/db/config';
+import { NuvixDBConfig } from '@nuvix/db/config';
 import collections from '@nuvix/utils/collections';
 
 const config: NuvixDBConfig = {
@@ -22,7 +22,7 @@ const config: NuvixDBConfig = {
 
   typeGeneration: {
     outputPath: './libs/utils/types/generated.ts',
-    packageName: '@nuvix-tech/db',
+    packageName: '@nuvix/db',
     includeDocTypes: true,
     generateUtilityTypes: true,
     generateQueryTypes: false,

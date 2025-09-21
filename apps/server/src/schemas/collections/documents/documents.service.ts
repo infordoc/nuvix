@@ -13,7 +13,7 @@ import {
   PermissionType,
   Role,
   PermissionsValidator,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { APP_LIMIT_COUNT, SchemaMeta } from '@nuvix/utils';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Exception } from '@nuvix/core/extend/exception';

@@ -23,7 +23,7 @@ import {
   AuthType,
 } from '@nuvix/core/decorators';
 
-import type { Database } from '@nuvix-tech/db';
+import type { Database } from '@nuvix/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import type { ProjectsDoc } from '@nuvix/utils/types';

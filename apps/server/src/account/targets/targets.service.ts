@@ -7,7 +7,7 @@ import {
   Role,
   Authorization,
   DuplicateException,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Detector } from '@nuvix/core/helper/detector.helper';

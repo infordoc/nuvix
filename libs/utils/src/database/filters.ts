@@ -5,7 +5,7 @@ import {
   Query,
   Filter,
   FilterValue,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import {
   APP_LIMIT_SUBQUERY,
   APP_LIMIT_SUBSCRIBERS_SUBQUERY,

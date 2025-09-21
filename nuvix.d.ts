@@ -7,7 +7,7 @@ import type {
   FastifyContextConfig,
   FastifyRouteConfig,
 } from 'fastify';
-import type { Entities } from '@nuvix-tech/db';
+import type { Entities } from '@nuvix/db';
 import type { Entities as NuvixEntities } from '@nuvix/utils/types';
 import type { RouteContext, ThrottleOptions } from '@nuvix/utils';
 import type { AuditEventType } from '@nuvix/core/decorators';
@@ -53,7 +53,7 @@ declare global {
   }
 }
 
-declare module '@nuvix-tech/db' {
+declare module '@nuvix/db' {
   export interface Entities extends NuvixEntities {}
 }
 

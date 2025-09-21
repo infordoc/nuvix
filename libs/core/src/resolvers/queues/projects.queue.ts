@@ -12,7 +12,7 @@ import {
   Doc,
   DuplicateException,
   type Collection,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import {
   DatabaseRole,
   DEFAULT_DATABASE,

@@ -31,7 +31,7 @@ import {
 } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
 
-import { Database, Query as Queries } from '@nuvix-tech/db';
+import { Database, Query as Queries } from '@nuvix/db';
 import {
   CreateEmailMessageDTO,
   CreatePushMessageDTO,

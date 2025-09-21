@@ -5,7 +5,7 @@ import {
   Query,
   QueryException,
   type BaseValidator,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 
 interface Options {
   validators?: BaseValidator[];

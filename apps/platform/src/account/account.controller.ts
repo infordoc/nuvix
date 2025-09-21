@@ -27,7 +27,7 @@ import {
   Scope,
   Throttle,
 } from '@nuvix/core/decorators';
-import { Query as Queries } from '@nuvix-tech/db';
+import { Query as Queries } from '@nuvix/db';
 
 import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
 import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';

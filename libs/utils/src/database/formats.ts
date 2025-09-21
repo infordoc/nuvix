@@ -5,7 +5,7 @@ import {
   Attribute,
   DatetimeValidator,
   NumericType,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import {
   EmailValidator,
   IPValidator,

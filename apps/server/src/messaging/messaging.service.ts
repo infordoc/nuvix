@@ -9,7 +9,7 @@ import type {
   UpdatePushMessage,
   UpdateSmsMessage,
 } from './messaging.types';
-import { Database, Doc, ID, Query } from '@nuvix-tech/db';
+import { Database, Doc, ID, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import {
   MessageType,

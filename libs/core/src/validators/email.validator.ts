@@ -1,4 +1,4 @@
-import { Validator } from '@nuvix-tech/db';
+import { Validator } from '@nuvix/db';
 
 export class EmailValidator implements Validator {
   private allowEmpty: boolean;

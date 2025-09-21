@@ -1,4 +1,4 @@
-import { Validator } from '@nuvix-tech/db';
+import { Validator } from '@nuvix/db';
 
 export class IPValidator implements Validator {
   static readonly ALL = 'all';

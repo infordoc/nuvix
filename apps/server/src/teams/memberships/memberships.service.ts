@@ -17,7 +17,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';

@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Database, Doc } from '@nuvix-tech/db';
+import { Database, Doc } from '@nuvix/db';
 import { DataSource } from '@nuvix/pg';
 import {
   AUDITS_FOR_PROJECT,

@@ -7,7 +7,7 @@ import {
   IndexValidator,
   Query,
   AttributeType,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { APP_LIMIT_COUNT, QueueFor, SchemaMeta, Status } from '@nuvix/utils';
 import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';

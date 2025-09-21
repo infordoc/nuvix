@@ -10,7 +10,7 @@ import {
   configuration,
   QueueFor,
 } from '@nuvix/utils';
-import { Database, StructureValidator } from '@nuvix-tech/db';
+import { Database, StructureValidator } from '@nuvix/db';
 import pg from 'pg';
 import { parse as parseArray } from 'postgres-array';
 import { filters, formats } from '@nuvix/utils/database';

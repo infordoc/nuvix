@@ -16,7 +16,7 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { CollectionsService } from './collections.service';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix-tech/db';
+import type { Database, Query as Queries } from '@nuvix/db';
 import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
 import {
   CurrentDatabase,

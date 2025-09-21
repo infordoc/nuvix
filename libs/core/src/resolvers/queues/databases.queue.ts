@@ -2,7 +2,7 @@ import { OnWorkerEvent, Processor } from '@nestjs/bullmq';
 import { Queue } from './queue';
 import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
-import { Database, Doc, DuplicateException } from '@nuvix-tech/db';
+import { Database, Doc, DuplicateException } from '@nuvix/db';
 import { QueueFor } from '@nuvix/utils';
 import { CoreService } from '@nuvix/core/core.service.js';
 import type { Projects, ProjectsDoc } from '@nuvix/utils/types';

@@ -1,6 +1,6 @@
 import { ApiKey } from '@nuvix/utils';
 import { roles } from '../config/roles';
-import { Doc, RoleName } from '@nuvix-tech/db';
+import { Doc, RoleName } from '@nuvix/db';
 import { JwtService } from '@nestjs/jwt';
 import { KeysDoc, ProjectsDoc } from '@nuvix/utils/types';
 

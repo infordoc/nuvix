@@ -1,4 +1,4 @@
-import { ID as BaseID } from '@nuvix-tech/db';
+import { ID as BaseID } from '@nuvix/db';
 
 /**
  * Helper class to generate ID strings for resources.

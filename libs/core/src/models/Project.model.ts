@@ -1,4 +1,4 @@
-import { Permission } from '@nuvix-tech/db';
+import { Permission } from '@nuvix/db';
 import { AuthProviderModel } from './AuthProvider.model';
 import BaseModel from './base.model';
 import { MockNumberModel } from './MockNumber.model';

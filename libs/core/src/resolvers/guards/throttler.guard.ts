@@ -4,7 +4,7 @@ import {
   CanActivate,
   ExecutionContext,
 } from '@nestjs/common';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { RatelimitService } from '@nuvix/core/rate-limit.service';
 import { Context, RouteContext } from '@nuvix/utils';

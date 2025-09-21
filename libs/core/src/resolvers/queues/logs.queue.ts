@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Queue } from './queue';
 import { QueueFor, Schemas } from '@nuvix/utils';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import { Job } from 'bullmq';
 import { CoreService } from '@nuvix/core/core.service.js';
 import type { ProjectsDoc } from '@nuvix/utils/types';

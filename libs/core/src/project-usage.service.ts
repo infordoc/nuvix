@@ -1,4 +1,4 @@
-import { Database, Doc } from '@nuvix-tech/db';
+import { Database, Doc } from '@nuvix/db';
 import {} from '@nuvix/utils';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';

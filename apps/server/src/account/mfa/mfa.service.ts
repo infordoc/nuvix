@@ -5,7 +5,7 @@ import * as Template from 'handlebars';
 import * as fs from 'fs/promises';
 import path from 'path';
 
-import { Doc, Database, ID, Permission, Role } from '@nuvix-tech/db';
+import { Doc, Database, ID, Permission, Role } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';

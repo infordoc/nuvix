@@ -14,7 +14,7 @@ import {
   NumericType,
   RelationType,
   RelationSide,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import {
   APP_LIMIT_COUNT,
   AttributeFormat,

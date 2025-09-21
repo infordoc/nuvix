@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Authorization, Database, Query } from '@nuvix-tech/db';
+import { Authorization, Database, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Context } from '@nuvix/utils';
 import { Hook } from '../../server/hooks/interface';

@@ -6,7 +6,7 @@ import {
   Collection,
   IndexType,
   Order,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 
 export const authCollections = (
   _for: 'platform' | 'project',

@@ -5,7 +5,7 @@ import {
   DatabaseException,
   Doc,
   Query,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Queue } from './queue';
 import { Exception } from '@nuvix/core/extend/exception';
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq';

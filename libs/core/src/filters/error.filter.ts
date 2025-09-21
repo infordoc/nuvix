@@ -20,7 +20,7 @@ import {
   RelationshipException,
   TimeoutException,
   TruncateException,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 
 @Catch()
 export class ErrorFilter implements ExceptionFilter {

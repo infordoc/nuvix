@@ -8,7 +8,7 @@ import {
   TokenType,
   SessionProvider,
 } from '@nuvix/utils';
-import { Role, UserDimension } from '@nuvix-tech/db';
+import { Role, UserDimension } from '@nuvix/db';
 import {
   MembershipsDoc,
   SessionsDoc,

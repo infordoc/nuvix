@@ -1,4 +1,4 @@
-import { Database, Query } from '@nuvix-tech/db';
+import { Database, Query } from '@nuvix/db';
 import { CreateSubscriberDTO } from './DTO/subscriber.dto';
 
 interface DB {

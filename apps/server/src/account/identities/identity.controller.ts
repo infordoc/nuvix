@@ -10,8 +10,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Database } from '@nuvix-tech/db';
-import { Query as Queries } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
+import { Query as Queries } from '@nuvix/db';
 
 import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';

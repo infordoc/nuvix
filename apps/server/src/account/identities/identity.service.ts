@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Doc, Database, Query } from '@nuvix-tech/db';
+import { Doc, Database, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { APP_LIMIT_COUNT } from '@nuvix/utils';
 import type { IdentitiesDoc, UsersDoc } from '@nuvix/utils/types';

@@ -1,6 +1,6 @@
 import { totp } from 'otplib';
 import { Auth } from '../helper/auth.helper';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import { UsersDoc, type AuthenticatorsDoc } from '@nuvix/utils/types';
 
 enum MfaType {

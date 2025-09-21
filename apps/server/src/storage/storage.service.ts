@@ -7,7 +7,7 @@ import {
   ID,
   Permission,
   Query,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { APP_LIMIT_COUNT, MetricFor, MetricPeriod } from '@nuvix/utils';
 import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';

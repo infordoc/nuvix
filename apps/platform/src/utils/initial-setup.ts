@@ -7,7 +7,7 @@ import {
   DuplicateException,
   Adapter,
   Authorization,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import collections from '@nuvix/utils/collections';
 import { Audit } from '@nuvix/audit';
 import { Client } from 'pg';

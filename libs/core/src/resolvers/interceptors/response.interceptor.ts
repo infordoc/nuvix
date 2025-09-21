@@ -14,7 +14,7 @@ import { isObject } from '@nestjs/common/utils/shared.utils.js';
 import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
 import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface';
 import { TransformerPackage } from '@nestjs/common/interfaces/external/transformer-package.interface';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 
 export const CLASS_SERIALIZER_OPTIONS = 'CLASS_SERIALIZER_OPTIONS';
 

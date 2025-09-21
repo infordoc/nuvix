@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Database } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
 import {
   AuditEvent,
   Route,

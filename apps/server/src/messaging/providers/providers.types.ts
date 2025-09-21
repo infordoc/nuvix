@@ -1,4 +1,4 @@
-import { Database, Query } from '@nuvix-tech/db';
+import { Database, Query } from '@nuvix/db';
 import {
   CreateMailgunProviderDTO,
   UpdateMailgunProviderDTO,

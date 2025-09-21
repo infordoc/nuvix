@@ -1,6 +1,6 @@
 import { Exclude, Expose } from 'class-transformer';
 import { AttributeModel } from './Attribute.model';
-import { AttributeType, OnDelete, RelationType } from '@nuvix-tech/db';
+import { AttributeType, OnDelete, RelationType } from '@nuvix/db';
 import { AttributeFormat } from '@nuvix/utils';
 
 @Exclude()

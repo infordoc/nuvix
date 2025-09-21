@@ -6,7 +6,7 @@ import {
   ParseDatePipe,
   UseGuards,
 } from '@nestjs/common';
-import { Authorization, type Database } from '@nuvix-tech/db';
+import { Authorization, type Database } from '@nuvix/db';
 import { ProjectDatabase, ResModel, Scope } from '@nuvix/core/decorators';
 import { Models } from '@nuvix/core/helper';
 import {

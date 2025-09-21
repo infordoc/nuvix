@@ -5,7 +5,7 @@ import {
   ID,
   IndexType,
   Order,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 
 export const bucketCollections: Record<string, Collection> = {
   files: {

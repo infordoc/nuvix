@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Database } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { CURRENT_SCHEMA_DB } from '@nuvix/utils';
 

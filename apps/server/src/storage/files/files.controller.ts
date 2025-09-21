@@ -20,7 +20,7 @@ import {
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { FilesService } from './files.service';
 import { Models } from '@nuvix/core/helper/response.helper';
-import { Database, Doc, Query as Queries } from '@nuvix-tech/db';
+import { Database, Doc, Query as Queries } from '@nuvix/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import {
   MultipartParam,

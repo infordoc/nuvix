@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { CreateTopic, ListTopics, UpdateTopic } from './topics.types';
-import { Database, Doc, DuplicateException, ID, Query } from '@nuvix-tech/db';
+import { Database, Doc, DuplicateException, ID, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import type { Topics } from '@nuvix/utils/types';
 

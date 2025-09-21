@@ -1,4 +1,4 @@
-import type { Validator } from '@nuvix-tech/db';
+import type { Validator } from '@nuvix/db';
 import { Platform } from './platform';
 import type { PlatformsDoc } from '@nuvix/utils/types';
 import { Hostname } from './hostname';

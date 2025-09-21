@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Authorization, Database, Doc, Query } from '@nuvix-tech/db';
+import { Authorization, Database, Doc, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import ParamsHelper from '@nuvix/core/helper/params.helper';

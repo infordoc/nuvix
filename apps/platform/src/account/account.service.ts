@@ -9,7 +9,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 
 import { CountryResponse, Reader } from 'maxmind';
 import { Exception } from '@nuvix/core/extend/exception';

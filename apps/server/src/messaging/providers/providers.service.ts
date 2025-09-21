@@ -23,7 +23,7 @@ import type {
   UpdateTwilioProvider,
   UpdateVonageProvider,
 } from './providers.types';
-import { Database, Doc, DuplicateException, ID, Query } from '@nuvix-tech/db';
+import { Database, Doc, DuplicateException, ID, Query } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { MessageType } from '@nuvix/utils';
 import type { Providers } from '@nuvix/utils/types';

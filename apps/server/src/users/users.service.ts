@@ -36,7 +36,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { CountryResponse, Reader } from 'maxmind';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CoreService } from '@nuvix/core';

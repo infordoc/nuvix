@@ -5,7 +5,7 @@ import {
   ID,
   IndexType,
   Order,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { authCollections, commonCollections } from './common';
 
 export const consoleCollections: Record<string, Collection> = {

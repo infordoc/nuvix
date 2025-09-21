@@ -29,7 +29,7 @@ import {
   UpdateTeamPrefsDTO,
 } from './DTO/team.dto';
 import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Database, Query as Queries } from '@nuvix-tech/db';
+import { Database, Query as Queries } from '@nuvix/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
 import { AuthDatabase } from '@nuvix/core/decorators/project.decorator';

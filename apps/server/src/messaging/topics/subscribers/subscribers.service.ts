@@ -9,7 +9,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { MessageType, Schemas } from '@nuvix/utils';
 import type { Subscribers } from '@nuvix/utils/types';

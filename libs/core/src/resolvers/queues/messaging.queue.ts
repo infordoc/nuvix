@@ -22,7 +22,7 @@ import {
   Priority,
 } from '@nuvix/messaging';
 import { Device } from '@nuvix/storage';
-import { Database, Doc, Query } from '@nuvix-tech/db';
+import { Database, Doc, Query } from '@nuvix/db';
 import { Injectable, Logger } from '@nestjs/common';
 import { Schemas, QueueFor, MessageType, MessageProvider } from '@nuvix/utils';
 import { MessageStatus } from '@nuvix/core/messaging/status';

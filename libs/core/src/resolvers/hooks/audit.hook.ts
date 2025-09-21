@@ -3,7 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AuditEventType } from '@nuvix/core/decorators';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Hook } from '@nuvix/core/server';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import {
   QueueFor,
   AppMode,

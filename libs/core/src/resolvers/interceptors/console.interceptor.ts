@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Context } from '@nuvix/utils';
-import { Authorization } from '@nuvix-tech/db';
+import { Authorization } from '@nuvix/db';
 import { Reflector } from '@nestjs/core';
 import { Exception } from '../../extend/exception';
 import { TOTP } from '../../validators/MFA.validator';

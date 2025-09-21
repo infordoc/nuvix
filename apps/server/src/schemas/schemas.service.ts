@@ -26,8 +26,8 @@ import {
   Permission,
   PermissionsValidator,
   PermissionType,
-} from '@nuvix-tech/db';
-import { Database } from '@nuvix-tech/db';
+} from '@nuvix/db';
+import { Database } from '@nuvix/db';
 
 @Injectable()
 export class SchemasService {

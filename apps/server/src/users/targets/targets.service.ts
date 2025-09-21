@@ -12,7 +12,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { ProvidersDoc } from '@nuvix/utils/types';
 

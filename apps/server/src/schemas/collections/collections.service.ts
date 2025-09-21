@@ -8,7 +8,7 @@ import {
   LimitException,
   Permission,
   Query,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import {
   APP_LIMIT_COUNT,
   MetricFor,

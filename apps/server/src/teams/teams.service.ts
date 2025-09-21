@@ -13,7 +13,7 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import type { UsersDoc } from '@nuvix/utils/types';
 

@@ -34,7 +34,7 @@ import {
   CreateMailgunProviderDTO,
   UpdateMailgunProviderDTO,
 } from './DTO/mailgun.dto';
-import { Database, Query as Queries } from '@nuvix-tech/db';
+import { Database, Query as Queries } from '@nuvix/db';
 import {
   CreateSendgridProviderDTO,
   UpdateSendgridProviderDTO,

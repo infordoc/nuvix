@@ -16,7 +16,7 @@ import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response
 import { AttributesService } from './attributes.service';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix-tech/db';
+import type { Database, Query as Queries } from '@nuvix/db';
 import {
   CurrentDatabase,
   Project,

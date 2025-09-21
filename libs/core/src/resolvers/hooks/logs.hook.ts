@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { Hook } from '@nuvix/core/server';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import { Context, QueueFor } from '@nuvix/utils';
 import type { Queue } from 'bullmq';
 import type { ProjectsDoc } from '@nuvix/utils/types';

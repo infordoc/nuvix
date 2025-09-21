@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Context, CORE_SCHEMA_DB, MetricFor, QueueFor } from '@nuvix/utils';
-import { Database, Events, Doc } from '@nuvix-tech/db';
+import { Database, Events, Doc } from '@nuvix/db';
 import { Reflector } from '@nestjs/core';
 import { Auth } from '../../helper/auth.helper';
 import { Exception } from '../../extend/exception';

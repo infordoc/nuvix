@@ -3,7 +3,7 @@ import { AppConfigService } from './config.service.js';
 import { Client } from 'pg';
 import IORedis from 'ioredis';
 import { Cache, Redis } from '@nuvix/cache';
-import { Adapter, Database, Doc } from '@nuvix-tech/db';
+import { Adapter, Database, Doc } from '@nuvix/db';
 import { Audit } from '@nuvix/audit';
 import { Local } from '@nuvix/storage';
 import { DataSource, Context } from '@nuvix/pg';

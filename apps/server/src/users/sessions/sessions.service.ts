@@ -5,7 +5,7 @@ import { SessionProvider } from '@nuvix/utils';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { Detector } from '@nuvix/core/helper/detector.helper';
 
-import { Database, Doc, Permission, Role } from '@nuvix-tech/db';
+import { Database, Doc, Permission, Role } from '@nuvix/db';
 import { CountryResponse, Reader } from 'maxmind';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CoreService } from '@nuvix/core';

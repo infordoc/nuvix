@@ -21,7 +21,7 @@ import {
   LOG_LEVELS,
   PROJECT_ROOT,
 } from '@nuvix/utils';
-import { Authorization, Role, storage } from '@nuvix-tech/db';
+import { Authorization, Role, storage } from '@nuvix/db';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
 import QueryString from 'qs';

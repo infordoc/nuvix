@@ -7,7 +7,7 @@ import {
   CursorValidator,
   FilterValidator,
   OrderValidator,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import collections from '@nuvix/utils/collections';
 import { ParseQueryPipe } from '../query.pipe';
 

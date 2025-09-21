@@ -15,7 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Database } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
 import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
 import { Locale } from '@nuvix/core/decorators/locale.decorator';
 import { ResModel } from '@nuvix/core/decorators/res-model.decorator';

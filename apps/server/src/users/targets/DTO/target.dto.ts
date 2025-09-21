@@ -1,5 +1,5 @@
 import { OmitType, PartialType } from '@nestjs/swagger';
-import { Database } from '@nuvix-tech/db';
+import { Database } from '@nuvix/db';
 import { IsCustomID } from '@nuvix/core/validators/input.validator.js';
 import { MessageType } from '@nuvix/utils';
 import { IsString, IsOptional, Length, IsIn } from 'class-validator';

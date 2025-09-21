@@ -15,7 +15,7 @@ import {
   Role,
   Authorization,
   DuplicateException,
-} from '@nuvix-tech/db';
+} from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Auth } from '@nuvix/core/helper/auth.helper';
 import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';

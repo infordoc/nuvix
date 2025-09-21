@@ -4,7 +4,7 @@ import { PROJECT_DB_CLIENT, Context } from '@nuvix/utils';
 
 import { CLIENT } from '../constants';
 import { PostgresMeta } from '../lib';
-import { Doc } from '@nuvix-tech/db';
+import { Doc } from '@nuvix/db';
 import { Exception } from '@nuvix/core/extend/exception';
 import { Client } from 'pg';
 

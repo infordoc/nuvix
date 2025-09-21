@@ -17,7 +17,7 @@ import {
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
 import { StorageService } from './storage.service';
 import { Models } from '@nuvix/core/helper/response.helper';
-import { Database, Query as Queries } from '@nuvix-tech/db';
+import { Database, Query as Queries } from '@nuvix/db';
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
 import {
   ResModel,

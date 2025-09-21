@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Authorization, Database, Doc, Role } from '@nuvix-tech/db';
+import { Authorization, Database, Doc, Role } from '@nuvix/db';
 import {
   ApiKey,
   AppMode,

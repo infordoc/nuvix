@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Exception } from '@nuvix/core/extend/exception';
 import { MfaType, TOTP } from '@nuvix/core/validators/MFA.validator';
 
-import { Database, Doc } from '@nuvix-tech/db';
+import { Database, Doc } from '@nuvix/db';
 
 @Injectable()
 export class MfaService {
