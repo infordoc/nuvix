@@ -142,7 +142,6 @@ const _admins = [
 
 const admins = [..._admins, ...Object.keys(scopes)];
 
-// TODO: THIS SHOULD BE DYNAMIC, we have to store in database
 export const roles = {
   guests: {
     label: 'Guests',

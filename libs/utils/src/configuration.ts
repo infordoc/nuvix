@@ -15,9 +15,8 @@ export default () => ({
     emailTeam: 'team@localhost.test',
     emailSecurity: '',
     userAgent: 'Nuvix-Server v%s. Please report abuse at %s',
-    color: '#f67520',
+    color: '#477f84',
     functionSpecificationDefault: 'default',
-    opensslKey1: 'acd3462d9128abcd',
     debug: {
       colors: process.env['APP_DEBUG_COLORS'] === 'true',
       format: process.env['APP_DEBUG_FORMAT'] === 'json',
@@ -151,8 +150,6 @@ export default () => ({
 
   storage: {
     uploads: path.join(PROJECT_ROOT, 'storage/uploads'),
-    functions: 'storage/functions',
-    builds: 'storage/builds',
     cache: 'storage/cache',
     certificates: 'storage/certificates',
     config: 'storage/config',
@@ -200,13 +197,8 @@ export default () => ({
   },
 
   system: {
-    emailAddress: 'app@nuvix.io',
+    emailAddress: 'support@nuvix.in',
     emailName: 'Nuvix',
-  },
-
-  api: {
-    pythonUrl: process.env['PYTHON_API_URL'],
-    internalPoolApi: process.env['APP_POOL_API'],
   },
 
   logLevels: (process.env['APP_LOG_LEVELS'] ?? '')
@@ -218,11 +210,6 @@ export default () => ({
         acc[level.toLowerCase()] = true;
         return acc;
       },
-      {} as { [key: string]: boolean },
+      {} as { [key: string]: boolean; },
     ),
-
-  cloudflare: {
-    accountId: process.env['APP_CLOUDFLARE_ACCOUNT_ID'],
-    apiKey: process.env['APP_CLOUDFLARE_API_TOKEN'],
-  },
 });

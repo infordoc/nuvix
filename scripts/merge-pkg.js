@@ -5,12 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs/promises';
 
-// A modern way to get the directory name of the current module file,
-// replacing the old __dirname global variable.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Define the fields in package.json that contain dependencies
 const DEP_FIELDS = ['dependencies', 'peerDependencies', 'trustedDependencies'];
 
 /**

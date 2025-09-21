@@ -154,8 +154,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       resultShape,
     );
 
+    // TODO: Fix type casting
     (this.astBuilder.qb as any)[joinType + 'Join'](
-      // TODO: Fix type casting
       this.astBuilder.pg.raw(
         `lateral (${lateralSelectContent})`,
         subQuerySQL.bindings,

@@ -11,8 +11,6 @@ services:
       - nuvix_paltform_data:/var/lib/postgresql/data
     networks:
       - nuvix
-    ports:
-      - '5432:5432'
     healthcheck:
       test:
         [
@@ -43,19 +41,17 @@ services:
       retries: 5
       start_period: 10s
 
-  api:
+  server:
     build:
       context: .
       dockerfile: Dockerfile
       target: runtime
       args:
-        - NPM_TOKEN=${GITHUB_TOKEN}
-        - APP_NAME=api
-    container_name: api
+        - APP_NAME=server
+    container_name: server
     command: ['bun', 'main.js']
     env_file:
       - .env
-      - .env.api
     environment:
       APP_DATABASE_HOST: postgres
       APP_REDIS_HOST: redis
@@ -68,38 +64,8 @@ services:
     networks:
       - nuvix
       - caddy
-    restart: unless-stopped
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '10m'
-        max-file: '5'
-
-  platform:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: runtime
-      args:
-        - NPM_TOKEN=${GITHUB_TOKEN}
-        - APP_NAME=platform
-    container_name: platform
-    command: ['bun', 'main.js']
-    env_file:
-      - .env
-      - .env.platform
-    environment:
-      APP_DATABASE_HOST: postgres
-      APP_REDIS_HOST: redis
-      NODE_ENV: production
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - nuvix
-      - caddy
+    volumes:
+      - nuvix_storage:/usr/src/app/storage
     restart: unless-stopped
     logging:
       driver: 'json-file'
@@ -124,6 +90,7 @@ services:
 
 volumes:
   nuvix_paltform_data:
+  nuvix_storage:
   redis_data:
   caddy_data:
   caddy_config:

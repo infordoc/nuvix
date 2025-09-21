@@ -1,7 +1,3 @@
-api.nuvix.in {
-  reverse_proxy api:4000
-}
-
-server.nuvix.in {
-  reverse_proxy platform:4100
+localhost:4000 {
+  reverse_proxy server:4000
 }

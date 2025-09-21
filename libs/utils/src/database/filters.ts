@@ -9,7 +9,7 @@ import {
 import {
   APP_LIMIT_SUBQUERY,
   APP_LIMIT_SUBSCRIBERS_SUBQUERY,
-  APP_OPENSSL_KEY_1,
+  APP_DATABASE_ENCRYPTION_KEY,
   SchemaMeta,
   Schemas,
 } from '../constants';
@@ -229,7 +229,7 @@ export const filters: Record<
 
   encrypt: {
     encode: value => {
-      const key = APP_OPENSSL_KEY_1;
+      const key = APP_DATABASE_ENCRYPTION_KEY;
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipheriv('aes-128-gcm', key, iv);
       let encrypted = cipher.update(value as string, 'utf8', 'hex');
@@ -252,10 +252,10 @@ export const filters: Record<
       let key: string;
       switch (value.version) {
         case '1':
-          key = APP_OPENSSL_KEY_1;
+          key = APP_DATABASE_ENCRYPTION_KEY;
           break;
         default:
-          key = APP_OPENSSL_KEY_1;
+          key = APP_DATABASE_ENCRYPTION_KEY;
       }
       const iv = Buffer.from(value.iv, 'hex');
       const tag = Buffer.from(value.tag, 'hex');

@@ -73,7 +73,7 @@ export const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 
 /**@deprecated */ export const APP_VERSION_STABLE = '1.0.0';
 /**@deprecated */ export const APP_FUNCTION_SPECIFICATION_DEFAULT = 'default';
-/**@deprecated */ export const APP_OPENSSL_KEY_1 = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
+export const APP_DATABASE_ENCRYPTION_KEY = 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
 
 /**@deprecated */ export const APP_REDIS_PORT = parseInt(
   process.env['APP_REDIS_PORT'] ?? '6379',
@@ -288,8 +288,8 @@ export const APP_LIMIT_COUNT = 5000;
 export const APP_LIMIT_ARRAY_PARAMS_SIZE = 100; // Default maximum of how many elements can there be in API parameter that expects array value
 export const APP_LIMIT_ARRAY_LABELS_SIZE = 1000; // Default maximum of how many labels elements can there be in API parameter that expects array value
 export const APP_LIMIT_ARRAY_ELEMENT_SIZE = 4096; // Default maximum length of element in array parameter represented by maximum URL length.
-/**@deprecated */ export const APP_LIMIT_SUBQUERY = 1000;
-/**@deprecated */ export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 1_000_000;
+export const APP_LIMIT_SUBQUERY = 1000;
+export const APP_LIMIT_SUBSCRIBERS_SUBQUERY = 1_000_000;
 /**@deprecated */ export const APP_LIMIT_WRITE_RATE_DEFAULT = 60; // Default maximum write rate per rate period
 /**@deprecated */ export const APP_LIMIT_WRITE_RATE_PERIOD_DEFAULT = 60; // Default maximum write rate period in seconds
 /**@deprecated */ export const APP_LIMIT_LIST_DEFAULT = 25; // Default maximum number of items to return in list API calls
