@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { MailsQueue } from '@nuvix/core/resolvers/queues/mails.queue';
 import { AuditsQueue } from '@nuvix/core/resolvers/queues/audits.queue';
 import { JWT_SECRET, QueueFor } from '@nuvix/utils';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 // Hooks
 import {
   ApiHook,
@@ -20,7 +21,6 @@ import {
   AuditHook,
 } from '@nuvix/core/resolvers/hooks';
 // Modules
-import { JwtModule, JwtService } from '@nestjs/jwt';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
 import { CoreModule } from '@nuvix/core/core.module';
@@ -31,8 +31,6 @@ import { AvatarsModule } from './avatars/avatars.module';
 import { UsersModule } from './users/users.module';
 import { AccountModule } from './account/account.module';
 import { TeamsModule } from './teams/teams.module';
-import { RealtimeModule } from './realtime/realtime.module';
-import { FunctionsModule } from './functions/functions.module';
 import { StorageModule } from './storage/storage.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { SchemasModule } from './schemas/schemas.module';
@@ -59,8 +57,8 @@ import { ApiLogsQueue } from '@nuvix/core/resolvers/queues/logs.queue';
             ...redisConfig,
             tls: redisConfig.secure
               ? {
-                  rejectUnauthorized: false,
-                }
+                rejectUnauthorized: false,
+              }
               : undefined,
             enableOfflineQueue: false, // Disable offline queue to avoid job accumulation when Redis is down
             enableReadyCheck: true,
@@ -97,8 +95,6 @@ import { ApiLogsQueue } from '@nuvix/core/resolvers/queues/logs.queue';
     AccountModule,
     DatabasesModule,
     AvatarsModule,
-    RealtimeModule,
-    FunctionsModule,
     StorageModule,
     SchemasModule,
     MessagingModule,

@@ -84,18 +84,18 @@ export const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
 /**@deprecated */ export const APP_REDIS_PASSWORD =
   process.env['APP_REDIS_PASSWORD'];
 /**@deprecated */ export const APP_REDIS_DB = parseInt(
-  process.env['APP_REDIS_DB'] ?? '0',
-  10,
-);
+    process.env['APP_REDIS_DB'] ?? '0',
+    10,
+  );
 /**@deprecated */ export const APP_REDIS_SECURE =
   process.env['APP_REDIS_SECURE'] === 'true';
 
 // Email Config
 /**@deprecated */ export const APP_SMTP_HOST = process.env['APP_SMTP_HOST'];
 /**@deprecated */ export const APP_SMTP_PORT = parseInt(
-  process.env['APP_SMTP_PORT'] ?? '587',
-  10,
-);
+    process.env['APP_SMTP_PORT'] ?? '587',
+    10,
+  );
 /**@deprecated */ export const APP_SMTP_SECURE =
   process.env['APP_SMTP_SECURE'] === 'true';
 /**@deprecated */ export const APP_SMTP_USER = process.env['APP_SMTP_USER'];
@@ -129,9 +129,9 @@ export const APP_POSTGRES_PORT = parseInt(
 /**@deprecated */ export const APP_POSTGRES_SSL =
   process.env['APP_POSTGRES_SSL'] === 'true';
 /**@deprecated */ export const APP_POSTGRES_MAX_CONNECTIONS = parseInt(
-  process.env['APP_POSTGRES_MAX_CONNECTIONS'] ?? '100',
-  10,
-);
+    process.env['APP_POSTGRES_MAX_CONNECTIONS'] ?? '100',
+    10,
+  );
 /**@deprecated */ export const APP_SHARED_CLUSTER = true; // Multi-cluster mode not supported yet!
 // Console DB
 /**@deprecated */ export const APP_DATABASE_HOST =
@@ -143,9 +143,9 @@ export const APP_POSTGRES_PORT = parseInt(
 /**@deprecated */ export const APP_DATABASE_NAME =
   process.env['APP_DATABASE_NAME'];
 /**@deprecated */ export const APP_DATABASE_PORT = parseInt(
-  process.env['APP_DATABASE_PORT'] ?? '3306',
-  10,
-);
+    process.env['APP_DATABASE_PORT'] ?? '3306',
+    10,
+  );
 
 /**@deprecated */ export const APP_INTERNAL_POOL_API =
   process.env['APP_POOL_API'];
@@ -252,7 +252,7 @@ const allowedHeaders = [
   cookieDomain: process.env['APP_COOKIE_DOMAIN'] ?? '',
 };
 
-export const LOG_LEVELS: { [key: string]: boolean } = (
+export const LOG_LEVELS: { [key: string]: boolean; } = (
   process.env['APP_LOG_LEVELS'] ?? ''
 )
   .split(',')
@@ -263,7 +263,7 @@ export const LOG_LEVELS: { [key: string]: boolean } = (
       acc[level.toLowerCase()] = true;
       return acc;
     },
-    {} as { [key: string]: boolean },
+    {} as { [key: string]: boolean; },
   );
 
 // APP
@@ -275,10 +275,6 @@ export const APP_EMAIL_TEAM = 'team@localhost.test'; // Default email address
 export const APP_EMAIL_SECURITY = ''; // Default security email address
 export const APP_USERAGENT =
   APP_NAME + '-Server v%s. Please report abuse at %s';
-/**@deprecated use `AppMode.DEFAULT` instead */
-export const APP_MODE_DEFAULT = 'default';
-/**@deprecated use `AppMode.ADMIN` instead */
-/**@deprecated */ export const APP_MODE_ADMIN = 'admin';
 /**@deprecated */ export const APP_PAGING_LIMIT = 12;
 export const APP_MAX_COUNT = 1000;
 export const APP_LIMIT_COUNT = 5000;
@@ -325,9 +321,6 @@ export const APP_STORAGE_MAX_SIZE = 5 * (1000 * 1000 * 1000); // 5GB
 export const APP_STORAGE_LIMIT = 10 * (1000 * 1000 * 1000); // 10GB
 export const APP_HOSTNAME_INTERNAL =
   process.env['APP_HOSTNAME_INTERNAL'] ?? 'localhost';
-// const APP_FUNCTION_SPECIFICATION_DEFAULT = Specification::S_05VCPU_512MB;
-export const APP_FUNCTION_CPUS_DEFAULT = 0.5;
-export const APP_FUNCTION_MEMORY_DEFAULT = 512;
 
 // Debug
 export const APP_DEBUG_COLORS = process.env['APP_DEBUG_COLORS'] === 'true';
@@ -359,19 +352,6 @@ export const DATABASE_RECONNECT_MAX_ATTEMPTS = 10;
 /**@deprecated */ export const DATABASE_TYPE_DELETE_DATABASE =
   'deleteDatabase' as const;
 
-// Build Worker Types
-export const BUILD_TYPE_DEPLOYMENT = 'deployment';
-export const BUILD_TYPE_RETRY = 'retry';
-
-// Message types
-/**@deprecated */ export const MESSAGE_SEND_TYPE_INTERNAL = 'internal' as const;
-/**@deprecated */ export const MESSAGE_SEND_TYPE_EXTERNAL = 'external' as const;
-// Mail Types
-/**@deprecated */ export const MAIL_TYPE_VERIFICATION = 'verification';
-/**@deprecated */ export const MAIL_TYPE_MAGIC_SESSION = 'magicSession';
-/**@deprecated */ export const MAIL_TYPE_RECOVERY = 'recovery';
-/**@deprecated */ export const MAIL_TYPE_INVITATION = 'invitation';
-/**@deprecated */ export const MAIL_TYPE_CERTIFICATE = 'certificate';
 // Auth Types
 export const APP_AUTH_TYPE_SESSION = 'Session';
 export const APP_AUTH_TYPE_JWT = 'JWT';
@@ -379,63 +359,16 @@ export const APP_AUTH_TYPE_KEY = 'Key';
 export const APP_AUTH_TYPE_ADMIN = 'Admin';
 // Response related
 export const MAX_OUTPUT_CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
-// Function headers
-export const FUNCTION_ALLOWLIST_HEADERS_REQUEST = [
-  'content-type',
-  'agent',
-  'content-length',
-  'host',
-];
-export const FUNCTION_ALLOWLIST_HEADERS_RESPONSE = [
-  'content-type',
-  'content-length',
-];
 
-/**@deprecated */
-export const MESSAGE_TYPE_EMAIL = 'email';
-/**@deprecated */
-export const MESSAGE_TYPE_SMS = 'sms';
-/**@deprecated */
-export const MESSAGE_TYPE_PUSH = 'push';
-/**@deprecated use `ApiKey` enum instead */
-export const API_KEY_STANDARD = 'standard';
-/**@deprecated use `ApiKey` enum instead */
-export const API_KEY_DYNAMIC = 'dynamic';
-/**@deprecated */
-export const WORKER_TYPE_USAGE = 'usage';
-
-// Events
-export const EVENT_DELIMITER = '.';
-/**@deprecated */ export const EVENT_USER_CREATE =
-  'user' + EVENT_DELIMITER + 'create';
-/**@deprecated */ export const EVENT_USER_DELETE =
-  'user' + EVENT_DELIMITER + 'delete';
-/**@deprecated */ export const EVENT_USER_UPDATE =
-  'user' + EVENT_DELIMITER + 'update';
-/**@deprecated */ export const EVENT_SESSION_CREATE =
-  'session' + EVENT_DELIMITER + 'create';
-/**@deprecated */ export const EVENT_SESSION_DELETE =
-  'session' + EVENT_DELIMITER + 'delete';
-/**@deprecated */ export const EVENT_SESSIONS_DELETE =
-  'sessions' + EVENT_DELIMITER + 'delete';
-/**@deprecated */ export const EVENT_SESSION_UPDATE =
-  'session' + EVENT_DELIMITER + 'update';
-
-// CLOUD
-export const GOOGLE_CLOUD_API = process.env['GOOGLE_CLOUD_API'];
-
-// _REQUEST is used for inject in request
 export enum AppMode {
   ADMIN = 'admin',
   DEFAULT = 'default',
-  /**@deprecated use Context.Mode */ _REQUEST = 'mode',
 }
 
 export enum ApiKey {
   STANDARD = 'standard',
   DYNAMIC = 'dynamic',
   DEV = 'dev',
-  /**@deprecated use Context.ApiKey*/ _REQUEST = 'apiKey',
 }
 
 export enum Schemas {
@@ -468,6 +401,7 @@ export enum QueueFor {
   LOGS = 'logs',
 }
 
+export const EVENT_DELIMITER = '.';
 export enum AppEvents {
   USER_CREATE = 'user' + EVENT_DELIMITER + 'create',
   USER_DELETE = 'user' + EVENT_DELIMITER + 'delete',
@@ -689,13 +623,4 @@ export enum MetricPeriod {
   WEEK = '1w',
   MONTH = '1m',
   YEAR = '1y',
-}
-
-export enum MetricDateFormat {
-  INF = '0000-00-00 00:00:00',
-  HOUR = 'YYYY-MM-DD HH:00:00',
-  DAY = 'YYYY-MM-DD 00:00:00',
-  WEEK = 'YYYY-MM-DD 00:00:00',
-  MONTH = 'YYYY-MM-01 00:00:00',
-  YEAR = 'YYYY-01-01 00:00:00',
 }
