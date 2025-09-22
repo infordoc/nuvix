@@ -119,7 +119,7 @@ async function bootstrap() {
   });
 
   fastify.decorateRequest('hooks_args', null as any);
-  fastify.addHook('onRequest', (req, res, done) => {
+  fastify.addHook('onRequest', (req: any, res, done) => {
     let size = 0;
 
     // Patch the raw stream push method

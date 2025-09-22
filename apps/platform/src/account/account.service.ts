@@ -595,7 +595,7 @@ export class AccountService {
 
     const updatedSessions = sessions.map((session: SessionsDoc) => {
       const countryName = locale.getText(
-        'countries' + session.get('countryCode', '').toLowerCase(),
+        'countries' + session.get('countryCode', '')?.toLowerCase(),
         locale.getText('locale.country.unknown'),
       );
 
@@ -629,7 +629,7 @@ export class AccountService {
       session.set(
         'countryName',
         locale.getText(
-          'countries' + session.get('countryCode', '').toLowerCase(),
+          'countries' + session.get('countryCode', '')?.toLowerCase(),
           locale.getText('locale.country.unknown'),
         ),
       );
@@ -674,7 +674,7 @@ export class AccountService {
     for (const session of sessions) {
       if (sessionId === session.getId()) {
         const countryName = locale.getText(
-          'countries' + session.get('countryCode', '').toLowerCase(),
+          'countries' + session.get('countryCode', '')?.toLowerCase(),
           locale.getText('locale.country.unknown'),
         );
 
@@ -892,7 +892,7 @@ export class AccountService {
       .status(201);
 
     const countryName = locale.getText(
-      'countries' + session.get('countryCode', '').toLowerCase(),
+      'countries' + session.get('countryCode', '')?.toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 
@@ -2120,7 +2120,7 @@ export class AccountService {
       .status(201);
 
     const countryName = locale.getText(
-      'countries.' + createdSession.get('countryCode', '').toLowerCase(),
+      'countries.' + createdSession.get('countryCode', '')?.toLowerCase(),
       locale.getText('locale.country.unknown'),
     );
 

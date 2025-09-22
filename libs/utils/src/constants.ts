@@ -253,7 +253,7 @@ const allowedHeaders = [
 };
 
 export const LOG_LEVELS: { [key: string]: boolean } = (
-  process.env['APP_LOG_LEVELS'] ?? ''
+  process.env['APP_LOG_LEVELS'] ?? 'log,error,warn'
 )
   .split(',')
   .map(level => level.trim())

@@ -185,7 +185,7 @@ export async function initSetup(
 
         const adminEmail = 'admin@nuvix.local';
         const adminPassword = 'password';
-        const isExists = (
+        const isExists = !(
           await dbForPlatform.findOne('users', qb =>
             qb.equal('email', adminEmail),
           )
