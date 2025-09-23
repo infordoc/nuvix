@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Exception } from '@nuvix/core/extend/exception';
 import { ID } from '@nuvix/core/helper/ID.helper';
 import { APP_LIMIT_COUNT, MessageType } from '@nuvix/utils';
@@ -190,10 +190,6 @@ export class TargetsService {
     );
     await db.purgeCachedDocument('users', user.getId());
 
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
-    // queueForEvents.setParam('targetId', target.getId());
-
     return updatedTarget;
   }
 
@@ -240,14 +236,6 @@ export class TargetsService {
     await db.purgeCachedDocument('users', user.getId());
 
     // TODO: Implement queue for deletes
-    // queueForDeletes
-    //   .setType(DELETE_TYPE_TARGET)
-    //   .setDocument(target);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('targetId', target.getId());
 
     return {};
   }

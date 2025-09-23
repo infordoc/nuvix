@@ -199,13 +199,6 @@ export class RecoveryService {
 
     createdRecovery.set('secret', secret);
 
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', profile.getId())
-    //   .setParam('tokenId', createdRecovery.getId())
-    //   .setUser(profile)
-    //   .setPayload(Response.showSensitive(() => response.output(createdRecovery, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
-
     return createdRecovery;
   }
 
@@ -288,12 +281,6 @@ export class RecoveryService {
      */
     await db.deleteDocument('tokens', verifiedToken.getId());
     await db.purgeCachedDocument('users', profile.getId());
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', profile.getId())
-    //   .setParam('tokenId', recoveryDocument.getId())
-    //   .setPayload(Response.showSensitive(() => response.output(recoveryDocument, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
 
     return recoveryDocument;
   }

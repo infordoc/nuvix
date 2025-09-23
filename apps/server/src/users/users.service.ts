@@ -124,9 +124,6 @@ export class UsersService {
       user.set('prefs', prefs),
     );
 
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', updatedUser.getId());
-
     return updatedUser.get('prefs');
   }
 
@@ -209,9 +206,6 @@ export class UsersService {
         user.getId(),
         user.set('password', '').set('passwordUpdate', new Date()),
       );
-
-      // TODO: Implement queue for events
-      // queueForEvents.setParam('userId', updatedUser.getId());
 
       return updatedUser;
     }
@@ -453,9 +447,6 @@ export class UsersService {
       user.getId(),
       user.set('phoneVerification', input.phoneVerification),
     );
-
-    // TODO: Implement queue for events
-    // queueForEvents.setParam('userId', user.getId());
 
     return updatedUser;
   }
@@ -764,12 +755,6 @@ export class UsersService {
     }
 
     await db.deleteDocument('identities', identityId);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', identity.get('userId'))
-    //   .setParam('identityId', identity.getId())
-    //   .setPayload(identity); // TODO: Implement proper response formatter
   }
 
   /**
@@ -811,12 +796,6 @@ export class UsersService {
     await db.purgeCachedDocument('users', user.getId());
 
     createdToken.set('secret', secret);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('tokenId', createdToken.getId())
-    //   .setPayload(createdToken); // TODO: Implement proper response formatter
 
     return createdToken;
   }
@@ -873,14 +852,6 @@ export class UsersService {
     await db.deleteDocument('users', userId);
 
     // TODO: Implement queue for deletes
-    // queueForDeletes
-    //   .setType(DELETE_TYPE_DOCUMENT)
-    //   .setDocument(clone);
-
-    // TODO: Implement queue for events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setPayload(clone); // TODO: Implement proper response formatter
   }
 
   /**

@@ -74,11 +74,6 @@ export class TargetsService {
 
       await db.purgeCachedDocument('users', user.getId());
 
-      // TODO: Handle Events
-      // queueForEvents
-      //   .setParam('userId', user.getId())
-      //   .setParam('targetId', createdTarget.getId());
-
       return createdTarget;
     } catch (error) {
       if (error instanceof DuplicateException) {
@@ -129,11 +124,6 @@ export class TargetsService {
 
     await db.purgeCachedDocument('users', user.getId());
 
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('targetId', updatedTarget.getId());
-
     return updatedTarget;
   }
 
@@ -162,15 +152,7 @@ export class TargetsService {
     await db.purgeCachedDocument('users', user.getId());
 
     // TODO: Handle Delete Queue
-    // queueForDeletes
-    //   .setType(DELETE_TYPE_TARGET)
-    //   .setDocument(target);
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('targetId', target.getId())
-    //   .setPayload(response.output(target, Response.MODEL_TARGET));
+    // Delete resource that depends on Targets (like in messaging)
 
     return {};
   }

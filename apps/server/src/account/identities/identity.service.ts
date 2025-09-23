@@ -56,12 +56,6 @@ export class IdentityService {
     }
 
     await db.deleteDocument('identities', identityId);
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', identity.get('userId'))
-    //   .setParam('identityId', identity.getId())
-    //   .setPayload(response.output(identity, Response.MODEL_IDENTITY));
   }
 }
 

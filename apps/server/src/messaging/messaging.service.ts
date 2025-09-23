@@ -183,8 +183,6 @@ export class MessagingService {
         break;
     }
 
-    // queueForEvents.setParam('messageId', createdMessage.getId());
-
     return createdMessage;
   }
 
@@ -291,8 +289,6 @@ export class MessagingService {
         );
         break;
     }
-
-    // queueForEvents.setParam('messageId', createdMessage.getId());
 
     return createdMessage;
   }
@@ -483,8 +479,6 @@ export class MessagingService {
         );
         break;
     }
-
-    // queueForEvents.setParam('messageId', createdMessage.getId());
 
     return createdMessage;
   }
@@ -744,8 +738,6 @@ export class MessagingService {
       });
     }
 
-    // queueForEvents.setParam('messageId', updatedMessage.getId());
-
     return updatedMessage;
   }
 
@@ -892,8 +884,6 @@ export class MessagingService {
         message: updatedMessage,
       });
     }
-
-    // queueForEvents.setParam('messageId', updatedMessage.getId());
 
     return updatedMessage;
   }
@@ -1146,8 +1136,6 @@ export class MessagingService {
       });
     }
 
-    // queueForEvents.setParam('messageId', updatedMessage.getId());
-
     return updatedMessage;
   }
 
@@ -1187,10 +1175,5 @@ export class MessagingService {
     }
 
     await db.deleteDocument('messages', message.getId());
-
-    // TODO: queue for events
-    // this.queueForEvents
-    //   .setParam('messageId', message.getId())
-    //   .setPayload(response.output(message, Response.MODEL_MESSAGE));
   }
 }

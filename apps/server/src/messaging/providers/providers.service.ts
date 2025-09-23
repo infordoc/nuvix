@@ -88,8 +88,7 @@ export class ProvidersService {
 
     try {
       const createdProvider = await db.createDocument('providers', provider);
-      // TODO: queue for events
-      // this.queueForEvents.setParam('providerId', createdProvider.getId());
+
       return createdProvider;
     } catch (error) {
       if (error instanceof DuplicateException) {
@@ -453,8 +452,6 @@ export class ProvidersService {
       provider.getId(),
       provider,
     );
-    // TODO: queue for events
-    // this.queueForEvents.setParam('providerId', updatedProvider.getId());
 
     return updatedProvider;
   }
@@ -736,8 +733,5 @@ export class ProvidersService {
     }
 
     await db.deleteDocument('providers', providerId);
-
-    // TODO: queue for events
-    // this.queueForEvents.setParam('providerId', providerId);
   }
 }

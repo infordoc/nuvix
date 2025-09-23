@@ -75,9 +75,6 @@ export class MfaService {
       await db.updateDocument('sessions', session.getId(), session);
     }
 
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
-
     return user;
   }
 
@@ -172,9 +169,6 @@ export class MfaService {
     await db.createDocument('authenticators', newAuthenticator);
     await db.purgeCachedDocument('users', user.getId());
 
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
-
     return model;
   }
 
@@ -237,9 +231,6 @@ export class MfaService {
     session.set('factors', uniqueFactors);
     await db.updateDocument('sessions', session.getId(), session);
 
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
-
     return user;
   }
 
@@ -259,9 +250,6 @@ export class MfaService {
     const newRecoveryCodes = TOTP.generateBackupCodes();
     user.set('mfaRecoveryCodes', newRecoveryCodes);
     await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
 
     const document = new Doc({
       recoveryCodes: newRecoveryCodes,
@@ -286,9 +274,6 @@ export class MfaService {
     const newMfaRecoveryCodes = TOTP.generateBackupCodes();
     user.set('mfaRecoveryCodes', newMfaRecoveryCodes);
     await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
 
     const document = new Doc({
       recoveryCodes: newMfaRecoveryCodes,
@@ -320,9 +305,6 @@ export class MfaService {
 
     await db.deleteDocument('authenticators', authenticator.getId());
     await db.purgeCachedDocument('users', user.getId());
-
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
   }
 
   /**

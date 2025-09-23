@@ -21,8 +21,7 @@ export class TopicsService {
 
     try {
       const createdTopic = await db.createDocument('topics', topic);
-      // TODO: queue for events
-      // this.queueForEvents.setParam('topicId', createdTopic.getId());
+
       return createdTopic;
     } catch (error) {
       if (error instanceof DuplicateException) {
@@ -84,9 +83,6 @@ export class TopicsService {
 
     const updatedTopic = await db.updateDocument('topics', topicId, topic);
 
-    // TODO: queue for events
-    // this.queueForEvents.setParam('topicId', updatedTopic.getId());
-
     return updatedTopic;
   }
 
@@ -102,13 +98,7 @@ export class TopicsService {
 
     await db.deleteDocument('topics', topicId);
 
-    // queueForDeletes
-    //         .setType(DELETE_TYPE_TOPIC)
-    //         .setDocument(topic);
-
-    // queueForEvents
-    //   .setParam('topicId', topic.getId());
-
+    // TODO: handle topics delete queue
     return;
   }
 }

@@ -95,11 +95,6 @@ export class SubscribersService {
         db.increaseDocumentAttribute('topics', topicId, totalAttribute),
       );
 
-      // TODO: queue for events
-      // this.queueForEvents
-      //   .setParam('topicId', topic.getId())
-      //   .setParam('subscriberId', createdSubscriber.getId());
-
       createdSubscriber.set('target', target).set('userName', user.get('name'));
 
       return createdSubscriber;
@@ -238,10 +233,5 @@ export class SubscribersService {
     await Authorization.skip(() =>
       db.decreaseDocumentAttribute('topics', topicId, totalAttribute, 0),
     );
-
-    // TODO: queue for events
-    // this.queueForEvents
-    //   .setParam('topicId', topic.getId())
-    //   .setParam('subscriberId', subscriber.getId());
   }
 }

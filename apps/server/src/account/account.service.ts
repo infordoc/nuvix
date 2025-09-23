@@ -408,9 +408,6 @@ export class AccountService {
 
     user = await db.updateDocument('users', user.getId(), user);
 
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
-
     return user;
   }
 
@@ -498,9 +495,6 @@ export class AccountService {
       throw error;
     }
 
-    // TODO: Handle Events
-    // queueForEvents.setParam('userId', user.getId());
-
     return user;
   }
 
@@ -521,11 +515,6 @@ export class AccountService {
     user.set('status', false);
 
     user = await db.updateDocument('users', user.getId(), user);
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setPayload(response.output(user, Response.MODEL_ACCOUNT));
 
     if (!request.domainVerification) {
       response.header('X-Fallback-Cookies', JSON.stringify([]));
@@ -682,12 +671,6 @@ export class AccountService {
 
     createdVerification.set('secret', verificationSecret);
 
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('tokenId', createdVerification.getId())
-    //   .setPayload(Response.showSensitive(() => response.output(createdVerification, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
-
     response.status(201);
     return createdVerification;
   }
@@ -739,12 +722,6 @@ export class AccountService {
      */
     await db.deleteDocument('tokens', verifiedToken.getId());
     await db.purgeCachedDocument('users', profile.getId());
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', userId)
-    //   .setParam('tokenId', verification.getId())
-    //   .setPayload(Response.showSensitive(() => response.output(verification, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
 
     return verification;
   }
@@ -839,12 +816,6 @@ export class AccountService {
 
     createdVerification.set('secret', secret);
 
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('tokenId', createdVerification.getId())
-    //   .setPayload(Response.showSensitive(() => response.output(createdVerification, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
-
     response.status(201);
     return createdVerification;
   }
@@ -893,12 +864,6 @@ export class AccountService {
      */
     await db.deleteDocument('tokens', verifiedToken.getId());
     await db.purgeCachedDocument('users', profile.getId());
-
-    // TODO: Handle Events
-    // queueForEvents
-    //   .setParam('userId', user.getId())
-    //   .setParam('tokenId', verificationDocument.getId())
-    //   .setPayload(Response.showSensitive(() => response.output(verificationDocument, Response.MODEL_TOKEN)), { sensitive: ['secret'] });
 
     return verificationDocument;
   }

@@ -58,11 +58,6 @@ import {
   ProviderParamDTO,
 } from './DTO/session.dto';
 import {
-  CreatePushTargetDTO,
-  TargetIdParamDTO,
-  UpdatePushTargetDTO,
-} from './DTO/target.dto';
-import {
   CreateEmailTokenDTO,
   CreateMagicURLTokenDTO,
   CreateOAuth2TokenDTO,
@@ -384,16 +379,6 @@ export class AccountController {
     });
   }
 
-  @Post(['jwts', 'jwt'])
-  @Scope('account')
-  @ResModel(Models.JWT)
-  async createJWT(
-    @User() user: UsersDoc,
-    @Res({ passthrough: true }) response: NuvixRes,
-  ) {
-    return this.accountService.createJWT(user, response);
-  }
-
   @Get('prefs')
   @Scope('account')
   @ResModel(Models.PREFERENCES)
@@ -700,64 +685,6 @@ export class AccountController {
       ...input,
       user,
       session,
-    });
-  }
-
-  @Post('targets/push')
-  @Scope('account')
-  @AuditEvent('target.create', {
-    resource: 'user/{user.$id}/target/{res.$id}',
-    userId: '{user.$id}',
-  })
-  @ResModel(Models.TARGET)
-  async createPushTarget(
-    @Body() input: CreatePushTargetDTO,
-    @User() user: UsersDoc,
-    @Req() request: NuvixRequest,
-  ) {
-    return this.accountService.createPushTarget({
-      ...input,
-      user,
-      request,
-    });
-  }
-
-  @Put('targets/:targetId/push')
-  @Scope('account')
-  @AuditEvent('target.update', {
-    resource: 'user/{user.$id}/target/{params.targetId}',
-    userId: '{user.$id}',
-  })
-  @ResModel(Models.TARGET)
-  async updatePushTarget(
-    @Param() { targetId }: TargetIdParamDTO,
-    @Body() input: UpdatePushTargetDTO,
-    @User() user: UsersDoc,
-    @Req() request: NuvixRequest,
-  ) {
-    return this.accountService.updatePushTarget({
-      targetId,
-      ...input,
-      user,
-      request,
-    });
-  }
-
-  @Delete('targets/:targetId/push')
-  @Scope('account')
-  @AuditEvent('target.delete', {
-    resource: 'user/{user.$id}/target/{params.targetId}',
-    userId: '{user.$id}',
-  })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ResModel(Models.NONE)
-  async deletePushTarget(
-    @Param() { targetId }: TargetIdParamDTO,
-    @User() user: UsersDoc,
-  ) {
-    return this.accountService.deletePushTarget({
-      targetId,
-      user,
     });
   }
 
