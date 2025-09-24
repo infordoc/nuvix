@@ -244,3 +244,31 @@ const nxconfig = () =>
   }) as const;
 
 export const configuration = nxconfig();
+
+export function validateRequiredConfig() {
+  const requiredVars = [
+    'APP_JWT_SECRET',
+    'APP_ENCRYPTION_KEY',
+    'APP_REDIS_HOST',
+    'APP_DATABASE_ADMIN_PASSWORD',
+    'APP_DATABASE_PASSWORD',
+  ];
+
+  const missing: string[] = [];
+
+  for (const envVar of requiredVars) {
+    if (!process.env[envVar]) {
+      missing.push(envVar);
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(', ')}`,
+    );
+  }
+
+  if (configuration.security.dbEncryptionKey.length !== 16) {
+    throw new Error(`DB Encryption key must be 16 characters long`);
+  }
+}

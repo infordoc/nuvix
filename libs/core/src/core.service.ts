@@ -68,6 +68,7 @@ export class CoreService implements OnModuleDestroy {
     if (name === 'root') {
       databaseOptions = {
         ...this.appConfig.getDatabaseConfig().postgres,
+        user: DatabaseRole.ADMIN,
         password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
       };
     } else if (options) {
@@ -151,8 +152,8 @@ export class CoreService implements OnModuleDestroy {
     const data: Platform = {
       auths: {
         limit: 1,
-        personalDataCheck: true,
-        passwordHistory: 10,
+        personalDataCheck: false,
+        passwordHistory: 0,
         duration: undefined,
         sessionAlerts: false,
       },

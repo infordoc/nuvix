@@ -213,7 +213,7 @@ export async function initSetup(
           adminPassword,
           adminName,
           new Doc(),
-          '127.0.0.1',
+          '',
         );
 
         const team = await orgService.create(user, {

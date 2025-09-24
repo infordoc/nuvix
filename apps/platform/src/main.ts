@@ -14,7 +14,11 @@ import {
   LogLevel,
   ValidationPipe,
 } from '@nestjs/common';
-import { configuration, PROJECT_ROOT } from '@nuvix/utils';
+import {
+  configuration,
+  PROJECT_ROOT,
+  validateRequiredConfig,
+} from '@nuvix/utils';
 import { Authorization, Role, storage } from '@nuvix/db';
 import cookieParser from '@fastify/cookie';
 import fastifyMultipart from '@fastify/multipart';
@@ -32,6 +36,7 @@ config({
   ],
 });
 
+validateRequiredConfig();
 Authorization.enableAsyncLocalStorage();
 
 async function bootstrap() {
@@ -61,7 +66,7 @@ async function bootstrap() {
         colors: configuration.app.debug.colors,
         prefix: 'Nuvix-Console',
         logLevels: configuration.app.isProduction
-          ? (Object.keys(configuration.logLevels) as LogLevel[])
+          ? (configuration.logLevels as LogLevel[])
           : undefined,
       }),
       autoFlushLogs: true,
