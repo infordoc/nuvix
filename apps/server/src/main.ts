@@ -5,10 +5,17 @@
  * @version 1.0
  * @beta
  */
+import { config } from 'dotenv';
+config({
+  path: [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '.env.api'),
+  ],
+});
+
 import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server';
 import { AppModule } from './app.module';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { config } from 'dotenv';
 import {
   ConsoleLogger,
   Logger,
@@ -33,13 +40,6 @@ import { AppConfigService } from '@nuvix/core';
 import { openApiSetup } from './core';
 import { Auth } from '@nuvix/core/helper/auth.helper.js';
 import * as crypto from 'crypto';
-
-config({
-  path: [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '.env.api'),
-  ],
-});
 
 validateRequiredConfig();
 Authorization.enableAsyncLocalStorage();

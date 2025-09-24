@@ -41,8 +41,10 @@ export async function initSetup(
       try {
         await rootClient.connect();
         const res = await rootClient.query(
-          `SELECT 1 FROM pg_database WHERE datname='${name}'`,
+          'SELECT 1 FROM pg_database WHERE datname = $1',
+          [name],
         );
+
         if (res.rowCount === 0) {
           logger.log(`Database ${name} does not exist. Creating...`);
           await rootClient.query(`CREATE DATABASE "${name}"`);
@@ -50,7 +52,8 @@ export async function initSetup(
         }
         // set password for postgres user until we implement it in docker image
         await rootClient.query(
-          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD '${config.getDatabaseConfig().postgres.password}'`,
+          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD $1`,
+          [config.getDatabaseConfig().postgres.password],
         );
       } catch (error: any) {
         logger.error("Can't create database.", error.message);
@@ -195,10 +198,8 @@ export async function initSetup(
           return;
         }
 
-        const adminEmail =
-          process.env['APP_DEFAULT_USER_EMAIL'] || 'admin@localhost';
-        const adminPassword =
-          process.env['APP_DEFAULT_USER_PASSWORD'] || 'admin';
+        const adminEmail = process.env['APP_DEFAULT_USER_EMAIL'];
+        const adminPassword = process.env['APP_DEFAULT_USER_PASSWORD'];
         const adminName = process.env['APP_DEFAULT_USER_NAME'] || 'Admin';
 
         if (!adminEmail || !adminPassword) {
@@ -226,7 +227,7 @@ export async function initSetup(
           name: 'Project',
           teamId: team.getId(),
           region: 'local',
-          password: password ?? 'password',
+          password: password || '',
         });
 
         await projectsQueue.devInit(project, {
@@ -257,8 +258,6 @@ export async function initSetup(
         );
 
         logger.log('Project setup complete.');
-        logger.log(`Admin email: ${adminEmail}`);
-        logger.log(`Admin password: ${adminPassword}`);
       }
 
       logger.log('Successfully complete the server setup.');

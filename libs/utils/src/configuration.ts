@@ -1,10 +1,7 @@
 import * as path from 'path';
 import { PROJECT_ROOT } from './constants';
-import { config } from 'dotenv';
 import { Logger } from '@nestjs/common';
 import { parseBoolean, parseNumber } from './helpers';
-
-config();
 
 const nxconfig = () =>
   ({
@@ -262,13 +259,25 @@ export function validateRequiredConfig() {
     }
   }
 
+  const inProd = process.env['NODE_ENV'] === 'production';
+  if (inProd && !process.env['APP_DATABASE_ENCRYPTION_KEY']) {
+    missing.push('APP_DATABASE_ENCRYPTION_KEY');
+  }
+
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}`,
     );
   }
 
-  if (configuration.security.dbEncryptionKey.length !== 16) {
-    throw new Error(`DB Encryption key must be 16 characters long`);
+  const dbKey =
+    process.env['APP_DATABASE_ENCRYPTION_KEY'] ??
+    configuration.security.dbEncryptionKey;
+
+  const keyBytes = Buffer.byteLength(dbKey, 'utf8');
+  if (![16, 24, 32].includes(keyBytes)) {
+    throw new Error(
+      `DB Encryption key must be 16, 24, or 32 bytes (AES-128/192/256)`,
+    );
   }
 }

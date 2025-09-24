@@ -1,6 +1,6 @@
 [general]
-host = "${APP_POSTGRES_POOL_HOST}"
-port = ${APP_POSTGRES_POOL_PORT}
+host = "${APP_DATABASE_POOL_HOST}"
+port = ${APP_DATABASE_POOL_PORT}
 log_level = "info"
 stats_enabled = true
 stats_interval = 10

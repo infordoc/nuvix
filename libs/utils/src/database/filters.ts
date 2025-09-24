@@ -224,10 +224,7 @@ export const filters: Record<
 
   encrypt: {
     encode: value => {
-      const key = Buffer.from(
-        configuration.security.dbEncryptionKey.slice(0, 16),
-        'utf8',
-      );
+      const key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8');
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipheriv('aes-128-gcm', key, iv);
       let encrypted = cipher.update(value as string, 'utf8', 'hex');
@@ -250,16 +247,10 @@ export const filters: Record<
       let key: Buffer;
       switch (value.version) {
         case '1':
-          key = Buffer.from(
-            configuration.security.dbEncryptionKey.slice(0, 16),
-            'utf8',
-          );
+          key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8');
           break;
         default:
-          key = Buffer.from(
-            configuration.security.dbEncryptionKey.slice(0, 16),
-            'utf8',
-          );
+          key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8');
       }
       const iv = Buffer.from(value.iv, 'hex');
       const tag = Buffer.from(value.tag, 'hex');

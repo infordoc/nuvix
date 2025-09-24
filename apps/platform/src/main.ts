@@ -4,10 +4,17 @@
  * @version 1.0
  * @beta
  */
+import { config } from 'dotenv';
+config({
+  path: [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '.env.platform'),
+  ],
+});
+
 import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server';
 import { AppModule } from './app.module';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { config } from 'dotenv';
 import {
   ConsoleLogger,
   Logger,
@@ -16,6 +23,7 @@ import {
 } from '@nestjs/common';
 import {
   configuration,
+  parseNumber,
   PROJECT_ROOT,
   validateRequiredConfig,
 } from '@nuvix/utils';
@@ -28,13 +36,6 @@ import { initSetup } from './utils/initial-setup';
 import { ErrorFilter } from '@nuvix/core/filters';
 import { AppConfigService } from '@nuvix/core';
 import { Auth } from '@nuvix/core/helper/auth.helper.js';
-
-config({
-  path: [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(process.cwd(), '.env.platform'),
-  ],
-});
 
 validateRequiredConfig();
 Authorization.enableAsyncLocalStorage();
@@ -129,7 +130,7 @@ async function bootstrap() {
   app.useGlobalFilters(new ErrorFilter(config));
   await initSetup(app, config as AppConfigService);
 
-  const port = parseInt(config.root.get('APP_PLATFORM_PORT', '4100'), 10);
+  const port = parseNumber(config.root.get('APP_PLATFORM_PORT'), 4100);
   const host = '0.0.0.0';
   await app.listen(port, host);
 
