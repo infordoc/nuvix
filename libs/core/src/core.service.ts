@@ -68,15 +68,18 @@ export class CoreService implements OnModuleDestroy {
     if (name === 'root') {
       databaseOptions = {
         ...this.appConfig.getDatabaseConfig().postgres,
+        password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
       };
     } else if (options) {
       databaseOptions = {
         host: options.host,
-        port: parseInt(options.port?.toString() || '5432'),
+        port: options.port,
         database: options.database,
         user: options.user,
         password: options.password,
-        ssl: false ? { rejectUnauthorized: false } : undefined,
+        ssl: this.appConfig.getDatabaseConfig().postgres.ssl
+          ? { rejectUnauthorized: false }
+          : undefined,
       };
     }
 
@@ -168,7 +171,6 @@ export class CoreService implements OnModuleDestroy {
     });
     const connection = new Database(adapter, this.getCache());
     connection.setMeta({
-      // cacheId: `${projectId}:core`
       schema: options.schema ?? Schemas.Core,
       namespace: 'nx',
       metadata: { project: projectId },
@@ -219,7 +221,7 @@ export class CoreService implements OnModuleDestroy {
     const client = await this.createProjectDbClient(project.getId(), {
       database: DEFAULT_DATABASE,
       user: DatabaseRole.ADMIN,
-      password: dbOptions?.pool?.password,
+      password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
       port: dbOptions?.pool?.port,
       host: dbOptions?.pool?.host,
     });
@@ -235,7 +237,7 @@ export class CoreService implements OnModuleDestroy {
     const client = await this.createProjectDbClient(project.getId(), {
       database: DEFAULT_DATABASE,
       user: DatabaseRole.ADMIN,
-      password: dbOptions?.pool?.password,
+      password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
       port: dbOptions?.pool?.port,
       host: dbOptions?.pool?.host,
     });
@@ -256,7 +258,7 @@ export class CoreService implements OnModuleDestroy {
 interface PoolOptions {
   database: string;
   user: string;
-  password: string;
+  password?: string;
   host: string;
   port?: number;
 }

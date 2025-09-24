@@ -48,6 +48,10 @@ export async function initSetup(
           await rootClient.query(`CREATE DATABASE "${name}"`);
           logger.log(`Database ${name} created.`);
         }
+        // set password for postgres user until we implement it in docker image
+        await rootClient.query(
+          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD '${config.getDatabaseConfig().postgres.password}'`,
+        );
       } catch (error: any) {
         logger.error("Can't create database.", error.message);
         throw error;
@@ -175,7 +179,8 @@ export async function initSetup(
         await new Audit(dbForPlatform).setup();
       }
 
-      // TODO: improve project setup for selfhost and make it dynamic based on multi project or single project
+      // currently we only support single project in self-hosted mode
+      // so we create a default project with admin user
       if (config.isSelfHosted) {
         logger.log('Setting up project.');
         const accountService = app.get(AccountService);
@@ -183,65 +188,77 @@ export async function initSetup(
         const projectService = app.get(ProjectService);
         const projectsQueue = app.get(ProjectsQueue);
 
-        const adminEmail = 'admin@nuvix.local';
-        const adminPassword = 'password';
-        const isExists = !(
-          await dbForPlatform.findOne('users', qb =>
-            qb.equal('email', adminEmail),
-          )
-        ).empty();
-        if (!isExists) {
-          const user = await accountService.createAccount(
-            ID.unique(),
-            adminEmail,
-            adminPassword,
-            undefined,
-            new Doc(),
-            '',
-          );
-          const team = await orgService.create(user, {
-            organizationId: 'my-team',
-            name: 'Team',
-          });
-          const project = await projectService.create({
-            projectId: 'default',
-            name: 'Project',
-            teamId: team.getId(),
-            region: 'local',
-            password: password ?? 'password',
-          });
+        const hasAnyUser = !(await dbForPlatform.findOne('users')).empty();
 
-          await projectsQueue.devInit(project, {
-            host,
-            port,
-          });
-
-          project
-            .set('status', 'active')
-            .set('database', {
-              postgres: {
-                host,
-                port,
-                password,
-              },
-              pool: {
-                host,
-                port: 6432,
-                password,
-              },
-            })
-            .set('environment', 'local');
-
-          await dbForPlatform.updateDocument(
-            'projects',
-            project.getId(),
-            project,
-          );
-
-          logger.log('Project setup complete.');
-          logger.log(`Admin email: ${adminEmail}`);
-          logger.log(`Admin password: ${adminPassword}`);
+        if (hasAnyUser) {
+          logger.log('User already exists. Skipping project setup.');
+          return;
         }
+
+        const adminEmail =
+          process.env['APP_DEFAULT_USER_EMAIL'] || 'admin@localhost';
+        const adminPassword =
+          process.env['APP_DEFAULT_USER_PASSWORD'] || 'admin';
+        const adminName = process.env['APP_DEFAULT_USER_NAME'] || 'Admin';
+
+        if (!adminEmail || !adminPassword) {
+          throw new Error(
+            'APP_DEFAULT_USER_EMAIL or APP_DEFAULT_USER_PASSWORD is not set in environment variables.',
+          );
+        }
+
+        const user = await accountService.createAccount(
+          ID.unique(),
+          adminEmail,
+          adminPassword,
+          adminName,
+          new Doc(),
+          '127.0.0.1',
+        );
+
+        const team = await orgService.create(user, {
+          organizationId: 'my-team',
+          name: 'My Team',
+        });
+
+        const project = await projectService.create({
+          projectId: 'default',
+          name: 'Project',
+          teamId: team.getId(),
+          region: 'local',
+          password: password ?? 'password',
+        });
+
+        await projectsQueue.devInit(project, {
+          host,
+          port,
+        });
+
+        project
+          .set('status', 'active')
+          .set('database', {
+            postgres: {
+              host,
+              port,
+              password,
+            },
+            pool: {
+              host,
+              port: config.getDatabaseConfig().postgres.pool.port,
+              password,
+            },
+          })
+          .set('environment', 'local');
+
+        await dbForPlatform.updateDocument(
+          'projects',
+          project.getId(),
+          project,
+        );
+
+        logger.log('Project setup complete.');
+        logger.log(`Admin email: ${adminEmail}`);
+        logger.log(`Admin password: ${adminPassword}`);
       }
 
       logger.log('Successfully complete the server setup.');
