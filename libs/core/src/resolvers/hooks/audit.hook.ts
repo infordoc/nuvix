@@ -13,7 +13,6 @@ import {
 } from '@nuvix/utils';
 import { Queue } from 'bullmq';
 import { AuditsQueueJobData } from '../queues/audits.queue';
-import { Auth } from '@nuvix/core/helper';
 import { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
 
 @Injectable()

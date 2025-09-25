@@ -262,11 +262,18 @@ export class ProjectModel extends BaseModel {
     return this.services?.avatars ?? false;
   }
   /**
-   * Databases service status
+   * Database service status
    */
   @Expose()
-  get serviceStatusForDatabases(): boolean {
-    return this.services?.databases ?? false;
+  get serviceStatusForDatabase(): boolean {
+    return this.services?.database ?? false;
+  }
+  /**
+   * Schemas service status
+   */
+  @Expose()
+  get serviceStatusForSchemas(): boolean {
+    return this.services?.schemas ?? false;
   }
   /**
    * Locale service status

@@ -13,5 +13,5 @@ generator.generate({
   ],
   outputDir: __dirname,
   watch: false,
-  tsconfigPath: 'apps/api/tsconfig.app.json',
+  tsconfigPath: 'apps/server/tsconfig.app.json',
 });

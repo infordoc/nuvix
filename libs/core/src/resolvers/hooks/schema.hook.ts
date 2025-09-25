@@ -76,8 +76,8 @@ export class SchemaHook implements Hook {
           } catch (e) {
             throw new Exception(
               Exception.GENERAL_SERVER_ERROR,
-              'Unable to set request role.',
-            ); // TODO: improve message
+              'Failed to set database role',
+            );
           }
         }
       }

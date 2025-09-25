@@ -42,7 +42,6 @@ export class ProjectHook implements Hook {
       params.getFromHeaders('x-nuvix-project') ||
       (req.params as { projectId: string })['projectId'] || // for OAuth2 callback route
       params.getFromQuery('project', 'console');
-    const devKey = params.getFromHeaders('x-dev-key');
 
     if (!projectId || projectId === 'console') {
       req[Context.Project] = new Doc({ $id: 'console' });
@@ -91,11 +90,14 @@ export class ProjectHook implements Hook {
         req[CORE_SCHEMA_DB] = coreDatabase;
         req[AUDITS_FOR_PROJECT] = new Audit(coreDatabase);
       } catch (e) {
-        // TODO: improve the error handling
-        this.logger.error('Something went wrong while connecting database.', e);
+        this.logger.error(
+          `Failed to connect to the database for project ${projectId}: `,
+          e,
+        );
         throw new Exception(
           Exception.GENERAL_SERVER_ERROR,
-          'Database connection faild.',
+          'Failed to connect to the project database. Please check your database configuration.',
+          500,
         );
       }
     }
