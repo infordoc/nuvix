@@ -5,6 +5,7 @@ const generator = new PluginMetadataGenerator();
 generator.generate({
   visitors: [
     new ReadonlyVisitor({
+      dtoFileNameSuffix: ['.dto.ts', '.model.ts'],
       classTransformerShim: true,
       classValidatorShim: true,
       introspectComments: true,
