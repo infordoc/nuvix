@@ -1,53 +1,50 @@
 import {
   Body,
   Controller,
-  Post,
-  Put,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
 import { Database } from '@nuvix/db'
-import {
-  AuditEvent,
-  Namespace,
-  Scope,
-  Throttle,
-} from '@nuvix/core/decorators'
+import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
 import { Locale } from '@nuvix/core/decorators/locale.decorator'
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
 import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
 import { User } from '@nuvix/core/decorators/project-user.decorator'
 import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
 import { Models } from '@nuvix/core/helper/response.helper'
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard'
 import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import type { ProjectsDoc, TokensDoc, UsersDoc } from '@nuvix/utils/types'
 import { RecoveryService } from './recovery.service'
+import { Post, Put } from '@nuvix/core'
+import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account/recovery' })
 @Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.SESSION, AuthType.JWT])
 export class RecoveryController {
   constructor(private readonly recoveryService: RecoveryService) {}
 
-  @Public()
-  @Scope('sessions.update')
-  @Throttle({
-    limit: 10,
-    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
-  })
-  @AuditEvent('recovery.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createRecovery',
-    description: 'Create account recovery request',
+  @Post('', {
+    summary: 'Create password recovery',
+    scopes: 'sessions.update',
+    throttle: {
+      limit: 10,
+      key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+    },
+    audit: {
+      key: 'recovery.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createRecovery',
+      descMd: '/docs/references/account/create-recovery.md',
+    },
   })
   async createRecovery(
     @AuthDatabase() db: Database,
@@ -56,7 +53,7 @@ export class RecoveryController {
     @Locale() locale: LocaleTranslator,
     @Project() project: ProjectsDoc,
     @Req() request: NuvixRequest,
-  ) {
+  ): Promise<IResponse<TokensDoc>> {
     return this.recoveryService.createRecovery({
       db,
       user,
@@ -68,22 +65,23 @@ export class RecoveryController {
     })
   }
 
-  @Public()
-  @Put()
-  @Post()
-  @Scope('sessions.update')
-  @ResModel(Models.TOKEN)
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('recovery.update', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'updateRecovery',
-    description: 'Update account recovery request',
+  @Put('', {
+    summary: 'Update password recovery (confirmation)',
+    scopes: 'sessions.update',
+    resModel: Models.TOKEN,
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'recovery.update',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'updateRecovery',
+      descMd: '/docs/references/account/update-recovery.md',
+    },
   })
   async updateRecovery(
     @AuthDatabase() db: Database,

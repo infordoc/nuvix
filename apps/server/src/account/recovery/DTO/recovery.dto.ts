@@ -2,23 +2,38 @@ import { IsUID } from '@nuvix/core/validators/input.validator.js'
 import { IsEmail, IsString, IsNotEmpty, IsUrl } from 'class-validator'
 
 export class CreateRecoveryDTO {
+  /**
+   * User email.
+   */
   @IsEmail()
-  email!: string
+  declare email: string
 
+  /**
+   * URL to redirect the user back to your app from the recovery email. Only URLs from hostnames in your project platform list are allowed. This requirement helps to prevent an [open redirect](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html) attack against your project API.
+   */
   @IsNotEmpty()
   @IsUrl()
-  url!: string
+  declare url: string
 }
 
 export class UpdateRecoveryDTO {
+  /**
+   * User ID.
+   */
   @IsUID()
-  userId!: string
+  declare userId: string
 
+  /**
+   * Valid reset token.
+   */
   @IsNotEmpty()
   @IsString()
-  secret!: string
+  declare secret: string
 
+  /**
+   * New user password. Must be between 8 and 256 chars.
+   */
   @IsNotEmpty()
   @IsString()
-  password!: string
+  declare password: string
 }
