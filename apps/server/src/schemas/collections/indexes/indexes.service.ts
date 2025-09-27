@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common'
 import {
   Database,
   Doc,
@@ -7,28 +7,28 @@ import {
   IndexValidator,
   Query,
   AttributeType,
-} from '@nuvix/db';
-import { configuration, QueueFor, SchemaMeta, Status } from '@nuvix/utils';
-import { InjectQueue } from '@nestjs/bullmq';
-import type { Queue } from 'bullmq';
-import { Exception } from '@nuvix/core/extend/exception';
-import type { CreateIndexDTO } from './DTO/indexes.dto';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+} from '@nuvix/db'
+import { configuration, QueueFor, SchemaMeta, Status } from '@nuvix/utils'
+import { InjectQueue } from '@nestjs/bullmq'
+import type { Queue } from 'bullmq'
+import { Exception } from '@nuvix/core/extend/exception'
+import type { CreateIndexDTO } from './DTO/indexes.dto'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import {
   CollectionsJob,
   CollectionsJobData,
-} from '@nuvix/core/resolvers/queues';
+} from '@nuvix/core/resolvers/queues'
 import type {
   Attributes,
   AttributesDoc,
   Indexes,
   IndexesDoc,
   ProjectsDoc,
-} from '@nuvix/utils/types';
+} from '@nuvix/utils/types'
 
 @Injectable()
 export class IndexesService {
-  private readonly logger = new Logger(IndexesService.name);
+  private readonly logger = new Logger(IndexesService.name)
 
   constructor(
     @InjectQueue(QueueFor.COLLECTIONS)
@@ -41,11 +41,11 @@ export class IndexesService {
   ) {}
 
   getRelatedAttrId(collectionSequence: number, key: string): string {
-    return `related_${collectionSequence}_${key}`;
+    return `related_${collectionSequence}_${key}`
   }
 
   getAttrId(collectionSequence: number, key: string): string {
-    return `${collectionSequence}_${key}`;
+    return `${collectionSequence}_${key}`
   }
 
   /**
@@ -57,34 +57,34 @@ export class IndexesService {
     input: CreateIndexDTO,
     project: ProjectsDoc,
   ) {
-    const { key, type, attributes, orders } = input;
+    const { key, type, attributes, orders } = input
 
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
     const count = await db.count(
       SchemaMeta.indexes,
       [Query.equal('collectionInternalId', [collection.getSequence()])],
       61,
-    );
+    )
 
-    const limit = db.getAdapter().$limitForIndexes;
+    const limit = db.getAdapter().$limitForIndexes
     if (count >= limit) {
       throw new Exception(
         Exception.INDEX_LIMIT_EXCEEDED,
         'Index limit exceeded',
-      );
+      )
     }
 
     const oldAttributes = (collection.get('attributes') as AttributesDoc[]).map(
       a => a.toObject(),
-    );
+    )
 
     oldAttributes.push(
       {
@@ -104,39 +104,39 @@ export class IndexesService {
         type: AttributeType.Timestamptz,
         status: Status.AVAILABLE,
       } as Attributes,
-    );
+    )
 
     for (const [i, attribute] of attributes.entries()) {
-      const attributeIndex = oldAttributes.findIndex(a => a.key === attribute);
+      const attributeIndex = oldAttributes.findIndex(a => a.key === attribute)
 
       if (attributeIndex === -1) {
         throw new Exception(
           Exception.ATTRIBUTE_UNKNOWN,
           `Unknown attribute: ${attribute}. Verify the attribute name or create the attribute.`,
-        );
+        )
       }
 
       const {
         status: attributeStatus,
         type: attributeType,
         array: attributeArray = false,
-      } = oldAttributes[attributeIndex]!;
+      } = oldAttributes[attributeIndex]!
       if (attributeType === AttributeType.Relationship) {
         throw new Exception(
           Exception.ATTRIBUTE_TYPE_INVALID,
           `Cannot create an index for a relationship attribute: ${oldAttributes[attributeIndex]!.key}`,
-        );
+        )
       }
 
       if (attributeStatus !== Status.AVAILABLE) {
         throw new Exception(
           Exception.ATTRIBUTE_NOT_AVAILABLE,
           `Attribute not available: ${oldAttributes[attributeIndex]!.key}`,
-        );
+        )
       }
 
       if (attributeArray) {
-        orders[i] = null;
+        orders[i] = null
       }
     }
 
@@ -149,36 +149,36 @@ export class IndexesService {
       type,
       attributes,
       orders,
-    });
+    })
 
     const validator = new IndexValidator(
       collection.get('attributes'),
       db.getAdapter().$maxIndexLength,
-    );
+    )
 
     if (!validator.$valid(index as any)) {
-      throw new Exception(Exception.INDEX_INVALID, validator.$description);
+      throw new Exception(Exception.INDEX_INVALID, validator.$description)
     }
 
     try {
-      index = await db.createDocument(SchemaMeta.indexes, index);
+      index = await db.createDocument(SchemaMeta.indexes, index)
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.INDEX_ALREADY_EXISTS);
+        throw new Exception(Exception.INDEX_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
 
-    await db.purgeCachedDocument(SchemaMeta.collections, collectionId);
+    await db.purgeCachedDocument(SchemaMeta.collections, collectionId)
 
     await this.collectionsQueue.add(CollectionsJob.CREATE_INDEX, {
       database: db.schema,
       collection,
       index,
       project,
-    });
+    })
 
-    return index;
+    return index
   }
 
   /**
@@ -188,27 +188,27 @@ export class IndexesService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
     queries.push(
       Query.equal('collectionInternalId', [collection.getSequence()]),
-    );
+    )
 
-    const filterQueries = Query.groupByType(queries).filters;
-    const indexes = await db.find(SchemaMeta.indexes, queries);
+    const filterQueries = Query.groupByType(queries).filters
+    const indexes = await db.find(SchemaMeta.indexes, queries)
     const total = await db.count(
       SchemaMeta.indexes,
       filterQueries,
       configuration.limits.limitCount,
-    );
+    )
 
     return {
       indexes,
       total,
-    };
+    }
   }
 
   /**
@@ -218,21 +218,21 @@ export class IndexesService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
     const index = collection.findWhere(
       'indexes',
       (i: IndexesDoc) => i.get('key') === key,
-    );
+    )
 
     if (!index) {
-      throw new Exception(Exception.INDEX_NOT_FOUND);
+      throw new Exception(Exception.INDEX_NOT_FOUND)
     }
 
-    return index;
+    return index
   }
 
   /**
@@ -247,19 +247,19 @@ export class IndexesService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
     const index = await db.getDocument(
       SchemaMeta.indexes,
       this.getAttrId(collection.getSequence(), key),
-    );
+    )
 
     if (index.empty()) {
-      throw new Exception(Exception.INDEX_NOT_FOUND);
+      throw new Exception(Exception.INDEX_NOT_FOUND)
     }
 
     // Only update status if removing available index
@@ -268,18 +268,18 @@ export class IndexesService {
         SchemaMeta.indexes,
         index.getId(),
         index.set('status', Status.DELETING),
-      );
+      )
     }
 
-    await db.purgeCachedDocument(SchemaMeta.collections, collectionId);
+    await db.purgeCachedDocument(SchemaMeta.collections, collectionId)
 
     await this.collectionsQueue.add(CollectionsJob.DELETE_INDEX, {
       database: db.schema,
       collection,
       index,
       project,
-    });
+    })
 
-    return;
+    return
   }
 }

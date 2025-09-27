@@ -1176,4 +1176,4 @@ export const currencies = [
     namePlural: 'Zambian kwachas',
     locations: [],
   },
-];
+]

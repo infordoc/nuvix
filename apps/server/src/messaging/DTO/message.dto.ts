@@ -1,5 +1,5 @@
-import { PartialType, PickType } from '@nestjs/swagger';
-import { IsCustomID, IsUID } from '@nuvix/core/validators';
+import { PartialType, PickType } from '@nestjs/swagger'
+import { IsCustomID, IsUID } from '@nuvix/core/validators'
 import {
   IsString,
   IsOptional,
@@ -11,181 +11,181 @@ import {
   IsIn,
   MaxLength,
   Min,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateEmailMessageDTO {
   @IsCustomID()
-  messageId!: string;
+  messageId!: string
 
   @IsString()
   @MaxLength(998)
-  subject!: string;
+  subject!: string
 
   @IsString()
   @MaxLength(64230)
-  content!: string;
+  content!: string
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  topics?: string[];
+  topics?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  users?: string[];
+  users?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  targets?: string[];
+  targets?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  cc?: string[];
+  cc?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  bcc?: string[];
+  bcc?: string[]
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true }) // TODO: CompoundID
-  attachments?: string[];
+  attachments?: string[]
 
   @IsOptional()
   @IsBoolean()
-  draft?: boolean;
+  draft?: boolean
 
   @IsOptional()
   @IsBoolean()
-  html?: boolean;
+  html?: boolean
 
   @IsOptional()
   @IsDateString()
-  scheduledAt?: string; // TODO: Future Date validation
+  scheduledAt?: string // TODO: Future Date validation
 }
 
 export class CreateSmsMessageDTO {
   @IsCustomID()
-  messageId!: string;
+  messageId!: string
 
   @IsString()
   @MaxLength(64230)
-  content!: string;
+  content!: string
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  topics?: string[];
+  topics?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  users?: string[];
+  users?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  targets?: string[];
+  targets?: string[]
 
   @IsOptional()
   @IsBoolean()
-  draft?: boolean;
+  draft?: boolean
 
   @IsOptional()
   @IsDateString()
-  scheduledAt?: string;
+  scheduledAt?: string
 }
 
 export class CreatePushMessageDTO {
   @IsCustomID()
-  messageId!: string;
+  messageId!: string
 
   @IsOptional()
   @IsString()
   @MaxLength(256)
-  title?: string;
+  title?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(64230)
-  body?: string;
+  body?: string
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  topics?: string[];
+  topics?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  users?: string[];
+  users?: string[]
 
   @IsOptional()
   @IsArray()
   @IsUID({ each: true })
-  targets?: string[];
+  targets?: string[]
 
   @IsOptional()
   @IsObject()
-  data?: Record<string, any>;
+  data?: Record<string, any>
 
   @IsOptional()
   @IsString()
   @MaxLength(256)
-  action?: string;
+  action?: string
 
   @IsOptional()
   @IsString()
-  image?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(256)
-  icon?: string;
+  image?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(256)
-  sound?: string;
+  icon?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(256)
-  color?: string;
+  sound?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(256)
-  tag?: string;
+  color?: string
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(256)
+  tag?: string
 
   @IsOptional()
   @IsInt()
   @Min(-1)
-  badge?: number;
+  badge?: number
 
   @IsOptional()
   @IsBoolean()
-  draft?: boolean;
+  draft?: boolean
 
   @IsOptional()
   @IsDateString()
-  scheduledAt?: string;
+  scheduledAt?: string
 
   @IsOptional()
   @IsBoolean()
-  contentAvailable?: boolean;
+  contentAvailable?: boolean
 
   @IsOptional()
   @IsBoolean()
-  critical?: boolean;
+  critical?: boolean
 
   @IsOptional()
   @IsIn(['normal', 'high'])
-  priority?: 'normal' | 'high';
+  priority?: 'normal' | 'high'
 }
 
 export class UpdateEmailMessageDTO extends PartialType(

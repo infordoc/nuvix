@@ -2,10 +2,10 @@
  * Helper class to get params from headers or query
  */
 class ParamsHelper {
-  private req: NuvixRequest;
+  private req: NuvixRequest
 
   constructor(req: NuvixRequest) {
-    this.req = req;
+    this.req = req
   }
 
   /**
@@ -18,47 +18,47 @@ class ParamsHelper {
     param: string,
     defaultValue = null,
   ): T | string | string[] | undefined {
-    let value: string | string[] | undefined;
-    let headerParam = `x-nuvix-${param.toLowerCase()}`;
+    let value: string | string[] | undefined
+    let headerParam = `x-nuvix-${param.toLowerCase()}`
     // Check in headers
-    value = this.req.headers[headerParam];
+    value = this.req.headers[headerParam]
     if (value) {
-      return this.processValue(value);
+      return this.processValue(value)
     }
 
     // Check in query
-    value = this.getQueryParams()[param];
+    value = this.getQueryParams()[param]
     if (value) {
-      return this.processValue(value);
+      return this.processValue(value)
     }
 
-    return defaultValue as T;
+    return defaultValue as T
   }
 
   getFromHeaders(
     param: string,
     defaultValue: any | null = null,
   ): string | undefined {
-    const value = this.req.headers[param.toLowerCase()];
-    return value ? this.processValue(value) : defaultValue;
+    const value = this.req.headers[param.toLowerCase()]
+    return value ? this.processValue(value) : defaultValue
   }
 
   getFromQuery(
     param: string,
     defaultValue: any | null = null,
   ): string | undefined {
-    const value = this.getQueryParams()[param];
-    return value ? this.processValue(value) : defaultValue;
+    const value = this.getQueryParams()[param]
+    return value ? this.processValue(value) : defaultValue
   }
 
   private processValue(value: string | string[]): string {
     if (Array.isArray(value)) {
-      return value[value.length - 1]!;
+      return value[value.length - 1]!
     } else if (typeof value === 'string' && value.includes(',')) {
-      const parts = value.split(',');
-      return parts[parts.length - 1]!;
+      const parts = value.split(',')
+      return parts[parts.length - 1]!
     } else {
-      return value;
+      return value
     }
   }
 
@@ -78,8 +78,8 @@ class ParamsHelper {
     //   }
     // });
 
-    return this.req.query as any;
+    return this.req.query as any
   }
 }
 
-export default ParamsHelper;
+export default ParamsHelper

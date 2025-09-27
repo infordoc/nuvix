@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Targets extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -6,9 +6,9 @@ export class Targets extends BaseQueryPipe {
     'providerId',
     'identifier',
     'providerType',
-  ];
+  ]
 
   public constructor() {
-    super('targets', Targets.ALLOWED_ATTRIBUTES);
+    super('targets', Targets.ALLOWED_ATTRIBUTES)
   }
 }

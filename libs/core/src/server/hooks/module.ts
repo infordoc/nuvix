@@ -1,56 +1,56 @@
-import { HttpServer, InjectionToken, Logger } from '@nestjs/common';
-import { RequestMethod } from '@nestjs/common/enums/request-method.enum.js';
+import { HttpServer, InjectionToken, Logger } from '@nestjs/common'
+import { RequestMethod } from '@nestjs/common/enums/request-method.enum.js'
 import {
   MiddlewareConfiguration,
   RouteInfo,
-} from '@nestjs/common/interfaces/middleware';
-import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface';
-import { isUndefined } from '@nestjs/common/utils/shared.utils.js';
-import { ApplicationConfig } from '@nestjs/core/application-config';
-import { RuntimeException } from '@nestjs/core/errors/exceptions/runtime.exception.js';
-import { ContextIdFactory } from '@nestjs/core/helpers/context-id-factory.js';
-import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host.js';
-import { STATIC_CONTEXT } from '@nestjs/core/injector/constants.js';
-import { NestContainer } from '@nestjs/core/injector/container.js';
-import { Injector } from '@nestjs/core/injector/injector.js';
+} from '@nestjs/common/interfaces/middleware'
+import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface'
+import { isUndefined } from '@nestjs/common/utils/shared.utils.js'
+import { ApplicationConfig } from '@nestjs/core/application-config'
+import { RuntimeException } from '@nestjs/core/errors/exceptions/runtime.exception.js'
+import { ContextIdFactory } from '@nestjs/core/helpers/context-id-factory.js'
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host.js'
+import { STATIC_CONTEXT } from '@nestjs/core/injector/constants.js'
+import { NestContainer } from '@nestjs/core/injector/container.js'
+import { Injector } from '@nestjs/core/injector/injector.js'
 import {
   ContextId,
   InstanceWrapper,
-} from '@nestjs/core/injector/instance-wrapper.js';
-import { Module } from '@nestjs/core/injector/module.js';
-import { GraphInspector } from '@nestjs/core/inspector/graph-inspector.js';
+} from '@nestjs/core/injector/instance-wrapper.js'
+import { Module } from '@nestjs/core/injector/module.js'
+import { GraphInspector } from '@nestjs/core/inspector/graph-inspector.js'
 import {
   Entrypoint,
   MiddlewareEntrypointMetadata,
-} from '@nestjs/core/inspector/interfaces/entrypoint.interface.js';
-import { REQUEST_CONTEXT_ID } from '@nestjs/core/router/request/request-constants.js';
-import { RouterExceptionFilters } from '@nestjs/core/router/router-exception-filters.js';
-import { RouterProxy } from '@nestjs/core/router/router-proxy.js';
-import { isRequestMethodAll } from '@nestjs/core/router/utils/index.js';
-import { MiddlewareBuilder } from '@nestjs/core/middleware/builder.js';
-import { HooksContainer } from './container';
-import { MiddlewareResolver } from '@nestjs/core/middleware/resolver.js';
-import { RouteInfoPathExtractor } from '@nestjs/core/middleware/route-info-path-extractor.js';
-import { RoutesMapper } from '@nestjs/core/middleware/routes-mapper.js';
-import { Hook, HookMethods } from './interface';
+} from '@nestjs/core/inspector/interfaces/entrypoint.interface.js'
+import { REQUEST_CONTEXT_ID } from '@nestjs/core/router/request/request-constants.js'
+import { RouterExceptionFilters } from '@nestjs/core/router/router-exception-filters.js'
+import { RouterProxy } from '@nestjs/core/router/router-proxy.js'
+import { isRequestMethodAll } from '@nestjs/core/router/utils/index.js'
+import { MiddlewareBuilder } from '@nestjs/core/middleware/builder.js'
+import { HooksContainer } from './container'
+import { MiddlewareResolver } from '@nestjs/core/middleware/resolver.js'
+import { RouteInfoPathExtractor } from '@nestjs/core/middleware/route-info-path-extractor.js'
+import { RoutesMapper } from '@nestjs/core/middleware/routes-mapper.js'
+import { Hook, HookMethods } from './interface'
 
 export class HooksModule<
   TAppOptions extends
     NestApplicationContextOptions = NestApplicationContextOptions,
 > {
-  private readonly routerProxy = new RouterProxy();
-  private readonly exceptionFiltersCache = new WeakMap();
-  private readonly logger = new Logger(HooksModule.name);
+  private readonly routerProxy = new RouterProxy()
+  private readonly exceptionFiltersCache = new WeakMap()
+  private readonly logger = new Logger(HooksModule.name)
 
-  declare private injector: Injector;
-  declare private routerExceptionFilter: RouterExceptionFilters;
-  declare private routesMapper: RoutesMapper;
-  declare private resolver: MiddlewareResolver;
-  declare private container: NestContainer;
-  declare private httpAdapter: HttpServer;
-  declare private graphInspector: GraphInspector;
-  declare private appOptions: TAppOptions;
-  declare private routeInfoPathExtractor: RouteInfoPathExtractor;
+  private declare injector: Injector
+  private declare routerExceptionFilter: RouterExceptionFilters
+  private declare routesMapper: RoutesMapper
+  private declare resolver: MiddlewareResolver
+  private declare container: NestContainer
+  private declare httpAdapter: HttpServer
+  private declare graphInspector: GraphInspector
+  private declare appOptions: TAppOptions
+  private declare routeInfoPathExtractor: RouteInfoPathExtractor
 
   public async register(
     HooksContainer: HooksContainer,
@@ -61,39 +61,39 @@ export class HooksModule<
     graphInspector: GraphInspector,
     options: TAppOptions,
   ) {
-    this.appOptions = options;
+    this.appOptions = options
 
-    const appRef = container.getHttpAdapterRef();
+    const appRef = container.getHttpAdapterRef()
     this.routerExceptionFilter = new RouterExceptionFilters(
       container,
       config,
       appRef,
-    );
-    this.routesMapper = new RoutesMapper(container, config);
-    this.resolver = new MiddlewareResolver(HooksContainer as any, injector);
-    this.routeInfoPathExtractor = new RouteInfoPathExtractor(config);
-    this.injector = injector;
-    this.container = container;
-    this.httpAdapter = httpAdapter;
-    this.graphInspector = graphInspector;
+    )
+    this.routesMapper = new RoutesMapper(container, config)
+    this.resolver = new MiddlewareResolver(HooksContainer as any, injector)
+    this.routeInfoPathExtractor = new RouteInfoPathExtractor(config)
+    this.injector = injector
+    this.container = container
+    this.httpAdapter = httpAdapter
+    this.graphInspector = graphInspector
 
-    const modules = container.getModules();
-    await this.resolveMiddleware(HooksContainer, modules);
+    const modules = container.getModules()
+    await this.resolveMiddleware(HooksContainer, modules)
   }
 
   public async resolveMiddleware(
     HooksContainer: HooksContainer,
     modules: Map<string, Module>,
   ) {
-    const moduleEntries = [...modules.entries()];
+    const moduleEntries = [...modules.entries()]
     const loadMiddlewareConfiguration = async ([moduleName, moduleRef]: [
       string,
       Module,
     ]) => {
-      await this.loadConfiguration(HooksContainer, moduleRef, moduleName);
-      await this.resolver.resolveInstances(moduleRef, moduleName);
-    };
-    await Promise.all(moduleEntries.map(loadMiddlewareConfiguration));
+      await this.loadConfiguration(HooksContainer, moduleRef, moduleName)
+      await this.resolver.resolveInstances(moduleRef, moduleName)
+    }
+    await Promise.all(moduleEntries.map(loadMiddlewareConfiguration))
   }
 
   public async loadConfiguration(
@@ -101,39 +101,39 @@ export class HooksModule<
     moduleRef: Module,
     moduleKey: string,
   ) {
-    const { instance } = moduleRef;
+    const { instance } = moduleRef
     if (!instance.configure) {
-      return;
+      return
     }
     const middlewareBuilder = new MiddlewareBuilder(
       this.routesMapper,
       this.httpAdapter,
       this.routeInfoPathExtractor,
-    );
+    )
     try {
-      await instance.configure(middlewareBuilder);
+      await instance.configure(middlewareBuilder)
     } catch (err) {
       if (!this.appOptions.preview) {
-        throw err;
+        throw err
       }
       const warningMessage =
         `Warning! "${moduleRef.name}" module exposes a "configure" method that throws an exception in the preview mode` +
-        ` (possibly due to missing dependencies). Note: you can ignore this message, just be aware that some of those conditional middlewares will not be reflected in your graph.`;
-      this.logger.warn(warningMessage);
+        ` (possibly due to missing dependencies). Note: you can ignore this message, just be aware that some of those conditional middlewares will not be reflected in your graph.`
+      this.logger.warn(warningMessage)
     }
 
     if (!(middlewareBuilder instanceof MiddlewareBuilder)) {
-      return;
+      return
     }
-    const config = middlewareBuilder.build();
-    HooksContainer.insertConfig(config, moduleKey);
+    const config = middlewareBuilder.build()
+    HooksContainer.insertConfig(config, moduleKey)
   }
 
   public async registerMiddleware(
     HooksContainer: HooksContainer,
     applicationRef: any,
   ) {
-    const configs = HooksContainer.getConfigurations();
+    const configs = HooksContainer.getConfigurations()
     const registerAllConfigs = async (
       moduleKey: string,
       middlewareConfig: MiddlewareConfiguration[],
@@ -144,30 +144,30 @@ export class HooksModule<
           config,
           moduleKey,
           applicationRef,
-        );
+        )
       }
-    };
+    }
 
     const entriesSortedByDistance = [...configs.entries()].sort(
       ([moduleA], [moduleB]) => {
-        const moduleARef = this.container.getModuleByKey(moduleA)!;
-        const moduleBRef = this.container.getModuleByKey(moduleB)!;
-        const isModuleAGlobal = moduleARef.distance === Number.MAX_VALUE;
-        const isModuleBGlobal = moduleBRef.distance === Number.MAX_VALUE;
+        const moduleARef = this.container.getModuleByKey(moduleA)!
+        const moduleBRef = this.container.getModuleByKey(moduleB)!
+        const isModuleAGlobal = moduleARef.distance === Number.MAX_VALUE
+        const isModuleBGlobal = moduleBRef.distance === Number.MAX_VALUE
         if (isModuleAGlobal && isModuleBGlobal) {
-          return 0;
+          return 0
         }
         if (isModuleAGlobal) {
-          return -1;
+          return -1
         }
         if (isModuleBGlobal) {
-          return 1;
+          return 1
         }
-        return moduleARef.distance - moduleBRef.distance;
+        return moduleARef.distance - moduleBRef.distance
       },
-    );
+    )
     for (const [moduleRef, moduleConfigurations] of entriesSortedByDistance) {
-      await registerAllConfigs(moduleRef, [...moduleConfigurations]);
+      await registerAllConfigs(moduleRef, [...moduleConfigurations])
     }
   }
 
@@ -177,7 +177,7 @@ export class HooksModule<
     moduleKey: string,
     applicationRef: any,
   ) {
-    const { forRoutes } = config;
+    const { forRoutes } = config
     for (const routeInfo of forRoutes) {
       await this.registerRouteMiddleware(
         HooksContainer,
@@ -185,7 +185,7 @@ export class HooksModule<
         config,
         moduleKey,
         applicationRef,
-      );
+      )
     }
   }
 
@@ -196,25 +196,25 @@ export class HooksModule<
     moduleKey: string,
     applicationRef: any,
   ) {
-    const middlewareCollection = [].concat(config.middleware);
-    const moduleRef = this.container.getModuleByKey(moduleKey)!;
+    const middlewareCollection = [].concat(config.middleware)
+    const moduleRef = this.container.getModuleByKey(moduleKey)!
 
     for (const metatype of middlewareCollection) {
-      const collection = HooksContainer.getMiddlewareCollection(moduleKey);
-      const instanceWrapper = collection.get(metatype);
+      const collection = HooksContainer.getMiddlewareCollection(moduleKey)
+      const instanceWrapper = collection.get(metatype)
 
       if (isUndefined(instanceWrapper)) {
-        throw new RuntimeException();
+        throw new RuntimeException()
       }
       if (instanceWrapper.isTransient) {
-        return;
+        return
       }
 
       this.graphInspector.insertClassNode(
         moduleRef,
         instanceWrapper,
         'middleware',
-      );
+      )
       const middlewareDefinition: Entrypoint<MiddlewareEntrypointMetadata> = {
         type: 'middleware',
         methodName: 'use',
@@ -228,11 +228,11 @@ export class HooksModule<
             'ALL',
           version: routeInfo.version,
         },
-      };
+      }
       this.graphInspector.insertEntrypointDefinition(
         middlewareDefinition,
         instanceWrapper.id,
-      );
+      )
 
       await this.bindHandler(
         instanceWrapper,
@@ -240,7 +240,7 @@ export class HooksModule<
         routeInfo,
         moduleRef,
         collection,
-      );
+      )
     }
   }
 
@@ -252,24 +252,24 @@ export class HooksModule<
     moduleRef: Module,
     collection: Map<InjectionToken, InstanceWrapper>,
   ) {
-    const { instance, metatype } = wrapper;
+    const { instance, metatype } = wrapper
     const hasAnyHookMethod = new Set(
       HookMethods.filter(method => !isUndefined(instance?.[method])),
-    );
+    )
 
     if (!hasAnyHookMethod.size) {
-      throw new InvalidHookException(metatype!.name);
+      throw new InvalidHookException(metatype!.name)
     }
 
-    const isStatic = wrapper.isDependencyTreeStatic();
+    const isStatic = wrapper.isDependencyTreeStatic()
     if (isStatic) {
       for (const method of hasAnyHookMethod) {
-        const proxy = await this.createProxy(instance, method);
-        this.registerHandler(applicationRef, routeInfo, method, proxy);
+        const proxy = await this.createProxy(instance, method)
+        this.registerHandler(applicationRef, routeInfo, method, proxy)
       }
-      return;
+      return
     }
-    const isTreeDurable = wrapper.isDependencyTreeDurable();
+    const isTreeDurable = wrapper.isDependencyTreeDurable()
 
     for (const method of hasAnyHookMethod) {
       await this.registerHandler(
@@ -283,39 +283,39 @@ export class HooksModule<
           ...rest: any
         ) => {
           try {
-            const contextId = this.getContextId(req, isTreeDurable);
+            const contextId = this.getContextId(req, isTreeDurable)
             const contextInstance = await this.injector.loadPerContext(
               instance,
               moduleRef,
               collection,
               contextId,
-            );
+            )
             const proxy = await this.createProxy<TRequest, TResponse>(
               contextInstance,
               method,
               contextId,
-            );
-            return proxy(req, res, next, ...rest);
+            )
+            return proxy(req, res, next, ...rest)
           } catch (err) {
             let exceptionsHandler = this.exceptionFiltersCache.get(
               instance[method]!,
-            );
+            )
             if (!exceptionsHandler) {
               exceptionsHandler = this.routerExceptionFilter.create(
                 instance,
                 instance[method] as any,
                 undefined,
-              );
+              )
               this.exceptionFiltersCache.set(
                 instance[method]!,
                 exceptionsHandler,
-              );
+              )
             }
-            const host = new ExecutionContextHost([req, res]);
-            exceptionsHandler.next(err, host);
+            const host = new ExecutionContextHost([req, res])
+            exceptionsHandler.next(err, host)
           }
         },
-      );
+      )
     }
   }
 
@@ -337,9 +337,9 @@ export class HooksModule<
       instance[method as keyof Hook] as any,
       undefined,
       contextId,
-    );
-    const middleware = instance[method as keyof Hook]!.bind(instance) as any;
-    return this.routerProxy.createProxy(middleware, exceptionsHandler) as any;
+    )
+    const middleware = instance[method as keyof Hook]!.bind(instance) as any
+    return this.routerProxy.createProxy(middleware, exceptionsHandler) as any
   }
 
   private async registerHandler(
@@ -353,11 +353,11 @@ export class HooksModule<
       ...rest: any
     ) => void,
   ): Promise<void> {
-    const { method } = routeInfo;
-    const paths = this.routeInfoPathExtractor.extractPathsFrom(routeInfo);
-    const isMethodAll = isRequestMethodAll(method);
-    const requestMethod = RequestMethod[method];
-    const router = await applicationRef.createMiddlewareFactory(method);
+    const { method } = routeInfo
+    const paths = this.routeInfoPathExtractor.extractPathsFrom(routeInfo)
+    const isMethodAll = isRequestMethodAll(method)
+    const requestMethod = RequestMethod[method]
+    const router = await applicationRef.createMiddlewareFactory(method)
     const middlewareFunction = isMethodAll
       ? proxy
       : async <TRequest, TResponse>(
@@ -367,40 +367,40 @@ export class HooksModule<
           ...rest: any
         ) => {
           if (applicationRef.getRequestMethod?.(req) === requestMethod) {
-            return proxy(req, res, next, ...rest);
+            return proxy(req, res, next, ...rest)
           }
-          return Promise.resolve();
-        };
-    const pathsToApplyMiddleware = [] as string[];
+          return Promise.resolve()
+        }
+    const pathsToApplyMiddleware = [] as string[]
     paths.some(path => path.match(/^\/?$/))
       ? pathsToApplyMiddleware.push('/')
-      : pathsToApplyMiddleware.push(...paths);
+      : pathsToApplyMiddleware.push(...paths)
     pathsToApplyMiddleware.forEach(path =>
       (router as any)(path, middlewareFunction, hookName),
-    );
+    )
   }
 
   private getContextId(request: unknown, isTreeDurable: boolean): ContextId {
-    const contextId = ContextIdFactory.getByRequest(request as object);
+    const contextId = ContextIdFactory.getByRequest(request as object)
     if (!request![REQUEST_CONTEXT_ID as keyof object]) {
       Object.defineProperty(request, REQUEST_CONTEXT_ID, {
         value: contextId,
         enumerable: false,
         writable: false,
         configurable: false,
-      });
+      })
 
       const requestProviderValue = isTreeDurable
         ? contextId.payload
-        : Object.assign(request as object, contextId.payload);
-      this.container.registerRequestProvider(requestProviderValue, contextId);
+        : Object.assign(request as object, contextId.payload)
+      this.container.registerRequestProvider(requestProviderValue, contextId)
     }
-    return contextId;
+    return contextId
   }
 }
 
 export class InvalidHookException extends RuntimeException {
   constructor(hook: string) {
-    super(`Invalid hook "${hook}"`);
+    super(`Invalid hook "${hook}"`)
   }
 }

@@ -1,6 +1,6 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
-import { CreateProjectDTO } from './create-project.dto';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/swagger'
+import { CreateProjectDTO } from './create-project.dto'
+import { IsNotEmpty, IsString } from 'class-validator'
 
 export class UpdateProjectDTO extends PartialType(
   OmitType(CreateProjectDTO, ['region', 'teamId', 'projectId'] as const),
@@ -9,5 +9,5 @@ export class UpdateProjectDTO extends PartialType(
 export class UpdateProjectTeamDTO {
   @IsNotEmpty()
   @IsString()
-  declare teamId: string;
+  declare teamId: string
 }

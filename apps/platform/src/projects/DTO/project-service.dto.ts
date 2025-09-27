@@ -1,6 +1,6 @@
-import { OmitType } from '@nestjs/swagger';
-import { IsBoolean, IsIn } from 'class-validator';
-import { services } from '@nuvix/core/config/services';
+import { OmitType } from '@nestjs/swagger'
+import { IsBoolean, IsIn } from 'class-validator'
+import { services } from '@nuvix/core/config/services'
 
 export class UpdateProjectServiceDTO {
   @IsIn(
@@ -8,10 +8,10 @@ export class UpdateProjectServiceDTO {
       .filter(v => v.optional)
       .map(value => value.key),
   )
-  service!: string;
+  service!: string
 
   @IsBoolean()
-  status!: boolean;
+  status!: boolean
 }
 
 export class UpdateProjectAllServiceDTO extends OmitType(

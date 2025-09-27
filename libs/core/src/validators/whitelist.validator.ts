@@ -1,33 +1,33 @@
-import { Validator } from '@nuvix/db';
+import { Validator } from '@nuvix/db'
 
 export class WhiteList implements Validator {
-  private list: string[];
-  private strict: boolean;
+  private list: string[]
+  private strict: boolean
 
   constructor(list: string[], strict: boolean = false) {
-    this.list = list;
-    this.strict = strict;
+    this.list = list
+    this.strict = strict
 
     if (!this.strict) {
-      this.list = this.list.map(value => value.toLowerCase());
+      this.list = this.list.map(value => value.toLowerCase())
     }
   }
 
   getList(): string[] {
-    return this.list;
+    return this.list
   }
 
   get $description(): string {
-    return `Value must be one of (${this.list.join(', ')})`;
+    return `Value must be one of (${this.list.join(', ')})`
   }
 
   $valid(value: any): boolean {
     if (Array.isArray(value)) {
-      return false;
+      return false
     }
 
-    value = this.strict ? value : value.toLowerCase();
+    value = this.strict ? value : value.toLowerCase()
 
-    return this.list.includes(value);
+    return this.list.includes(value)
   }
 }

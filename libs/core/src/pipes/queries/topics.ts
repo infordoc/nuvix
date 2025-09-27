@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Topics extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -7,9 +7,9 @@ export class Topics extends BaseQueryPipe {
     'emailTotal',
     'smsTotal',
     'pushTotal',
-  ];
+  ]
 
   public constructor() {
-    super('topics', Topics.ALLOWED_ATTRIBUTES);
+    super('topics', Topics.ALLOWED_ATTRIBUTES)
   }
 }

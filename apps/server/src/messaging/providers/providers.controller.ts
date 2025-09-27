@@ -11,13 +11,13 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { ProvidersService } from './providers.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { ProvidersService } from './providers.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ApiInterceptor,
   ResponseInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
+} from '@nuvix/core/resolvers/interceptors'
 import {
   AuditEvent,
   ProjectDatabase,
@@ -27,42 +27,39 @@ import {
   Scope,
   Sdk,
   Auth,
-} from '@nuvix/core/decorators';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/decorators'
+import { Models } from '@nuvix/core/helper'
 
 import {
   CreateMailgunProviderDTO,
   UpdateMailgunProviderDTO,
-} from './DTO/mailgun.dto';
-import { Database, Query as Queries } from '@nuvix/db';
+} from './DTO/mailgun.dto'
+import { Database, Query as Queries } from '@nuvix/db'
 import {
   CreateSendgridProviderDTO,
   UpdateSendgridProviderDTO,
-} from './DTO/sendgrid.dto';
-import { CreateSMTPProviderDTO, UpdateSMTPProviderDTO } from './DTO/smtp.dto';
-import {
-  CreateMsg91ProviderDTO,
-  UpdateMsg91ProviderDTO,
-} from './DTO/msg91.dto';
+} from './DTO/sendgrid.dto'
+import { CreateSMTPProviderDTO, UpdateSMTPProviderDTO } from './DTO/smtp.dto'
+import { CreateMsg91ProviderDTO, UpdateMsg91ProviderDTO } from './DTO/msg91.dto'
 import {
   CreateTwilioProviderDTO,
   UpdateTwilioProviderDTO,
-} from './DTO/twilio.dto';
+} from './DTO/twilio.dto'
 import {
   CreateTelesignProviderDTO,
   UpdateTelesignProviderDTO,
-} from './DTO/telesign.dto';
+} from './DTO/telesign.dto'
 import {
   CreateTextmagicProviderDTO,
   UpdateTextmagicProviderDTO,
-} from './DTO/textmagic.dto';
+} from './DTO/textmagic.dto'
 import {
   CreateVonageProviderDTO,
   UpdateVonageProviderDTO,
-} from './DTO/vonage.dto';
-import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
-import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
-import { ProvidersQueryPipe } from '@nuvix/core/pipes/queries';
+} from './DTO/vonage.dto'
+import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto'
+import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto'
+import { ProvidersQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('messaging')
 @UseGuards(ProjectGuard)
@@ -88,7 +85,7 @@ export class ProvidersController {
     return this.providersService.createMailgunProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('sendgrid')
@@ -107,7 +104,7 @@ export class ProvidersController {
     return this.providersService.createSendGridProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('smtp')
@@ -126,7 +123,7 @@ export class ProvidersController {
     return this.providersService.createSmtpProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('msg91')
@@ -145,7 +142,7 @@ export class ProvidersController {
     return this.providersService.createMsg91Provider({
       db,
       input,
-    });
+    })
   }
 
   @Post('telesign')
@@ -164,7 +161,7 @@ export class ProvidersController {
     return this.providersService.createTelesignProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('textmagic')
@@ -183,7 +180,7 @@ export class ProvidersController {
     return this.providersService.createTextMagicProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('twilio')
@@ -202,7 +199,7 @@ export class ProvidersController {
     return this.providersService.createTwilioProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('vonage')
@@ -221,7 +218,7 @@ export class ProvidersController {
     return this.providersService.createVonageProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('fcm')
@@ -240,7 +237,7 @@ export class ProvidersController {
     return this.providersService.createFcmProvider({
       db,
       input,
-    });
+    })
   }
 
   @Post('apns')
@@ -259,7 +256,7 @@ export class ProvidersController {
     return this.providersService.createApnsProvider({
       db,
       input,
-    });
+    })
   }
 
   @Get()
@@ -279,7 +276,7 @@ export class ProvidersController {
       db,
       queries,
       search,
-    });
+    })
   }
 
   @Get(':providerId')
@@ -294,7 +291,7 @@ export class ProvidersController {
     @Param('providerId') providerId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.providersService.getProvider(db, providerId);
+    return this.providersService.getProvider(db, providerId)
   }
 
   @Patch('mailgun/:providerId')
@@ -315,7 +312,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('sendgrid/:providerId')
@@ -336,7 +333,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('smtp/:providerId')
@@ -357,7 +354,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('msg91/:providerId')
@@ -378,7 +375,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('telesign/:providerId')
@@ -399,7 +396,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('textmagic/:providerId')
@@ -420,7 +417,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('twilio/:providerId')
@@ -441,7 +438,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('vonage/:providerId')
@@ -462,7 +459,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('fcm/:providerId')
@@ -483,7 +480,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Patch('apns/:providerId')
@@ -504,7 +501,7 @@ export class ProvidersController {
       db,
       providerId,
       input,
-    });
+    })
   }
 
   @Delete(':providerId')
@@ -521,6 +518,6 @@ export class ProvidersController {
     @Param('providerId') providerId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.providersService.deleteProvider(db, providerId);
+    return this.providersService.deleteProvider(db, providerId)
   }
 }

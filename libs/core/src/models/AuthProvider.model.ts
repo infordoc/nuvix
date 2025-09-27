@@ -1,36 +1,36 @@
-import { Exclude, Expose } from 'class-transformer';
-import { BaseModel } from '@nuvix/core/models/base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from '@nuvix/core/models/base.model'
 
 @Exclude()
 export class AuthProviderModel extends BaseModel {
   /**
    * Auth Provider key.
    */
-  @Expose() key: string = '';
+  @Expose() key: string = ''
 
   /**
    * Auth Provider name.
    */
-  @Expose() name: string = '';
+  @Expose() name: string = ''
 
   /**
    * OAuth 2.0 application ID.
    */
-  @Expose() appId: string = '';
+  @Expose() appId: string = ''
 
   /**
    * OAuth 2.0 application secret. Might be JSON string if provider requires extra configuration.
    */
-  @Expose() secret: string = '';
+  @Expose() secret: string = ''
 
   /**
    * Auth Provider is active and can be used to create session.
    */
-  @Expose() enabled: boolean = false;
+  @Expose() enabled: boolean = false
 
   constructor(partial: Partial<AuthProviderModel>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 
   /**
@@ -39,7 +39,7 @@ export class AuthProviderModel extends BaseModel {
    * @return string
    */
   getName(): string {
-    return 'AuthProvider';
+    return 'AuthProvider'
   }
 
   /**
@@ -48,6 +48,6 @@ export class AuthProviderModel extends BaseModel {
    * @return string
    */
   getType(): string {
-    return 'MODEL_AUTH_PROVIDER';
+    return 'MODEL_AUTH_PROVIDER'
   }
 }

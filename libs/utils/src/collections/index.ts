@@ -1,7 +1,7 @@
-import { authCollections, commonCollections } from './common.js';
-import { consoleCollections } from './console';
-import { bucketCollections, dbCollections } from './misc';
-import { projectCollections } from './project';
+import { authCollections, commonCollections } from './common.js'
+import { consoleCollections } from './console'
+import { bucketCollections, dbCollections } from './misc'
+import { projectCollections } from './project'
 
 const collections = {
   auth: authCollections('project'),
@@ -10,6 +10,6 @@ const collections = {
   bucket: bucketCollections,
   database: dbCollections,
   common: commonCollections('project'),
-};
+}
 
-export default collections;
+export default collections

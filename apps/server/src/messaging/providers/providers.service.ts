@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common'
 import type {
   CreateApnsProvider,
   CreateFcmProvider,
@@ -22,11 +22,11 @@ import type {
   UpdateTextmagicProvider,
   UpdateTwilioProvider,
   UpdateVonageProvider,
-} from './providers.types';
-import { Database, Doc, DuplicateException, ID, Query } from '@nuvix/db';
-import { Exception } from '@nuvix/core/extend/exception';
-import { MessageType } from '@nuvix/utils';
-import type { Providers } from '@nuvix/utils/types';
+} from './providers.types'
+import { Database, Doc, DuplicateException, ID, Query } from '@nuvix/db'
+import { Exception } from '@nuvix/core/extend/exception'
+import { MessageType } from '@nuvix/utils'
+import type { Providers } from '@nuvix/utils/types'
 
 @Injectable()
 export class ProvidersService {
@@ -44,37 +44,37 @@ export class ProvidersService {
     optionFields,
     enabledCondition,
   }: {
-    input: T;
-    db: Database;
-    providerType: string;
-    messageType: string;
-    credentialFields: Record<string, keyof typeof input>;
-    optionFields: Record<string, keyof typeof input>;
+    input: T
+    db: Database
+    providerType: string
+    messageType: string
+    credentialFields: Record<string, keyof typeof input>
+    optionFields: Record<string, keyof typeof input>
     enabledCondition: (
       credentials: Record<string, keyof typeof input>,
       options: Record<string, keyof typeof input>,
-    ) => boolean;
+    ) => boolean
   }) {
-    const { providerId: inputProviderId, name, enabled: inputEnabled } = input;
+    const { providerId: inputProviderId, name, enabled: inputEnabled } = input
     const providerId =
-      inputProviderId === 'unique()' ? ID.unique() : inputProviderId;
+      inputProviderId === 'unique()' ? ID.unique() : inputProviderId
 
-    const credentials: Record<string, any> = {};
-    const options: Record<string, any> = {};
+    const credentials: Record<string, any> = {}
+    const options: Record<string, any> = {}
 
     Object.entries(credentialFields).forEach(([key, inputKey]) => {
       if (input[inputKey as keyof typeof input]) {
-        credentials[key] = input[inputKey as keyof typeof input];
+        credentials[key] = input[inputKey as keyof typeof input]
       }
-    });
+    })
     Object.entries(optionFields).forEach(([key, inputKey]) => {
       if (input[inputKey as keyof typeof input]) {
-        options[key] = input[inputKey as keyof typeof input];
+        options[key] = input[inputKey as keyof typeof input]
       }
-    });
+    })
 
     const enabled =
-      inputEnabled === true && enabledCondition(credentials, options);
+      inputEnabled === true && enabledCondition(credentials, options)
 
     const provider = new Doc<Providers>({
       $id: providerId,
@@ -84,17 +84,17 @@ export class ProvidersService {
       enabled,
       credentials,
       options,
-    });
+    })
 
     try {
-      const createdProvider = await db.createDocument('providers', provider);
+      const createdProvider = await db.createDocument('providers', provider)
 
-      return createdProvider;
+      return createdProvider
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.PROVIDER_ALREADY_EXISTS);
+        throw new Exception(Exception.PROVIDER_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -123,7 +123,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('isEuRegion') &&
         credentials.hasOwnProperty('apiKey') &&
         credentials.hasOwnProperty('domain'),
-    });
+    })
   }
 
   /**
@@ -146,7 +146,7 @@ export class ProvidersService {
       },
       enabledCondition: (credentials, options) =>
         !!options['fromEmail'] && credentials.hasOwnProperty('apiKey'),
-    });
+    })
   }
 
   /**
@@ -175,7 +175,7 @@ export class ProvidersService {
       },
       enabledCondition: (credentials, options) =>
         !!options['fromEmail'] && credentials.hasOwnProperty('host'),
-    });
+    })
   }
 
   /**
@@ -199,7 +199,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('senderId') &&
         credentials.hasOwnProperty('authKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -222,7 +222,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('customerId') &&
         credentials.hasOwnProperty('apiKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -245,7 +245,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('username') &&
         credentials.hasOwnProperty('apiKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -268,7 +268,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('accountSid') &&
         credentials.hasOwnProperty('authToken') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -291,7 +291,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('apiKey') &&
         credentials.hasOwnProperty('apiSecret') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -309,7 +309,7 @@ export class ProvidersService {
       optionFields: {},
       enabledCondition: credentials =>
         credentials.hasOwnProperty('serviceAccountJSON'),
-    });
+    })
   }
 
   /**
@@ -335,7 +335,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('authKeyId') &&
         credentials.hasOwnProperty('teamId') &&
         credentials.hasOwnProperty('bundleId'),
-    });
+    })
   }
 
   /**
@@ -343,31 +343,31 @@ export class ProvidersService {
    */
   async listProviders({ db, queries = [], search }: ListProviders) {
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
 
-    const { filters } = Query.groupByType(queries);
+    const { filters } = Query.groupByType(queries)
 
-    const providers = await db.find('providers', queries);
-    const total = await db.count('providers', filters);
+    const providers = await db.find('providers', queries)
+    const total = await db.count('providers', filters)
 
     return {
       providers,
       total,
-    };
+    }
   }
 
   /**
    * Get Provider
    */
   async getProvider(db: Database, id: string) {
-    const provider = await db.getDocument('providers', id);
+    const provider = await db.getDocument('providers', id)
 
     if (provider.empty()) {
-      throw new Exception(Exception.PROVIDER_NOT_FOUND);
+      throw new Exception(Exception.PROVIDER_NOT_FOUND)
     }
 
-    return provider;
+    return provider
   }
 
   /**
@@ -382,54 +382,54 @@ export class ProvidersService {
     optionFields,
     enabledCondition,
   }: {
-    providerId: string;
-    db: Database;
-    providerType: string;
-    updatedFields: T;
-    credentialFields: Record<string, keyof typeof updatedFields>;
-    optionFields: Record<string, keyof typeof updatedFields>;
+    providerId: string
+    db: Database
+    providerType: string
+    updatedFields: T
+    credentialFields: Record<string, keyof typeof updatedFields>
+    optionFields: Record<string, keyof typeof updatedFields>
     enabledCondition: (
       credentials: Record<string, keyof typeof updatedFields>,
       options: Record<string, keyof typeof updatedFields>,
-    ) => boolean;
+    ) => boolean
   }) {
-    const provider = await db.getDocument('providers', providerId);
+    const provider = await db.getDocument('providers', providerId)
 
     if (provider.empty()) {
-      throw new Exception(Exception.PROVIDER_NOT_FOUND);
+      throw new Exception(Exception.PROVIDER_NOT_FOUND)
     }
 
     if (provider.get('provider') !== providerType) {
-      throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
+      throw new Exception(Exception.PROVIDER_INCORRECT_TYPE)
     }
 
     if (updatedFields['name']) {
-      provider.set('name', updatedFields['name']);
+      provider.set('name', updatedFields['name'])
     }
 
     // Update credentials
-    const credentials = provider.get('credentials', {}) as Record<string, any>;
+    const credentials = provider.get('credentials', {}) as Record<string, any>
     Object.entries(credentialFields).forEach(([key, inputKey]) => {
       if (
         updatedFields[inputKey] !== undefined &&
         updatedFields[inputKey] !== ''
       ) {
-        credentials[key] = updatedFields[inputKey];
+        credentials[key] = updatedFields[inputKey]
       }
-    });
-    provider.set('credentials', credentials);
+    })
+    provider.set('credentials', credentials)
 
     // Update options
-    const options = provider.get('options') || {};
+    const options = provider.get('options') || {}
     Object.entries(optionFields).forEach(([key, inputKey]) => {
       if (
         updatedFields[inputKey] !== undefined &&
         updatedFields[inputKey] !== ''
       ) {
-        options[key] = updatedFields[inputKey];
+        options[key] = updatedFields[inputKey]
       }
-    });
-    provider.set('options', options);
+    })
+    provider.set('options', options)
 
     // Update enabled status
     if (
@@ -438,12 +438,12 @@ export class ProvidersService {
     ) {
       if (updatedFields['enabled']) {
         if (enabledCondition(credentials, options)) {
-          provider.set('enabled', true);
+          provider.set('enabled', true)
         } else {
-          throw new Exception(Exception.PROVIDER_MISSING_CREDENTIALS);
+          throw new Exception(Exception.PROVIDER_MISSING_CREDENTIALS)
         }
       } else {
-        provider.set('enabled', false);
+        provider.set('enabled', false)
       }
     }
 
@@ -451,9 +451,9 @@ export class ProvidersService {
       'providers',
       provider.getId(),
       provider,
-    );
+    )
 
-    return updatedProvider;
+    return updatedProvider
   }
 
   /**
@@ -485,7 +485,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('isEuRegion') &&
         credentials.hasOwnProperty('apiKey') &&
         credentials.hasOwnProperty('domain'),
-    });
+    })
   }
 
   /**
@@ -513,7 +513,7 @@ export class ProvidersService {
       enabledCondition: (credentials, options) =>
         options.hasOwnProperty('fromEmail') &&
         credentials.hasOwnProperty('apiKey'),
-    });
+    })
   }
 
   /**
@@ -543,7 +543,7 @@ export class ProvidersService {
       enabledCondition: (credentials, options) =>
         options.hasOwnProperty('fromEmail') &&
         credentials.hasOwnProperty('host'),
-    });
+    })
   }
 
   /**
@@ -567,7 +567,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('senderId') &&
         credentials.hasOwnProperty('authKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -594,7 +594,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('customerId') &&
         credentials.hasOwnProperty('apiKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -621,7 +621,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('username') &&
         credentials.hasOwnProperty('apiKey') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -644,7 +644,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('accountSid') &&
         credentials.hasOwnProperty('authToken') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -667,7 +667,7 @@ export class ProvidersService {
         credentials.hasOwnProperty('apiKey') &&
         credentials.hasOwnProperty('apiSecret') &&
         options.hasOwnProperty('from'),
-    });
+    })
   }
 
   /**
@@ -679,7 +679,7 @@ export class ProvidersService {
       input.serviceAccountJSON &&
       typeof input.serviceAccountJSON === 'string'
     ) {
-      input.serviceAccountJSON = JSON.parse(input.serviceAccountJSON);
+      input.serviceAccountJSON = JSON.parse(input.serviceAccountJSON)
     }
 
     return this.updateProvider({
@@ -693,7 +693,7 @@ export class ProvidersService {
       optionFields: {},
       enabledCondition: credentials =>
         credentials.hasOwnProperty('serviceAccountJSON'),
-    });
+    })
   }
 
   /**
@@ -719,19 +719,19 @@ export class ProvidersService {
         credentials.hasOwnProperty('authKeyId') &&
         credentials.hasOwnProperty('teamId') &&
         credentials.hasOwnProperty('bundleId'),
-    });
+    })
   }
 
   /**
    * Deletes a provider.
    */
   async deleteProvider(db: Database, providerId: string) {
-    const provider = await db.getDocument('providers', providerId);
+    const provider = await db.getDocument('providers', providerId)
 
     if (provider.empty()) {
-      throw new Exception(Exception.PROVIDER_NOT_FOUND);
+      throw new Exception(Exception.PROVIDER_NOT_FOUND)
     }
 
-    await db.deleteDocument('providers', providerId);
+    await db.deleteDocument('providers', providerId)
   }
 }

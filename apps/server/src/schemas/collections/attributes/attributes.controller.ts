@@ -11,17 +11,17 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { AttributesService } from './attributes.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix/db';
+} from '@nestjs/common'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { AttributesService } from './attributes.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { Models } from '@nuvix/core/helper/response.helper'
+import type { Database, Query as Queries } from '@nuvix/db'
 import {
   CurrentDatabase,
   Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators/project.decorator'
+import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators'
 
 // DTOs
 import {
@@ -45,11 +45,11 @@ import {
   UpdateRelationAttributeDTO,
   UpdateStringAttributeDTO,
   UpdateURLAttributeDTO,
-} from './DTO/attributes.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { AttributesQueryPipe } from '@nuvix/core/pipes/queries';
+} from './DTO/attributes.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { DocSchemaGuard } from '@nuvix/core/resolvers/guards'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { AttributesQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Controller({
   version: ['1'],
@@ -69,7 +69,7 @@ export class AttributesController {
     @Param('collectionId') collectionId: string,
     @Query('queries', AttributesQueryPipe) queries?: Queries[],
   ) {
-    return this.attributesService.getAttributes(db, collectionId, queries);
+    return this.attributesService.getAttributes(db, collectionId, queries)
   }
 
   @Post('string')
@@ -85,7 +85,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('email')
@@ -101,7 +101,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('enum')
@@ -117,7 +117,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('ip')
@@ -133,7 +133,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('url')
@@ -149,7 +149,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('integer')
@@ -165,7 +165,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('float')
@@ -181,7 +181,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('boolean')
@@ -197,7 +197,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('datetime')
@@ -213,7 +213,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Post('relationship')
@@ -229,7 +229,7 @@ export class AttributesController {
       collectionId,
       createAttributeDTO,
       project,
-    );
+    )
   }
 
   @Get(':attributeId')
@@ -239,7 +239,7 @@ export class AttributesController {
     @Param('collectionId') collectionId: string,
     @Param('attributeId') attributeId: string,
   ) {
-    return this.attributesService.getAttribute(db, collectionId, attributeId);
+    return this.attributesService.getAttribute(db, collectionId, attributeId)
   }
 
   @Patch('string/:attributeId')
@@ -255,7 +255,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('email/:attributeId')
@@ -271,7 +271,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('enum/:attributeId')
@@ -287,7 +287,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('ip/:attributeId')
@@ -303,7 +303,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('url/:attributeId')
@@ -319,7 +319,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('integer/:attributeId')
@@ -335,7 +335,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('float/:attributeId')
@@ -351,7 +351,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('boolean/:attributeId')
@@ -367,7 +367,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('datetime/:attributeId')
@@ -383,7 +383,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Patch('relationship/:attributeId')
@@ -399,7 +399,7 @@ export class AttributesController {
       collectionId,
       attributeId,
       updateAttributeDTO,
-    );
+    )
   }
 
   @Delete(':attributeId')
@@ -416,6 +416,6 @@ export class AttributesController {
       collectionId,
       attributeId,
       project,
-    );
+    )
   }
 }

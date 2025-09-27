@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Rules extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -9,9 +9,9 @@ export class Rules extends BaseQueryPipe {
     'deploymentResourceId',
     'deploymentId',
     'deploymentVcsProviderBranch',
-  ];
+  ]
 
   public constructor() {
-    super('rules', Rules.ALLOWED_ATTRIBUTES);
+    super('rules', Rules.ALLOWED_ATTRIBUTES)
   }
 }

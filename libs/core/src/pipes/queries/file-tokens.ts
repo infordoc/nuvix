@@ -1,9 +1,9 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class FileTokens extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = ['expire'];
+  public static ALLOWED_ATTRIBUTES = ['expire']
 
   public constructor() {
-    super('files', FileTokens.ALLOWED_ATTRIBUTES);
+    super('files', FileTokens.ALLOWED_ATTRIBUTES)
   }
 }

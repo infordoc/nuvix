@@ -1,5 +1,5 @@
-import { Exception } from '@nuvix/core/extend/exception';
-import { DatabaseError } from 'pg';
+import { Exception } from '@nuvix/core/extend/exception'
+import { DatabaseError } from 'pg'
 
 type PgErrorType =
   | 'database_conflict'
@@ -9,38 +9,38 @@ type PgErrorType =
   | typeof Exception.GENERAL_NOT_FOUND
   | 'database_unavailable'
   | 'database_internal'
-  | 'database_unknown';
+  | 'database_unknown'
 
 interface PgTransformedError {
-  status: number;
-  code: string;
-  type: PgErrorType;
-  message: string;
+  status: number
+  code: string
+  type: PgErrorType
+  message: string
   details: {
-    message: string;
-    detail?: string;
-    hint?: string;
-    position?: string;
-    table?: string;
-    column?: string;
-    constraint?: string;
-  };
+    message: string
+    detail?: string
+    hint?: string
+    position?: string
+    table?: string
+    column?: string
+    constraint?: string
+  }
 }
 
 function safeMessage(defaultMessage: string, detail?: string): string {
-  return detail || defaultMessage;
+  return detail || defaultMessage
 }
 
 type ErrorMapEntry =
   | {
-      status: number;
-      type: PgErrorType;
-      message: string | ((err: DatabaseError) => string);
+      status: number
+      type: PgErrorType
+      message: string | ((err: DatabaseError) => string)
     }
   | ((
       err: DatabaseError,
       authed: boolean,
-    ) => Omit<PgTransformedError, 'code' | 'details'>);
+    ) => Omit<PgTransformedError, 'code' | 'details'>)
 
 const errorMapArray: [string, ErrorMapEntry][] = [
   // Class 23 — Integrity Constraint Violation
@@ -136,9 +136,9 @@ const errorMapArray: [string, ErrorMapEntry][] = [
         'The database is currently undergoing maintenance. Please try again later.',
     },
   ], // admin_shutdown
-] as const;
+] as const
 
-const SPECIFIC_ERROR_MAP: Map<string, ErrorMapEntry> = new Map(errorMapArray);
+const SPECIFIC_ERROR_MAP: Map<string, ErrorMapEntry> = new Map(errorMapArray)
 
 // Mappings for PostgreSQL error classes (the first two characters of the code)
 const CLASS_ERROR_MAP: Map<
@@ -214,7 +214,7 @@ const CLASS_ERROR_MAP: Map<
     'XX',
     { status: 500, type: 'database_internal', message: 'Internal Error.' },
   ],
-]);
+])
 
 /**
  * Transforms a raw PostgreSQL error into a structured, user-friendly error object.
@@ -227,34 +227,34 @@ export function transformPgError(
   authed: boolean = true,
 ): PgTransformedError | null {
   if (!(error instanceof DatabaseError)) {
-    return null;
+    return null
   }
 
-  const code = error.code ?? 'UNKNOWN';
-  let result: Omit<PgTransformedError, 'code' | 'details'>;
+  const code = error.code ?? 'UNKNOWN'
+  let result: Omit<PgTransformedError, 'code' | 'details'>
 
-  const specificMapping = SPECIFIC_ERROR_MAP.get(code);
-  const classMapping = CLASS_ERROR_MAP.get(code.substring(0, 2));
+  const specificMapping = SPECIFIC_ERROR_MAP.get(code)
+  const classMapping = CLASS_ERROR_MAP.get(code.substring(0, 2))
 
   if (specificMapping) {
     if (typeof specificMapping === 'function') {
-      result = specificMapping(error, authed);
+      result = specificMapping(error, authed)
     } else {
       const message =
         typeof specificMapping.message === 'function'
           ? specificMapping.message(error)
-          : specificMapping.message;
-      result = { ...specificMapping, message };
+          : specificMapping.message
+      result = { ...specificMapping, message }
     }
   } else if (classMapping) {
-    result = classMapping;
+    result = classMapping
   } else {
     // Fallback for any unhandled PostgreSQL error
     result = {
       status: 500,
       type: 'database_unknown',
       message: 'An unexpected database error occurred.',
-    };
+    }
   }
 
   return {
@@ -269,5 +269,5 @@ export function transformPgError(
       column: error.column,
       constraint: error.constraint,
     },
-  };
+  }
 }

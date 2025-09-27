@@ -1,55 +1,55 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators/input.validator';
+import { PartialType, OmitType } from '@nestjs/swagger'
+import { IsCustomID } from '@nuvix/core/validators/input.validator'
 import {
   IsString,
   IsOptional,
   IsBoolean,
   IsEmail,
   MaxLength,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateMailgunProviderDTO {
   @IsString()
   @IsCustomID()
-  providerId!: string;
+  providerId!: string
 
   @IsString()
   @MaxLength(128)
-  name!: string;
+  name!: string
 
   @IsString()
   @IsOptional()
-  apiKey?: string;
+  apiKey?: string
 
   @IsString()
   @IsOptional()
-  domain?: string;
+  domain?: string
 
   @IsBoolean()
   @IsOptional()
-  isEuRegion?: boolean;
+  isEuRegion?: boolean
 
   @IsString()
   @MaxLength(128)
   @IsOptional()
-  fromName?: string;
+  fromName?: string
 
   @IsEmail()
   @IsOptional()
-  fromEmail?: string;
+  fromEmail?: string
 
   @IsString()
   @MaxLength(128)
   @IsOptional()
-  replyToName?: string;
+  replyToName?: string
 
   @IsEmail()
   @IsOptional()
-  replyToEmail?: string;
+  replyToEmail?: string
 
   @IsBoolean()
   @IsOptional()
-  enabled?: boolean;
+  enabled?: boolean
 }
 
 export class UpdateMailgunProviderDTO extends PartialType(

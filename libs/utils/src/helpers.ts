@@ -1,7 +1,7 @@
-import * as crypto from 'crypto';
-import * as fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import * as crypto from 'crypto'
+import * as fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 /**
  *  Generates a MD5 hash of the given input string
@@ -9,23 +9,23 @@ import { fileURLToPath } from 'url';
  *  @returns The MD5 hash as a hexadecimal string
  */
 export const createMd5Hash = (input: string): string => {
-  return crypto.createHash('md5').update(input).digest('hex');
-};
+  return crypto.createHash('md5').update(input).digest('hex')
+}
 
 /**
  * FNV-1a 128-bit hash function implementation in TypeScript
  */
 export function fnv1a128(str: string): string {
-  let hash = BigInt('0x6c62272e07bb014262b821756295c58d'); // 128-bit offset basis
-  const prime = BigInt('0x0000000001000000000000000000013B'); // 128-bit prime
+  let hash = BigInt('0x6c62272e07bb014262b821756295c58d') // 128-bit offset basis
+  const prime = BigInt('0x0000000001000000000000000000013B') // 128-bit prime
 
   for (let i = 0; i < str.length; i++) {
-    hash ^= BigInt(str.charCodeAt(i));
-    hash = (hash * prime) & ((BigInt(1) << BigInt(128)) - BigInt(1)); // 128-bit overflow
+    hash ^= BigInt(str.charCodeAt(i))
+    hash = (hash * prime) & ((BigInt(1) << BigInt(128)) - BigInt(1)) // 128-bit overflow
   }
 
   // Return as fixed 32-char hex string
-  return hash.toString(16).padStart(32, '0');
+  return hash.toString(16).padStart(32, '0')
 }
 
 /**
@@ -37,38 +37,38 @@ export function fnv1a128(str: string): string {
 export function findProjectRoot(): string {
   try {
     // Start from current file's directory
-    let currentDir: string;
+    let currentDir: string
     if (import.meta.url) {
-      currentDir = path.dirname(fileURLToPath(import.meta.url));
+      currentDir = path.dirname(fileURLToPath(import.meta.url))
     } else {
-      currentDir = __dirname;
+      currentDir = __dirname
     }
-    const maxDepth = 10; // Prevent infinite loops
-    let depth = 0;
+    const maxDepth = 10 // Prevent infinite loops
+    let depth = 0
 
     while (currentDir !== '/' && depth < maxDepth) {
-      const packageJsonPath = path.join(currentDir, 'package.json');
+      const packageJsonPath = path.join(currentDir, 'package.json')
 
       if (fs.existsSync(packageJsonPath)) {
-        return currentDir;
+        return currentDir
       }
 
-      const parentDir = path.dirname(currentDir);
+      const parentDir = path.dirname(currentDir)
       // Check if we've reached the top (when dirname doesn't change the path anymore)
       if (parentDir === currentDir) {
-        break;
+        break
       }
 
-      currentDir = parentDir;
-      depth++;
+      currentDir = parentDir
+      depth++
     }
 
     // Fallback to current working directory if not found
-    console.warn('Could not find package.json, falling back to process.cwd()');
-    return process.cwd();
+    console.warn('Could not find package.json, falling back to process.cwd()')
+    return process.cwd()
   } catch (error) {
-    console.error('Error finding project root:', error);
-    throw new Error('Failed to determine project root directory');
+    console.error('Error finding project root:', error)
+    throw new Error('Failed to determine project root directory')
   }
 }
 
@@ -76,15 +76,15 @@ export const parseNumber = (
   value: string | undefined,
   defaultValue: number,
 ) => {
-  if (!value) return defaultValue;
-  const parsed = parseInt(value, 10);
-  return isNaN(parsed) ? defaultValue : parsed;
-};
+  if (!value) return defaultValue
+  const parsed = parseInt(value, 10)
+  return isNaN(parsed) ? defaultValue : parsed
+}
 
 export const parseBoolean = (
   value: string | undefined,
   defaultValue: boolean,
 ) => {
-  if (!value) return defaultValue;
-  return value.toLowerCase() === 'true';
-};
+  if (!value) return defaultValue
+  return value.toLowerCase() === 'true'
+}

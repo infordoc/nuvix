@@ -12,24 +12,24 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { StorageService } from './storage.service';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Database, Query as Queries } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { StorageService } from './storage.service'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { Database, Query as Queries } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
 import {
   ResModel,
   ProjectDatabase,
   Namespace,
   Auth,
   AuthType,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
-import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { BucketsQueryPipe } from '@nuvix/core/pipes/queries';
+import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { BucketsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('storage')
 @UseGuards(ProjectGuard)
@@ -37,7 +37,7 @@ import { BucketsQueryPipe } from '@nuvix/core/pipes/queries';
 @Controller({ version: ['1'], path: 'storage' })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
-  private readonly logger = new Logger(StorageController.name);
+  private readonly logger = new Logger(StorageController.name)
   constructor(private readonly storageService: StorageService) {}
 
   @Get('buckets')
@@ -47,7 +47,7 @@ export class StorageController {
     @Query('queries', BucketsQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.storageService.getBuckets(db, queries, search);
+    return this.storageService.getBuckets(db, queries, search)
   }
 
   @Post('buckets')
@@ -56,13 +56,13 @@ export class StorageController {
     @ProjectDatabase() db: Database,
     @Body() createBucketDTO: CreateBucketDTO,
   ) {
-    return this.storageService.createBucket(db, createBucketDTO);
+    return this.storageService.createBucket(db, createBucketDTO)
   }
 
   @Get('buckets/:id')
   @ResModel(Models.BUCKET)
   async getBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
-    return this.storageService.getBucket(db, id);
+    return this.storageService.getBucket(db, id)
   }
 
   @Put('buckets/:id')
@@ -72,14 +72,14 @@ export class StorageController {
     @Param('id') id: string,
     @Body() createBucketDTO: UpdateBucketDTO,
   ) {
-    return this.storageService.updateBucket(db, id, createBucketDTO);
+    return this.storageService.updateBucket(db, id, createBucketDTO)
   }
 
   @Delete('buckets/:id')
   @ResModel(Models.NONE)
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
-    return this.storageService.deleteBucket(db, id);
+    return this.storageService.deleteBucket(db, id)
   }
 
   @Get('usage')
@@ -88,7 +88,7 @@ export class StorageController {
     @ProjectDatabase() db: Database,
     @Query('range') range?: string,
   ) {
-    return this.storageService.getStorageUsage(db, range);
+    return this.storageService.getStorageUsage(db, range)
   }
 
   @Get(':id/usage')
@@ -98,6 +98,6 @@ export class StorageController {
     @Param('id') id: string,
     @Query('range') range?: string,
   ) {
-    return this.storageService.getBucketStorageUsage(db, id, range);
+    return this.storageService.getBucketStorageUsage(db, id, range)
   }
 }

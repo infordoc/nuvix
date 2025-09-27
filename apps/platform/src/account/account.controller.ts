@@ -15,24 +15,24 @@ import {
   Session,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { AccountService } from './account.service';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { User } from '@nuvix/core/decorators/user.decorator';
+} from '@nestjs/common'
+import { AccountService } from './account.service'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { User } from '@nuvix/core/decorators/user.decorator'
 import {
   AuditEvent,
   Locale,
   ResModel,
   Scope,
   Throttle,
-} from '@nuvix/core/decorators';
-import { Query as Queries } from '@nuvix/db';
+} from '@nuvix/core/decorators'
+import { Query as Queries } from '@nuvix/db'
 
-import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
-import { Exception } from '@nuvix/core/extend/exception';
-import { LocaleTranslator } from '@nuvix/core/helper';
+import { AuthGuard, Public } from '@nuvix/core/resolvers/guards/auth.guard'
+import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor'
+import { Exception } from '@nuvix/core/extend/exception'
+import { LocaleTranslator } from '@nuvix/core/helper'
 
 import {
   CreateAccountDTO,
@@ -40,34 +40,34 @@ import {
   UpdateNameDTO,
   UpdatePasswordDTO,
   UpdatePrefsDTO,
-} from './DTO/account.dto';
-import { IdentityIdParamDTO } from './DTO/identity.dto';
+} from './DTO/account.dto'
+import { IdentityIdParamDTO } from './DTO/identity.dto'
 import {
   CreateMfaChallengeDTO,
   MfaAuthenticatorTypeParamDTO,
   UpdateAccountMfaDTO,
   VerifyMfaChallengeDTO,
   VerifyMfaAuthenticatorDTO,
-} from './DTO/mfa.dto';
-import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
+} from './DTO/mfa.dto'
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
   CreateSessionDTO,
   OAuth2CallbackDTO,
   ProviderParamDTO,
-} from './DTO/session.dto';
+} from './DTO/session.dto'
 import {
   CreateEmailTokenDTO,
   CreateMagicURLTokenDTO,
   CreateOAuth2TokenDTO,
-} from './DTO/token.dto';
+} from './DTO/token.dto'
 import {
   CreateEmailVerificationDTO,
   UpdateEmailVerificationDTO,
-} from './DTO/verification.dto';
-import type { SessionsDoc, UsersDoc } from '@nuvix/utils/types';
-import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries';
+} from './DTO/verification.dto'
+import type { SessionsDoc, UsersDoc } from '@nuvix/utils/types'
+import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Controller({ version: ['1'], path: 'account' })
 @UseGuards(AuthGuard)
@@ -96,7 +96,7 @@ export class AccountController {
       input.name,
       user,
       request.ip,
-    );
+    )
   }
 
   @Get()
@@ -104,9 +104,9 @@ export class AccountController {
   @ResModel(Models.ACCOUNT)
   async getAccount(@User() user: UsersDoc) {
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
-    return user;
+    return user
   }
 
   @Delete()
@@ -114,7 +114,7 @@ export class AccountController {
   @ResModel(Models.NONE)
   @AuditEvent('user.delete', 'user/{res.$id}')
   async deleteAccount(@User() user: UsersDoc) {
-    return this.accountService.deleteAccount(user);
+    return this.accountService.deleteAccount(user)
   }
 
   @Get('sessions')
@@ -124,7 +124,7 @@ export class AccountController {
     @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
-    return this.accountService.getSessions(user, locale);
+    return this.accountService.getSessions(user, locale)
   }
 
   @Delete('sessions')
@@ -137,7 +137,7 @@ export class AccountController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
   ) {
-    return this.accountService.deleteSessions(user, locale, request, response);
+    return this.accountService.deleteSessions(user, locale, request, response)
   }
 
   @Get('sessions/:id')
@@ -148,7 +148,7 @@ export class AccountController {
     @Param('id') sessionId: string,
     @Locale() locale: LocaleTranslator,
   ) {
-    return this.accountService.getSession(user, sessionId, locale);
+    return this.accountService.getSession(user, sessionId, locale)
   }
 
   @Delete('sessions/:id')
@@ -163,9 +163,9 @@ export class AccountController {
     @Session() session: SessionsDoc,
   ) {
     if (id === 'current') {
-      id = session.getId();
+      id = session.getId()
     }
-    return this.accountService.deleteSession(user, id, request, response);
+    return this.accountService.deleteSession(user, id, request, response)
   }
 
   @Patch('sessions/:id')
@@ -173,7 +173,7 @@ export class AccountController {
   @ResModel(Models.SESSION)
   @AuditEvent('session.update', 'user/{res.userId}')
   async updateSession(@User() user: UsersDoc, @Param('id') id: string) {
-    return this.accountService.updateSession(user, id);
+    return this.accountService.updateSession(user, id)
   }
 
   @Public()
@@ -198,7 +198,7 @@ export class AccountController {
       locale,
       request,
       response,
-    );
+    )
   }
 
   @Public()
@@ -222,7 +222,7 @@ export class AccountController {
       request,
       response,
       locale,
-    });
+    })
   }
 
   @Public()
@@ -239,7 +239,7 @@ export class AccountController {
       request,
       response,
       provider,
-    });
+    })
   }
 
   @Public()
@@ -253,12 +253,12 @@ export class AccountController {
     @Param('projectId') projectId: string,
     @Param() { provider }: ProviderParamDTO,
   ) {
-    const domain = request.host;
-    const protocol = request.protocol;
+    const domain = request.host
+    const protocol = request.protocol
 
-    const params: Record<string, any> = { ...input };
-    params['provider'] = provider;
-    params['project'] = projectId;
+    const params: Record<string, any> = { ...input }
+    params['provider'] = provider
+    params['project'] = projectId
 
     response
       .status(302)
@@ -266,7 +266,7 @@ export class AccountController {
       .header('Pragma', 'no-cache')
       .redirect(
         `${protocol}://${domain}/account/sessions/oauth2/${provider}/redirect?${new URLSearchParams(params).toString()}`,
-      );
+      )
   }
 
   @Public()
@@ -289,7 +289,7 @@ export class AccountController {
       provider,
       request,
       response,
-    });
+    })
   }
 
   @Public()
@@ -306,7 +306,7 @@ export class AccountController {
       request,
       response,
       provider,
-    });
+    })
   }
 
   @Public()
@@ -329,7 +329,7 @@ export class AccountController {
       request,
       response,
       locale,
-    });
+    })
   }
 
   @Public()
@@ -353,7 +353,7 @@ export class AccountController {
       response,
       user,
       locale,
-    });
+    })
   }
 
   @Public()
@@ -376,14 +376,14 @@ export class AccountController {
       response,
       user,
       locale,
-    });
+    })
   }
 
   @Get('prefs')
   @Scope('account')
   @ResModel(Models.PREFERENCES)
   getPrefs(@User() user: UsersDoc) {
-    return user.get('prefs', {});
+    return user.get('prefs', {})
   }
 
   @Patch('prefs')
@@ -391,7 +391,7 @@ export class AccountController {
   @ResModel(Models.PREFERENCES)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updatePrefs(@User() user: UsersDoc, @Body() input: UpdatePrefsDTO) {
-    return this.accountService.updatePrefs(user, input.prefs);
+    return this.accountService.updatePrefs(user, input.prefs)
   }
 
   @Patch('name')
@@ -399,7 +399,7 @@ export class AccountController {
   @ResModel(Models.ACCOUNT)
   @AuditEvent('user.update', 'user/{res.$id}')
   async updateName(@User() user: UsersDoc, @Body() { name }: UpdateNameDTO) {
-    return this.accountService.updateName(user, name);
+    return this.accountService.updateName(user, name)
   }
 
   @Patch('password')
@@ -410,7 +410,7 @@ export class AccountController {
     @User() user: UsersDoc,
     @Body() input: UpdatePasswordDTO,
   ) {
-    return this.accountService.updatePassword(user, input);
+    return this.accountService.updatePassword(user, input)
   }
 
   @Patch('email')
@@ -421,7 +421,7 @@ export class AccountController {
     @User() user: UsersDoc,
     @Body() updateEmailDTO: UpdateEmailDTO,
   ) {
-    return this.accountService.updateEmail(user, updateEmailDTO);
+    return this.accountService.updateEmail(user, updateEmailDTO)
   }
 
   @Patch('status')
@@ -437,7 +437,7 @@ export class AccountController {
       user,
       request,
       response,
-    });
+    })
   }
 
   @Public()
@@ -460,7 +460,7 @@ export class AccountController {
       locale,
       request,
       response,
-    });
+    })
   }
 
   @Public()
@@ -480,7 +480,7 @@ export class AccountController {
       user,
       input,
       response,
-    });
+    })
   }
 
   @Post('verification')
@@ -503,7 +503,7 @@ export class AccountController {
       response,
       user,
       locale,
-    });
+    })
   }
 
   @Public()
@@ -524,13 +524,13 @@ export class AccountController {
       secret,
       response,
       user,
-    });
+    })
   }
 
   @Get('logs')
   @ResModel({ type: Models.LOG, list: true })
   async getLogs(@User() user: UsersDoc, @Query('queries') queries: Queries[]) {
-    return this.accountService.getLogs(user, queries);
+    return this.accountService.getLogs(user, queries)
   }
 
   @Patch('mfa')
@@ -549,14 +549,14 @@ export class AccountController {
       mfa,
       session,
       user,
-    });
+    })
   }
 
   @Get('mfa/factors')
   @Scope('account')
   @ResModel(Models.MFA_FACTORS)
   async getMfaFactors(@User() user: UsersDoc) {
-    return this.accountService.getMfaFactors(user);
+    return this.accountService.getMfaFactors(user)
   }
 
   @Post('mfa/authenticators/:type')
@@ -574,7 +574,7 @@ export class AccountController {
       type,
 
       user,
-    });
+    })
   }
 
   @Put('mfa/authenticators/:type')
@@ -595,7 +595,7 @@ export class AccountController {
       otp,
       user,
       session,
-    });
+    })
   }
 
   @Post('mfa/recovery-codes')
@@ -606,7 +606,7 @@ export class AccountController {
   })
   @ResModel(Models.MFA_RECOVERY_CODES)
   async createMfaRecoveryCodes(@User() user: UsersDoc) {
-    return this.accountService.createMfaRecoveryCodes({ user });
+    return this.accountService.createMfaRecoveryCodes({ user })
   }
 
   @Patch('mfa/recovery-codes')
@@ -617,22 +617,22 @@ export class AccountController {
   })
   @ResModel(Models.MFA_RECOVERY_CODES)
   async updateMfaRecoveryCodes(@User() user: UsersDoc) {
-    return this.accountService.updateMfaRecoveryCodes({ user });
+    return this.accountService.updateMfaRecoveryCodes({ user })
   }
 
   @Get('mfa/recovery-codes')
   @Scope('account')
   @ResModel(Models.MFA_RECOVERY_CODES)
   async getMfaRecoveryCodes(@User() user: UsersDoc) {
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', [])
 
     if (!mfaRecoveryCodes || mfaRecoveryCodes.length === 0) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
+      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND)
     }
 
     return {
       recoveryCodes: mfaRecoveryCodes,
-    };
+    }
   }
 
   @Delete('mfa/authenticators/:type')
@@ -650,7 +650,7 @@ export class AccountController {
     return this.accountService.deleteMfaAuthenticator({
       type,
       user,
-    });
+    })
   }
 
   @Post('mfa/challenge')
@@ -670,7 +670,7 @@ export class AccountController {
       user,
 
       locale,
-    });
+    })
   }
 
   @Put('mfa/challenge')
@@ -685,7 +685,7 @@ export class AccountController {
       ...input,
       user,
       session,
-    });
+    })
   }
 
   @Get('identities')
@@ -695,7 +695,7 @@ export class AccountController {
     @Query('queries', IdentitiesQueryPipe) queries: Queries[],
     @User() user: UsersDoc,
   ) {
-    return this.accountService.getIdentities({ user, queries });
+    return this.accountService.getIdentities({ user, queries })
   }
 
   @Delete('identities/:identityId')
@@ -709,6 +709,6 @@ export class AccountController {
   async deleteIdentity(@Param() { identityId }: IdentityIdParamDTO) {
     return this.accountService.deleteIdentity({
       identityId,
-    });
+    })
   }
 }

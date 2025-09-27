@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import * as fs from 'fs/promises';
+import { readFileSync, writeFileSync, existsSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import * as fs from 'fs/promises'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const DEP_FIELDS = ['dependencies', 'peerDependencies', 'trustedDependencies'];
+const DEP_FIELDS = ['dependencies', 'peerDependencies', 'trustedDependencies']
 
 /**
  * Loads and parses a package.json file from the given file path.
@@ -17,9 +17,9 @@ const DEP_FIELDS = ['dependencies', 'peerDependencies', 'trustedDependencies'];
  */
 function loadPkg(filePath) {
   if (!existsSync(filePath)) {
-    throw new Error(`Package file not found: ${filePath}`);
+    throw new Error(`Package file not found: ${filePath}`)
   }
-  return JSON.parse(readFileSync(filePath, 'utf-8'));
+  return JSON.parse(readFileSync(filePath, 'utf-8'))
 }
 
 /**
@@ -30,24 +30,24 @@ function loadPkg(filePath) {
  */
 function mergeDeps(base, source) {
   for (const field of DEP_FIELDS) {
-    if (!source[field]) continue;
+    if (!source[field]) continue
     if (field === 'trustedDependencies') {
-      base[field] = base[field] || [];
-      base[field].push(...source[field]);
+      base[field] = base[field] || []
+      base[field].push(...source[field])
     } else {
-      base[field] = base[field] || {};
+      base[field] = base[field] || {}
       for (const [name, version] of Object.entries(source[field])) {
         if (typeof version === 'string' && version.startsWith('workspace:')) {
-          continue; // Skip internal workspace dependencies
+          continue // Skip internal workspace dependencies
         }
         if (base[field][name] && base[field][name] !== version) {
           console.warn(
             `⚠️ Conflict for ${name}: versions '${base[field][name]}' vs '${version}'. Using base version.`,
-          );
+          )
         }
         // If the dependency is not already defined, add it. Otherwise, keep the base version.
         if (!base[field][name]) {
-          base[field][name] = version;
+          base[field][name] = version
         }
       }
     }
@@ -60,7 +60,7 @@ function mergeDeps(base, source) {
  * @returns {boolean} True if it's a workspace dependency, false otherwise.
  */
 function isWorkspaceDep(version) {
-  return typeof version === 'string' && version.startsWith('workspace:');
+  return typeof version === 'string' && version.startsWith('workspace:')
 }
 
 /**
@@ -69,9 +69,9 @@ function isWorkspaceDep(version) {
  * @returns {string | null} The absolute path to the package.json, or null if not found.
  */
 function resolveLibPath(pkgName) {
-  const dir = pkgName.replace(/^@[^/]+\//, '');
-  const libPath = path.join(__dirname, `../libs/${dir}/package.json`);
-  return existsSync(libPath) ? libPath : null;
+  const dir = pkgName.replace(/^@[^/]+\//, '')
+  const libPath = path.join(__dirname, `../libs/${dir}/package.json`)
+  return existsSync(libPath) ? libPath : null
 }
 
 /**
@@ -81,26 +81,26 @@ function resolveLibPath(pkgName) {
  */
 function collectLibDeps(pkg, visited = new Set()) {
   for (const field of DEP_FIELDS) {
-    if (!pkg[field]) continue;
+    if (!pkg[field]) continue
 
     for (const [dep, version] of Object.entries(pkg[field])) {
-      if (!isWorkspaceDep(version)) continue;
-      if (visited.has(dep)) continue;
+      if (!isWorkspaceDep(version)) continue
+      if (visited.has(dep)) continue
 
-      const libPkgPath = resolveLibPath(dep);
+      const libPkgPath = resolveLibPath(dep)
       if (!libPkgPath) {
-        console.warn(`⚠️ Could not resolve workspace lib '${dep}'.`);
-        continue;
+        console.warn(`⚠️ Could not resolve workspace lib '${dep}'.`)
+        continue
       }
 
-      visited.add(dep);
-      const libPkg = loadPkg(libPkgPath);
+      visited.add(dep)
+      const libPkg = loadPkg(libPkgPath)
 
       // Merge external deps of this lib into the main package
-      mergeDeps(pkg, libPkg);
+      mergeDeps(pkg, libPkg)
 
       // Recursively check for nested libs
-      collectLibDeps(libPkg, visited);
+      collectLibDeps(libPkg, visited)
     }
   }
 }
@@ -110,13 +110,13 @@ function collectLibDeps(pkg, visited = new Set()) {
  * @param {string} appName The name of the application.
  */
 async function prepareDeploy(appName) {
-  console.log(`✨ Preparing deploy package.json for '${appName}'...`);
+  console.log(`✨ Preparing deploy package.json for '${appName}'...`)
 
   try {
-    const appPkgPath = path.join(__dirname, `../apps/${appName}/package.json`);
-    const mainPkgPath = path.join(__dirname, `../package.json`);
-    const appPkg = loadPkg(appPkgPath);
-    const mainPkg = loadPkg(mainPkgPath);
+    const appPkgPath = path.join(__dirname, `../apps/${appName}/package.json`)
+    const mainPkgPath = path.join(__dirname, `../package.json`)
+    const appPkg = loadPkg(appPkgPath)
+    const mainPkg = loadPkg(mainPkgPath)
 
     // Start with a shallow clone, keeping essential fields.
     const finalPkg = {
@@ -131,36 +131,36 @@ async function prepareDeploy(appName) {
           ? { start: appPkg.scripts.start || 'node main.js' }
           : undefined,
       dependencies: {},
-    };
+    }
 
-    mergeDeps(finalPkg, mainPkg);
+    mergeDeps(finalPkg, mainPkg)
     // First, merge the app's direct dependencies
-    mergeDeps(finalPkg, appPkg);
+    mergeDeps(finalPkg, appPkg)
 
     // Recursively collect dependencies from internal libraries
-    collectLibDeps(appPkg);
+    collectLibDeps(appPkg)
 
     // Merge again to bring the newly collected deps into the final package
-    mergeDeps(finalPkg, appPkg);
+    mergeDeps(finalPkg, appPkg)
 
     finalPkg['trustedDependencies'] = Array.isArray(
       finalPkg['trustedDependencies'],
     )
       ? Array.from(new Set(finalPkg['trustedDependencies']))
-      : [];
+      : []
 
-    const outDir = path.join(__dirname, `../dist/pkg/${appName}`);
+    const outDir = path.join(__dirname, `../dist/pkg/${appName}`)
     if (!existsSync(outDir)) {
       // Create the output directory if it doesn't exist
-      await fs.mkdir(outDir, { recursive: true });
+      await fs.mkdir(outDir, { recursive: true })
     }
 
-    const outPath = path.join(outDir, 'package.json');
-    writeFileSync(outPath, JSON.stringify(finalPkg, null, 2));
-    console.log(`✅ Deploy-ready package.json written to ${outPath}`);
+    const outPath = path.join(outDir, 'package.json')
+    writeFileSync(outPath, JSON.stringify(finalPkg, null, 2))
+    console.log(`✅ Deploy-ready package.json written to ${outPath}`)
   } catch (error) {
-    console.error(`❌ Error preparing deploy for '${appName}':`, error.message);
-    process.exit(1);
+    console.error(`❌ Error preparing deploy for '${appName}':`, error.message)
+    process.exit(1)
   }
 }
 
@@ -168,16 +168,16 @@ async function prepareDeploy(appName) {
  * Main function to handle command-line execution.
  */
 async function main() {
-  const args = process.argv.slice(2);
+  const args = process.argv.slice(2)
   if (args.length === 0) {
-    console.error('Usage: prepare-deploy <app-name1> <app-name2>...');
-    process.exit(1);
+    console.error('Usage: prepare-deploy <app-name1> <app-name2>...')
+    process.exit(1)
   }
 
   for (const appName of args) {
-    await prepareDeploy(appName);
+    await prepareDeploy(appName)
   }
 }
 
 // Execute the main function
-main();
+main()

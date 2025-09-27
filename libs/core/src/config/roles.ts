@@ -1,4 +1,4 @@
-import { scopes } from './scopes';
+import { scopes } from './scopes'
 
 const member = [
   'global',
@@ -41,7 +41,7 @@ const member = [
   'subscribers.delete',
   'subscribers.read',
   'assistant.read',
-] as const;
+] as const
 
 const _admins = [
   'global',
@@ -138,9 +138,9 @@ const _admins = [
   'schema.create',
   'schema.update',
   'schema.delete',
-] as const;
+] as const
 
-const admins = [..._admins, ...Object.keys(scopes)];
+const admins = [..._admins, ...Object.keys(scopes)]
 
 export const roles = {
   guests: {
@@ -189,8 +189,8 @@ export const roles = {
     label: 'Applications',
     scopes: ['global', 'health.read', 'graphql'],
   },
-};
+}
 
-const _owner = [...member, _admins] as const;
+const _owner = [...member, _admins] as const
 
-export type Scopes = (typeof _owner)[number] | keyof typeof scopes;
+export type Scopes = (typeof _owner)[number] | keyof typeof scopes

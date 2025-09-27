@@ -10,11 +10,11 @@ import {
   Post,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { TargetsService } from './targets.service';
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+} from '@nestjs/common'
+import { TargetsService } from './targets.service'
+import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import {
   AuditEvent,
   Namespace,
@@ -23,10 +23,10 @@ import {
   AuthDatabase,
   Auth,
   AuthType,
-} from '@nuvix/core/decorators';
-import type { Database } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
+} from '@nuvix/core/decorators'
+import type { Database } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
 
 @Namespace('users')
 @Controller({ version: ['1'], path: 'users/:id/targets' })
@@ -45,7 +45,7 @@ export class TargetsController {
     @Param('id') id: string,
     @Body() createTargetDTO: CreateTargetDTO,
   ): Promise<any> {
-    return this.targetsService.createTarget(db, id, createTargetDTO);
+    return this.targetsService.createTarget(db, id, createTargetDTO)
   }
 
   @Get()
@@ -54,7 +54,7 @@ export class TargetsController {
     @AuthDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
-    return this.targetsService.getTargets(db, id);
+    return this.targetsService.getTargets(db, id)
   }
 
   @Get(':targetId')
@@ -64,7 +64,7 @@ export class TargetsController {
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ): Promise<any> {
-    return this.targetsService.getTarget(db, id, targetId);
+    return this.targetsService.getTarget(db, id, targetId)
   }
 
   @Patch(':targetId')
@@ -75,7 +75,7 @@ export class TargetsController {
     @Param('targetId') targetId: string,
     @Body() input: UpdateTargetDTO,
   ): Promise<any> {
-    return this.targetsService.updateTarget(db, id, targetId, input);
+    return this.targetsService.updateTarget(db, id, targetId, input)
   }
 
   @Delete(':targetId')
@@ -85,6 +85,6 @@ export class TargetsController {
     @Param('id') id: string,
     @Param('targetId') targetId: string,
   ) {
-    return this.targetsService.deleteTarget(db, id, targetId);
+    return this.targetsService.deleteTarget(db, id, targetId)
   }
 }

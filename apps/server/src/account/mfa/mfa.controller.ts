@@ -13,34 +13,38 @@ import {
   Session,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
-import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
+import { Database } from '@nuvix/db'
 import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Exception } from '@nuvix/core/extend/exception';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { MfaService } from './mfa.service';
+  AuditEvent,
+  Namespace,
+  Scope,
+  Sdk,
+  Throttle,
+} from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Exception } from '@nuvix/core/extend/exception'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { MfaService } from './mfa.service'
 import {
   CreateMfaChallengeDTO,
   MfaAuthenticatorTypeParamDTO,
   UpdateAccountMfaDTO,
   VerifyMfaChallengeDTO,
   VerifyMfaAuthenticatorDTO,
-} from './DTO/mfa.dto';
-import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types';
+} from './DTO/mfa.dto'
+import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 
 @Controller({ version: ['1'], path: 'account/mfa' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class MfaController {
@@ -67,7 +71,7 @@ export class MfaController {
       session,
       user,
       db,
-    });
+    })
   }
 
   @Get('factors')
@@ -77,7 +81,7 @@ export class MfaController {
     name: 'listMfaFactors',
   })
   async getMfaFactors(@User() user: UsersDoc) {
-    return this.mfaService.getMfaFactors(user);
+    return this.mfaService.getMfaFactors(user)
   }
 
   @Post('authenticators/:type')
@@ -101,7 +105,7 @@ export class MfaController {
       project,
       user,
       db,
-    });
+    })
   }
 
   @Put('authenticators/:type')
@@ -127,7 +131,7 @@ export class MfaController {
       user,
       session,
       db,
-    });
+    })
   }
 
   @Post('recovery-codes')
@@ -144,7 +148,7 @@ export class MfaController {
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
   ) {
-    return this.mfaService.createMfaRecoveryCodes({ user, db });
+    return this.mfaService.createMfaRecoveryCodes({ user, db })
   }
 
   @Patch('recovery-codes')
@@ -161,7 +165,7 @@ export class MfaController {
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
   ) {
-    return this.mfaService.updateMfaRecoveryCodes({ db, user });
+    return this.mfaService.updateMfaRecoveryCodes({ db, user })
   }
 
   @Get('recovery-codes')
@@ -171,15 +175,15 @@ export class MfaController {
     name: 'getMfaRecoveryCodes',
   })
   async getMfaRecoveryCodes(@User() user: UsersDoc) {
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', [])
 
     if (!mfaRecoveryCodes || mfaRecoveryCodes.length === 0) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
+      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND)
     }
 
     return {
       recoveryCodes: mfaRecoveryCodes,
-    };
+    }
   }
 
   @Delete('authenticators/:type')
@@ -202,7 +206,7 @@ export class MfaController {
       type,
       user,
       db,
-    });
+    })
   }
 
   @Post('challenge')
@@ -230,7 +234,7 @@ export class MfaController {
       db,
       project,
       locale,
-    });
+    })
   }
 
   @Put('challenge')
@@ -254,6 +258,6 @@ export class MfaController {
       user,
       db,
       session,
-    });
+    })
   }
 }

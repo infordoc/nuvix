@@ -204,4 +204,4 @@ export const countries = [
   'ZA',
   'ZM',
   'ZW',
-];
+]

@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Files extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -8,9 +8,9 @@ export class Files extends BaseQueryPipe {
     'sizeOriginal',
     'chunksTotal',
     'chunksUploaded',
-  ];
+  ]
 
   public constructor() {
-    super('files', Files.ALLOWED_ATTRIBUTES);
+    super('files', Files.ALLOWED_ATTRIBUTES)
   }
 }

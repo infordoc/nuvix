@@ -1,13 +1,13 @@
-import { Reflector } from '@nestjs/core';
-import { RouteConfig } from '@nestjs/platform-fastify';
-import { RouteContext } from '@nuvix/utils';
+import { Reflector } from '@nestjs/core'
+import { RouteConfig } from '@nestjs/platform-fastify'
+import { RouteContext } from '@nuvix/utils'
 
-type EventActions = 'create' | 'update' | 'delete';
+type EventActions = 'create' | 'update' | 'delete'
 
 const event = <T extends string>(name: T): readonly `${T}.${EventActions}`[] =>
-  [`${name}.create`, `${name}.update`, `${name}.delete`] as const;
+  [`${name}.create`, `${name}.update`, `${name}.delete`] as const
 
-type EventCategory = 'user' | 'target' | 'session';
+type EventCategory = 'user' | 'target' | 'session'
 
 const auditEvents = [
   'identity.delete',
@@ -21,27 +21,27 @@ const auditEvents = [
   ...event('topic'),
   ...event('subscriber'),
   ...event('message'),
-] as const;
+] as const
 
-export type AuditEventKey = (typeof auditEvents)[number];
+export type AuditEventKey = (typeof auditEvents)[number]
 
-type ParameterKey = 'user' | 'req' | 'res' | 'params' | 'body' | 'query';
-type ResourceSegment = `{${ParameterKey}.${string}}`;
+type ParameterKey = 'user' | 'req' | 'res' | 'params' | 'body' | 'query'
+type ResourceSegment = `{${ParameterKey}.${string}}`
 export type ResourcePath =
   | `${string}/${ResourceSegment}`
   | `${string}/${string | ResourceSegment}/${ResourceSegment}`
   | `${ResourceSegment}/${string | ResourceSegment}/${string | ResourceSegment}/${ResourceSegment}`
-  | ResourceSegment;
+  | ResourceSegment
 
 export type _AuditEvent = {
-  resource: ResourcePath;
-  userId?: `{${ParameterKey}.${string}}`;
-};
+  resource: ResourcePath
+  userId?: `{${ParameterKey}.${string}}`
+}
 
 export type AuditEventType = {
-  event: AuditEventKey;
-  meta: _AuditEvent;
-};
+  event: AuditEventKey
+  meta: _AuditEvent
+}
 
 /**
  * Decorator function to configure an audit event for a route.
@@ -66,17 +66,17 @@ export const AuditEvent = (
       event,
       meta: typeof meta === 'string' ? { resource: meta } : meta,
     },
-  });
+  })
 
-const events = ['user.{userId}.create'] as const;
+const events = ['user.{userId}.create'] as const
 
-type EventKey = (typeof events)[number];
+type EventKey = (typeof events)[number]
 
 export const SimpleEvent = Reflector.createDecorator<
   EventKey | EventKey[],
   EventKey[]
 >({
   transform(value) {
-    return Array.isArray(value) ? value : [value];
+    return Array.isArray(value) ? value : [value]
   },
-});
+})

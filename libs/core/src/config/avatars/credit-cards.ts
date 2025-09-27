@@ -1,7 +1,7 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as path from 'path'
 
-const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/credit-cards');
+const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/credit-cards')
 
 export const creditCards = {
   amex: { name: 'American Express', path: assetsPath + `/amex.png` },
@@ -27,4 +27,4 @@ export const creditCards = {
   mir: { name: 'MIR', path: assetsPath + `/mir.png` },
   maestro: { name: 'Maestro', path: assetsPath + `/maestro.png` },
   rupay: { name: 'Rupay', path: assetsPath + `/rupay.png` },
-};
+}

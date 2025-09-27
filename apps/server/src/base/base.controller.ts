@@ -1,12 +1,12 @@
-import { InjectQueue } from '@nestjs/bullmq';
-import { All, Controller, Get, Query, Req, Res } from '@nestjs/common';
-import { RouteConfig } from '@nestjs/platform-fastify';
-import { Auth, AuthType, ProjectPg } from '@nuvix/core/decorators';
-import { Exception } from '@nuvix/core/extend/exception';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { MailJob, type MailQueueOptions } from '@nuvix/core/resolvers/index.js';
-import type { DataSource } from '@nuvix/pg';
-import { QueueFor, RouteContext, Schemas } from '@nuvix/utils';
+import { InjectQueue } from '@nestjs/bullmq'
+import { All, Controller, Get, Query, Req, Res } from '@nestjs/common'
+import { RouteConfig } from '@nestjs/platform-fastify'
+import { Auth, AuthType, ProjectPg } from '@nuvix/core/decorators'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Public } from '@nuvix/core/resolvers/guards/auth.guard'
+import { MailJob, type MailQueueOptions } from '@nuvix/core/resolvers/index.js'
+import type { DataSource } from '@nuvix/pg'
+import { QueueFor, RouteContext, Schemas } from '@nuvix/utils'
 import {
   ASTToQueryBuilder,
   OrderParser,
@@ -16,8 +16,8 @@ import {
   type ParsedOrdering,
   type ParserResult,
   type SelectNode,
-} from '@nuvix/utils/query';
-import { Queue } from 'bullmq';
+} from '@nuvix/utils/query'
+import { Queue } from 'bullmq'
 
 @Controller({ version: ['1'] })
 export class BaseController {
@@ -32,7 +32,7 @@ export class BaseController {
     return res.status(200).send({
       status: 'UP',
       version: '1.0.0',
-    });
+    })
   }
 
   @All('vcs/installations')
@@ -41,7 +41,7 @@ export class BaseController {
     return res.status(200).send({
       total: 0,
       installations: [],
-    });
+    })
   }
 
   @All('locale/codes')
@@ -182,7 +182,7 @@ export class BaseController {
         { code: 'zh-tw', name: 'Chinese (Taiwan)' },
         { code: 'zu', name: 'Zulu' },
       ],
-    };
+    }
   }
 
   @Get('logs')
@@ -191,25 +191,22 @@ export class BaseController {
   })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   async getLogs(@Req() req: NuvixRequest, @ProjectPg() dataSource: DataSource) {
-    const qb = dataSource.qb('api_logs').withSchema(Schemas.System);
-    const astToQueryBuilder = new ASTToQueryBuilder(qb, dataSource);
+    const qb = dataSource.qb('api_logs').withSchema(Schemas.System)
+    const astToQueryBuilder = new ASTToQueryBuilder(qb, dataSource)
 
-    const { filter, select, order } = this.getParamsFromUrl(
-      req.url,
-      'api_logs',
-    );
+    const { filter, select, order } = this.getParamsFromUrl(req.url, 'api_logs')
 
-    astToQueryBuilder.applySelect(select);
+    astToQueryBuilder.applySelect(select)
     astToQueryBuilder.applyFilters(filter, {
       applyExtra: true,
       tableName: 'api_logs',
-    });
-    astToQueryBuilder.applyOrder(order, 'api_logs');
+    })
+    astToQueryBuilder.applyOrder(order, 'api_logs')
 
     try {
-      return await qb;
+      return await qb
     } catch (e) {
-      throw new Exception(Exception.GENERAL_SERVER_ERROR);
+      throw new Exception(Exception.GENERAL_SERVER_ERROR)
     }
   }
 
@@ -217,26 +214,26 @@ export class BaseController {
     url: string,
     tableName: string,
   ): {
-    filter?: Expression & ParserResult;
-    select?: SelectNode[];
-    order?: ParsedOrdering[];
+    filter?: Expression & ParserResult
+    select?: SelectNode[]
+    order?: ParsedOrdering[]
   } {
-    const queryString = url.includes('?') ? url.split('?')[1] : '';
-    const urlParams = new URLSearchParams(queryString);
+    const queryString = url.includes('?') ? url.split('?')[1] : ''
+    const urlParams = new URLSearchParams(queryString)
 
-    const _filter = urlParams.get('filter') || '';
+    const _filter = urlParams.get('filter') || ''
     const filter = _filter
       ? Parser.create({ tableName }).parse(_filter)
-      : undefined;
+      : undefined
 
-    const _select = urlParams.get('select') || '';
+    const _select = urlParams.get('select') || ''
     const select = _select
       ? new SelectParser({ tableName }).parse(_select)
-      : undefined;
+      : undefined
 
-    const _order = urlParams.get('order') || '';
-    const order = _order ? OrderParser.parse(_order, tableName) : undefined;
+    const _order = urlParams.get('order') || ''
+    const order = _order ? OrderParser.parse(_order, tableName) : undefined
 
-    return { filter, select, order };
+    return { filter, select, order }
   }
 }

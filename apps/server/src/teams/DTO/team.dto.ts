@@ -1,4 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
+import { OmitType, PartialType } from '@nestjs/swagger'
 import {
   IsString,
   Length,
@@ -6,19 +6,19 @@ import {
   ArrayMaxSize,
   IsOptional,
   IsObject,
-} from 'class-validator';
-import { IsCustomID } from '@nuvix/core/validators';
-import { configuration } from '@nuvix/utils';
+} from 'class-validator'
+import { IsCustomID } from '@nuvix/core/validators'
+import { configuration } from '@nuvix/utils'
 
 export class CreateTeamDTO {
   @IsCustomID()
-  teamId!: string;
+  teamId!: string
 
   @IsString()
   @Length(1, 128, {
     message: 'Team name must be between 1 and 128 characters long.',
   })
-  name!: string;
+  name!: string
 
   @IsOptional()
   @IsArray()
@@ -29,7 +29,7 @@ export class CreateTeamDTO {
     each: true,
     message: 'Each role must be between 1 and 32 characters long.',
   })
-  roles?: string[] = [];
+  roles?: string[] = []
 }
 
 export class UpdateTeamDTO extends PartialType(
@@ -38,5 +38,5 @@ export class UpdateTeamDTO extends PartialType(
 
 export class UpdateTeamPrefsDTO {
   @IsObject()
-  prefs?: Record<string, any>;
+  prefs?: Record<string, any>
 }

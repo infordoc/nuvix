@@ -1,46 +1,46 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as fs from 'fs'
+import * as path from 'path'
 
 /**
  * Class to handle translations for different locales.
  */
 export class LocaleTranslator {
-  private locale: string;
-  private translations: { [key: string]: string };
+  private locale: string
+  private translations: { [key: string]: string }
 
-  default = 'en';
+  default = 'en'
 
   constructor(locale: string = 'en') {
-    this.locale = locale;
-    this.translations = this.loadTranslations(locale);
+    this.locale = locale
+    this.translations = this.loadTranslations(locale)
   }
 
   private loadTranslations(locale: string): { [key: string]: string } {
     const filePath = path.resolve(
       PROJECT_ROOT,
       `assets/locale/translations/${locale}.json`,
-    );
+    )
     if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(fileContent);
+      const fileContent = fs.readFileSync(filePath, 'utf-8')
+      return JSON.parse(fileContent)
     } else {
-      throw new Error(`Translation file for locale ${locale} not found.`);
+      throw new Error(`Translation file for locale ${locale} not found.`)
     }
   }
 
   public setLocale(locale: string): void {
-    this.locale = locale;
-    this.translations = this.loadTranslations(locale);
+    this.locale = locale
+    this.translations = this.loadTranslations(locale)
   }
 
-  getText<T = any>(key: LocaleKeys, defaultValue?: string | any): T;
-  getText<T = any>(key: string, defaultValue?: string | any): T;
+  getText<T = any>(key: LocaleKeys, defaultValue?: string | any): T
+  getText<T = any>(key: string, defaultValue?: string | any): T
   public getText<T = any>(
     key: LocaleKeys,
     defaultValue: string | any = null,
   ): T {
-    return this.translations[key] ?? defaultValue;
+    return this.translations[key] ?? defaultValue
   }
 }
 
@@ -309,4 +309,4 @@ type LocaleKeys =
   | 'continents.eu'
   | 'continents.na'
   | 'continents.oc'
-  | 'continents.sa';
+  | 'continents.sa'

@@ -8,25 +8,26 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
-import { Query as Queries } from '@nuvix/db';
+import { Database } from '@nuvix/db'
+import { Query as Queries } from '@nuvix/db'
 
-import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import { AuthDatabase } from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { IdentityService } from './identity.service';
-import { IdentityIdParamDTO } from './DTO/identity.dto';
-import type { UsersDoc } from '@nuvix/utils/types';
-import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries';
+import { AuditEvent, Namespace, Scope, Sdk } from '@nuvix/core/decorators'
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { AuthDatabase } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { IdentityService } from './identity.service'
+import { IdentityIdParamDTO } from './DTO/identity.dto'
+import type { UsersDoc } from '@nuvix/utils/types'
+import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Controller({ version: ['1'], path: 'account/identities' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class IdentityController {
@@ -43,7 +44,7 @@ export class IdentityController {
     @AuthDatabase() db: Database,
     @Query('queries', IdentitiesQueryPipe) queries?: Queries[],
   ) {
-    return this.identityService.getIdentities({ user, db, queries });
+    return this.identityService.getIdentities({ user, db, queries })
   }
 
   @Delete(':identityId')
@@ -65,6 +66,6 @@ export class IdentityController {
     return this.identityService.deleteIdentity({
       identityId,
       db,
-    });
+    })
   }
 }

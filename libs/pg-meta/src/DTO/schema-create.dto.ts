@@ -1,10 +1,10 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional } from 'class-validator'
 
 export class SchemaCreateDTO {
   @IsString()
-  declare name: string;
+  declare name: string
 
   @IsOptional()
   @IsString()
-  owner?: string;
+  owner?: string
 }

@@ -19,13 +19,13 @@ import {
   UseFilters,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { SchemasService } from './schemas.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { SchemasService } from './schemas.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ResponseInterceptor,
   ApiInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
+} from '@nuvix/core/resolvers/interceptors'
 import {
   Auth,
   AuthType,
@@ -33,10 +33,10 @@ import {
   Namespace,
   Scope,
   Sdk,
-} from '@nuvix/core/decorators';
-import { DataSource } from '@nuvix/pg';
-import { ParseDuplicatePipe } from '@nuvix/core/pipes';
-import { PermissionsDTO } from './DTO/permissions';
+} from '@nuvix/core/decorators'
+import { DataSource } from '@nuvix/pg'
+import { ParseDuplicatePipe } from '@nuvix/core/pipes'
+import { PermissionsDTO } from './DTO/permissions'
 
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 @Controller({ version: ['1'], path: ['schemas/:schemaId', 'public'] })
@@ -44,7 +44,7 @@ import { PermissionsDTO } from './DTO/permissions';
 @Namespace('schemas')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SchemasController {
-  private readonly logger = new Logger(SchemasController.name);
+  private readonly logger = new Logger(SchemasController.name)
   constructor(private readonly schemasService: SchemasService) {}
 
   @Get([':tableId', 'tables/:tableId'])
@@ -70,7 +70,7 @@ export class SchemasController {
       offset,
       schema,
       url: request.raw.url || request.url,
-    });
+    })
   }
 
   @Post([':tableId', 'tables/:tableId'])
@@ -94,7 +94,7 @@ export class SchemasController {
       input,
       columns,
       url: request.raw.url || request.url,
-    });
+    })
   }
 
   @Patch([':tableId', 'tables/:tableId'])
@@ -127,7 +127,7 @@ export class SchemasController {
       limit,
       offset,
       force,
-    });
+    })
   }
 
   @Put([':tableId', 'tables/:tableId'])
@@ -164,7 +164,7 @@ export class SchemasController {
       limit,
       offset,
       force,
-    });
+    })
   }
 
   // @Head(':tableId')
@@ -193,7 +193,7 @@ export class SchemasController {
       limit,
       offset,
       args,
-    });
+    })
   }
 
   @Put(['tables/:tableId/permissions'])
@@ -209,7 +209,7 @@ export class SchemasController {
       permissions: body.permissions,
       tableId,
       schema,
-    });
+    })
   }
 
   // TODO: check if schema type is not managed then throw error...
@@ -228,7 +228,7 @@ export class SchemasController {
       tableId,
       schema,
       rowId,
-    });
+    })
   }
 
   @Get(['tables/:tableId/permissions'])
@@ -242,7 +242,7 @@ export class SchemasController {
       pg,
       tableId,
       schema,
-    });
+    })
   }
 
   @Get(['tables/:tableId/:rowId/permissions'])
@@ -258,6 +258,6 @@ export class SchemasController {
       tableId,
       schema,
       rowId,
-    });
+    })
   }
 }

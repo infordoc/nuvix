@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import type { CreateSubscriber, ListSubscribers } from './subscribers.types';
+import { Injectable } from '@nestjs/common'
+import type { CreateSubscriber, ListSubscribers } from './subscribers.types'
 import {
   Authorization,
   Database,
@@ -9,10 +9,10 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix/db';
-import { Exception } from '@nuvix/core/extend/exception';
-import { MessageType, Schemas } from '@nuvix/utils';
-import type { Subscribers } from '@nuvix/utils/types';
+} from '@nuvix/db'
+import { Exception } from '@nuvix/core/extend/exception'
+import { MessageType, Schemas } from '@nuvix/utils'
+import type { Subscribers } from '@nuvix/utils/types'
 
 @Injectable()
 export class SubscribersService {
@@ -20,36 +20,36 @@ export class SubscribersService {
    * Create Subscriber
    */
   async createSubscriber({ input, db, topicId }: CreateSubscriber) {
-    const { subscriberId: inputSubscriberId, targetId } = input;
+    const { subscriberId: inputSubscriberId, targetId } = input
     const subscriberId =
-      inputSubscriberId === 'unique()' ? ID.unique() : inputSubscriberId;
+      inputSubscriberId === 'unique()' ? ID.unique() : inputSubscriberId
 
     const topic = await Authorization.skip(() =>
       db.getDocument('topics', topicId),
-    );
+    )
 
     if (topic.empty()) {
-      throw new Exception(Exception.TOPIC_NOT_FOUND);
+      throw new Exception(Exception.TOPIC_NOT_FOUND)
     }
 
-    const validator = new Authorization('subscribe' as any);
+    const validator = new Authorization('subscribe' as any)
     if (!validator.$valid(topic.get('subscribe'))) {
-      throw new Exception(Exception.USER_UNAUTHORIZED, validator.$description);
+      throw new Exception(Exception.USER_UNAUTHORIZED, validator.$description)
     }
 
     const target = await Authorization.skip(() =>
       db.withSchema(Schemas.Auth, () => db.getDocument('targets', targetId)),
-    );
+    )
 
     if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     const user = await Authorization.skip(() =>
       db.withSchema(Schemas.Auth, () =>
         db.getDocument('users', target.get('userId')),
       ),
-    );
+    )
 
     const subscriber = new Doc<Subscribers>({
       $id: subscriberId,
@@ -70,39 +70,39 @@ export class SubscribersService {
         user.getId(),
         target.get('providerType'),
       ].join(' '),
-    });
+    })
 
     try {
       const createdSubscriber = await db.createDocument(
         'subscribers',
         subscriber,
-      );
+      )
 
       const totalAttribute = (() => {
         switch (target.get('providerType')) {
           case MessageType.EMAIL:
-            return 'emailTotal';
+            return 'emailTotal'
           case MessageType.SMS:
-            return 'smsTotal';
+            return 'smsTotal'
           case MessageType.PUSH:
-            return 'pushTotal';
+            return 'pushTotal'
           default:
-            throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE);
+            throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE)
         }
-      })();
+      })()
 
       await Authorization.skip(() =>
         db.increaseDocumentAttribute('topics', topicId, totalAttribute),
-      );
+      )
 
-      createdSubscriber.set('target', target).set('userName', user.get('name'));
+      createdSubscriber.set('target', target).set('userName', user.get('name'))
 
-      return createdSubscriber;
+      return createdSubscriber
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.SUBSCRIBER_ALREADY_EXISTS);
+        throw new Exception(Exception.SUBSCRIBER_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -116,22 +116,22 @@ export class SubscribersService {
     search,
   }: ListSubscribers) {
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
 
     const topic = await Authorization.skip(() =>
       db.getDocument('topics', topicId),
-    );
+    )
 
     if (topic.empty()) {
-      throw new Exception(Exception.TOPIC_NOT_FOUND);
+      throw new Exception(Exception.TOPIC_NOT_FOUND)
     }
 
-    const { filters } = Query.groupByType(queries);
+    const { filters } = Query.groupByType(queries)
 
-    queries.push(Query.equal('topicInternalId', [topic.getSequence()]));
-    const subscribers = await db.find('subscribers', queries);
-    const total = await db.count('subscribers', filters);
+    queries.push(Query.equal('topicInternalId', [topic.getSequence()]))
+    const subscribers = await db.find('subscribers', queries)
+    const total = await db.count('subscribers', filters)
 
     // Batch process subscribers to add target and userName
     const enrichedSubscribers = await Promise.all(
@@ -140,23 +140,23 @@ export class SubscribersService {
           db.withSchema(Schemas.Auth, () =>
             db.getDocument('targets', subscriber.get('targetId')),
           ),
-        );
+        )
         const user = await Authorization.skip(() =>
           db.withSchema(Schemas.Auth, () =>
             db.getDocument('users', target.get('userId')),
           ),
-        );
+        )
 
         return subscriber
           .set('target', target)
-          .set('userName', user.get('name'));
+          .set('userName', user.get('name'))
       }),
-    );
+    )
 
     return {
       subscribers: enrichedSubscribers,
       total,
-    };
+    }
   }
 
   /**
@@ -165,32 +165,32 @@ export class SubscribersService {
   async getSubscriber(db: Database, topicId: string, subscriberId: string) {
     const topic = await Authorization.skip(() =>
       db.getDocument('topics', topicId),
-    );
+    )
 
     if (topic.empty()) {
-      throw new Exception(Exception.TOPIC_NOT_FOUND);
+      throw new Exception(Exception.TOPIC_NOT_FOUND)
     }
 
-    const subscriber = await db.getDocument('subscribers', subscriberId);
+    const subscriber = await db.getDocument('subscribers', subscriberId)
 
     if (subscriber.empty() || subscriber.get('topicId') !== topicId) {
-      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
+      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND)
     }
 
     const target = await Authorization.skip(() =>
       db.withSchema(Schemas.Auth, () =>
         db.getDocument('targets', subscriber.get('targetId')),
       ),
-    );
+    )
     const user = await Authorization.skip(() =>
       db.withSchema(Schemas.Auth, () =>
         db.getDocument('users', target.get('userId')),
       ),
-    );
+    )
 
-    subscriber.set('target', target).set('userName', user.get('name'));
+    subscriber.set('target', target).set('userName', user.get('name'))
 
-    return subscriber;
+    return subscriber
   }
 
   /**
@@ -199,39 +199,39 @@ export class SubscribersService {
   async deleteSubscriber(db: Database, topicId: string, subscriberId: string) {
     const topic = await Authorization.skip(() =>
       db.getDocument('topics', topicId),
-    );
+    )
 
     if (topic.empty()) {
-      throw new Exception(Exception.TOPIC_NOT_FOUND);
+      throw new Exception(Exception.TOPIC_NOT_FOUND)
     }
 
-    const subscriber = await db.getDocument('subscribers', subscriberId);
+    const subscriber = await db.getDocument('subscribers', subscriberId)
 
     if (subscriber.empty() || subscriber.get('topicId') !== topicId) {
-      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND);
+      throw new Exception(Exception.SUBSCRIBER_NOT_FOUND)
     }
 
     const target = await db.withSchema(Schemas.Auth, () =>
       db.getDocument('targets', subscriber.get('targetId')),
-    );
+    )
 
-    await db.deleteDocument('subscribers', subscriberId);
+    await db.deleteDocument('subscribers', subscriberId)
 
     const totalAttribute = (() => {
       switch (target.get('providerType')) {
         case MessageType.EMAIL:
-          return 'emailTotal';
+          return 'emailTotal'
         case MessageType.SMS:
-          return 'smsTotal';
+          return 'smsTotal'
         case MessageType.PUSH:
-          return 'pushTotal';
+          return 'pushTotal'
         default:
-          throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE);
+          throw new Exception(Exception.TARGET_PROVIDER_INVALID_TYPE)
       }
-    })();
+    })()
 
     await Authorization.skip(() =>
       db.decreaseDocumentAttribute('topics', topicId, totalAttribute, 0),
-    );
+    )
   }
 }

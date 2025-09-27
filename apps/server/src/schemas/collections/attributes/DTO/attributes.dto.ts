@@ -3,7 +3,7 @@ import {
   PartialType,
   PickType,
   IntersectionType,
-} from '@nestjs/swagger';
+} from '@nestjs/swagger'
 import {
   IsArray,
   IsBoolean,
@@ -13,35 +13,35 @@ import {
   Length,
   Max,
   Min,
-} from 'class-validator';
-import { IsKey } from '@nuvix/core/validators/input.validator';
-import { APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH } from '@nuvix/utils';
+} from 'class-validator'
+import { IsKey } from '@nuvix/core/validators/input.validator'
+import { APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH } from '@nuvix/utils'
 
 export class CreateStringAttributeDTO {
   @IsString()
   @IsKey()
-  key!: string;
+  key!: string
 
   @IsInt()
   @Min(1)
   @Max(APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH)
-  size: number = 0;
+  size: number = 0
 
   @IsOptional()
   @IsBoolean()
-  required?: boolean = false;
+  required?: boolean = false
 
   @IsOptional()
   @IsString()
-  default?: string | null = null;
+  default?: string | null = null
 
   @IsOptional()
   @IsBoolean()
-  array?: boolean = false;
+  array?: boolean = false
 
   @IsOptional()
   @IsBoolean()
-  encrypt?: boolean = false;
+  encrypt?: boolean = false
 }
 
 export class CreateEmailAttributeDTO extends OmitType(
@@ -58,10 +58,10 @@ export class CreateEnumAttributeDTO extends OmitType(CreateStringAttributeDTO, [
   @IsArray()
   @IsString({ each: true })
   @Length(1, 1024, { each: true })
-  elements?: string[] = [];
+  elements?: string[] = []
 
   @IsOptional()
-  default?: string | any = null;
+  default?: string | any = null
 }
 
 export class CreateIpAttributeDTO extends OmitType(CreateStringAttributeDTO, [
@@ -80,15 +80,15 @@ export class CreateIntegerAttributeDTO extends OmitType(
 ) {
   @IsOptional()
   @IsInt()
-  min?: number;
+  min?: number
 
   @IsOptional()
   @IsInt()
-  max?: number;
+  max?: number
 
   @IsOptional()
   @IsInt()
-  default?: number;
+  default?: number
 }
 
 export class CreateFloatAttributeDTO extends CreateIntegerAttributeDTO {}
@@ -99,7 +99,7 @@ export class CreateBooleanAttributeDTO extends OmitType(
 ) {
   @IsOptional()
   @IsBoolean()
-  default?: boolean = false;
+  default?: boolean = false
 }
 
 export class CreateDatetimeAttributeDTO extends OmitType(
@@ -110,28 +110,28 @@ export class CreateDatetimeAttributeDTO extends OmitType(
 export class CreateRelationAttributeDTO {
   @IsString()
   @IsKey()
-  relatedCollectionId!: string;
+  relatedCollectionId!: string
 
   @IsString()
   @IsKey()
-  type!: string;
+  type!: string
 
   @IsOptional()
   @IsBoolean()
-  twoWay?: boolean = false;
+  twoWay?: boolean = false
 
   @IsString()
   @IsKey()
-  key!: string;
+  key!: string
 
   @IsOptional()
   @IsString()
   @IsKey()
-  twoWayKey?: string;
+  twoWayKey?: string
 
   @IsString()
   @IsKey()
-  onDelete!: string;
+  onDelete!: string
 }
 
 // Update DTOs
@@ -142,7 +142,7 @@ export class UpdateStringAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateEmailAttributeDTO extends IntersectionType(
@@ -159,7 +159,7 @@ export class UpdateEnumAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateIpAttributeDTO extends PartialType(
@@ -168,7 +168,7 @@ export class UpdateIpAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateURLAttributeDTO extends PartialType(
@@ -177,7 +177,7 @@ export class UpdateURLAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateIntegerAttributeDTO extends PartialType(
@@ -191,7 +191,7 @@ export class UpdateIntegerAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateFloatAttributeDTO extends PartialType(
@@ -205,7 +205,7 @@ export class UpdateFloatAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateBooleanAttributeDTO extends PartialType(
@@ -214,7 +214,7 @@ export class UpdateBooleanAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateDatetimeAttributeDTO extends PartialType(
@@ -223,7 +223,7 @@ export class UpdateDatetimeAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }
 
 export class UpdateRelationAttributeDTO extends PartialType(
@@ -232,5 +232,5 @@ export class UpdateRelationAttributeDTO extends PartialType(
   @IsOptional()
   @IsString()
   @IsKey()
-  newKey?: string;
+  newKey?: string
 }

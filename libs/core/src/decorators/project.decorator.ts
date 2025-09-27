@@ -1,6 +1,6 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Database, Doc } from '@nuvix/db';
-import { DataSource } from '@nuvix/pg';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common'
+import { Database, Doc } from '@nuvix/db'
+import { DataSource } from '@nuvix/pg'
 import {
   AUDITS_FOR_PROJECT,
   AUTH_SCHEMA_DB,
@@ -9,91 +9,91 @@ import {
   CURRENT_SCHEMA_DB,
   CURRENT_SCHEMA_PG,
   PROJECT_PG,
-} from '@nuvix/utils';
-import { Exception } from '../extend/exception';
-import { Audit } from '@nuvix/audit';
-import { ProjectsDoc } from '@nuvix/utils/types';
+} from '@nuvix/utils'
+import { Exception } from '../extend/exception'
+import { Audit } from '@nuvix/audit'
+import { ProjectsDoc } from '@nuvix/utils/types'
 
 /**
  * Get the current project from the request
  */
 export const Project = createParamDecorator<ProjectsDoc>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
 
-    const project = request[Context.Project] as ProjectsDoc;
+    const project = request[Context.Project] as ProjectsDoc
 
     if (project.empty() || project.getId() === 'console') {
-      return new Doc();
+      return new Doc()
     }
-    return project;
+    return project
   },
-);
+)
 
 /**
  * Get the core database instance from the request
  */
 export const ProjectDatabase = createParamDecorator<any, Database>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const database = request[CORE_SCHEMA_DB] as Database;
-    return database;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const database = request[CORE_SCHEMA_DB] as Database
+    return database
   },
-);
+)
 
 /**
  * Get the auth database instance from the request
  */
 export const AuthDatabase = createParamDecorator<any, Database>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const database = request[AUTH_SCHEMA_DB] as Database;
-    return database;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const database = request[AUTH_SCHEMA_DB] as Database
+    return database
   },
-);
+)
 
 /**
  * Get the current database instance from the request, (the one that corresponds to the requested schema)
  */
 export const CurrentDatabase = createParamDecorator<any, Database>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const database = request[CURRENT_SCHEMA_DB] as Database;
-    return database;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const database = request[CURRENT_SCHEMA_DB] as Database
+    return database
   },
-);
+)
 
 /**
  * Get the current pg DataSource instance from the request, (the one that corresponds to the requested schema)
  */
 export const CurrentSchema = createParamDecorator<any, DataSource | undefined>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const database = request[CURRENT_SCHEMA_PG] as DataSource;
-    if (!database) throw new Exception(Exception.SCHEMA_NOT_FOUND);
-    return database;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const database = request[CURRENT_SCHEMA_PG] as DataSource
+    if (!database) throw new Exception(Exception.SCHEMA_NOT_FOUND)
+    return database
   },
-);
+)
 
 /**
  * Get the project pg DataSource instance from the request, (the one that corresponds to the project)
  */
 export const ProjectPg = createParamDecorator<any, DataSource | undefined>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const dataSource = request[PROJECT_PG] as DataSource;
-    if (!dataSource) throw new Exception(Exception.DATABASE_NOT_FOUND);
-    return dataSource;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const dataSource = request[PROJECT_PG] as DataSource
+    if (!dataSource) throw new Exception(Exception.DATABASE_NOT_FOUND)
+    return dataSource
   },
-);
+)
 
 /**
  * Get the audit instance for the project from the request
  */
 export const ProjectAudits = createParamDecorator<any, Audit>(
   (data: unknown, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    const audit = request[AUDITS_FOR_PROJECT] as Audit;
-    return audit;
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    const audit = request[AUDITS_FOR_PROJECT] as Audit
+    return audit
   },
-);
+)

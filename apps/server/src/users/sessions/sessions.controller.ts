@@ -9,10 +9,10 @@ import {
   Req,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { SessionsService } from './sessions.service';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+} from '@nestjs/common'
+import { SessionsService } from './sessions.service'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import {
   Namespace,
   Project,
@@ -21,13 +21,13 @@ import {
   Locale,
   Auth,
   AuthType,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
-import type { Database } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import type { LocaleTranslator } from '@nuvix/core/helper';
+import type { Database } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import type { LocaleTranslator } from '@nuvix/core/helper'
 
 @Namespace('users')
 @Controller({ version: ['1'], path: 'users/:id/sessions' })
@@ -44,7 +44,7 @@ export class SessionsController {
     @Param('id') id: string,
     @Locale() localeTranslater: LocaleTranslator,
   ): Promise<any> {
-    return this.sessionsService.getSessions(db, id, localeTranslater);
+    return this.sessionsService.getSessions(db, id, localeTranslater)
   }
 
   @Post()
@@ -63,13 +63,13 @@ export class SessionsController {
       req.ip,
       project,
       localeTranslater,
-    );
+    )
   }
 
   @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteSessions(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.sessionsService.deleteSessions(db, id);
+    return this.sessionsService.deleteSessions(db, id)
   }
 
   @Delete(':sessionId')
@@ -79,6 +79,6 @@ export class SessionsController {
     @Param('id') id: string,
     @Param('sessionId') sessionId: string,
   ) {
-    return this.sessionsService.deleteSession(db, id, sessionId);
+    return this.sessionsService.deleteSession(db, id, sessionId)
   }
 }

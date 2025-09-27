@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Identities extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -7,9 +7,9 @@ export class Identities extends BaseQueryPipe {
     'providerUid',
     'providerEmail',
     'providerAccessTokenExpiry',
-  ];
+  ]
 
   public constructor() {
-    super('identities', Identities.ALLOWED_ATTRIBUTES);
+    super('identities', Identities.ALLOWED_ATTRIBUTES)
   }
 }

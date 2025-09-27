@@ -224,4 +224,4 @@ export const services = {
     optional: true,
     icon: '/images/services/messaging.png',
   },
-} as const;
+} as const

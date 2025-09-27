@@ -1,14 +1,14 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator'
 
 export class ExtensionCreateDTO {
   @IsString()
-  declare name: string;
+  declare name: string
 
   @IsOptional()
   @IsString()
-  schema?: string;
+  schema?: string
 
   @IsOptional()
   @IsString()
-  version?: string;
+  version?: string
 }

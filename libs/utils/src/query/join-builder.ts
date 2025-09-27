@@ -1,21 +1,21 @@
-import { DataSource } from '@nuvix/pg';
+import { DataSource } from '@nuvix/pg'
 import {
   EmbedNode,
   EmbedParserResult,
   Expression,
   ParsedOrdering,
   SelectNode,
-} from './types';
-import { ASTToQueryBuilder } from './builder';
-import { Exception } from '@nuvix/core/extend/exception';
+} from './types'
+import { ASTToQueryBuilder } from './builder'
+import { Exception } from '@nuvix/core/extend/exception'
 
-type QueryBuilder = ReturnType<DataSource['queryBuilder']>;
+type QueryBuilder = ReturnType<DataSource['queryBuilder']>
 
 export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
-  private readonly astBuilder: T;
+  private readonly astBuilder: T
 
   constructor(astBuilder: T) {
-    this.astBuilder = astBuilder;
+    this.astBuilder = astBuilder
   }
 
   public applyEmbedNode(embedNode: EmbedNode): void {
@@ -28,23 +28,23 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       select: selectFields,
       flatten: shouldFlatten,
       shape: resultShape,
-    } = embedNode;
-    let joinAlias = tableAlias || tableName;
+    } = embedNode
+    let joinAlias = tableAlias || tableName
 
     if (tableName.includes('.')) {
-      const [_schema, _table] = tableName.split('.', 2); // We have to think about schema, should we allow it?
+      const [_schema, _table] = tableName.split('.', 2) // We have to think about schema, should we allow it?
       if (_schema && !this.astBuilder.allowedSchemas.includes(_schema)) {
         throw new Exception(
           Exception.GENERAL_QUERY_BUILDER_ERROR,
           `Schema "${_schema}" is not allowed for join: ${tableName}`,
-        );
+        )
       }
       if (!tableAlias && _table) {
-        joinAlias = _table;
+        joinAlias = _table
       }
     }
 
-    const { limit, offset, order, group, ...filterConstraints } = constraint;
+    const { limit, offset, order, group, ...filterConstraints } = constraint
 
     if (!shouldFlatten && !['left', 'inner'].includes(joinType)) {
       throw new Exception(
@@ -53,7 +53,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       ).addDetails({
         hint: 'Use "left" or "inner" join for non-flattened embeds.',
         detail: `Invalid join type "${joinType}" for embed: ${tableName}`,
-      });
+      })
     }
 
     if (shouldFlatten) {
@@ -65,7 +65,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
         selectFields,
         group,
         order ?? [],
-      );
+      )
     } else {
       this._applyLateralJoin(
         tableName,
@@ -78,7 +78,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
         limit as any,
         offset ?? 0,
         resultShape ?? 'array',
-      );
+      )
     }
   }
 
@@ -94,26 +94,26 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     const conditionQueryBuilder = this._buildJoinConditionSQL(
       filterConstraints,
       this.astBuilder.pg.queryBuilder(),
-    );
+    )
 
-    const conditionSQL = conditionQueryBuilder.toSQL();
-    const cleanedCondition = conditionSQL.sql.replace('select * where ', '');
+    const conditionSQL = conditionQueryBuilder.toSQL()
+    const cleanedCondition = conditionSQL.sql.replace('select * where ', '')
 
-    (this.astBuilder.qb as any)[joinType + 'Join'](
+    ;(this.astBuilder.qb as any)[joinType + 'Join'](
       // TODO: Fix type casting
       this.astBuilder.pg.alias(tableName, joinAlias),
       this.astBuilder.pg.raw(cleanedCondition, conditionSQL.bindings),
-    );
+    )
 
     const childASTBuilder = new ASTToQueryBuilder(
       this.astBuilder.qb,
       this.astBuilder.pg,
       { tableName: joinAlias },
-    );
+    )
 
-    childASTBuilder.applyGroupBy(groupBy, joinAlias);
-    childASTBuilder.applyOrder(orderBy, joinAlias);
-    childASTBuilder.applySelect(selectFields);
+    childASTBuilder.applyGroupBy(groupBy, joinAlias)
+    childASTBuilder.applyOrder(orderBy, joinAlias)
+    childASTBuilder.applySelect(selectFields)
   }
 
   private _applyLateralJoin(
@@ -130,7 +130,7 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
   ): void {
     const subQueryBuilder = this.astBuilder.pg.qb(
       this.astBuilder.pg.alias(tableName, joinAlias),
-    );
+    )
 
     const childASTBuilder = new ASTToQueryBuilder(
       subQueryBuilder,
@@ -138,32 +138,32 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
       {
         tableName,
       },
-    );
+    )
 
-    childASTBuilder.applySelect(selectFields);
-    childASTBuilder.applyGroupBy(groupBy, joinAlias);
-    childASTBuilder.applyOrder(orderBy, joinAlias);
+    childASTBuilder.applySelect(selectFields)
+    childASTBuilder.applyGroupBy(groupBy, joinAlias)
+    childASTBuilder.applyOrder(orderBy, joinAlias)
 
-    this._applyLimitAndOffset(subQueryBuilder, resultShape, limit, offset);
-    this._buildJoinConditionSQL(filterConstraints, subQueryBuilder);
+    this._applyLimitAndOffset(subQueryBuilder, resultShape, limit, offset)
+    this._buildJoinConditionSQL(filterConstraints, subQueryBuilder)
 
-    const subQuerySQL = subQueryBuilder.toSQL();
+    const subQuerySQL = subQueryBuilder.toSQL()
     const lateralSelectContent = this._buildLateralSelectContent(
       joinAlias,
       subQuerySQL.sql,
       resultShape,
-    );
+    )
 
     // TODO: Fix type casting
-    (this.astBuilder.qb as any)[joinType + 'Join'](
+    ;(this.astBuilder.qb as any)[joinType + 'Join'](
       this.astBuilder.pg.raw(
         `lateral (${lateralSelectContent})`,
         subQuerySQL.bindings,
       ),
       this.astBuilder.pg.raw('true'),
-    );
+    )
 
-    this.astBuilder.qb.select(joinAlias);
+    this.astBuilder.qb.select(joinAlias)
   }
 
   private _applyLimitAndOffset(
@@ -173,11 +173,11 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     offset: number,
   ): void {
     if (resultShape === 'object') {
-      queryBuilder.limit(1);
+      queryBuilder.limit(1)
     } else {
-      queryBuilder.limit(limit);
+      queryBuilder.limit(limit)
     }
-    queryBuilder.offset(offset);
+    queryBuilder.offset(offset)
   }
 
   private _buildLateralSelectContent(
@@ -185,22 +185,19 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     subQuerySQL: string,
     resultShape: string,
   ): string {
-    const wrappedAlias = this.astBuilder.pg.wrapIdentifier(
-      joinAlias,
-      undefined,
-    );
-    const aliasedSubqueryResult = `${wrappedAlias}.*`;
+    const wrappedAlias = this.astBuilder.pg.wrapIdentifier(joinAlias, undefined)
+    const aliasedSubqueryResult = `${wrappedAlias}.*`
 
     if (resultShape === 'object') {
       return `
         select to_jsonb(${aliasedSubqueryResult}) as ${wrappedAlias}
         from (${subQuerySQL}) as ${wrappedAlias}
-      `;
+      `
     } else {
       return `
         select coalesce(jsonb_agg(to_jsonb(${aliasedSubqueryResult})), '[]'::jsonb) as ${wrappedAlias}
         from (${subQuerySQL}) as ${wrappedAlias}
-      `;
+      `
     }
   }
 
@@ -208,8 +205,8 @@ export class JoinBuilder<T extends ASTToQueryBuilder<QueryBuilder>> {
     expression: Expression,
     queryBuilder: QueryBuilder,
   ): QueryBuilder {
-    const astBuilder = new ASTToQueryBuilder(queryBuilder, this.astBuilder.pg);
-    astBuilder.applyFilters(expression as any, {});
-    return queryBuilder;
+    const astBuilder = new ASTToQueryBuilder(queryBuilder, this.astBuilder.pg)
+    astBuilder.applyFilters(expression as any, {})
+    return queryBuilder
   }
 }

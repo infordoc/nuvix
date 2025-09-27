@@ -1,28 +1,28 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
-import { Database } from '@nuvix/db';
-import { IsCustomID } from '@nuvix/core/validators/input.validator.js';
-import { MessageType } from '@nuvix/utils';
-import { IsString, IsOptional, Length, IsIn } from 'class-validator';
+import { OmitType, PartialType } from '@nestjs/swagger'
+import { Database } from '@nuvix/db'
+import { IsCustomID } from '@nuvix/core/validators/input.validator.js'
+import { MessageType } from '@nuvix/utils'
+import { IsString, IsOptional, Length, IsIn } from 'class-validator'
 
 export class CreateTargetDTO {
   @IsCustomID()
-  targetId!: string;
+  targetId!: string
 
   @IsString()
   @IsIn(Object.values(MessageType))
-  providerType!: string;
+  providerType!: string
 
   @IsString()
   @Length(1, Database.LENGTH_KEY)
-  identifier!: string;
+  identifier!: string
 
   @IsOptional()
   @IsString()
-  providerId?: string;
+  providerId?: string
 
   @IsString()
   @Length(1, 128)
-  name!: string;
+  name!: string
 }
 
 export class UpdateTargetDTO extends PartialType(

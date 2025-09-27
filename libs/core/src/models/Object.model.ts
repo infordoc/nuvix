@@ -1,40 +1,40 @@
-import { Exclude, Expose } from 'class-transformer';
-import { BaseModel } from '@nuvix/core/models/base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from '@nuvix/core/models/base.model'
 
 @Exclude()
 export class ObjectModel extends BaseModel {
   /**
    * Bucket ID.
    */
-  @Expose() bucketId: string = '';
+  @Expose() bucketId: string = ''
 
   /**
    * Object permissions.
    */
-  @Expose() permissions: string[] = [];
+  @Expose() permissions: string[] = []
 
   /**
    * Object name.
    */
-  @Expose() name: string = '';
+  @Expose() name: string = ''
 
   /**
    * Object version.
    */
-  @Expose() version: string = '';
+  @Expose() version: string = ''
 
   /**
    * Object metadata.
    */
-  @Expose() metadata: Record<string, string> = {};
+  @Expose() metadata: Record<string, string> = {}
 
   /**
    * Object path_tokens.
    */
-  @Expose() tokens: string[] = [];
+  @Expose() tokens: string[] = []
 
   constructor(partial: Partial<ObjectModel>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 }

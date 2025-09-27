@@ -1,10 +1,10 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Context } from '@nuvix/utils';
-import { Key } from '../helper';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common'
+import { Context } from '@nuvix/utils'
+import { Key } from '../helper'
 
 export const ApiKey = createParamDecorator<any, Key>(
   (data: unknown, ctx: ExecutionContext): any => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest();
-    return request[Context.ApiKey];
+    const request: NuvixRequest = ctx.switchToHttp().getRequest()
+    return request[Context.ApiKey]
   },
-);
+)

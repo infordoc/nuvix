@@ -6,27 +6,31 @@ import {
   Req,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { Database } from '@nuvix/db';
-import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
+} from '@nestjs/common'
+import { Database } from '@nuvix/db'
 import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
-import { RecoveryService } from './recovery.service';
+  AuditEvent,
+  Namespace,
+  Scope,
+  Sdk,
+  Throttle,
+} from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { Public } from '@nuvix/core/resolvers/guards/auth.guard'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
+import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import { RecoveryService } from './recovery.service'
 
 @Controller({ version: ['1'], path: 'account/recovery' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class RecoveryController {
@@ -62,7 +66,7 @@ export class RecoveryController {
       project,
       ip: request.ip,
       userAgent: request.headers['user-agent'] || 'UNKNOWN',
-    });
+    })
   }
 
   @Public()
@@ -94,6 +98,6 @@ export class RecoveryController {
       user,
       input,
       project,
-    });
+    })
   }
 }

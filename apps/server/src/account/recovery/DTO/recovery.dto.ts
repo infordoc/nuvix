@@ -1,24 +1,24 @@
-import { IsUID } from '@nuvix/core/validators/input.validator.js';
-import { IsEmail, IsString, IsNotEmpty, IsUrl } from 'class-validator';
+import { IsUID } from '@nuvix/core/validators/input.validator.js'
+import { IsEmail, IsString, IsNotEmpty, IsUrl } from 'class-validator'
 
 export class CreateRecoveryDTO {
   @IsEmail()
-  email!: string;
+  email!: string
 
   @IsNotEmpty()
   @IsUrl()
-  url!: string;
+  url!: string
 }
 
 export class UpdateRecoveryDTO {
   @IsUID()
-  userId!: string;
+  userId!: string
 
   @IsNotEmpty()
   @IsString()
-  secret!: string;
+  secret!: string
 
   @IsNotEmpty()
   @IsString()
-  password!: string;
+  password!: string
 }

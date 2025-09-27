@@ -1,13 +1,13 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ID } from '@nuvix/core/helper/ID.helper';
-import { Exception } from '@nuvix/core/extend/exception';
-import { TOTP } from '@nuvix/core/validators/MFA.validator';
+import { Injectable, Logger } from '@nestjs/common'
+import { ID } from '@nuvix/core/helper/ID.helper'
+import { Exception } from '@nuvix/core/extend/exception'
+import { TOTP } from '@nuvix/core/validators/MFA.validator'
 import {
   CreateMembershipDTO,
   UpdateMembershipDTO,
   UpdateMembershipStatusDTO,
-} from './DTO/membership.dto';
-import { configuration, QueueFor } from '@nuvix/utils';
+} from './DTO/membership.dto'
+import { configuration, QueueFor } from '@nuvix/utils'
 import {
   Authorization,
   AuthorizationException,
@@ -17,25 +17,25 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix/db';
-import { Auth } from '@nuvix/core/helper/auth.helper';
-import { InjectQueue } from '@nestjs/bullmq';
-import type { Queue } from 'bullmq';
+} from '@nuvix/db'
+import { Auth } from '@nuvix/core/helper/auth.helper'
+import { InjectQueue } from '@nestjs/bullmq'
+import type { Queue } from 'bullmq'
 import {
   MailJob,
   MailQueueOptions,
-} from '@nuvix/core/resolvers/queues/mails.queue';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { sprintf } from 'sprintf-js';
-import * as fs from 'fs';
-import * as Template from 'handlebars';
-import { AppConfigService } from '@nuvix/core';
-import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
-import type { SmtpConfig } from '@nuvix/core/config/smtp.js';
+} from '@nuvix/core/resolvers/queues/mails.queue'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { sprintf } from 'sprintf-js'
+import * as fs from 'fs'
+import * as Template from 'handlebars'
+import { AppConfigService } from '@nuvix/core'
+import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import type { SmtpConfig } from '@nuvix/core/config/smtp.js'
 
 @Injectable()
 export class MembershipsService {
-  private logger: Logger = new Logger(MembershipsService.name);
+  private logger: Logger = new Logger(MembershipsService.name)
 
   constructor(
     private readonly appConfig: AppConfigService,
@@ -54,13 +54,13 @@ export class MembershipsService {
     user: UsersDoc,
     locale: LocaleTranslator,
   ) {
-    const url = input.url ? input.url.trim() : '';
+    const url = input.url ? input.url.trim() : ''
     if (!url) {
       if (!Auth.isTrustedActor) {
         throw new Exception(
           Exception.GENERAL_ARGUMENT_INVALID,
           'URL is required',
-        );
+        )
       }
     }
 
@@ -68,46 +68,46 @@ export class MembershipsService {
       throw new Exception(
         Exception.GENERAL_ARGUMENT_INVALID,
         'At least one of userId, email, or phone is required',
-      );
+      )
     }
 
     if (!Auth.isTrustedActor && !this.appConfig.getSmtpConfig().host) {
-      throw new Exception(Exception.GENERAL_SMTP_DISABLED);
+      throw new Exception(Exception.GENERAL_SMTP_DISABLED)
     }
 
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    let email = input.email ? input.email.trim().toLowerCase() : '';
-    let name = input.name ? input.name.trim() : email;
-    let invitee: UsersDoc | null = null;
+    let email = input.email ? input.email.trim().toLowerCase() : ''
+    let name = input.name ? input.name.trim() : email
+    let invitee: UsersDoc | null = null
 
     if (input.userId) {
-      invitee = await db.getDocument('users', input.userId);
+      invitee = await db.getDocument('users', input.userId)
       if (invitee.empty()) {
-        throw new Exception(Exception.USER_NOT_FOUND);
+        throw new Exception(Exception.USER_NOT_FOUND)
       }
       if (email && invitee.get('email') !== email) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and email do not match',
           409,
-        );
+        )
       }
       if (input.phone && invitee.get('phone') !== input.phone) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given userId and phone do not match',
           409,
-        );
+        )
       }
-      email = invitee.get('email', '');
-      input.phone = invitee.get('phone', '');
-      name = !name ? invitee.get('name', '') : name;
+      email = invitee.get('email', '')
+      input.phone = invitee.get('phone', '')
+      name = !name ? invitee.get('name', '') : name
     } else if (input.email) {
-      invitee = await db.findOne('users', [Query.equal('email', [email])]);
+      invitee = await db.findOne('users', [Query.equal('email', [email])])
       if (
         !invitee.empty() &&
         input.phone &&
@@ -117,42 +117,40 @@ export class MembershipsService {
           Exception.USER_ALREADY_EXISTS,
           'Given email and phone do not match',
           409,
-        );
+        )
       }
     } else if (input.phone) {
-      invitee = await db.findOne('users', [
-        Query.equal('phone', [input.phone]),
-      ]);
+      invitee = await db.findOne('users', [Query.equal('phone', [input.phone])])
       if (!invitee.empty() && email && invitee.get('email') !== email) {
         throw new Exception(
           Exception.USER_ALREADY_EXISTS,
           'Given phone and email do not match',
           409,
-        );
+        )
       }
     }
 
     if (!invitee || invitee.empty()) {
-      const userId = ID.unique();
+      const userId = ID.unique()
 
       // Check user limit if not privileged or app user
-      const limit = project.get('auths', {})['limit'] ?? 0;
+      const limit = project.get('auths', {})['limit'] ?? 0
       if (!Auth.isTrustedActor && limit !== 0) {
-        const total = await db.count('users', []);
+        const total = await db.count('users', [])
         if (total >= limit) {
           throw new Exception(
             Exception.USER_COUNT_EXCEEDED,
             'User registration is restricted. Contact your administrator for more information.',
-          );
+          )
         }
       }
 
       // Ensure email is not already used in another identity
       const identityWithMatchingEmail = await db.findOne('identities', [
         Query.equal('providerEmail', [email]),
-      ]);
+      ])
       if (identityWithMatchingEmail && !identityWithMatchingEmail.empty()) {
-        throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS);
+        throw new Exception(Exception.USER_EMAIL_ALREADY_EXISTS)
       }
 
       try {
@@ -178,25 +176,25 @@ export class MembershipsService {
               .filter(Boolean)
               .join(' '),
           }),
-        );
+        )
       } catch (error) {
         if (error instanceof DuplicateException) {
-          throw new Exception(Exception.USER_ALREADY_EXISTS);
-        } else throw error;
+          throw new Exception(Exception.USER_ALREADY_EXISTS)
+        } else throw error
       }
     }
 
-    const isOwner = Authorization.isRole('team:' + team.getId() + '/owner');
+    const isOwner = Authorization.isRole('team:' + team.getId() + '/owner')
 
     if (!isOwner && !Auth.isTrustedActor) {
       throw new Exception(
         Exception.USER_UNAUTHORIZED,
         'User is not allowed to send invitations for this team',
-      );
+      )
     }
 
-    const membershipId = ID.unique();
-    const secret = Auth.tokenGenerator();
+    const membershipId = ID.unique()
+    const secret = Auth.tokenGenerator()
 
     let membership = new Doc<Memberships>({
       $id: membershipId,
@@ -217,58 +215,58 @@ export class MembershipsService {
       confirm: Auth.isTrustedActor,
       secret: Auth.hash(secret),
       search: [membershipId, invitee.getId()].join(' '),
-    });
+    })
 
     if (Auth.isTrustedActor) {
       try {
         membership = await Authorization.skip(() =>
           db.createDocument('memberships', membership),
-        );
+        )
       } catch (error) {
         if (error instanceof DuplicateException) {
-          throw new Exception(Exception.TEAM_INVITE_ALREADY_EXISTS);
+          throw new Exception(Exception.TEAM_INVITE_ALREADY_EXISTS)
         }
-        throw error;
+        throw error
       }
 
       await Authorization.skip(() =>
         db.increaseDocumentAttribute('teams', team.getId(), 'total', 1),
-      );
-      await db.purgeCachedDocument('users', invitee.getId());
+      )
+      await db.purgeCachedDocument('users', invitee.getId())
     } else {
       try {
-        membership = await db.createDocument('memberships', membership);
+        membership = await db.createDocument('memberships', membership)
       } catch (error) {
         if (error instanceof DuplicateException) {
-          throw new Exception(Exception.TEAM_INVITE_ALREADY_EXISTS);
+          throw new Exception(Exception.TEAM_INVITE_ALREADY_EXISTS)
         }
-        throw error;
+        throw error
       }
 
-      const url = new URL(input.url || '');
-      url.searchParams.append('membershipId', membership.getId());
-      url.searchParams.append('userId', invitee.getId());
-      url.searchParams.append('secret', secret);
-      url.searchParams.append('teamId', team.getId());
+      const url = new URL(input.url || '')
+      url.searchParams.append('membershipId', membership.getId())
+      url.searchParams.append('userId', invitee.getId())
+      url.searchParams.append('secret', secret)
+      url.searchParams.append('teamId', team.getId())
 
-      const email = invitee.get('email');
+      const email = invitee.get('email')
       if (email) {
         const projectName = project.empty()
           ? 'Console'
-          : project.get('name', '[APP-NAME]');
+          : project.get('name', '[APP-NAME]')
         let subject = sprintf(
           locale.getText('emails.invitation.subject'),
           team.get('name'),
           projectName,
-        );
+        )
         const customTemplate =
           project.get('templates', {})?.[
             'email.invitation-' + locale.default
-          ] ?? {};
+          ] ?? {}
         const templatePath =
-          this.appConfig.assetConfig.templates + '/email-inner-base.tpl';
-        const templateSource = fs.readFileSync(templatePath, 'utf8');
-        const template = Template.compile(templateSource);
+          this.appConfig.assetConfig.templates + '/email-inner-base.tpl'
+        const templateSource = fs.readFileSync(templatePath, 'utf8')
+        const template = Template.compile(templateSource)
 
         const emailData = {
           hello: locale.getText('emails.invitation.hello'),
@@ -276,34 +274,34 @@ export class MembershipsService {
           footer: locale.getText('emails.invitation.footer'),
           thanks: locale.getText('emails.invitation.thanks'),
           signature: locale.getText('emails.invitation.signature'),
-        };
+        }
 
-        let body = template(emailData);
+        let body = template(emailData)
 
-        const smtp = project.get('smtp', {}) as SmtpConfig;
-        const smtpEnabled = smtp['enabled'] ?? false;
-        const systemConfig = this.appConfig.get('system');
+        const smtp = project.get('smtp', {}) as SmtpConfig
+        const smtpEnabled = smtp['enabled'] ?? false
+        const systemConfig = this.appConfig.get('system')
 
         let senderEmail =
-          systemConfig.emailAddress || configuration.app.emailTeam;
+          systemConfig.emailAddress || configuration.app.emailTeam
         let senderName =
-          systemConfig.emailName || configuration.app.name + ' Server';
-        let replyTo = '';
+          systemConfig.emailName || configuration.app.name + ' Server'
+        let replyTo = ''
 
         if (smtpEnabled) {
-          if (smtp['senderEmail']) senderEmail = smtp['senderEmail'];
-          if (smtp['senderName']) senderName = smtp['senderName'];
-          if (smtp['replyTo']) replyTo = smtp['replyTo'];
+          if (smtp['senderEmail']) senderEmail = smtp['senderEmail']
+          if (smtp['senderName']) senderName = smtp['senderName']
+          if (smtp['replyTo']) replyTo = smtp['replyTo']
 
           if (customTemplate) {
             if (customTemplate['senderEmail'])
-              senderEmail = customTemplate['senderEmail'];
+              senderEmail = customTemplate['senderEmail']
             if (customTemplate['senderName'])
-              senderName = customTemplate['senderName'];
-            if (customTemplate['replyTo']) replyTo = customTemplate['replyTo'];
+              senderName = customTemplate['senderName']
+            if (customTemplate['replyTo']) replyTo = customTemplate['replyTo']
 
-            body = customTemplate['message'] || body;
-            subject = customTemplate['subject'] || subject;
+            body = customTemplate['message'] || body
+            subject = customTemplate['subject'] || subject
           }
         }
 
@@ -314,7 +312,7 @@ export class MembershipsService {
           team: team.get('name'),
           redirect: url.toString(),
           project: projectName,
-        };
+        }
 
         await this.mailsQueue.add(MailJob.SEND_EMAIL, {
           email,
@@ -332,16 +330,16 @@ export class MembershipsService {
             senderName,
           },
           variables: emailVariables,
-        });
+        })
       }
     }
 
     membership
       .set('teamName', team.get('name'))
       .set('userName', invitee.get('name'))
-      .set('userEmail', invitee.get('email'));
+      .set('userEmail', invitee.get('email'))
 
-    return membership;
+    return membership
   }
 
   /**
@@ -353,36 +351,36 @@ export class MembershipsService {
     queries: Query[],
     search?: string,
   ) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
-    queries.push(Query.equal('teamInternalId', [team.getSequence()]));
+    queries.push(Query.equal('teamInternalId', [team.getSequence()]))
 
-    const filterQueries = Query.groupByType(queries)['filters'];
-    const memberships = await db.find('memberships', queries);
-    const total = await db.count('memberships', filterQueries);
+    const filterQueries = Query.groupByType(queries)['filters']
+    const memberships = await db.find('memberships', queries)
+    const total = await db.count('memberships', filterQueries)
 
     const validMemberships = memberships
       .filter(membership => membership.get('userId'))
       .map(async membership => {
-        const user = await db.getDocument('users', membership.get('userId'));
+        const user = await db.getDocument('users', membership.get('userId'))
 
-        let mfa = user.get('mfa', false);
+        let mfa = user.get('mfa', false)
         if (mfa) {
-          const totp = TOTP.getAuthenticatorFromUser(user);
-          const totpEnabled = totp && totp.get('verified', false);
+          const totp = TOTP.getAuthenticatorFromUser(user)
+          const totpEnabled = totp && totp.get('verified', false)
           const emailEnabled =
-            user.get('email') && user.get('emailVerification');
+            user.get('email') && user.get('emailVerification')
           const phoneEnabled =
-            user.get('phone') && user.get('phoneVerification');
+            user.get('phone') && user.get('phoneVerification')
 
           if (!totpEnabled && !emailEnabled && !phoneEnabled) {
-            mfa = false;
+            mfa = false
           }
         }
 
@@ -390,42 +388,42 @@ export class MembershipsService {
           .set('mfa', mfa)
           .set('teamName', team.get('name'))
           .set('userName', user.get('name'))
-          .set('userEmail', user.get('email'));
+          .set('userEmail', user.get('email'))
 
-        return membership;
-      });
+        return membership
+      })
 
     return {
       memberships: await Promise.all(validMemberships),
       total: total,
-    };
+    }
   }
 
   /**
    * Get A member of the team
    */
   async getMember(db: Database, teamId: string, memberId: string) {
-    const team = await db.getDocument('teams', teamId);
+    const team = await db.getDocument('teams', teamId)
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    const membership = await db.getDocument('memberships', memberId);
+    const membership = await db.getDocument('memberships', memberId)
     if (membership.empty() || !membership.get('userId')) {
-      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
     }
 
-    const user = await db.getDocument('users', membership.get('userId'));
+    const user = await db.getDocument('users', membership.get('userId'))
 
-    let mfa = user.get('mfa', false);
+    let mfa = user.get('mfa', false)
     if (mfa) {
-      const totp = TOTP.getAuthenticatorFromUser(user);
-      const totpEnabled = totp && totp.get('verified', false);
-      const emailEnabled = user.get('email') && user.get('emailVerification');
-      const phoneEnabled = user.get('phone') && user.get('phoneVerification');
+      const totp = TOTP.getAuthenticatorFromUser(user)
+      const totpEnabled = totp && totp.get('verified', false)
+      const emailEnabled = user.get('email') && user.get('emailVerification')
+      const phoneEnabled = user.get('phone') && user.get('phoneVerification')
 
       if (!totpEnabled && !emailEnabled && !phoneEnabled) {
-        mfa = false;
+        mfa = false
       }
     }
 
@@ -433,9 +431,9 @@ export class MembershipsService {
       .set('mfa', mfa)
       .set('teamName', team.get('name'))
       .set('userName', user.get('name'))
-      .set('userEmail', user.get('email'));
+      .set('userEmail', user.get('email'))
 
-    return membership;
+    return membership
   }
 
   /**
@@ -447,44 +445,44 @@ export class MembershipsService {
     memberId: string,
     input: UpdateMembershipDTO,
   ) {
-    const team = await db.getDocument('teams', teamId);
+    const team = await db.getDocument('teams', teamId)
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    const membership = await db.getDocument('memberships', memberId);
+    const membership = await db.getDocument('memberships', memberId)
     if (membership.empty()) {
-      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
     }
 
-    const user = await db.getDocument('users', membership.get('userId'));
+    const user = await db.getDocument('users', membership.get('userId'))
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
-    const isOwner = Authorization.isRole(`team:${team.getId()}/owner`);
+    const isOwner = Authorization.isRole(`team:${team.getId()}/owner`)
 
     if (!isOwner && !Auth.isTrustedActor) {
       throw new Exception(
         Exception.USER_UNAUTHORIZED,
         'User is not allowed to modify roles',
-      );
+      )
     }
 
-    membership.set('roles', input.roles);
+    membership.set('roles', input.roles)
     const updatedMembership = await db.updateDocument(
       'memberships',
       membership.getId(),
       membership,
-    );
+    )
 
-    await db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId())
 
     updatedMembership
       .set('teamName', team.get('name'))
       .set('userName', user.get('name'))
-      .set('userEmail', user.get('email'));
+      .set('userEmail', user.get('email'))
 
-    return updatedMembership;
+    return updatedMembership
   }
 
   /**
@@ -497,50 +495,50 @@ export class MembershipsService {
     input: UpdateMembershipStatusDTO,
   ) {
     /**@todo ---- */
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   /**
    * Delete member of the team
    */
   async deleteMember(db: Database, teamId: string, memberId: string) {
-    const team = await db.getDocument('teams', teamId);
+    const team = await db.getDocument('teams', teamId)
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    const membership = await db.getDocument('memberships', memberId);
+    const membership = await db.getDocument('memberships', memberId)
     if (membership.empty()) {
-      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND);
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
     }
 
-    const user = await db.getDocument('users', membership.get('userId'));
+    const user = await db.getDocument('users', membership.get('userId'))
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
     if (membership.get('teamInternalId') !== team.getSequence()) {
-      throw new Exception(Exception.TEAM_MEMBERSHIP_MISMATCH);
+      throw new Exception(Exception.TEAM_MEMBERSHIP_MISMATCH)
     }
 
     try {
-      await db.deleteDocument('memberships', membership.getId());
+      await db.deleteDocument('memberships', membership.getId())
     } catch (error) {
       if (error instanceof AuthorizationException) {
-        throw new Exception(Exception.USER_UNAUTHORIZED);
+        throw new Exception(Exception.USER_UNAUTHORIZED)
       }
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
         'Failed to remove membership from DB',
-      );
+      )
     }
 
-    await db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId())
 
     if (membership.get('confirm')) {
-      await db.decreaseDocumentAttribute('teams', team.getId(), 'total', 1, 0);
+      await db.decreaseDocumentAttribute('teams', team.getId(), 'total', 1, 0)
     }
 
-    return null;
+    return null
   }
 }

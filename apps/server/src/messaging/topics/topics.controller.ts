@@ -11,13 +11,13 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { TopicsService } from './topics.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { TopicsService } from './topics.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ApiInterceptor,
   ResponseInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
+} from '@nuvix/core/resolvers/interceptors'
 import {
   AuditEvent,
   ProjectDatabase,
@@ -27,12 +27,12 @@ import {
   Scope,
   Sdk,
   Auth,
-} from '@nuvix/core/decorators';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/decorators'
+import { Models } from '@nuvix/core/helper'
 
-import { Database, Query as Queries } from '@nuvix/db';
-import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto';
-import { TopicsQueryPipe } from '@nuvix/core/pipes/queries';
+import { Database, Query as Queries } from '@nuvix/db'
+import { CreateTopicDTO, UpdateTopicDTO } from './DTO/topics.dto'
+import { TopicsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('messaging')
 @UseGuards(ProjectGuard)
@@ -58,7 +58,7 @@ export class TopicsController {
     return this.topicsService.createTopic({
       db,
       input,
-    });
+    })
   }
 
   @Get()
@@ -78,7 +78,7 @@ export class TopicsController {
       db,
       queries,
       search,
-    });
+    })
   }
 
   @Get(':topicId')
@@ -93,7 +93,7 @@ export class TopicsController {
     @Param('topicId') topicId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.topicsService.getTopic(db, topicId);
+    return this.topicsService.getTopic(db, topicId)
   }
 
   @Patch(':topicId')
@@ -114,7 +114,7 @@ export class TopicsController {
       db,
       topicId,
       input,
-    });
+    })
   }
 
   @Delete(':topicId')
@@ -131,6 +131,6 @@ export class TopicsController {
     @Param('topicId') topicId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.topicsService.deleteTopic(db, topicId);
+    return this.topicsService.deleteTopic(db, topicId)
   }
 }

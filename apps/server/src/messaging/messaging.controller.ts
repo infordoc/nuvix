@@ -11,13 +11,13 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { MessagingService } from './messaging.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { MessagingService } from './messaging.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ApiInterceptor,
   ResponseInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
+} from '@nuvix/core/resolvers/interceptors'
 import {
   AuditEvent,
   ProjectDatabase,
@@ -28,10 +28,10 @@ import {
   Scope,
   Sdk,
   Auth,
-} from '@nuvix/core/decorators';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/decorators'
+import { Models } from '@nuvix/core/helper'
 
-import { Database, Query as Queries } from '@nuvix/db';
+import { Database, Query as Queries } from '@nuvix/db'
 import {
   CreateEmailMessageDTO,
   CreatePushMessageDTO,
@@ -39,9 +39,9 @@ import {
   UpdateEmailMessageDTO,
   UpdatePushMessageDTO,
   UpdateSmsMessageDTO,
-} from './DTO/message.dto';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { MessagesQueryPipe, TargetsQueryPipe } from '@nuvix/core/pipes/queries';
+} from './DTO/message.dto'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { MessagesQueryPipe, TargetsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('messaging')
 @UseGuards(ProjectGuard)
@@ -69,7 +69,7 @@ export class MessagingController {
       db,
       input,
       project,
-    });
+    })
   }
 
   @Post('sms')
@@ -90,7 +90,7 @@ export class MessagingController {
       db,
       input,
       project,
-    });
+    })
   }
 
   @Post('push')
@@ -111,7 +111,7 @@ export class MessagingController {
       db,
       input,
       project,
-    });
+    })
   }
 
   @Get()
@@ -131,7 +131,7 @@ export class MessagingController {
       db,
       queries,
       search,
-    });
+    })
   }
 
   @Get(':messageId')
@@ -146,7 +146,7 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.messagingService.getMessage(db, messageId);
+    return this.messagingService.getMessage(db, messageId)
   }
 
   @Get(':messageId/targets')
@@ -166,7 +166,7 @@ export class MessagingController {
       db,
       messageId,
       queries,
-    });
+    })
   }
 
   @Patch('email/:messageId')
@@ -189,7 +189,7 @@ export class MessagingController {
       messageId,
       input,
       project,
-    });
+    })
   }
 
   @Patch('sms/:messageId')
@@ -212,7 +212,7 @@ export class MessagingController {
       messageId,
       input,
       project,
-    });
+    })
   }
 
   @Patch('push/:messageId')
@@ -235,7 +235,7 @@ export class MessagingController {
       messageId,
       input,
       project,
-    });
+    })
   }
 
   @Delete(':messageId')
@@ -252,6 +252,6 @@ export class MessagingController {
     @Param('messageId') messageId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.messagingService.deleteMessage(db, messageId);
+    return this.messagingService.deleteMessage(db, messageId)
   }
 }

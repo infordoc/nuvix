@@ -7,11 +7,11 @@ import {
   CursorValidator,
   FilterValidator,
   OrderValidator,
-} from '@nuvix/db';
-import collections from '@nuvix/utils/collections';
-import { ParseQueryPipe } from '../query.pipe';
+} from '@nuvix/db'
+import collections from '@nuvix/utils/collections'
+import { ParseQueryPipe } from '../query.pipe'
 
-const APP_DATABASE_QUERY_MAX_VALUES = 100;
+const APP_DATABASE_QUERY_MAX_VALUES = 100
 
 export class BaseQueryPipe extends ParseQueryPipe {
   private static get collections() {
@@ -20,16 +20,16 @@ export class BaseQueryPipe extends ParseQueryPipe {
       ...collections.project,
       ...collections.bucket,
       ...collections.database,
-    };
+    }
   }
 
   constructor(collectionName: string, allowed: string[]) {
-    const collection = BaseQueryPipe.collections[collectionName]!;
+    const collection = BaseQueryPipe.collections[collectionName]!
 
-    const attributes: Doc<Attribute>[] = [];
+    const attributes: Doc<Attribute>[] = []
 
     for (const attr of collection.attributes) {
-      if (!allowed.includes(attr.key)) continue;
+      if (!allowed.includes(attr.key)) continue
 
       attributes.push(
         new Doc({
@@ -38,7 +38,7 @@ export class BaseQueryPipe extends ParseQueryPipe {
           type: attr.type,
           array: attr.array,
         }),
-      );
+      )
     }
 
     attributes.push(
@@ -66,7 +66,7 @@ export class BaseQueryPipe extends ParseQueryPipe {
         type: AttributeType.Integer,
         array: false,
       }),
-    );
+    )
 
     const validators = [
       new LimitValidator(),
@@ -74,8 +74,8 @@ export class BaseQueryPipe extends ParseQueryPipe {
       new CursorValidator(),
       new FilterValidator(attributes, APP_DATABASE_QUERY_MAX_VALUES),
       new OrderValidator(attributes),
-    ];
+    ]
 
-    super({ validators });
+    super({ validators })
   }
 }

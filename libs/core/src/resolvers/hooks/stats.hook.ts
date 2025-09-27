@@ -1,11 +1,11 @@
-import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
-import { Hook } from '@nuvix/core/server';
-import { Context, MetricFor, QueueFor } from '@nuvix/utils';
-import { Queue } from 'bullmq';
-import { StatsQueueOptions, StatsQueueJob } from '../queues';
-import { Auth } from '@nuvix/core/helper';
-import type { ProjectsDoc } from '@nuvix/utils/types';
+import { InjectQueue } from '@nestjs/bullmq'
+import { Injectable } from '@nestjs/common'
+import { Hook } from '@nuvix/core/server'
+import { Context, MetricFor, QueueFor } from '@nuvix/utils'
+import { Queue } from 'bullmq'
+import { StatsQueueOptions, StatsQueueJob } from '../queues'
+import { Auth } from '@nuvix/core/helper'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class StatsHook implements Hook {
@@ -19,17 +19,16 @@ export class StatsHook implements Hook {
     reply: NuvixRes,
     next: (err?: Error) => void,
   ): Promise<unknown> {
-    const project: ProjectsDoc = req[Context.Project];
+    const project: ProjectsDoc = req[Context.Project]
     if (
       project.empty() ||
       project.getId() === 'console' ||
       Auth.isPlatformActor
     )
-      return;
+      return
 
-    const reqBodySize: number =
-      req['hooks_args']['onRequest']?.sizeRef?.() ?? 0;
-    const resBodySize: number = Number(reply.getHeader('Content-Length')) || 0;
+    const reqBodySize: number = req['hooks_args']['onRequest']?.sizeRef?.() ?? 0
+    const resBodySize: number = Number(reply.getHeader('Content-Length')) || 0
 
     await this.statsQueue.add(StatsQueueJob.ADD_METRIC, {
       project,
@@ -38,8 +37,8 @@ export class StatsHook implements Hook {
         { key: MetricFor.INBOUND, value: reqBodySize },
         { key: MetricFor.OUTBOUND, value: resBodySize },
       ],
-    });
+    })
 
-    return;
+    return
   }
 }

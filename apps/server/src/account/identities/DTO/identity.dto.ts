@@ -1,6 +1,6 @@
-import { IsCustomID } from '@nuvix/core/validators/input.validator';
+import { IsCustomID } from '@nuvix/core/validators/input.validator'
 
 export class IdentityIdParamDTO {
   @IsCustomID()
-  identityId!: string;
+  identityId!: string
 }

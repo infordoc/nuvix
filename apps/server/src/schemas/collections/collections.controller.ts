@@ -11,25 +11,25 @@ import {
   Put,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { CollectionsService } from './collections.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix/db';
-import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
+} from '@nestjs/common'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { CollectionsService } from './collections.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { Models } from '@nuvix/core/helper/response.helper'
+import type { Database, Query as Queries } from '@nuvix/db'
+import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe'
 import {
   CurrentDatabase,
   Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators/project.decorator'
+import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators'
 
 // DTOs
-import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { CollectionsQueryPipe } from '@nuvix/core/pipes/queries';
+import { CreateCollectionDTO, UpdateCollectionDTO } from './DTO/collection.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { DocSchemaGuard } from '@nuvix/core/resolvers/guards'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { CollectionsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('schemas')
 @Auth([AuthType.ADMIN, AuthType.KEY])
@@ -46,7 +46,7 @@ export class CollectionsController {
     @Query('queries', CollectionsQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.collectionsService.getCollections(db, queries, search);
+    return this.collectionsService.getCollections(db, queries, search)
   }
 
   @Post()
@@ -55,7 +55,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Body() createCollectionDTO: CreateCollectionDTO,
   ) {
-    return this.collectionsService.createCollection(db, createCollectionDTO);
+    return this.collectionsService.createCollection(db, createCollectionDTO)
   }
 
   @Get(':collectionId')
@@ -64,7 +64,7 @@ export class CollectionsController {
     @CurrentDatabase() db: Database,
     @Param('collectionId') collectionId: string,
   ) {
-    return this.collectionsService.getCollection(db, collectionId);
+    return this.collectionsService.getCollection(db, collectionId)
   }
 
   @Put(':collectionId')
@@ -78,7 +78,7 @@ export class CollectionsController {
       db,
       collectionId,
       updateCollectionDTO,
-    );
+    )
   }
 
   @Delete(':collectionId')
@@ -89,7 +89,7 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Project() project: ProjectsDoc,
   ) {
-    return this.collectionsService.removeCollection(db, collectionId, project);
+    return this.collectionsService.removeCollection(db, collectionId, project)
   }
 
   @Get(':collectionId/usage')
@@ -99,7 +99,7 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Query('range') range?: string,
   ) {
-    return this.collectionsService.getCollectionUsage(db, collectionId, range);
+    return this.collectionsService.getCollectionUsage(db, collectionId, range)
   }
 
   @Get(':collectionId/logs')
@@ -109,6 +109,6 @@ export class CollectionsController {
     @Param('collectionId') collectionId: string,
     @Query('queries', ParseQueryPipe) queries?: Queries[],
   ) {
-    return this.collectionsService.getCollectionLogs(db, collectionId, queries);
+    return this.collectionsService.getCollectionLogs(db, collectionId, queries)
   }
 }

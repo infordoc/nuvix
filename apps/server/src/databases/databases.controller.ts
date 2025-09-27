@@ -8,15 +8,15 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { DatabasesService } from './databases.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { DatabasesService } from './databases.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ResponseInterceptor,
   ApiInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
-import { DataSource } from '@nuvix/pg';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/resolvers/interceptors'
+import { DataSource } from '@nuvix/pg'
+import { Models } from '@nuvix/core/helper'
 import {
   Namespace,
   Project,
@@ -24,13 +24,13 @@ import {
   ResModel,
   Scope,
   Sdk,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
 // DTO's
-import { CreateSchema } from './DTO/create-schema.dto';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { SchemaType } from '@nuvix/utils';
-import { ApiQuery } from '@nestjs/swagger';
+import { CreateSchema } from './DTO/create-schema.dto'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { SchemaType } from '@nuvix/utils'
+import { ApiQuery } from '@nestjs/swagger'
 
 @Controller({ version: ['1'], path: ['databases', 'database'] })
 @UseGuards(ProjectGuard)
@@ -52,8 +52,8 @@ export class DatabasesController {
     required: false,
   })
   async getSchemas(@ProjectPg() pg: DataSource, @Query('type') type?: any) {
-    const schemas = await this.databaseService.getSchemas(pg, type);
-    return schemas;
+    const schemas = await this.databaseService.getSchemas(pg, type)
+    return schemas
   }
 
   @Post('schemas')
@@ -70,8 +70,8 @@ export class DatabasesController {
   ) {
     const result = await (body.type !== SchemaType.Document
       ? this.databaseService.createSchema(pg, body)
-      : this.databaseService.createDocumentSchema(pg, project, body));
-    return result;
+      : this.databaseService.createDocumentSchema(pg, project, body))
+    return result
   }
 
   @Get('schemas/:schemaId')
@@ -82,7 +82,7 @@ export class DatabasesController {
   })
   @ResModel(Models.SCHEMA)
   async getSchema(@ProjectPg() pg: DataSource, @Param('schemaId') id: string) {
-    const result = await this.databaseService.getSchema(pg, id);
-    return result;
+    const result = await this.databaseService.getSchema(pg, id)
+    return result
   }
 }

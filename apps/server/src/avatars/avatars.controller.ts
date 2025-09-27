@@ -1,6 +1,6 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
-import { AvatarsService } from './avatars.service';
-import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
+import { Controller, Get, Query, Res } from '@nestjs/common'
+import { AvatarsService } from './avatars.service'
+import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe'
 
 @Controller({ version: ['1'], path: 'avatars' })
 export class AvatarsController {
@@ -22,6 +22,6 @@ export class AvatarsController {
       background,
       circle,
       res,
-    });
+    })
   }
 }

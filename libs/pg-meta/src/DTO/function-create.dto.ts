@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsArray,
   IsBoolean,
@@ -6,46 +6,46 @@ import {
   IsObject,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from 'class-validator'
 
 export class FunctionCreateDTO {
   @IsString()
-  declare name: string;
+  declare name: string
 
   @IsString()
-  declare definition: string;
-
-  @IsOptional()
-  @IsString()
-  schema?: string;
+  declare definition: string
 
   @IsOptional()
   @IsString()
-  language?: string;
+  schema?: string
+
+  @IsOptional()
+  @IsString()
+  language?: string
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  args?: string[];
+  args?: string[]
 
   @IsOptional()
   @IsString()
-  return_type?: string;
+  return_type?: string
 
   @IsOptional()
   @IsEnum(['IMMUTABLE', 'STABLE', 'VOLATILE'])
   @ApiPropertyOptional({ enum: ['IMMUTABLE', 'STABLE', 'VOLATILE'] })
-  behavior?: 'IMMUTABLE' | 'STABLE' | 'VOLATILE';
+  behavior?: 'IMMUTABLE' | 'STABLE' | 'VOLATILE'
 
   @IsOptional()
   @IsBoolean()
-  security_definer?: boolean;
+  security_definer?: boolean
 
   @IsOptional()
   @IsObject()
-  config_params?: Record<string, string>;
+  config_params?: Record<string, string>
 
   @IsOptional()
   @IsString()
-  comment?: string;
+  comment?: string
 }

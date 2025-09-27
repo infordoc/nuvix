@@ -1,47 +1,41 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  Length,
-  IsIn,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Length, IsIn } from 'class-validator'
 
 export class CreateProjectDTO {
   @IsString()
   @IsNotEmpty()
-  projectId!: string;
+  projectId!: string
 
   @IsNotEmpty()
   @IsString()
-  name!: string;
+  name!: string
 
   @IsString()
   @IsNotEmpty()
-  teamId!: string;
+  teamId!: string
 
   @IsString()
   @IsNotEmpty()
   @Length(6)
-  password!: string;
+  password!: string
 
   @IsString()
   @IsNotEmpty()
-  region!: string;
+  region!: string
 
   @IsOptional()
   @IsString()
-  description?: string;
+  description?: string
 
   @IsOptional()
   @IsString()
-  logo?: string;
+  logo?: string
 
   @IsOptional()
   @IsString()
-  url?: string;
+  url?: string
 
   @IsOptional()
   @IsString()
   @IsIn(['dev', 'prod'])
-  env?: 'dev' | 'prod' = 'dev';
+  env?: 'dev' | 'prod' = 'dev'
 }

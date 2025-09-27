@@ -1,6 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { SetMetadata } from '@nestjs/common'
 
-export type LabelKey = '*' | 'res.type' | 'res.status';
+export type LabelKey = '*' | 'res.type' | 'res.status'
 
 enum ResType {
   JSON = 'json',
@@ -48,11 +48,11 @@ enum ResStatus {
 }
 
 export type LabelValue = {
-  '*': string;
-  'res.type': keyof typeof ResType;
-  'res.status': keyof typeof ResStatus;
-};
+  '*': string
+  'res.type': keyof typeof ResType
+  'res.status': keyof typeof ResStatus
+}
 
 /**@deprecated use `Sdk` instead */
 export const Label = <K extends LabelKey>(key: K, value: LabelValue[K]) =>
-  SetMetadata(key, value);
+  SetMetadata(key, value)

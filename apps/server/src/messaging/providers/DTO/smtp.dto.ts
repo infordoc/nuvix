@@ -1,5 +1,5 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
+import { PartialType, OmitType } from '@nestjs/swagger'
+import { IsCustomID } from '@nuvix/core/validators'
 import {
   IsString,
   IsNumber,
@@ -10,68 +10,68 @@ import {
   Min,
   Max,
   MaxLength,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateSMTPProviderDTO {
   @IsString()
   @IsCustomID()
-  providerId!: string;
+  providerId!: string
 
   @IsString()
   @MaxLength(128)
-  name!: string;
+  name!: string
 
   @IsString()
-  host!: string;
+  host!: string
 
   @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(65535)
-  port?: number = 587;
+  port?: number = 587
 
   @IsOptional()
   @IsString()
-  username?: string;
+  username?: string
 
   @IsOptional()
   @IsString()
-  password?: string;
+  password?: string
 
   @IsOptional()
   @IsString()
   @IsIn(['none', 'ssl', 'tls'])
-  encryption?: string = 'none';
+  encryption?: string = 'none'
 
   @IsOptional()
   @IsBoolean()
-  autoTLS?: boolean = true;
+  autoTLS?: boolean = true
 
   @IsOptional()
   @IsString()
-  mailer?: string;
+  mailer?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(128)
-  fromName?: string;
+  fromName?: string
 
   @IsOptional()
   @IsEmail()
-  fromEmail?: string;
+  fromEmail?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(128)
-  replyToName?: string;
+  replyToName?: string
 
   @IsOptional()
   @IsEmail()
-  replyToEmail?: string;
+  replyToEmail?: string
 
   @IsOptional()
   @IsBoolean()
-  enabled?: boolean;
+  enabled?: boolean
 }
 
 export class UpdateSMTPProviderDTO extends PartialType(

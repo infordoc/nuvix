@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common'
 import {
   Authorization,
   Database,
@@ -7,23 +7,23 @@ import {
   ID,
   Permission,
   Query,
-} from '@nuvix/db';
-import { Exception } from '@nuvix/core/extend/exception';
-import { configuration, MetricFor, MetricPeriod } from '@nuvix/utils';
-import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto';
+} from '@nuvix/db'
+import { Exception } from '@nuvix/core/extend/exception'
+import { configuration, MetricFor, MetricPeriod } from '@nuvix/utils'
+import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto'
 
-import usageConfig from '@nuvix/core/config/usage';
-import collections from '@nuvix/utils/collections/index.js';
-import { StatsQueue } from '@nuvix/core/resolvers';
+import usageConfig from '@nuvix/core/config/usage'
+import collections from '@nuvix/utils/collections/index.js'
+import { StatsQueue } from '@nuvix/core/resolvers'
 
 @Injectable()
 export class StorageService {
-  private readonly logger = new Logger(StorageService.name);
+  private readonly logger = new Logger(StorageService.name)
 
   constructor() {}
 
   private getCollectionName(s: number) {
-    return `bucket_${s}`;
+    return `bucket_${s}`
   }
 
   /**
@@ -31,9 +31,9 @@ export class StorageService {
    */
   async getBuckets(db: Database, queries: Query[] = [], search?: string) {
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
-    const filterQueries = Query.groupByType(queries).filters;
+    const filterQueries = Query.groupByType(queries).filters
 
     return {
       buckets: await db.find('buckets', queries),
@@ -42,7 +42,7 @@ export class StorageService {
         filterQueries,
         configuration.limits.limitCount,
       ),
-    };
+    }
   }
 
   /**
@@ -52,22 +52,22 @@ export class StorageService {
     db: Database,
     { bucketId, permissions: _perms, ...data }: CreateBucketDTO,
   ) {
-    bucketId = bucketId === 'unique()' ? ID.unique() : bucketId;
-    const permissions = Permission.aggregate(_perms ?? []);
+    bucketId = bucketId === 'unique()' ? ID.unique() : bucketId
+    const permissions = Permission.aggregate(_perms ?? [])
 
     try {
-      const filesCollection = collections.bucket['files'];
+      const filesCollection = collections.bucket['files']
       if (!filesCollection) {
         throw new Exception(
           Exception.GENERAL_SERVER_ERROR,
           'Files collection is not configured.',
-        );
+        )
       }
 
       const attributes = filesCollection.attributes.map(
         attribute => new Doc(attribute),
-      );
-      const indexes = filesCollection.indexes?.map(index => new Doc(index));
+      )
+      const indexes = filesCollection.indexes?.map(index => new Doc(index))
 
       await db.createDocument(
         'buckets',
@@ -85,23 +85,23 @@ export class StorageService {
           antivirus: data.antivirus,
           search: [bucketId, data.name].join(' '),
         }),
-      );
+      )
 
-      const bucket = await db.getDocument('buckets', bucketId);
+      const bucket = await db.getDocument('buckets', bucketId)
       await db.createCollection({
         id: this.getCollectionName(bucket.getSequence()),
         attributes,
         indexes,
         permissions: permissions ?? [],
         documentSecurity: data.fileSecurity,
-      });
+      })
 
-      return bucket;
+      return bucket
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.STORAGE_BUCKET_ALREADY_EXISTS);
+        throw new Exception(Exception.STORAGE_BUCKET_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -109,34 +109,34 @@ export class StorageService {
    * Get a bucket.
    */
   async getBucket(db: Database, id: string) {
-    const bucket = await db.getDocument('buckets', id);
+    const bucket = await db.getDocument('buckets', id)
 
-    if (bucket.empty()) throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
+    if (bucket.empty()) throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND)
 
-    return bucket;
+    return bucket
   }
 
   /**
    * Update a bucket.
    */
   async updateBucket(db: Database, id: string, input: UpdateBucketDTO) {
-    const bucket = await db.getDocument('buckets', id);
+    const bucket = await db.getDocument('buckets', id)
 
     if (bucket.empty()) {
-      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
+      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND)
     }
 
     const permissions = Permission.aggregate(
       input.permissions ?? bucket.getPermissions(),
-    )!;
+    )!
     const maximumFileSize =
       input.maximumFileSize ??
-      bucket.get('maximumFileSize', configuration.storage.limit);
+      bucket.get('maximumFileSize', configuration.storage.limit)
     const allowedFileExtensions =
-      input.allowedFileExtensions ?? bucket.get('allowedFileExtensions', []);
-    const enabled = input.enabled ?? bucket.get('enabled', true);
-    const encryption = input.encryption ?? bucket.get('encryption', true);
-    const antivirus = input.antivirus ?? bucket.get('antivirus', true);
+      input.allowedFileExtensions ?? bucket.get('allowedFileExtensions', [])
+    const enabled = input.enabled ?? bucket.get('enabled', true)
+    const encryption = input.encryption ?? bucket.get('encryption', true)
+    const antivirus = input.antivirus ?? bucket.get('antivirus', true)
 
     const updatedBucket = await db.updateDocument(
       'buckets',
@@ -154,95 +154,95 @@ export class StorageService {
           input.compression ?? bucket.get('compression', 'none'),
         )
         .set('antivirus', antivirus),
-    );
+    )
 
     await db.updateCollection({
       id: this.getCollectionName(bucket.getSequence()),
       permissions,
       documentSecurity: input.fileSecurity ?? bucket.get('fileSecurity', false),
-    });
+    })
 
-    return updatedBucket;
+    return updatedBucket
   }
 
   /**
    * Delete a bucket.
    */
   async deleteBucket(db: Database, id: string) {
-    const bucket = await db.getDocument('buckets', id);
+    const bucket = await db.getDocument('buckets', id)
 
     if (bucket.empty()) {
-      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
+      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND)
     }
 
     if (!(await db.deleteDocument('buckets', id))) {
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
         'Failed to remove bucket from DB',
-      );
+      )
     }
 
-    await db.deleteCollection(this.getCollectionName(bucket.getSequence())); // TODO: use queues to delete
-    return;
+    await db.deleteCollection(this.getCollectionName(bucket.getSequence())) // TODO: use queues to delete
+    return
   }
 
   /**
    * Get Storage Usage.
    */
   async getStorageUsage(db: Database, range: string = '7d') {
-    const periods = usageConfig;
+    const periods = usageConfig
 
-    const stats: Record<string, any> = {};
-    const usage: Record<string, any> = {};
-    const days = periods[range as keyof typeof periods];
+    const stats: Record<string, any> = {}
+    const usage: Record<string, any> = {}
+    const days = periods[range as keyof typeof periods]
     const metrics = [
       MetricFor.BUCKETS,
       MetricFor.FILES,
       MetricFor.FILES_STORAGE,
-    ];
+    ]
 
     await Authorization.skip(async () => {
       for (const metric of metrics) {
         const result = await db.findOne('stats', qb =>
           qb.equal('metric', metric).equal('period', MetricPeriod.INF),
-        );
+        )
 
-        stats[metric] = { total: result.get('value') ?? 0, data: {} };
+        stats[metric] = { total: result.get('value') ?? 0, data: {} }
         const results = await db.find('stats', qb =>
           qb
             .equal('metric', metric)
             .equal('period', days.period)
             .limit(days.limit)
             .orderDesc('time'),
-        );
+        )
 
         for (const res of results) {
           const time = StatsQueue.formatDate(
             days.period,
             res.get('time') as string,
-          )!;
+          )!
           stats[metric].data[time] = {
             value: res.get('value'),
-          };
+          }
         }
       }
-    });
+    })
 
     for (const metric of metrics) {
-      usage[metric] = { total: stats[metric].total, data: [] };
-      let leap = Math.floor(Date.now() / 1000) - days.limit * days.factor;
+      usage[metric] = { total: stats[metric].total, data: [] }
+      let leap = Math.floor(Date.now() / 1000) - days.limit * days.factor
 
       while (leap < Math.floor(Date.now() / 1000)) {
-        leap += days.factor;
+        leap += days.factor
 
         const formatDate = StatsQueue.formatDate(
           days.period,
           new Date(leap * 1000),
-        )!;
+        )!
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,
-        });
+        })
       }
     }
 
@@ -254,7 +254,7 @@ export class StorageService {
       buckets: usage[MetricFor.BUCKETS]?.data,
       files: usage[MetricFor.FILES]?.data,
       storage: usage[MetricFor.FILES_STORAGE]?.data,
-    };
+    }
   }
 
   /**
@@ -265,17 +265,17 @@ export class StorageService {
     bucketId: string,
     range: string = '7d',
   ) {
-    const bucket = await db.getDocument('buckets', bucketId);
+    const bucket = await db.getDocument('buckets', bucketId)
 
     if (bucket.empty()) {
-      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND);
+      throw new Exception(Exception.STORAGE_BUCKET_NOT_FOUND)
     }
 
-    const periods = usageConfig;
+    const periods = usageConfig
 
-    const stats: Record<string, any> = {};
-    const usage: Record<string, any> = {};
-    const days = periods[range as keyof typeof periods];
+    const stats: Record<string, any> = {}
+    const usage: Record<string, any> = {}
+    const days = periods[range as keyof typeof periods]
     const metrics = [
       MetricFor.BUCKET_ID_FILES.replace(
         '{bucketInternalId}',
@@ -285,50 +285,50 @@ export class StorageService {
         '{bucketInternalId}',
         bucket.getSequence().toString(),
       ),
-    ];
+    ]
 
     await Authorization.skip(async () => {
       for (const metric of metrics) {
         const result = await db.findOne('stats', qb =>
           qb.equal('metric', metric).equal('period', MetricPeriod.INF),
-        );
+        )
 
-        stats[metric] = { total: result.get('value') ?? 0, data: {} };
+        stats[metric] = { total: result.get('value') ?? 0, data: {} }
         const results = await db.find('stats', qb =>
           qb
             .equal('metric', metric)
             .equal('period', days.period)
             .limit(days.limit)
             .orderDesc('time'),
-        );
+        )
 
         for (const res of results) {
           const time = StatsQueue.formatDate(
             days.period,
             res.get('time') as string,
-          )!;
+          )!
           stats[metric].data[time] = {
             value: res.get('value'),
-          };
+          }
         }
       }
-    });
+    })
 
     for (const metric of metrics) {
-      usage[metric] = { total: stats[metric].total, data: [] };
-      let leap = Math.floor(Date.now() / 1000) - days.limit * days.factor;
+      usage[metric] = { total: stats[metric].total, data: [] }
+      let leap = Math.floor(Date.now() / 1000) - days.limit * days.factor
 
       while (leap < Math.floor(Date.now() / 1000)) {
-        leap += days.factor;
+        leap += days.factor
 
         const formatDate = StatsQueue.formatDate(
           days.period,
           new Date(leap * 1000),
-        )!;
+        )!
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,
-        });
+        })
       }
     }
 
@@ -338,6 +338,6 @@ export class StorageService {
       filesStorageTotal: usage[metrics[1]!]?.total,
       files: usage[metrics[0]!]?.data,
       storage: usage[metrics[1]!]?.data,
-    };
+    }
   }
 }

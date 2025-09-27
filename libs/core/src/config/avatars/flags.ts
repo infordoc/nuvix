@@ -1,7 +1,7 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as path from 'path'
 
-const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/flags');
+const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/flags')
 
 export const flags = {
   af: { name: 'Afghanistan', path: assetsPath + `/af.png` },
@@ -211,4 +211,4 @@ export const flags = {
   za: { name: 'South Africa', path: assetsPath + '/za.png' },
   zm: { name: 'Zambia', path: assetsPath + '/zm.png' },
   zw: { name: 'Zimbabwe', path: assetsPath + '/zw.png' },
-};
+}

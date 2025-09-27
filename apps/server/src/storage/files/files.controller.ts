@@ -15,13 +15,13 @@ import {
   Res,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { FilesService } from './files.service';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Database, Doc, Query as Queries } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { FilesService } from './files.service'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { Database, Doc, Query as Queries } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
 import {
   MultipartParam,
   ResModel,
@@ -29,22 +29,22 @@ import {
   UploadedFile,
   Project,
   Namespace,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
-import { UpdateFileDTO } from './DTO/file.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
-import { type SavedMultipartFile } from '@fastify/multipart';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Exception } from '@nuvix/core/extend/exception';
-import { FilesQueryPipe } from '@nuvix/core/pipes/queries';
+import { UpdateFileDTO } from './DTO/file.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe'
+import { type SavedMultipartFile } from '@fastify/multipart'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Exception } from '@nuvix/core/extend/exception'
+import { FilesQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('storage')
 @UseGuards(ProjectGuard)
 @Controller({ version: ['1'], path: 'storage/buckets/:id/files' })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class FilesController {
-  private readonly logger = new Logger(FilesController.name);
+  private readonly logger = new Logger(FilesController.name)
   constructor(private readonly filesService: FilesService) {}
 
   @Get()
@@ -55,7 +55,7 @@ export class FilesController {
     @Query('queries', FilesQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.filesService.getFiles(db, id, queries, search);
+    return this.filesService.getFiles(db, id, queries, search)
   }
 
   @Post()
@@ -71,7 +71,7 @@ export class FilesController {
     @Project() project: Doc,
   ) {
     if (!fileId)
-      throw new Exception(Exception.INVALID_PARAMS, 'fileId is required');
+      throw new Exception(Exception.INVALID_PARAMS, 'fileId is required')
     return this.filesService.createFile(
       db,
       id,
@@ -80,7 +80,7 @@ export class FilesController {
       req,
       user,
       project,
-    );
+    )
   }
 
   @Get(':fileId')
@@ -90,7 +90,7 @@ export class FilesController {
     @Param('id') id: string,
     @Param('fileId') fileId: string,
   ) {
-    return this.filesService.getFile(db, id, fileId);
+    return this.filesService.getFile(db, id, fileId)
   }
 
   @Get(':fileId/preview')
@@ -145,7 +145,7 @@ export class FilesController {
         output,
       } as any,
       project,
-    );
+    )
   }
 
   @Get(':fileId/download')
@@ -157,7 +157,7 @@ export class FilesController {
     @Res({ passthrough: true }) res: any,
     @Project() project: Doc,
   ) {
-    return this.filesService.downloadFile(db, id, fileId, res, req, project);
+    return this.filesService.downloadFile(db, id, fileId, res, req, project)
   }
 
   @Get(':fileId/view')
@@ -169,7 +169,7 @@ export class FilesController {
     @Res({ passthrough: true }) res: any,
     @Project() project: Doc,
   ) {
-    return this.filesService.viewFile(db, id, fileId, res, req, project);
+    return this.filesService.viewFile(db, id, fileId, res, req, project)
   }
 
   @Get(':fileId/push')
@@ -190,7 +190,7 @@ export class FilesController {
       req,
       res,
       project,
-    );
+    )
   }
 
   @Put(':fileId')
@@ -201,7 +201,7 @@ export class FilesController {
     @Param('fileId') fileId: string,
     @Body() updateFileDTO: UpdateFileDTO,
   ) {
-    return this.filesService.updateFile(db, id, fileId, updateFileDTO);
+    return this.filesService.updateFile(db, id, fileId, updateFileDTO)
   }
 
   @Delete(':fileId')
@@ -213,6 +213,6 @@ export class FilesController {
     @Param('fileId') fileId: string,
     @Project() project: Doc,
   ) {
-    return this.filesService.deleteFile(db, id, fileId, project);
+    return this.filesService.deleteFile(db, id, fileId, project)
   }
 }

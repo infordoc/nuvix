@@ -1,17 +1,17 @@
-import { ident, literal } from 'pg-format';
-import { DEFAULT_SYSTEM_SCHEMAS } from './constants';
-import { filterByList } from './helpers';
-import { tablePrivilegesSql } from './sql/index';
-import { PostgresMetaResult, PostgresTablePrivileges } from './types';
-import { TablePrivilegeGrantDTO } from '../DTO/table-privilege-grant.dto';
-import { TablePrivilegeRevokeDTO } from '../DTO/table-privilege-revoke.dto';
-import { PgMetaException } from '../extra/execption';
+import { ident, literal } from 'pg-format'
+import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
+import { filterByList } from './helpers'
+import { tablePrivilegesSql } from './sql/index'
+import { PostgresMetaResult, PostgresTablePrivileges } from './types'
+import { TablePrivilegeGrantDTO } from '../DTO/table-privilege-grant.dto'
+import { TablePrivilegeRevokeDTO } from '../DTO/table-privilege-revoke.dto'
+import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaTablePrivileges {
-  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+  query: (sql: string) => Promise<PostgresMetaResult<any>>
 
   constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
-    this.query = query;
+    this.query = query
   }
 
   async list({
@@ -21,68 +21,68 @@ export default class PostgresMetaTablePrivileges {
     limit,
     offset,
   }: {
-    includeSystemSchemas?: boolean;
-    includedSchemas?: string[];
-    excludedSchemas?: string[];
-    limit?: number;
-    offset?: number;
+    includeSystemSchemas?: boolean
+    includedSchemas?: string[]
+    excludedSchemas?: string[]
+    limit?: number
+    offset?: number
   } = {}): Promise<PostgresMetaResult<PostgresTablePrivileges[]>> {
     let sql = `
 with table_privileges as (${tablePrivilegesSql})
 select *
 from table_privileges
-`;
+`
     const filter = filterByList(
       includedSchemas,
       excludedSchemas,
       !includeSystemSchemas ? DEFAULT_SYSTEM_SCHEMAS : undefined,
-    );
+    )
     if (filter) {
-      sql += ` where schema ${filter}`;
+      sql += ` where schema ${filter}`
     }
     if (limit) {
-      sql += ` limit ${limit}`;
+      sql += ` limit ${limit}`
     }
     if (offset) {
-      sql += ` offset ${offset}`;
+      sql += ` offset ${offset}`
     }
-    return this.query(sql);
+    return this.query(sql)
   }
 
   async retrieve({
     id,
   }: {
-    id: number;
-  }): Promise<PostgresMetaResult<PostgresTablePrivileges>>;
+    id: number
+  }): Promise<PostgresMetaResult<PostgresTablePrivileges>>
   async retrieve({
     name,
     schema,
   }: {
-    name: string;
-    schema: string;
-  }): Promise<PostgresMetaResult<PostgresTablePrivileges>>;
+    name: string
+    schema: string
+  }): Promise<PostgresMetaResult<PostgresTablePrivileges>>
   async retrieve({
     id,
     name,
     schema = 'public',
   }: {
-    id?: number;
-    name?: string;
-    schema?: string;
+    id?: number
+    name?: string
+    schema?: string
   }): Promise<PostgresMetaResult<PostgresTablePrivileges>> {
     if (id) {
       const sql = `
 with table_privileges as (${tablePrivilegesSql})
 select *
 from table_privileges
-where table_privileges.relation_id = ${literal(id)};`;
-      const { data, error } = await this.query(sql);
+where table_privileges.relation_id = ${literal(id)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a relation with ID ${id}`);
+        throw new PgMetaException(`Cannot find a relation with ID ${id}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else if (name) {
       const sql = `
@@ -91,21 +91,21 @@ select *
 from table_privileges
 where table_privileges.schema = ${literal(schema)}
   and table_privileges.name = ${literal(name)}
-`;
-      const { data, error } = await this.query(sql);
+`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
         throw new PgMetaException(
           `Cannot find a relation named ${name} in schema ${schema}`,
-        );
+        )
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else {
       throw new PgMetaException(
         'Invalid parameters on retrieving table privileges',
-      );
+      )
     }
   }
 
@@ -124,23 +124,23 @@ ${grants
   )
   .join('\n')}
 end $$;
-`;
-    const { data, error } = await this.query(sql);
+`
+    const { data, error } = await this.query(sql)
     if (error) {
-      return { data, error };
+      return { data, error }
     }
 
     // Return the updated table privileges for modified relations.
     const relationIds = [
       ...new Set(grants.map(({ relation_id }) => relation_id)),
-    ];
+    ]
     sql = `
 with table_privileges as (${tablePrivilegesSql})
 select *
 from table_privileges
 where relation_id in (${relationIds.map(literal).join(',')})
-`;
-    return this.query(sql);
+`
+    return this.query(sql)
   }
 
   async revoke(
@@ -156,22 +156,22 @@ ${revokes
   )
   .join('\n')}
 end $$;
-`;
-    const { data, error } = await this.query(sql);
+`
+    const { data, error } = await this.query(sql)
     if (error) {
-      return { data, error };
+      return { data, error }
     }
 
     // Return the updated table privileges for modified relations.
     const relationIds = [
       ...new Set(revokes.map(({ relation_id }) => relation_id)),
-    ];
+    ]
     sql = `
 with table_privileges as (${tablePrivilegesSql})
 select *
 from table_privileges
 where relation_id in (${relationIds.map(literal).join(',')})
-`;
-    return this.query(sql);
+`
+    return this.query(sql)
   }
 }

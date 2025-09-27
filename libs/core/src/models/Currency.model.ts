@@ -1,45 +1,45 @@
-import { Exclude, Expose } from 'class-transformer';
-import { BaseModel } from '@nuvix/core/models/base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from '@nuvix/core/models/base.model'
 
 @Exclude()
 export class CurrencyModel extends BaseModel {
   /**
    * Currency symbol.
    */
-  @Expose() symbol: string = '';
+  @Expose() symbol: string = ''
 
   /**
    * Currency name.
    */
-  @Expose() name: string = '';
+  @Expose() name: string = ''
 
   /**
    * Currency native symbol.
    */
-  @Expose() symbolNative: string = '';
+  @Expose() symbolNative: string = ''
 
   /**
    * Number of decimal digits.
    */
-  @Expose() decimalDigits: number = 0;
+  @Expose() decimalDigits: number = 0
 
   /**
    * Currency digit rounding.
    */
-  @Expose() rounding: number = 0;
+  @Expose() rounding: number = 0
 
   /**
    * Currency code in ISO 4217 three-character format.
    */
-  @Expose() code: string = '';
+  @Expose() code: string = ''
 
   /**
    * Currency plural name.
    */
-  @Expose() namePlural: string = '';
+  @Expose() namePlural: string = ''
 
   constructor(partial: Partial<CurrencyModel>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 }

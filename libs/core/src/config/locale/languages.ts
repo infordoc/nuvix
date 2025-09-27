@@ -936,4 +936,4 @@ export const languages = [
     name: 'Zulu',
     nativeName: 'isiZulu',
   },
-];
+]

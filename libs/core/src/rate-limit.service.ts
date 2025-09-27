@@ -1,26 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { CoreService } from './core.service';
-import { Redis } from 'ioredis';
+import { Injectable } from '@nestjs/common'
+import { CoreService } from './core.service'
+import { Redis } from 'ioredis'
 
 export interface RateLimitResult {
-  allowed: boolean;
-  limit: number;
-  remaining: number;
-  resetTime: number;
-  retryAfter?: number;
+  allowed: boolean
+  limit: number
+  remaining: number
+  resetTime: number
+  retryAfter?: number
 }
 
 export interface RateLimitOptions {
-  limit: number; // max requests allowed
-  window: number; // duration in seconds
+  limit: number // max requests allowed
+  window: number // duration in seconds
 }
 
 @Injectable()
 export class RatelimitService {
-  private redisClient: Redis;
+  private redisClient: Redis
 
   constructor(private readonly coreService: CoreService) {
-    this.redisClient = this.coreService.createCacheDb();
+    this.redisClient = this.coreService.createCacheDb()
   }
 
   /**
@@ -34,34 +34,34 @@ export class RatelimitService {
     options: RateLimitOptions,
     increment: number,
   ): Promise<RateLimitResult> {
-    const { limit, window } = options;
-    const now = Date.now();
-    const bucket = Math.floor(now / (window * 1000));
-    const redisKey = `rl:${key}:${window}:${bucket}`;
+    const { limit, window } = options
+    const now = Date.now()
+    const bucket = Math.floor(now / (window * 1000))
+    const redisKey = `rl:${key}:${window}:${bucket}`
 
     try {
-      let count: number;
+      let count: number
 
       if (increment > 0) {
         // Increment atomically
-        count = await this.redisClient.incrby(redisKey, increment);
+        count = await this.redisClient.incrby(redisKey, increment)
 
         // First write → set TTL
         if (count === increment) {
-          await this.redisClient.expire(redisKey, window);
+          await this.redisClient.expire(redisKey, window)
         }
       } else {
         // Just read current value
-        const raw = await this.redisClient.get(redisKey);
-        count = raw ? parseInt(raw, 10) : 0;
+        const raw = await this.redisClient.get(redisKey)
+        count = raw ? parseInt(raw, 10) : 0
       }
 
       // Get remaining TTL for reset time
-      const ttl = await this.redisClient.ttl(redisKey);
-      const resetTime = ttl > 0 ? now + ttl * 1000 : now + window * 1000;
+      const ttl = await this.redisClient.ttl(redisKey)
+      const resetTime = ttl > 0 ? now + ttl * 1000 : now + window * 1000
 
-      const remaining = Math.max(0, limit - count);
-      const allowed = count <= limit;
+      const remaining = Math.max(0, limit - count)
+      const allowed = count <= limit
 
       return {
         allowed,
@@ -69,7 +69,7 @@ export class RatelimitService {
         remaining,
         resetTime,
         retryAfter: allowed ? undefined : ttl,
-      };
+      }
     } catch {
       // Fail open on Redis errors
       return {
@@ -77,7 +77,7 @@ export class RatelimitService {
         limit,
         remaining: limit,
         resetTime: Date.now() + window * 1000,
-      };
+      }
     }
   }
 
@@ -88,7 +88,7 @@ export class RatelimitService {
     key: string,
     options: RateLimitOptions,
   ): Promise<RateLimitResult> {
-    return this.processRateLimit(key, options, 1);
+    return this.processRateLimit(key, options, 1)
   }
 
   /**
@@ -98,7 +98,7 @@ export class RatelimitService {
     key: string,
     options: RateLimitOptions,
   ): Promise<RateLimitResult> {
-    return this.processRateLimit(key, options, 0);
+    return this.processRateLimit(key, options, 0)
   }
 
   /**
@@ -109,7 +109,7 @@ export class RatelimitService {
     options: RateLimitOptions,
     increment = 1,
   ): Promise<RateLimitResult> {
-    return this.processRateLimit(key, options, increment);
+    return this.processRateLimit(key, options, increment)
   }
 
   /**
@@ -120,18 +120,18 @@ export class RatelimitService {
     limit: number,
     duration: number,
   ): Promise<boolean> {
-    const result = await this.checkRateLimit(key, { limit, window: duration });
-    return !result.allowed;
+    const result = await this.checkRateLimit(key, { limit, window: duration })
+    return !result.allowed
   }
 
   /**
    * Reset a subject's rate limits by deleting all buckets.
    */
   public async resetRateLimit(key: string): Promise<void> {
-    const pattern = `rl:${key}:*`;
-    const keys = await this.redisClient.keys(pattern);
+    const pattern = `rl:${key}:*`
+    const keys = await this.redisClient.keys(pattern)
     if (keys.length > 0) {
-      await this.redisClient.del(...keys);
+      await this.redisClient.del(...keys)
     }
   }
 }

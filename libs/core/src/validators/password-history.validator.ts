@@ -1,21 +1,21 @@
-import type { Validator } from '@nuvix/db';
-import { Auth } from '../helper/auth.helper';
-import { PasswordValidator } from './password.validator';
-import type { HashAlgorithm } from '@nuvix/utils';
+import type { Validator } from '@nuvix/db'
+import { Auth } from '../helper/auth.helper'
+import { PasswordValidator } from './password.validator'
+import type { HashAlgorithm } from '@nuvix/utils'
 
 export class PasswordHistoryValidator implements Validator {
-  private history: string[];
-  private algo: string;
-  private algoOptions: object;
-  private passwordValidator: PasswordValidator = new PasswordValidator();
+  private history: string[]
+  private algo: string
+  private algoOptions: object
+  private passwordValidator: PasswordValidator = new PasswordValidator()
 
   constructor(history: string[], algo: string, algoOptions: object = {}) {
-    this.history = history;
-    this.algo = algo;
-    this.algoOptions = algoOptions;
+    this.history = history
+    this.algo = algo
+    this.algoOptions = algoOptions
   }
 
-  $description: string = "Password shouldn't be in the history.";
+  $description: string = "Password shouldn't be in the history."
 
   /**
    * Is valid.
@@ -25,7 +25,7 @@ export class PasswordHistoryValidator implements Validator {
    * @return bool
    */
   async $valid(value: string): Promise<boolean> {
-    if (!this.passwordValidator.$valid(value)) return false;
+    if (!this.passwordValidator.$valid(value)) return false
     for (const hash of this.history) {
       if (
         hash &&
@@ -36,9 +36,9 @@ export class PasswordHistoryValidator implements Validator {
           this.algoOptions,
         ))
       ) {
-        return false;
+        return false
       }
     }
-    return true;
+    return true
   }
 }

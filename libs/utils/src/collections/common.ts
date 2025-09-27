@@ -1,4 +1,4 @@
-import { Auth } from '@nuvix/core/helper';
+import { Auth } from '@nuvix/core/helper'
 import {
   ID,
   Database,
@@ -6,7 +6,7 @@ import {
   Collection,
   IndexType,
   Order,
-} from '@nuvix/db';
+} from '@nuvix/db'
 
 export const authCollections = (
   _for: 'platform' | 'project',
@@ -255,7 +255,7 @@ export const authCollections = (
               orders: [Order.Asc],
             },
           ],
-        };
+        }
 
   return {
     users: {
@@ -1260,8 +1260,8 @@ export const authCollections = (
         },
       ],
     },
-  };
-};
+  }
+}
 
 export const commonCollections = (
   _for: 'platform' | 'project',
@@ -1903,4 +1903,4 @@ export const commonCollections = (
       },
     ],
   },
-});
+})

@@ -5,58 +5,58 @@ import {
   IsObject,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from 'class-validator'
 
 export class RoleUpdateDTO {
   @IsOptional()
   @IsString()
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsBoolean()
-  is_superuser?: boolean;
+  is_superuser?: boolean
 
   @IsOptional()
   @IsBoolean()
-  can_create_db?: boolean;
+  can_create_db?: boolean
 
   @IsOptional()
   @IsBoolean()
-  can_create_role?: boolean;
+  can_create_role?: boolean
 
   @IsOptional()
   @IsBoolean()
-  inherit_role?: boolean;
+  inherit_role?: boolean
 
   @IsOptional()
   @IsBoolean()
-  can_login?: boolean;
+  can_login?: boolean
 
   @IsOptional()
   @IsBoolean()
-  is_replication_role?: boolean;
+  is_replication_role?: boolean
 
   @IsOptional()
   @IsBoolean()
-  can_bypass_rls?: boolean;
+  can_bypass_rls?: boolean
 
   @IsOptional()
   @IsInt()
-  connection_limit?: number;
+  connection_limit?: number
 
   @IsOptional()
   @IsString()
-  password?: string;
+  password?: string
 
   @IsOptional()
   @IsString()
-  valid_until?: string;
+  valid_until?: string
 
   @IsOptional()
   @IsArray()
   config?: Array<{
-    op: 'remove' | 'add' | 'replace';
-    path: string;
-    value?: string;
-  }>;
+    op: 'remove' | 'add' | 'replace'
+    path: string
+    value?: string
+  }>
 }

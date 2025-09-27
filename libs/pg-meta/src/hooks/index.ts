@@ -1,1 +1,1 @@
-export * from './client.hook';
+export * from './client.hook'

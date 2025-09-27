@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common'
 import {
   CreateTeamDTO,
   UpdateTeamDTO,
   UpdateTeamPrefsDTO,
-} from './DTO/team.dto';
-import { ID } from '@nuvix/core/helper/ID.helper';
-import { Exception } from '@nuvix/core/extend/exception';
+} from './DTO/team.dto'
+import { ID } from '@nuvix/core/helper/ID.helper'
+import { Exception } from '@nuvix/core/extend/exception'
 import {
   Database,
   Doc,
@@ -13,9 +13,9 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix/db';
-import { Auth } from '@nuvix/core/helper/auth.helper';
-import type { UsersDoc } from '@nuvix/utils/types';
+} from '@nuvix/db'
+import { Auth } from '@nuvix/core/helper/auth.helper'
+import type { UsersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class TeamsService {
@@ -24,24 +24,24 @@ export class TeamsService {
    */
   async findAll(db: Database, queries: Query[] = [], search?: string) {
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
 
-    const filterQueries = Query.groupByType(queries)['filters'];
-    const results = await db.find('teams', queries);
-    const total = await db.count('teams', filterQueries);
+    const filterQueries = Query.groupByType(queries)['filters']
+    const results = await db.find('teams', queries)
+    const total = await db.count('teams', filterQueries)
 
     return {
       teams: results,
       total: total,
-    };
+    }
   }
 
   /**
    * Create a new team
    */
   async create(db: Database, user: UsersDoc | null, input: CreateTeamDTO) {
-    const teamId = input.teamId == 'unique()' ? ID.unique() : input.teamId;
+    const teamId = input.teamId == 'unique()' ? ID.unique() : input.teamId
 
     const team = await db
       .createDocument(
@@ -61,18 +61,18 @@ export class TeamsService {
       )
       .catch(error => {
         if (error instanceof DuplicateException) {
-          throw new Exception(Exception.TEAM_ALREADY_EXISTS);
+          throw new Exception(Exception.TEAM_ALREADY_EXISTS)
         }
-        throw error;
-      });
+        throw error
+      })
 
     if (!Auth.isTrustedActor && user) {
       // Don't add user on server mode
       if (!input.roles?.includes('owner')) {
-        input.roles!.push('owner');
+        input.roles!.push('owner')
       }
 
-      const membershipId = ID.unique();
+      const membershipId = ID.unique()
       await db.createDocument(
         'memberships',
         new Doc({
@@ -96,99 +96,99 @@ export class TeamsService {
           secret: '',
           search: [membershipId, user.getId()].join(' '),
         }),
-      );
+      )
 
-      await db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId())
     }
 
-    return team;
+    return team
   }
 
   /**
    * Update team
    */
   async update(db: Database, id: string, input: UpdateTeamDTO) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
 
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    team.set('name', input.name);
-    team.set('search', [id, input.name].join(' '));
+    team.set('name', input.name)
+    team.set('search', [id, input.name].join(' '))
 
-    const updatedTeam = await db.updateDocument('teams', team.getId(), team);
+    const updatedTeam = await db.updateDocument('teams', team.getId(), team)
 
-    return updatedTeam;
+    return updatedTeam
   }
 
   /**
    * Remove team
    */
   async remove(db: Database, id: string) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
 
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    const deleted = await db.deleteDocument('teams', id);
+    const deleted = await db.deleteDocument('teams', id)
     if (!deleted) {
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
         'Failed to remove team from DB',
-      );
+      )
     }
 
     // Delete all memberships associated with this team
-    const membershipQueries = [Query.equal('teamId', [team.getId()])];
-    const memberships = await db.find('memberships', membershipQueries);
+    const membershipQueries = [Query.equal('teamId', [team.getId()])]
+    const memberships = await db.find('memberships', membershipQueries)
     for (const membership of memberships) {
-      await db.deleteDocument('memberships', membership.getId());
+      await db.deleteDocument('memberships', membership.getId())
     }
 
-    return;
+    return
   }
 
   /**
    * Find a team by id
    */
   async findOne(db: Database, id: string) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
 
     if (!team) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    return team;
+    return team
   }
 
   /**
    * Get team preferences
    */
   async getPrefs(db: Database, id: string) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
 
     if (!team) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    return team.get('prefs', {});
+    return team.get('prefs', {})
   }
 
   /**
    * Set team preferences
    */
   async setPrefs(db: Database, id: string, { prefs }: UpdateTeamPrefsDTO) {
-    const team = await db.getDocument('teams', id);
+    const team = await db.getDocument('teams', id)
 
     if (team.empty()) {
-      throw new Exception(Exception.TEAM_NOT_FOUND);
+      throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    team.set('prefs', prefs);
-    const updatedTeam = await db.updateDocument('teams', team.getId(), team);
+    team.set('prefs', prefs)
+    const updatedTeam = await db.updateDocument('teams', team.getId(), team)
 
-    return updatedTeam.get('prefs');
+    return updatedTeam.get('prefs')
   }
 }

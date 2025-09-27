@@ -13,8 +13,8 @@ import {
   Req,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { UsersService } from './users.service';
+} from '@nestjs/common'
+import { UsersService } from './users.service'
 import {
   CreateUserDTO,
   UpdateUserEmailDTO,
@@ -26,9 +26,9 @@ import {
   UpdateUserPoneVerificationDTO,
   UpdateUserPrefsDTO,
   UpdateUserStatusDTO,
-} from './DTO/user.dto';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+} from './DTO/user.dto'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import {
   AuditEvent,
   Namespace,
@@ -40,19 +40,19 @@ import {
   Locale,
   Route,
   Auth,
-} from '@nuvix/core/decorators';
-import { CreateTokenDTO } from './DTO/token.dto';
-import { CreateJwtDTO } from './DTO/jwt.dto';
-import type { Database, Query as Queries } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import type { ProjectsDoc } from '@nuvix/utils/types';
+} from '@nuvix/core/decorators'
+import { CreateTokenDTO } from './DTO/token.dto'
+import { CreateJwtDTO } from './DTO/jwt.dto'
+import type { Database, Query as Queries } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 import {
   IdentitiesQueryPipe,
   LogsQueryPipe,
   UsersQueryPipe,
-} from '@nuvix/core/pipes/queries';
-import type { LocaleTranslator } from '@nuvix/core/helper';
+} from '@nuvix/core/pipes/queries'
+import type { LocaleTranslator } from '@nuvix/core/helper'
 
 @Namespace('users')
 @Controller({ version: ['1'], path: 'users' })
@@ -71,7 +71,7 @@ export class UsersController {
     @Query('queries', UsersQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.usersService.findAll(db, queries, search);
+    return this.usersService.findAll(db, queries, search)
   }
 
   @Post()
@@ -84,7 +84,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.create(db, createUserDTO, project);
+    return this.usersService.create(db, createUserDTO, project)
   }
 
   @Post('argon2')
@@ -97,7 +97,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithArgon2(db, createUserDTO, project);
+    return this.usersService.createWithArgon2(db, createUserDTO, project)
   }
 
   @Post('bcrypt')
@@ -110,7 +110,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithBcrypt(db, createUserDTO, project);
+    return this.usersService.createWithBcrypt(db, createUserDTO, project)
   }
 
   @Post('md5')
@@ -123,7 +123,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithMd5(db, createUserDTO, project);
+    return this.usersService.createWithMd5(db, createUserDTO, project)
   }
 
   @Post('sha')
@@ -136,7 +136,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithSha(db, createUserDTO, project);
+    return this.usersService.createWithSha(db, createUserDTO, project)
   }
 
   @Post('phpass')
@@ -149,7 +149,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithPhpass(db, createUserDTO, project);
+    return this.usersService.createWithPhpass(db, createUserDTO, project)
   }
 
   @Post('scrypt')
@@ -162,7 +162,7 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithScrypt(db, createUserDTO, project);
+    return this.usersService.createWithScrypt(db, createUserDTO, project)
   }
 
   @Post('scrypt-modified')
@@ -175,13 +175,13 @@ export class UsersController {
     @Body() createUserDTO: CreateUserDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.createWithScryptMod(db, createUserDTO, project);
+    return this.usersService.createWithScryptMod(db, createUserDTO, project)
   }
 
   @Get('usage')
   @ResModel({ type: Models.USAGE_USERS })
   async getUsage(@AuthDatabase() db: Database) {
-    return this.usersService.getUsage(db);
+    return this.usersService.getUsage(db)
   }
 
   @Get('identities')
@@ -192,28 +192,28 @@ export class UsersController {
     @Query('queries', IdentitiesQueryPipe) queries?: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.usersService.getIdentities(db, queries, search);
+    return this.usersService.getIdentities(db, queries, search)
   }
 
   @Delete('identities/:id')
   @Scope('users.read')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteIdentity(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.deleteIdentity(db, id);
+    return this.usersService.deleteIdentity(db, id)
   }
 
   @Get(':id')
   @Scope('users.read')
   @ResModel(Models.USER)
   async findOne(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.findOne(db, id);
+    return this.usersService.findOne(db, id)
   }
 
   @Get(':id/prefs')
   @Scope('users.read')
   @ResModel(Models.PREFERENCES)
   async getPrefs(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.getPrefs(db, id);
+    return this.usersService.getPrefs(db, id)
   }
 
   @Patch(':id/prefs')
@@ -224,7 +224,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() { prefs }: UpdateUserPrefsDTO,
   ) {
-    return this.usersService.updatePrefs(db, id, prefs);
+    return this.usersService.updatePrefs(db, id, prefs)
   }
 
   @Patch(':id/status')
@@ -235,7 +235,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() status: UpdateUserStatusDTO,
   ) {
-    return this.usersService.updateStatus(db, id, status);
+    return this.usersService.updateStatus(db, id, status)
   }
 
   @Put(':id/labels')
@@ -246,7 +246,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserLabelDTO,
   ) {
-    return this.usersService.updateLabels(db, id, input);
+    return this.usersService.updateLabels(db, id, input)
   }
 
   @Patch(':id/name')
@@ -257,7 +257,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserNameDTO,
   ) {
-    return this.usersService.updateName(db, id, input);
+    return this.usersService.updateName(db, id, input)
   }
 
   @Patch(':id/password')
@@ -268,7 +268,7 @@ export class UsersController {
     @Body() input: UpdateUserPasswordDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.usersService.updatePassword(db, id, input, project);
+    return this.usersService.updatePassword(db, id, input, project)
   }
 
   @Patch(':id/email')
@@ -278,7 +278,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserEmailDTO,
   ) {
-    return this.usersService.updateEmail(db, id, input.email);
+    return this.usersService.updateEmail(db, id, input.email)
   }
 
   @Patch(':id/phone')
@@ -288,7 +288,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserPhoneDTO,
   ) {
-    return this.usersService.updatePhone(db, id, input.phone);
+    return this.usersService.updatePhone(db, id, input.phone)
   }
 
   @Post(':id/jwts')
@@ -298,7 +298,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: CreateJwtDTO,
   ): Promise<any> {
-    return this.usersService.createJwt(db, id, input);
+    return this.usersService.createJwt(db, id, input)
   }
 
   @Get(':id/memberships')
@@ -307,7 +307,7 @@ export class UsersController {
     @AuthDatabase() db: Database,
     @Param('id') id: string,
   ): Promise<any> {
-    return this.usersService.getMemberships(db, id);
+    return this.usersService.getMemberships(db, id)
   }
 
   @Post(':id/tokens')
@@ -324,7 +324,7 @@ export class UsersController {
       input,
       req.headers['user-agent'] ?? 'UNKNOWN',
       req.ip,
-    );
+    )
   }
 
   @Get(':id/logs')
@@ -335,7 +335,7 @@ export class UsersController {
     @Locale() locale: LocaleTranslator,
     @Query('queries', LogsQueryPipe) queries?: Queries[],
   ): Promise<any> {
-    return this.usersService.getLogs(db, id, locale, queries);
+    return this.usersService.getLogs(db, id, locale, queries)
   }
 
   @Patch(':id/verification')
@@ -345,7 +345,7 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserEmailVerificationDTO,
   ) {
-    return this.usersService.updateEmailVerification(db, id, input);
+    return this.usersService.updateEmailVerification(db, id, input)
   }
 
   @Patch(':id/verification/phone')
@@ -355,12 +355,12 @@ export class UsersController {
     @Param('id') id: string,
     @Body() input: UpdateUserPoneVerificationDTO,
   ) {
-    return this.usersService.updatePhoneVerification(db, id, input);
+    return this.usersService.updatePhoneVerification(db, id, input)
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@AuthDatabase() db: Database, @Param('id') id: string) {
-    return this.usersService.remove(db, id);
+    return this.usersService.remove(db, id)
   }
 }

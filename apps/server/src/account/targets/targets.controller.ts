@@ -10,27 +10,28 @@ import {
   Req,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
-import { AuditEvent, Scope, Sdk } from '@nuvix/core/decorators';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import { AuthDatabase } from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+import { Database } from '@nuvix/db'
+import { AuditEvent, Namespace, Scope, Sdk } from '@nuvix/core/decorators'
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { AuthDatabase } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 
-import { TargetsService } from './targets.service';
+import { TargetsService } from './targets.service'
 import {
   CreatePushTargetDTO,
   TargetIdParamDTO,
   UpdatePushTargetDTO,
-} from './DTO/target.dto';
-import type { UsersDoc } from '@nuvix/utils/types';
+} from './DTO/target.dto'
+import type { UsersDoc } from '@nuvix/utils/types'
 
 @Controller({ version: ['1'], path: 'account/targets' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class TargetsController {
@@ -57,7 +58,7 @@ export class TargetsController {
       user,
       db,
       userAgent: request.headers['user-agent'] || 'UNKNOWN',
-    });
+    })
   }
 
   @Put(':targetId/push')
@@ -83,7 +84,7 @@ export class TargetsController {
       user,
       db,
       request,
-    });
+    })
   }
 
   @Delete(':targetId/push')
@@ -106,6 +107,6 @@ export class TargetsController {
       targetId,
       user,
       db,
-    });
+    })
   }
 }

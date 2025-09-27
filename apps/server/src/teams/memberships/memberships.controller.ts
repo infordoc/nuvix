@@ -9,35 +9,32 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { MembershipsService } from './memberships.service';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+} from '@nestjs/common'
+import { MembershipsService } from './memberships.service'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import {
   Auth,
   AuthType,
   Namespace,
   ResModel,
   Scope,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
-import { Models } from '@nuvix/core/helper/response.helper';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
+import { Models } from '@nuvix/core/helper/response.helper'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
 import {
   CreateMembershipDTO,
   UpdateMembershipDTO,
   UpdateMembershipStatusDTO,
-} from './DTO/membership.dto';
-import { Database, Query as Queries } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
-import { MembershipsQueryPipe } from '@nuvix/core/pipes/queries';
+} from './DTO/membership.dto'
+import { Database, Query as Queries } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import { MembershipsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('teams')
 @UseGuards(ProjectGuard)
@@ -64,7 +61,7 @@ export class MembershipsController {
       project,
       user,
       locale,
-    );
+    )
   }
 
   @Get()
@@ -75,7 +72,7 @@ export class MembershipsController {
     @Query('queries', MembershipsQueryPipe) queries: Queries[],
     @Query('search') search?: string,
   ) {
-    return this.membershipsService.getMembers(db, id, queries, search);
+    return this.membershipsService.getMembers(db, id, queries, search)
   }
 
   @Get(':memberId')
@@ -85,7 +82,7 @@ export class MembershipsController {
     @Param('id') id: string,
     @Param('memberId') memberId: string,
   ) {
-    return this.membershipsService.getMember(db, id, memberId);
+    return this.membershipsService.getMember(db, id, memberId)
   }
 
   @Patch(':memberId')
@@ -96,7 +93,7 @@ export class MembershipsController {
     @Param('memberId') memberId: string,
     @Body() input: UpdateMembershipDTO,
   ) {
-    return this.membershipsService.updateMember(db, id, memberId, input);
+    return this.membershipsService.updateMember(db, id, memberId, input)
   }
 
   @Patch(':memberId/status')
@@ -107,7 +104,7 @@ export class MembershipsController {
     @Param('memberId') memberId: string,
     @Body() input: UpdateMembershipStatusDTO,
   ) {
-    return this.membershipsService.updateMemberStatus(db, id, memberId, input);
+    return this.membershipsService.updateMemberStatus(db, id, memberId, input)
   }
 
   @Delete(':memberId')
@@ -117,6 +114,6 @@ export class MembershipsController {
     @Param('id') id: string,
     @Param('memberId') memberId: string,
   ) {
-    return this.membershipsService.deleteMember(db, id, memberId);
+    return this.membershipsService.deleteMember(db, id, memberId)
   }
 }

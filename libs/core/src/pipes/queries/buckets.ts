@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Buckets extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -8,9 +8,9 @@ export class Buckets extends BaseQueryPipe {
     'maximumFileSize',
     'encryption',
     'antivirus',
-  ];
+  ]
 
   constructor() {
-    super('buckets', Buckets.ALLOWED_ATTRIBUTES);
+    super('buckets', Buckets.ALLOWED_ATTRIBUTES)
   }
 }

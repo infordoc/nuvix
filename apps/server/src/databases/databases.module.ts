@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
-import { DatabasesService } from './databases.service';
-import { DatabasesController } from './databases.controller';
-import { BullModule } from '@nestjs/bullmq';
-import { DatabasesQueue } from '@nuvix/core/resolvers/queues/databases.queue';
-import { QueueFor } from '@nuvix/utils';
+import { Module } from '@nestjs/common'
+import { DatabasesService } from './databases.service'
+import { DatabasesController } from './databases.controller'
+import { BullModule } from '@nestjs/bullmq'
+import { DatabasesQueue } from '@nuvix/core/resolvers/queues/databases.queue'
+import { QueueFor } from '@nuvix/utils'
 
 @Module({
   controllers: [DatabasesController],

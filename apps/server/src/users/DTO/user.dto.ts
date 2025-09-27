@@ -9,30 +9,30 @@ import {
   IsString,
   Length,
   Matches,
-} from 'class-validator';
-import { IsCustomID } from '@nuvix/core/validators/input.validator';
+} from 'class-validator'
+import { IsCustomID } from '@nuvix/core/validators/input.validator'
 
 export class CreateUserDTO {
   @IsOptional()
   @IsCustomID()
-  userId?: string;
+  userId?: string
 
   @IsOptional()
   @IsEmail()
-  email?: string;
+  email?: string
 
   @IsOptional()
   @IsPhoneNumber()
-  phone?: string;
+  phone?: string
 
   @IsOptional()
   @Length(8)
-  password?: string;
+  password?: string
 
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  name?: string;
+  name?: string
 }
 
 export class CreateUserWithShaDTO extends CreateUserDTO {
@@ -44,53 +44,53 @@ export class CreateUserWithShaDTO extends CreateUserDTO {
         "Optional SHA version used to hash password. Allowed values are: 'sha1', 'sha224', 'sha256', 'sha384', 'sha512/224', 'sha512/256', 'sha512', 'sha3-224', 'sha3-256', 'sha3-384', 'sha3-512'",
     },
   )
-  passwordVersion?: string;
+  passwordVersion?: string
 }
 
 export class CreateUserWithScryptDTO extends CreateUserDTO {
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  passwordSalt?: string;
+  passwordSalt?: string
 
   @IsOptional()
   @IsNumber()
-  passwordCpu?: number;
+  passwordCpu?: number
 
   @IsOptional()
   @IsNumber()
-  passwordMemory?: number;
+  passwordMemory?: number
 
   @IsOptional()
   @IsNumber()
-  passwordParallel?: number;
+  passwordParallel?: number
 
   @IsOptional()
   @IsNumber()
-  passwordLength?: number;
+  passwordLength?: number
 }
 
 export class CreateUserWithScryptModifedDTO extends CreateUserDTO {
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  passwordSalt?: string;
+  passwordSalt?: string
 
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  passwordSaltSeparator?: string;
+  passwordSaltSeparator?: string
 
   @IsOptional()
   @IsString()
   @Length(1, 128)
-  passwordSignerKey?: string;
+  passwordSignerKey?: string
 }
 
 export class UpdateUserStatusDTO {
   @IsNotEmpty()
   @IsBoolean()
-  status!: boolean;
+  status!: boolean
 }
 
 export class UpdateUserLabelDTO {
@@ -100,46 +100,46 @@ export class UpdateUserLabelDTO {
     each: true,
     message: 'Each label must be 1-36 alphanumeric characters long.',
   })
-  labels?: string[];
+  labels?: string[]
 }
 
 export class UpdateUserPoneVerificationDTO {
   @IsNotEmpty()
   @IsBoolean()
-  phoneVerification!: boolean;
+  phoneVerification!: boolean
 }
 
 export class UpdateUserEmailVerificationDTO {
   @IsNotEmpty()
   @IsBoolean()
-  emailVerification!: boolean;
+  emailVerification!: boolean
 }
 
 export class UpdateUserNameDTO {
   @IsNotEmpty()
   @IsString()
   @Length(1, 128)
-  name!: string;
+  name!: string
 }
 
 export class UpdateUserPasswordDTO {
   @IsNotEmpty()
   @Length(8)
-  password!: string;
+  password!: string
 }
 
 export class UpdateUserEmailDTO {
   @IsEmail()
-  email!: string;
+  email!: string
 }
 
 export class UpdateUserPhoneDTO {
   @IsPhoneNumber()
-  phone!: string;
+  phone!: string
 }
 
 export class UpdateUserPrefsDTO {
   @IsOptional()
   @IsObject()
-  prefs?: Record<string, any>;
+  prefs?: Record<string, any>
 }

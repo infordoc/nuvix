@@ -1,45 +1,45 @@
-import { ident, literal } from 'pg-format';
-import { extensionsSql } from './sql/index';
-import { PostgresMetaResult, PostgresExtension } from './types';
-import { PgMetaException } from '../extra/execption';
+import { ident, literal } from 'pg-format'
+import { extensionsSql } from './sql/index'
+import { PostgresMetaResult, PostgresExtension } from './types'
+import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaExtensions {
-  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+  query: (sql: string) => Promise<PostgresMetaResult<any>>
 
   constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
-    this.query = query;
+    this.query = query
   }
 
   async list({
     limit,
     offset,
   }: {
-    limit?: number;
-    offset?: number;
+    limit?: number
+    offset?: number
   } = {}): Promise<PostgresMetaResult<PostgresExtension[]>> {
-    let sql = extensionsSql;
+    let sql = extensionsSql
     if (limit) {
-      sql = `${sql} LIMIT ${limit}`;
+      sql = `${sql} LIMIT ${limit}`
     }
     if (offset) {
-      sql = `${sql} OFFSET ${offset}`;
+      sql = `${sql} OFFSET ${offset}`
     }
-    return this.query(sql);
+    return this.query(sql)
   }
 
   async retrieve({
     name,
   }: {
-    name: string;
+    name: string
   }): Promise<PostgresMetaResult<PostgresExtension>> {
-    const sql = `${extensionsSql} WHERE name = ${literal(name)};`;
-    const { data, error } = await this.query(sql);
+    const sql = `${extensionsSql} WHERE name = ${literal(name)};`
+    const { data, error } = await this.query(sql)
     if (error) {
-      return { data, error };
+      return { data, error }
     } else if (data.length === 0) {
-      throw new PgMetaException(`Cannot find an extension named ${name}`);
+      throw new PgMetaException(`Cannot find an extension named ${name}`)
     } else {
-      return { data: data[0], error };
+      return { data: data[0], error }
     }
   }
 
@@ -49,21 +49,21 @@ export default class PostgresMetaExtensions {
     version,
     cascade = false,
   }: {
-    name: string;
-    schema?: string;
-    version?: string;
-    cascade?: boolean;
+    name: string
+    schema?: string
+    version?: string
+    cascade?: boolean
   }): Promise<PostgresMetaResult<PostgresExtension>> {
     const sql = `
 CREATE EXTENSION ${ident(name)}
   ${schema === undefined ? '' : `SCHEMA ${ident(schema)}`}
   ${version === undefined ? '' : `VERSION ${literal(version)}`}
-  ${cascade ? 'CASCADE' : ''};`;
-    const { error } = await this.query(sql);
+  ${cascade ? 'CASCADE' : ''};`
+    const { error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return this.retrieve({ name });
+    return this.retrieve({ name })
   }
 
   async update(
@@ -73,45 +73,45 @@ CREATE EXTENSION ${ident(name)}
       version,
       schema,
     }: {
-      update?: boolean;
-      version?: string;
-      schema?: string;
+      update?: boolean
+      version?: string
+      schema?: string
     },
   ): Promise<PostgresMetaResult<PostgresExtension>> {
-    let updateSql = '';
+    let updateSql = ''
     if (update) {
       updateSql = `ALTER EXTENSION ${ident(name)} UPDATE ${
         version === undefined ? '' : `TO ${literal(version)}`
-      };`;
+      };`
     }
     const schemaSql =
       schema === undefined
         ? ''
-        : `ALTER EXTENSION ${ident(name)} SET SCHEMA ${ident(schema)};`;
+        : `ALTER EXTENSION ${ident(name)} SET SCHEMA ${ident(schema)};`
 
-    const sql = `BEGIN; ${updateSql} ${schemaSql} COMMIT;`;
-    const { error } = await this.query(sql);
+    const sql = `BEGIN; ${updateSql} ${schemaSql} COMMIT;`
+    const { error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return this.retrieve({ name });
+    return this.retrieve({ name })
   }
 
   async remove(
     name: string,
     { cascade = false } = {},
   ): Promise<PostgresMetaResult<PostgresExtension>> {
-    const { data: extension, error } = await this.retrieve({ name });
+    const { data: extension, error } = await this.retrieve({ name })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    const sql = `DROP EXTENSION ${ident(name)} ${cascade ? 'CASCADE' : 'RESTRICT'};`;
+    const sql = `DROP EXTENSION ${ident(name)} ${cascade ? 'CASCADE' : 'RESTRICT'};`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return { data: extension!, error: null };
+    return { data: extension!, error: null }
   }
 }

@@ -199,4 +199,4 @@ export const phoneCodes = {
   ZA: '27',
   ZM: '260',
   ZW: '263',
-};
+}

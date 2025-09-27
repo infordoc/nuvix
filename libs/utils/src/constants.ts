@@ -1,31 +1,31 @@
-import { findProjectRoot } from './helpers';
+import { findProjectRoot } from './helpers'
 
-export const PROJECT_ROOT = findProjectRoot();
+export const PROJECT_ROOT = findProjectRoot()
 
 /** Symbol used to identify the project database client instance. */
-export const PROJECT_DB_CLIENT = Symbol('project-db-client');
+export const PROJECT_DB_CLIENT = Symbol('project-db-client')
 /** Symbol used to identify the project PostgreSQL database instance. */
-export const PROJECT_PG = Symbol('project-pg');
+export const PROJECT_PG = Symbol('project-pg')
 /** Symbol used to identify audits for a specific project. */
-export const AUDITS_FOR_PROJECT = Symbol('auditsForProject');
+export const AUDITS_FOR_PROJECT = Symbol('auditsForProject')
 
-export const IS_PUBLIC_KEY = 'isPublic';
-export const HOOKS = 'hooks';
-export const DEFAULT_DATABASE = 'postgres';
+export const IS_PUBLIC_KEY = 'isPublic'
+export const HOOKS = 'hooks'
+export const DEFAULT_DATABASE = 'postgres'
 
-export const CORE_SCHEMA_DB = Symbol('coreSchemaDb');
-export const AUTH_SCHEMA_DB = Symbol('authSchemaDb');
-export const CURRENT_SCHEMA_DB = Symbol('currentSchemaDb');
-export const CURRENT_SCHEMA_PG = Symbol('currentSchemaPg');
+export const CORE_SCHEMA_DB = Symbol('coreSchemaDb')
+export const AUTH_SCHEMA_DB = Symbol('authSchemaDb')
+export const CURRENT_SCHEMA_DB = Symbol('currentSchemaDb')
+export const CURRENT_SCHEMA_PG = Symbol('currentSchemaPg')
 
-export const APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH = 1_073_741_824; // 2^32 bits / 4 bits per char
-export const APP_DATABASE_TIMEOUT_MILLISECONDS = 15_000;
+export const APP_DATABASE_ATTRIBUTE_STRING_MAX_LENGTH = 1_073_741_824 // 2^32 bits / 4 bits per char
+export const APP_DATABASE_TIMEOUT_MILLISECONDS = 15_000
 
 // Auth Types
-export const APP_AUTH_TYPE_SESSION = 'Session';
-export const APP_AUTH_TYPE_JWT = 'JWT';
-export const APP_AUTH_TYPE_KEY = 'Key';
-export const APP_AUTH_TYPE_ADMIN = 'Admin';
+export const APP_AUTH_TYPE_SESSION = 'Session'
+export const APP_AUTH_TYPE_JWT = 'JWT'
+export const APP_AUTH_TYPE_KEY = 'Key'
+export const APP_AUTH_TYPE_ADMIN = 'Admin'
 
 export enum AppMode {
   ADMIN = 'admin',
@@ -68,7 +68,7 @@ export enum QueueFor {
   LOGS = 'logs',
 }
 
-export const EVENT_DELIMITER = '.';
+export const EVENT_DELIMITER = '.'
 export enum AppEvents {
   USER_CREATE = 'user' + EVENT_DELIMITER + 'create',
   USER_DELETE = 'user' + EVENT_DELIMITER + 'delete',

@@ -12,47 +12,46 @@ import {
   Res,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
+import { Database } from '@nuvix/db'
 import {
   AuditEvent,
+  Namespace,
   Route,
   Scope,
   Sdk,
   Throttle,
-} from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+} from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { Public } from '@nuvix/core/resolvers/guards/auth.guard'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 
-import { SessionService } from './session.service';
+import { SessionService } from './session.service'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
   CreateSessionDTO,
   OAuth2CallbackDTO,
   ProviderParamDTO,
-} from './DTO/session.dto';
+} from './DTO/session.dto'
 import {
   CreateEmailTokenDTO,
   CreateMagicURLTokenDTO,
   CreateOAuth2TokenDTO,
   CreatePhoneTokenDTO,
-} from './DTO/token.dto';
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
+} from './DTO/token.dto'
+import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 
 @Controller({ version: ['1'], path: 'account' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class SessionsController {
@@ -66,7 +65,7 @@ export class SessionsController {
     @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
   ) {
-    return this.sessionService.getSessions(user, locale);
+    return this.sessionService.getSessions(user, locale)
   }
 
   @Delete('sessions')
@@ -88,7 +87,7 @@ export class SessionsController {
       locale,
       request,
       response,
-    );
+    )
   }
 
   @Get('sessions/:id')
@@ -100,7 +99,7 @@ export class SessionsController {
     @Param('id') sessionId: string,
     @Locale() locale: LocaleTranslator,
   ) {
-    return this.sessionService.getSession(user, sessionId, locale);
+    return this.sessionService.getSession(user, sessionId, locale)
   }
 
   @Delete('sessions/:id')
@@ -124,7 +123,7 @@ export class SessionsController {
       request,
       response,
       locale,
-    );
+    )
   }
 
   @Patch('sessions/:id')
@@ -139,7 +138,7 @@ export class SessionsController {
     @Param('id') id: string,
     @Project() project: ProjectsDoc,
   ) {
-    return this.sessionService.updateSession(db, user, id, project);
+    return this.sessionService.updateSession(db, user, id, project)
   }
 
   @Public()
@@ -172,7 +171,7 @@ export class SessionsController {
       response,
       locale,
       project,
-    );
+    )
   }
 
   @Public()
@@ -205,7 +204,7 @@ export class SessionsController {
       locale,
       project,
       db: db,
-    });
+    })
   }
 
   @Public()
@@ -240,7 +239,7 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
   @Public()
@@ -266,7 +265,7 @@ export class SessionsController {
       response,
       provider,
       project,
-    });
+    })
   }
 
   @Public()
@@ -279,12 +278,12 @@ export class SessionsController {
     @Param('projectId') projectId: string,
     @Param() { provider }: ProviderParamDTO,
   ) {
-    const domain = request.host;
-    const protocol = request.protocol;
+    const domain = request.host
+    const protocol = request.protocol
 
-    const params: Record<string, any> = { ...input };
-    params['provider'] = provider;
-    params['project'] = projectId;
+    const params: Record<string, any> = { ...input }
+    params['provider'] = provider
+    params['project'] = projectId
 
     response
       .status(302)
@@ -292,7 +291,7 @@ export class SessionsController {
       .header('Pragma', 'no-cache')
       .redirect(
         `${protocol}://${domain}/v1/account/sessions/oauth2/${provider}/redirect?${new URLSearchParams(params).toString()}`,
-      );
+      )
   }
 
   @Public()
@@ -305,12 +304,12 @@ export class SessionsController {
     @Param('projectId') projectId: string,
     @Param() { provider }: ProviderParamDTO,
   ) {
-    const domain = request.host;
-    const protocol = request.protocol;
+    const domain = request.host
+    const protocol = request.protocol
 
-    const params: Record<string, any> = { ...input };
-    params['provider'] = provider;
-    params['project'] = projectId;
+    const params: Record<string, any> = { ...input }
+    params['provider'] = provider
+    params['project'] = projectId
 
     response
       .status(302)
@@ -318,7 +317,7 @@ export class SessionsController {
       .header('Pragma', 'no-cache')
       .redirect(
         `${protocol}://${domain}/v1/account/sessions/oauth2/${provider}/redirect?${new URLSearchParams(params).toString()}`,
-      );
+      )
   }
 
   @Public()
@@ -349,7 +348,7 @@ export class SessionsController {
       request,
       response,
       project,
-    });
+    })
   }
 
   @Public()
@@ -375,7 +374,7 @@ export class SessionsController {
       response,
       provider,
       project,
-    });
+    })
   }
 
   @Public()
@@ -409,7 +408,7 @@ export class SessionsController {
       response,
       locale,
       project,
-    });
+    })
   }
 
   @Public()
@@ -444,7 +443,7 @@ export class SessionsController {
       user,
       db: db,
       locale,
-    });
+    })
   }
 
   @Public()
@@ -478,7 +477,7 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
   @Public()
@@ -513,7 +512,7 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
   @Public()
@@ -548,6 +547,6 @@ export class SessionsController {
       response,
       locale,
       project,
-    });
+    })
   }
 }

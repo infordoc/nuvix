@@ -11,6 +11,6 @@ const apis = {
     key: 'realtime',
     name: 'Realtime',
   },
-};
+}
 
-export default apis;
+export default apis

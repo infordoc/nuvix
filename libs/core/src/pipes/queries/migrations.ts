@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Migrations extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -10,9 +10,9 @@ export class Migrations extends BaseQueryPipe {
     'statusCounters',
     'resourceData',
     'errors',
-  ];
+  ]
 
   public constructor() {
-    super('migrations', Migrations.ALLOWED_ATTRIBUTES);
+    super('migrations', Migrations.ALLOWED_ATTRIBUTES)
   }
 }

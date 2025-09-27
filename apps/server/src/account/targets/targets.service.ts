@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common'
 import {
   Doc,
   Database,
@@ -7,13 +7,13 @@ import {
   Role,
   Authorization,
   DuplicateException,
-} from '@nuvix/db';
-import { Exception } from '@nuvix/core/extend/exception';
-import { Auth } from '@nuvix/core/helper/auth.helper';
-import { Detector } from '@nuvix/core/helper/detector.helper';
-import { MessageType } from '@nuvix/utils';
-import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto';
-import type { UsersDoc } from '@nuvix/utils/types';
+} from '@nuvix/db'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Auth } from '@nuvix/core/helper/auth.helper'
+import { Detector } from '@nuvix/core/helper/detector.helper'
+import { MessageType } from '@nuvix/utils'
+import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto'
+import type { UsersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class TargetsService {
@@ -30,25 +30,25 @@ export class TargetsService {
     providerId,
     identifier,
   }: WithDB<WithUser<CreatePushTargetDTO & { userAgent: string }>>) {
-    const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId;
+    const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId
 
     const provider = await Authorization.skip(() =>
       db.getDocument('providers', providerId!),
-    );
+    )
 
     const target = await Authorization.skip(() =>
       db.getDocument('targets', finalTargetId),
-    );
+    )
 
     if (!target.empty()) {
-      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS)
     }
 
-    const detector = new Detector(userAgent);
-    const device = detector.getDevice();
+    const detector = new Detector(userAgent)
+    const device = detector.getDevice()
 
-    const sessionId = Auth.sessionVerify(user.get('sessions', []), Auth.secret);
-    const session = await db.getDocument('sessions', sessionId.toString());
+    const sessionId = Auth.sessionVerify(user.get('sessions', []), Auth.secret)
+    const session = await db.getDocument('sessions', sessionId.toString())
 
     try {
       const createdTarget = await db.createDocument(
@@ -70,16 +70,16 @@ export class TargetsService {
           identifier: identifier,
           name: `${device['deviceBrand']} ${device['deviceModel']}`,
         }),
-      );
+      )
 
-      await db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId())
 
-      return createdTarget;
+      return createdTarget
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -97,34 +97,34 @@ export class TargetsService {
   >) {
     const target = await Authorization.skip(
       async () => await db.getDocument('targets', targetId),
-    );
+    )
 
     if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (user.getId() !== target.get('userId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (identifier) {
-      target.set('identifier', identifier).set('expired', false);
+      target.set('identifier', identifier).set('expired', false)
     }
 
-    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN');
-    const device = detector.getDevice();
+    const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN')
+    const device = detector.getDevice()
 
-    target.set('name', `${device['deviceBrand']} ${device['deviceModel']}`);
+    target.set('name', `${device['deviceBrand']} ${device['deviceModel']}`)
 
     const updatedTarget = await db.updateDocument(
       'targets',
       target.getId(),
       target,
-    );
+    )
 
-    await db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId())
 
-    return updatedTarget;
+    return updatedTarget
   }
 
   /**
@@ -137,26 +137,26 @@ export class TargetsService {
   }: WithDB<WithUser<{ targetId: string }>>) {
     const target = await Authorization.skip(
       async () => await db.getDocument('targets', targetId),
-    );
+    )
 
     if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (user.getSequence() !== target.get('userInternalId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
-    await db.deleteDocument('targets', target.getId());
+    await db.deleteDocument('targets', target.getId())
 
-    await db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId())
 
     // TODO: Handle Delete Queue
     // Delete resource that depends on Targets (like in messaging)
 
-    return {};
+    return {}
   }
 }
 
-type WithDB<T = unknown> = { db: Database } & T;
-type WithUser<T = unknown> = { user: UsersDoc } & T;
+type WithDB<T = unknown> = { db: Database } & T
+type WithUser<T = unknown> = { user: UsersDoc } & T

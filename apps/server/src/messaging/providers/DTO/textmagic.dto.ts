@@ -1,37 +1,37 @@
-import { OmitType, PartialType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
+import { OmitType, PartialType } from '@nestjs/swagger'
+import { IsCustomID } from '@nuvix/core/validators'
 import {
   IsString,
   IsPhoneNumber,
   IsBoolean,
   IsOptional,
   MaxLength,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateTextmagicProviderDTO {
   @IsString()
   @IsCustomID()
-  providerId!: string;
+  providerId!: string
 
   @IsString()
   @MaxLength(128)
-  name!: string;
+  name!: string
 
   @IsPhoneNumber()
   @IsOptional()
-  from?: string;
+  from?: string
 
   @IsString()
   @IsOptional()
-  username?: string;
+  username?: string
 
   @IsString()
   @IsOptional()
-  apiKey?: string;
+  apiKey?: string
 
   @IsBoolean()
   @IsOptional()
-  enabled?: boolean;
+  enabled?: boolean
 }
 
 export class UpdateTextmagicProviderDTO extends PartialType(

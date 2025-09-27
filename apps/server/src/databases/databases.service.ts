@@ -1,21 +1,21 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { DataSource } from '@nuvix/pg';
-import { Exception } from '@nuvix/core/extend/exception';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Injectable, Logger } from '@nestjs/common'
+import { DataSource } from '@nuvix/pg'
+import { Exception } from '@nuvix/core/extend/exception'
+import { InjectQueue } from '@nestjs/bullmq'
+import { Queue } from 'bullmq'
 import {
   SchemaJob,
   SchemaQueueOptions,
-} from '@nuvix/core/resolvers/queues/databases.queue';
-import { QueueFor, Schemas, type SchemaType } from '@nuvix/utils';
+} from '@nuvix/core/resolvers/queues/databases.queue'
+import { QueueFor, Schemas, type SchemaType } from '@nuvix/utils'
 
 // DTO's
-import { CreateSchema } from './DTO/create-schema.dto';
-import type { ProjectsDoc } from '@nuvix/utils/types';
+import { CreateSchema } from './DTO/create-schema.dto'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class DatabasesService {
-  private readonly logger = new Logger(DatabasesService.name);
+  private readonly logger = new Logger(DatabasesService.name)
 
   constructor(
     @InjectQueue(QueueFor.DATABASES)
@@ -27,24 +27,24 @@ export class DatabasesService {
     project: ProjectsDoc,
     data: CreateSchema,
   ) {
-    const isExists = await db.getSchema(data.name);
+    const isExists = await db.getSchema(data.name)
 
     if (isExists) {
-      throw new Exception(Exception.SCHEMA_ALREADY_EXISTS);
+      throw new Exception(Exception.SCHEMA_ALREADY_EXISTS)
     }
 
     const schema = await db.createSchema(
       data.name,
       'document',
       data.description,
-    );
+    )
 
     await this.databasesQueue.add(SchemaJob.INIT_DOC, {
       project: project,
       schema: schema.name,
-    });
+    })
 
-    return schema;
+    return schema
   }
 
   /**
@@ -54,51 +54,47 @@ export class DatabasesService {
     let qb = pg
       .table('schemas', { schema: Schemas.System })
       .select('name', 'description', 'type')
-      .whereNotIn('name', Object.values(Schemas));
+      .whereNotIn('name', Object.values(Schemas))
 
     if (type) {
-      qb.where('type', '=', type);
+      qb.where('type', '=', type)
     }
 
-    const schemas = await qb;
+    const schemas = await qb
     return {
       schemas: schemas,
       total: schemas.length,
-    };
+    }
   }
 
   /**
    * Get a schema by name
    */
   public async getSchema(pg: DataSource, name: string) {
-    const schema = await pg.getSchema(name);
+    const schema = await pg.getSchema(name)
 
     if (!schema) {
-      throw new Exception(Exception.SCHEMA_NOT_FOUND);
+      throw new Exception(Exception.SCHEMA_NOT_FOUND)
     }
 
-    return schema;
+    return schema
   }
 
   /**
    * Create a schema
    */
   public async createSchema(pg: DataSource, data: CreateSchema) {
-    const isExists = await pg.getSchema(data.name);
+    const isExists = await pg.getSchema(data.name)
 
     if (isExists) {
       throw new Exception(
         Exception.SCHEMA_ALREADY_EXISTS,
         'Schema already exists, please choose another name',
-      );
+      )
     }
 
-    const schema = await pg.createSchema(
-      data.name,
-      data.type,
-      data.description,
-    );
+    const schema = await pg.createSchema(data.name, data.type, data.description)
 
-    return schema;
+    return schema
   }
 }

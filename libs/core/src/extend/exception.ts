@@ -1,324 +1,324 @@
-import { HttpException } from '@nestjs/common';
-import { MessageStatus } from '../messaging/status';
+import { HttpException } from '@nestjs/common'
+import { MessageStatus } from '../messaging/status'
 
 export class Exception extends HttpException {
-  static readonly GENERAL_UNKNOWN = 'general_unknown';
-  static readonly GENERAL_MOCK = 'general_mock';
-  static readonly GENERAL_ACCESS_FORBIDDEN = 'general_access_forbidden';
-  static readonly GENERAL_UNKNOWN_ORIGIN = 'general_unknown_origin';
-  static readonly GENERAL_API_DISABLED = 'general_api_disabled';
-  static readonly GENERAL_SERVICE_DISABLED = 'general_service_disabled';
-  static readonly GENERAL_UNAUTHORIZED_SCOPE = 'general_unauthorized_scope';
-  static readonly GENERAL_RATE_LIMIT_EXCEEDED = 'general_rate_limit_exceeded';
-  static readonly GENERAL_SMTP_DISABLED = 'general_smtp_disabled';
-  static readonly GENERAL_PHONE_DISABLED = 'general_phone_disabled';
-  static readonly GENERAL_ARGUMENT_INVALID = 'general_argument_invalid';
-  static readonly GENERAL_QUERY_LIMIT_EXCEEDED = 'general_query_limit_exceeded';
-  static readonly GENERAL_QUERY_INVALID = 'general_query_invalid';
-  static readonly GENERAL_NOT_FOUND = 'general_not_found';
-  static readonly GENERAL_ROUTE_NOT_FOUND = 'general_route_not_found';
-  static readonly GENERAL_CURSOR_NOT_FOUND = 'general_cursor_not_found';
-  static readonly GENERAL_SERVER_ERROR = 'general_server_error';
-  static readonly GENERAL_PROTOCOL_UNSUPPORTED = 'general_protocol_unsupported';
-  static readonly GENERAL_CODES_DISABLED = 'general_codes_disabled';
-  static readonly GENERAL_USAGE_DISABLED = 'general_usage_disabled';
-  static readonly GENERAL_NOT_IMPLEMENTED = 'general_not_implemented';
-  static readonly GENERAL_INVALID_EMAIL = 'general_invalid_email';
-  static readonly GENERAL_INVALID_PHONE = 'general_invalid_phone';
-  static readonly GENERAL_REGION_ACCESS_DENIED = 'general_region_access_denied';
-  static readonly GENERAL_BAD_REQUEST = 'general_bad_request';
-  static readonly GENERAL_PARSER_ERROR = 'general_parser_error';
-  static readonly GENERAL_PARSER_EMPTY_ERROR = 'general_parser_empty_error';
-  static readonly GENERAL_QUERY_BUILDER_ERROR = 'general_query_builder_error';
+  static readonly GENERAL_UNKNOWN = 'general_unknown'
+  static readonly GENERAL_MOCK = 'general_mock'
+  static readonly GENERAL_ACCESS_FORBIDDEN = 'general_access_forbidden'
+  static readonly GENERAL_UNKNOWN_ORIGIN = 'general_unknown_origin'
+  static readonly GENERAL_API_DISABLED = 'general_api_disabled'
+  static readonly GENERAL_SERVICE_DISABLED = 'general_service_disabled'
+  static readonly GENERAL_UNAUTHORIZED_SCOPE = 'general_unauthorized_scope'
+  static readonly GENERAL_RATE_LIMIT_EXCEEDED = 'general_rate_limit_exceeded'
+  static readonly GENERAL_SMTP_DISABLED = 'general_smtp_disabled'
+  static readonly GENERAL_PHONE_DISABLED = 'general_phone_disabled'
+  static readonly GENERAL_ARGUMENT_INVALID = 'general_argument_invalid'
+  static readonly GENERAL_QUERY_LIMIT_EXCEEDED = 'general_query_limit_exceeded'
+  static readonly GENERAL_QUERY_INVALID = 'general_query_invalid'
+  static readonly GENERAL_NOT_FOUND = 'general_not_found'
+  static readonly GENERAL_ROUTE_NOT_FOUND = 'general_route_not_found'
+  static readonly GENERAL_CURSOR_NOT_FOUND = 'general_cursor_not_found'
+  static readonly GENERAL_SERVER_ERROR = 'general_server_error'
+  static readonly GENERAL_PROTOCOL_UNSUPPORTED = 'general_protocol_unsupported'
+  static readonly GENERAL_CODES_DISABLED = 'general_codes_disabled'
+  static readonly GENERAL_USAGE_DISABLED = 'general_usage_disabled'
+  static readonly GENERAL_NOT_IMPLEMENTED = 'general_not_implemented'
+  static readonly GENERAL_INVALID_EMAIL = 'general_invalid_email'
+  static readonly GENERAL_INVALID_PHONE = 'general_invalid_phone'
+  static readonly GENERAL_REGION_ACCESS_DENIED = 'general_region_access_denied'
+  static readonly GENERAL_BAD_REQUEST = 'general_bad_request'
+  static readonly GENERAL_PARSER_ERROR = 'general_parser_error'
+  static readonly GENERAL_PARSER_EMPTY_ERROR = 'general_parser_empty_error'
+  static readonly GENERAL_QUERY_BUILDER_ERROR = 'general_query_builder_error'
 
   /** Users */
-  static readonly USER_COUNT_EXCEEDED = 'user_count_exceeded';
-  static readonly USER_CONSOLE_COUNT_EXCEEDED = 'user_console_count_exceeded';
-  static readonly USER_JWT_INVALID = 'user_jwt_invalid';
-  static readonly USER_ALREADY_EXISTS = 'user_already_exists';
-  static readonly USER_BLOCKED = 'user_blocked';
-  static readonly USER_INVALID_TOKEN = 'user_invalid_token';
-  static readonly USER_PASSWORD_RESET_REQUIRED = 'user_password_reset_required';
-  static readonly USER_EMAIL_NOT_WHITELISTED = 'user_email_not_whitelisted';
-  static readonly USER_IP_NOT_WHITELISTED = 'user_ip_not_whitelisted';
-  static readonly USER_INVALID_CODE = 'user_invalid_code';
-  static readonly USER_INVALID_CREDENTIALS = 'user_invalid_credentials';
+  static readonly USER_COUNT_EXCEEDED = 'user_count_exceeded'
+  static readonly USER_CONSOLE_COUNT_EXCEEDED = 'user_console_count_exceeded'
+  static readonly USER_JWT_INVALID = 'user_jwt_invalid'
+  static readonly USER_ALREADY_EXISTS = 'user_already_exists'
+  static readonly USER_BLOCKED = 'user_blocked'
+  static readonly USER_INVALID_TOKEN = 'user_invalid_token'
+  static readonly USER_PASSWORD_RESET_REQUIRED = 'user_password_reset_required'
+  static readonly USER_EMAIL_NOT_WHITELISTED = 'user_email_not_whitelisted'
+  static readonly USER_IP_NOT_WHITELISTED = 'user_ip_not_whitelisted'
+  static readonly USER_INVALID_CODE = 'user_invalid_code'
+  static readonly USER_INVALID_CREDENTIALS = 'user_invalid_credentials'
   static readonly USER_ANONYMOUS_CONSOLE_PROHIBITED =
-    'user_anonymous_console_prohibited';
-  static readonly USER_SESSION_ALREADY_EXISTS = 'user_session_already_exists';
-  static readonly USER_NOT_FOUND = 'user_not_found';
-  static readonly USER_PASSWORD_RECENTLY_USED = 'password_recently_used';
-  static readonly USER_PASSWORD_PERSONAL_DATA = 'password_personal_data';
-  static readonly USER_EMAIL_ALREADY_EXISTS = 'user_email_already_exists';
-  static readonly USER_PASSWORD_MISMATCH = 'user_password_mismatch';
-  static readonly USER_SESSION_NOT_FOUND = 'user_session_not_found';
-  static readonly USER_IDENTITY_NOT_FOUND = 'user_identity_not_found';
-  static readonly USER_UNAUTHORIZED = 'user_unauthorized';
-  static readonly USER_AUTH_METHOD_UNSUPPORTED = 'user_auth_method_unsupported';
-  static readonly USER_PHONE_ALREADY_EXISTS = 'user_phone_already_exists';
-  static readonly USER_PHONE_NOT_FOUND = 'user_phone_not_found';
-  static readonly USER_PHONE_NOT_VERIFIED = 'user_phone_not_verified';
-  static readonly USER_EMAIL_NOT_FOUND = 'user_email_not_found';
-  static readonly USER_EMAIL_NOT_VERIFIED = 'user_email_not_verified';
-  static readonly USER_MISSING_ID = 'user_missing_id';
-  static readonly USER_MORE_FACTORS_REQUIRED = 'user_more_factors_required';
-  static readonly USER_INVALID_CHALLENGE = 'user_invalid_challenge';
-  static readonly USER_AUTHENTICATOR_NOT_FOUND = 'user_authenticator_not_found';
+    'user_anonymous_console_prohibited'
+  static readonly USER_SESSION_ALREADY_EXISTS = 'user_session_already_exists'
+  static readonly USER_NOT_FOUND = 'user_not_found'
+  static readonly USER_PASSWORD_RECENTLY_USED = 'password_recently_used'
+  static readonly USER_PASSWORD_PERSONAL_DATA = 'password_personal_data'
+  static readonly USER_EMAIL_ALREADY_EXISTS = 'user_email_already_exists'
+  static readonly USER_PASSWORD_MISMATCH = 'user_password_mismatch'
+  static readonly USER_SESSION_NOT_FOUND = 'user_session_not_found'
+  static readonly USER_IDENTITY_NOT_FOUND = 'user_identity_not_found'
+  static readonly USER_UNAUTHORIZED = 'user_unauthorized'
+  static readonly USER_AUTH_METHOD_UNSUPPORTED = 'user_auth_method_unsupported'
+  static readonly USER_PHONE_ALREADY_EXISTS = 'user_phone_already_exists'
+  static readonly USER_PHONE_NOT_FOUND = 'user_phone_not_found'
+  static readonly USER_PHONE_NOT_VERIFIED = 'user_phone_not_verified'
+  static readonly USER_EMAIL_NOT_FOUND = 'user_email_not_found'
+  static readonly USER_EMAIL_NOT_VERIFIED = 'user_email_not_verified'
+  static readonly USER_MISSING_ID = 'user_missing_id'
+  static readonly USER_MORE_FACTORS_REQUIRED = 'user_more_factors_required'
+  static readonly USER_INVALID_CHALLENGE = 'user_invalid_challenge'
+  static readonly USER_AUTHENTICATOR_NOT_FOUND = 'user_authenticator_not_found'
   static readonly USER_AUTHENTICATOR_ALREADY_VERIFIED =
-    'user_authenticator_already_verified';
+    'user_authenticator_already_verified'
   static readonly USER_RECOVERY_CODES_ALREADY_EXISTS =
-    'user_recovery_codes_already_exists';
+    'user_recovery_codes_already_exists'
   static readonly USER_RECOVERY_CODES_NOT_FOUND =
-    'user_recovery_codes_not_found';
-  static readonly USER_CHALLENGE_REQUIRED = 'user_challenge_required';
-  static readonly USER_OAUTH2_BAD_REQUEST = 'user_oauth2_bad_request';
-  static readonly USER_OAUTH2_UNAUTHORIZED = 'user_oauth2_unauthorized';
-  static readonly USER_OAUTH2_PROVIDER_ERROR = 'user_oauth2_provider_error';
-  static readonly USER_EMAIL_ALREADY_VERIFIED = 'user_email_already_verified';
-  static readonly USER_PHONE_ALREADY_VERIFIED = 'user_phone_already_verified';
-  static readonly USER_DELETION_PROHIBITED = 'user_deletion_prohibited';
-  static readonly USER_TARGET_NOT_FOUND = 'user_target_not_found';
-  static readonly USER_TARGET_ALREADY_EXISTS = 'user_target_already_exists';
-  static readonly USER_API_KEY_AND_SESSION_SET = 'user_key_and_session_set';
+    'user_recovery_codes_not_found'
+  static readonly USER_CHALLENGE_REQUIRED = 'user_challenge_required'
+  static readonly USER_OAUTH2_BAD_REQUEST = 'user_oauth2_bad_request'
+  static readonly USER_OAUTH2_UNAUTHORIZED = 'user_oauth2_unauthorized'
+  static readonly USER_OAUTH2_PROVIDER_ERROR = 'user_oauth2_provider_error'
+  static readonly USER_EMAIL_ALREADY_VERIFIED = 'user_email_already_verified'
+  static readonly USER_PHONE_ALREADY_VERIFIED = 'user_phone_already_verified'
+  static readonly USER_DELETION_PROHIBITED = 'user_deletion_prohibited'
+  static readonly USER_TARGET_NOT_FOUND = 'user_target_not_found'
+  static readonly USER_TARGET_ALREADY_EXISTS = 'user_target_already_exists'
+  static readonly USER_API_KEY_AND_SESSION_SET = 'user_key_and_session_set'
 
-  static readonly API_KEY_EXPIRED = 'api_key_expired';
+  static readonly API_KEY_EXPIRED = 'api_key_expired'
 
   /** Teams */
-  static readonly TEAM_NOT_FOUND = 'team_not_found';
-  static readonly TEAM_INVITE_ALREADY_EXISTS = 'team_invite_already_exists';
-  static readonly TEAM_INVITE_NOT_FOUND = 'team_invite_not_found';
-  static readonly TEAM_INVALID_SECRET = 'team_invalid_secret';
-  static readonly TEAM_MEMBERSHIP_MISMATCH = 'team_membership_mismatch';
-  static readonly TEAM_INVITE_MISMATCH = 'team_invite_mismatch';
-  static readonly TEAM_ALREADY_EXISTS = 'team_already_exists';
+  static readonly TEAM_NOT_FOUND = 'team_not_found'
+  static readonly TEAM_INVITE_ALREADY_EXISTS = 'team_invite_already_exists'
+  static readonly TEAM_INVITE_NOT_FOUND = 'team_invite_not_found'
+  static readonly TEAM_INVALID_SECRET = 'team_invalid_secret'
+  static readonly TEAM_MEMBERSHIP_MISMATCH = 'team_membership_mismatch'
+  static readonly TEAM_INVITE_MISMATCH = 'team_invite_mismatch'
+  static readonly TEAM_ALREADY_EXISTS = 'team_already_exists'
 
   /** Membership */
-  static readonly MEMBERSHIP_NOT_FOUND = 'membership_not_found';
-  static readonly MEMBERSHIP_ALREADY_CONFIRMED = 'membership_already_confirmed';
+  static readonly MEMBERSHIP_NOT_FOUND = 'membership_not_found'
+  static readonly MEMBERSHIP_ALREADY_CONFIRMED = 'membership_already_confirmed'
 
   /** Avatars */
-  static readonly AVATAR_SET_NOT_FOUND = 'avatar_set_not_found';
-  static readonly AVATAR_NOT_FOUND = 'avatar_not_found';
-  static readonly AVATAR_IMAGE_NOT_FOUND = 'avatar_image_not_found';
-  static readonly AVATAR_REMOTE_URL_FAILED = 'avatar_remote_url_failed';
-  static readonly AVATAR_ICON_NOT_FOUND = 'avatar_icon_not_found';
+  static readonly AVATAR_SET_NOT_FOUND = 'avatar_set_not_found'
+  static readonly AVATAR_NOT_FOUND = 'avatar_not_found'
+  static readonly AVATAR_IMAGE_NOT_FOUND = 'avatar_image_not_found'
+  static readonly AVATAR_REMOTE_URL_FAILED = 'avatar_remote_url_failed'
+  static readonly AVATAR_ICON_NOT_FOUND = 'avatar_icon_not_found'
 
   /** Storage */
-  static readonly STORAGE_FILE_ALREADY_EXISTS = 'storage_file_already_exists';
-  static readonly STORAGE_FILE_NOT_FOUND = 'storage_file_not_found';
-  static readonly STORAGE_DEVICE_NOT_FOUND = 'storage_device_not_found';
-  static readonly STORAGE_FILE_EMPTY = 'storage_file_empty';
+  static readonly STORAGE_FILE_ALREADY_EXISTS = 'storage_file_already_exists'
+  static readonly STORAGE_FILE_NOT_FOUND = 'storage_file_not_found'
+  static readonly STORAGE_DEVICE_NOT_FOUND = 'storage_device_not_found'
+  static readonly STORAGE_FILE_EMPTY = 'storage_file_empty'
   static readonly STORAGE_FILE_TYPE_UNSUPPORTED =
-    'storage_file_type_unsupported';
-  static readonly STORAGE_INVALID_FILE_SIZE = 'storage_invalid_file_size';
-  static readonly STORAGE_INVALID_FILE = 'storage_invalid_file';
+    'storage_file_type_unsupported'
+  static readonly STORAGE_INVALID_FILE_SIZE = 'storage_invalid_file_size'
+  static readonly STORAGE_INVALID_FILE = 'storage_invalid_file'
   static readonly STORAGE_BUCKET_ALREADY_EXISTS =
-    'storage_bucket_already_exists';
-  static readonly STORAGE_BUCKET_NOT_FOUND = 'storage_bucket_not_found';
+    'storage_bucket_already_exists'
+  static readonly STORAGE_BUCKET_NOT_FOUND = 'storage_bucket_not_found'
   static readonly STORAGE_INVALID_CONTENT_RANGE =
-    'storage_invalid_content_range';
-  static readonly STORAGE_INVALID_RANGE = 'storage_invalid_range';
-  static readonly STORAGE_INVALID_NUVIX_ID = 'storage_invalid_nuvix_id';
-  static readonly STORAGE_FILE_NOT_PUBLIC = 'storage_file_not_public';
-  static readonly STORAGE_FILE_CHUNK_MISSING = 'storage_file_chunk_missing';
+    'storage_invalid_content_range'
+  static readonly STORAGE_INVALID_RANGE = 'storage_invalid_range'
+  static readonly STORAGE_INVALID_NUVIX_ID = 'storage_invalid_nuvix_id'
+  static readonly STORAGE_FILE_NOT_PUBLIC = 'storage_file_not_public'
+  static readonly STORAGE_FILE_CHUNK_MISSING = 'storage_file_chunk_missing'
 
   /** VCS */
-  static readonly INSTALLATION_NOT_FOUND = 'installation_not_found';
+  static readonly INSTALLATION_NOT_FOUND = 'installation_not_found'
   static readonly PROVIDER_REPOSITORY_NOT_FOUND =
-    'provider_repository_not_found';
-  static readonly REPOSITORY_NOT_FOUND = 'repository_not_found';
+    'provider_repository_not_found'
+  static readonly REPOSITORY_NOT_FOUND = 'repository_not_found'
   static readonly PROVIDER_CONTRIBUTION_CONFLICT =
-    'provider_contribution_conflict';
-  static readonly GENERAL_PROVIDER_FAILURE = 'general_provider_failure';
+    'provider_contribution_conflict'
+  static readonly GENERAL_PROVIDER_FAILURE = 'general_provider_failure'
 
   /** Functions */
-  static readonly FUNCTION_NOT_FOUND = 'function_not_found';
-  static readonly FUNCTION_RUNTIME_UNSUPPORTED = 'function_runtime_unsupported';
-  static readonly FUNCTION_ENTRYPOINT_MISSING = 'function_entrypoint_missing';
-  static readonly FUNCTION_SYNCHRONOUS_TIMEOUT = 'function_synchronous_timeout';
-  static readonly FUNCTION_TEMPLATE_NOT_FOUND = 'function_template_not_found';
+  static readonly FUNCTION_NOT_FOUND = 'function_not_found'
+  static readonly FUNCTION_RUNTIME_UNSUPPORTED = 'function_runtime_unsupported'
+  static readonly FUNCTION_ENTRYPOINT_MISSING = 'function_entrypoint_missing'
+  static readonly FUNCTION_SYNCHRONOUS_TIMEOUT = 'function_synchronous_timeout'
+  static readonly FUNCTION_TEMPLATE_NOT_FOUND = 'function_template_not_found'
 
   /** Deployments */
-  static readonly DEPLOYMENT_NOT_FOUND = 'deployment_not_found';
+  static readonly DEPLOYMENT_NOT_FOUND = 'deployment_not_found'
 
   /** Builds */
-  static readonly BUILD_NOT_FOUND = 'build_not_found';
-  static readonly BUILD_NOT_READY = 'build_not_ready';
-  static readonly BUILD_IN_PROGRESS = 'build_in_progress';
-  static readonly BUILD_ALREADY_COMPLETED = 'build_already_completed';
+  static readonly BUILD_NOT_FOUND = 'build_not_found'
+  static readonly BUILD_NOT_READY = 'build_not_ready'
+  static readonly BUILD_IN_PROGRESS = 'build_in_progress'
+  static readonly BUILD_ALREADY_COMPLETED = 'build_already_completed'
 
   /** Execution */
-  static readonly EXECUTION_NOT_FOUND = 'execution_not_found';
-  static readonly EXECUTION_IN_PROGRESS = 'execution_in_progress';
+  static readonly EXECUTION_NOT_FOUND = 'execution_not_found'
+  static readonly EXECUTION_IN_PROGRESS = 'execution_in_progress'
 
   /** Databases */
-  static readonly DATABASE_NOT_FOUND = 'database_not_found';
-  static readonly DATABASE_ALREADY_EXISTS = 'database_already_exists';
-  static readonly DATABASE_TIMEOUT = 'database_timeout';
-  static readonly DATABASE_QUERY_ORDER_NULL = 'database_query_order_null';
+  static readonly DATABASE_NOT_FOUND = 'database_not_found'
+  static readonly DATABASE_ALREADY_EXISTS = 'database_already_exists'
+  static readonly DATABASE_TIMEOUT = 'database_timeout'
+  static readonly DATABASE_QUERY_ORDER_NULL = 'database_query_order_null'
 
   /** Schema */
-  static readonly SCHEMA_NOT_FOUND = 'schema_not_found';
-  static readonly SCHEMA_ALREADY_EXISTS = 'schema_already_exists';
-  static readonly SCHEMA_INVALID = 'schema_invalid';
-  static readonly SCHEMA_INVALID_NAME = 'schema_invalid_name';
-  static readonly SCHEMA_INVALID_TYPE = 'schema_invalid_type';
+  static readonly SCHEMA_NOT_FOUND = 'schema_not_found'
+  static readonly SCHEMA_ALREADY_EXISTS = 'schema_already_exists'
+  static readonly SCHEMA_INVALID = 'schema_invalid'
+  static readonly SCHEMA_INVALID_NAME = 'schema_invalid_name'
+  static readonly SCHEMA_INVALID_TYPE = 'schema_invalid_type'
 
   /** Collections */
-  static readonly COLLECTION_NOT_FOUND = 'collection_not_found';
-  static readonly COLLECTION_ALREADY_EXISTS = 'collection_already_exists';
-  static readonly COLLECTION_LIMIT_EXCEEDED = 'collection_limit_exceeded';
+  static readonly COLLECTION_NOT_FOUND = 'collection_not_found'
+  static readonly COLLECTION_ALREADY_EXISTS = 'collection_already_exists'
+  static readonly COLLECTION_LIMIT_EXCEEDED = 'collection_limit_exceeded'
 
   /** Documents */
-  static readonly DOCUMENT_NOT_FOUND = 'document_not_found';
-  static readonly DOCUMENT_INVALID_STRUCTURE = 'document_invalid_structure';
-  static readonly DOCUMENT_MISSING_DATA = 'document_missing_data';
-  static readonly DOCUMENT_MISSING_PAYLOAD = 'document_missing_payload';
-  static readonly DOCUMENT_ALREADY_EXISTS = 'document_already_exists';
-  static readonly DOCUMENT_UPDATE_CONFLICT = 'document_update_conflict';
-  static readonly DOCUMENT_DELETE_RESTRICTED = 'document_delete_restricted';
+  static readonly DOCUMENT_NOT_FOUND = 'document_not_found'
+  static readonly DOCUMENT_INVALID_STRUCTURE = 'document_invalid_structure'
+  static readonly DOCUMENT_MISSING_DATA = 'document_missing_data'
+  static readonly DOCUMENT_MISSING_PAYLOAD = 'document_missing_payload'
+  static readonly DOCUMENT_ALREADY_EXISTS = 'document_already_exists'
+  static readonly DOCUMENT_UPDATE_CONFLICT = 'document_update_conflict'
+  static readonly DOCUMENT_DELETE_RESTRICTED = 'document_delete_restricted'
 
   /** Attribute */
-  static readonly ATTRIBUTE_NOT_FOUND = 'attribute_not_found';
-  static readonly ATTRIBUTE_UNKNOWN = 'attribute_unknown';
-  static readonly ATTRIBUTE_NOT_AVAILABLE = 'attribute_not_available';
-  static readonly ATTRIBUTE_FORMAT_UNSUPPORTED = 'attribute_format_unsupported';
+  static readonly ATTRIBUTE_NOT_FOUND = 'attribute_not_found'
+  static readonly ATTRIBUTE_UNKNOWN = 'attribute_unknown'
+  static readonly ATTRIBUTE_NOT_AVAILABLE = 'attribute_not_available'
+  static readonly ATTRIBUTE_FORMAT_UNSUPPORTED = 'attribute_format_unsupported'
   static readonly ATTRIBUTE_DEFAULT_UNSUPPORTED =
-    'attribute_default_unsupported';
-  static readonly ATTRIBUTE_ALREADY_EXISTS = 'attribute_already_exists';
-  static readonly ATTRIBUTE_LIMIT_EXCEEDED = 'attribute_limit_exceeded';
-  static readonly ATTRIBUTE_VALUE_INVALID = 'attribute_value_invalid';
-  static readonly ATTRIBUTE_TYPE_INVALID = 'attribute_type_invalid';
-  static readonly ATTRIBUTE_INVALID_RESIZE = 'attribute_invalid_resize';
+    'attribute_default_unsupported'
+  static readonly ATTRIBUTE_ALREADY_EXISTS = 'attribute_already_exists'
+  static readonly ATTRIBUTE_LIMIT_EXCEEDED = 'attribute_limit_exceeded'
+  static readonly ATTRIBUTE_VALUE_INVALID = 'attribute_value_invalid'
+  static readonly ATTRIBUTE_TYPE_INVALID = 'attribute_type_invalid'
+  static readonly ATTRIBUTE_INVALID_RESIZE = 'attribute_invalid_resize'
 
   /** Relationship */
-  static readonly RELATIONSHIP_VALUE_INVALID = 'relationship_value_invalid';
+  static readonly RELATIONSHIP_VALUE_INVALID = 'relationship_value_invalid'
 
   /** Indexes */
-  static readonly INDEX_NOT_FOUND = 'index_not_found';
-  static readonly INDEX_LIMIT_EXCEEDED = 'index_limit_exceeded';
-  static readonly INDEX_ALREADY_EXISTS = 'index_already_exists';
-  static readonly INDEX_INVALID = 'index_invalid';
+  static readonly INDEX_NOT_FOUND = 'index_not_found'
+  static readonly INDEX_LIMIT_EXCEEDED = 'index_limit_exceeded'
+  static readonly INDEX_ALREADY_EXISTS = 'index_already_exists'
+  static readonly INDEX_INVALID = 'index_invalid'
 
   /** Projects */
-  static readonly PROJECT_NOT_FOUND = 'project_not_found';
-  static readonly PROJECT_PROVIDER_DISABLED = 'project_provider_disabled';
-  static readonly PROJECT_PROVIDER_UNSUPPORTED = 'project_provider_unsupported';
-  static readonly PROJECT_ALREADY_EXISTS = 'project_already_exists';
-  static readonly PROJECT_INVALID_SUCCESS_URL = 'project_invalid_success_url';
-  static readonly PROJECT_INVALID_FAILURE_URL = 'project_invalid_failure_url';
-  static readonly PROJECT_RESERVED_PROJECT = 'project_reserved_project';
-  static readonly PROJECT_KEY_EXPIRED = 'project_key_expired';
+  static readonly PROJECT_NOT_FOUND = 'project_not_found'
+  static readonly PROJECT_PROVIDER_DISABLED = 'project_provider_disabled'
+  static readonly PROJECT_PROVIDER_UNSUPPORTED = 'project_provider_unsupported'
+  static readonly PROJECT_ALREADY_EXISTS = 'project_already_exists'
+  static readonly PROJECT_INVALID_SUCCESS_URL = 'project_invalid_success_url'
+  static readonly PROJECT_INVALID_FAILURE_URL = 'project_invalid_failure_url'
+  static readonly PROJECT_RESERVED_PROJECT = 'project_reserved_project'
+  static readonly PROJECT_KEY_EXPIRED = 'project_key_expired'
 
-  static readonly PROJECT_SMTP_CONFIG_INVALID = 'project_smtp_config_invalid';
+  static readonly PROJECT_SMTP_CONFIG_INVALID = 'project_smtp_config_invalid'
 
   static readonly PROJECT_TEMPLATE_DEFAULT_DELETION =
-    'project_template_default_deletion';
+    'project_template_default_deletion'
 
-  static readonly PROJECT_REGION_UNSUPPORTED = 'project_region_unsupported';
+  static readonly PROJECT_REGION_UNSUPPORTED = 'project_region_unsupported'
 
   /** Webhooks */
-  static readonly WEBHOOK_NOT_FOUND = 'webhook_not_found';
+  static readonly WEBHOOK_NOT_FOUND = 'webhook_not_found'
 
   /** Router */
-  static readonly ROUTER_HOST_NOT_FOUND = 'router_host_not_found';
-  static readonly ROUTER_DOMAIN_NOT_CONFIGURED = 'router_domain_not_configured';
+  static readonly ROUTER_HOST_NOT_FOUND = 'router_host_not_found'
+  static readonly ROUTER_DOMAIN_NOT_CONFIGURED = 'router_domain_not_configured'
 
   /** Proxy */
-  static readonly RULE_RESOURCE_NOT_FOUND = 'rule_resource_not_found';
-  static readonly RULE_NOT_FOUND = 'rule_not_found';
-  static readonly RULE_ALREADY_EXISTS = 'rule_already_exists';
-  static readonly RULE_VERIFICATION_FAILED = 'rule_verification_failed';
+  static readonly RULE_RESOURCE_NOT_FOUND = 'rule_resource_not_found'
+  static readonly RULE_NOT_FOUND = 'rule_not_found'
+  static readonly RULE_ALREADY_EXISTS = 'rule_already_exists'
+  static readonly RULE_VERIFICATION_FAILED = 'rule_verification_failed'
 
   /** Keys */
-  static readonly KEY_NOT_FOUND = 'key_not_found';
+  static readonly KEY_NOT_FOUND = 'key_not_found'
 
   /** Variables */
-  static readonly VARIABLE_NOT_FOUND = 'variable_not_found';
-  static readonly VARIABLE_ALREADY_EXISTS = 'variable_already_exists';
+  static readonly VARIABLE_NOT_FOUND = 'variable_not_found'
+  static readonly VARIABLE_ALREADY_EXISTS = 'variable_already_exists'
 
   /** Platform */
-  static readonly PLATFORM_NOT_FOUND = 'platform_not_found';
+  static readonly PLATFORM_NOT_FOUND = 'platform_not_found'
 
   /** GraphqQL */
-  static readonly GRAPHQL_NO_QUERY = 'graphql_no_query';
-  static readonly GRAPHQL_TOO_MANY_QUERIES = 'graphql_too_many_queries';
+  static readonly GRAPHQL_NO_QUERY = 'graphql_no_query'
+  static readonly GRAPHQL_TOO_MANY_QUERIES = 'graphql_too_many_queries'
 
   /** Migrations */
-  static readonly MIGRATION_NOT_FOUND = 'migration_not_found';
-  static readonly MIGRATION_ALREADY_EXISTS = 'migration_already_exists';
-  static readonly MIGRATION_IN_PROGRESS = 'migration_in_progress';
-  static readonly MIGRATION_PROVIDER_ERROR = 'migration_provider_error';
+  static readonly MIGRATION_NOT_FOUND = 'migration_not_found'
+  static readonly MIGRATION_ALREADY_EXISTS = 'migration_already_exists'
+  static readonly MIGRATION_IN_PROGRESS = 'migration_in_progress'
+  static readonly MIGRATION_PROVIDER_ERROR = 'migration_provider_error'
 
   /** Realtime */
   static readonly REALTIME_MESSAGE_FORMAT_INVALID =
-    'realtime_message_format_invalid';
-  static readonly REALTIME_TOO_MANY_MESSAGES = 'realtime_too_many_messages';
-  static readonly REALTIME_POLICY_VIOLATION = 'realtime_policy_violation';
+    'realtime_message_format_invalid'
+  static readonly REALTIME_TOO_MANY_MESSAGES = 'realtime_too_many_messages'
+  static readonly REALTIME_POLICY_VIOLATION = 'realtime_policy_violation'
 
   /** Health */
-  static readonly HEALTH_QUEUE_SIZE_EXCEEDED = 'health_queue_size_exceeded';
-  static readonly HEALTH_CERTIFICATE_EXPIRED = 'health_certificate_expired';
-  static readonly HEALTH_INVALID_HOST = 'health_invalid_host';
+  static readonly HEALTH_QUEUE_SIZE_EXCEEDED = 'health_queue_size_exceeded'
+  static readonly HEALTH_CERTIFICATE_EXPIRED = 'health_certificate_expired'
+  static readonly HEALTH_INVALID_HOST = 'health_invalid_host'
 
   /** Provider */
-  static readonly PROVIDER_NOT_FOUND = 'provider_not_found';
-  static readonly PROVIDER_ALREADY_EXISTS = 'provider_already_exists';
-  static readonly PROVIDER_INCORRECT_TYPE = 'provider_incorrect_type';
-  static readonly PROVIDER_MISSING_CREDENTIALS = 'provider_missing_credentials';
+  static readonly PROVIDER_NOT_FOUND = 'provider_not_found'
+  static readonly PROVIDER_ALREADY_EXISTS = 'provider_already_exists'
+  static readonly PROVIDER_INCORRECT_TYPE = 'provider_incorrect_type'
+  static readonly PROVIDER_MISSING_CREDENTIALS = 'provider_missing_credentials'
 
   /** Topic */
-  static readonly TOPIC_NOT_FOUND = 'topic_not_found';
-  static readonly TOPIC_ALREADY_EXISTS = 'topic_already_exists';
+  static readonly TOPIC_NOT_FOUND = 'topic_not_found'
+  static readonly TOPIC_ALREADY_EXISTS = 'topic_already_exists'
 
   /** Subscriber */
-  static readonly SUBSCRIBER_NOT_FOUND = 'subscriber_not_found';
-  static readonly SUBSCRIBER_ALREADY_EXISTS = 'subscriber_already_exists';
+  static readonly SUBSCRIBER_NOT_FOUND = 'subscriber_not_found'
+  static readonly SUBSCRIBER_ALREADY_EXISTS = 'subscriber_already_exists'
 
   /** Message */
-  static readonly MESSAGE_NOT_FOUND = 'message_not_found';
-  static readonly MESSAGE_MISSING_TARGET = 'message_missing_target';
-  static readonly MESSAGE_ALREADY_SENT = 'message_already_sent';
-  static readonly MESSAGE_ALREADY_PROCESSING = 'message_already_processing';
-  static readonly MESSAGE_ALREADY_FAILED = 'message_already_failed';
-  static readonly MESSAGE_ALREADY_SCHEDULED = 'message_already_scheduled';
-  static readonly MESSAGE_TARGET_NOT_EMAIL = 'message_target_not_email';
-  static readonly MESSAGE_TARGET_NOT_SMS = 'message_target_not_sms';
-  static readonly MESSAGE_TARGET_NOT_PUSH = 'message_target_not_push';
-  static readonly MESSAGE_MISSING_SCHEDULE = 'message_missing_schedule';
+  static readonly MESSAGE_NOT_FOUND = 'message_not_found'
+  static readonly MESSAGE_MISSING_TARGET = 'message_missing_target'
+  static readonly MESSAGE_ALREADY_SENT = 'message_already_sent'
+  static readonly MESSAGE_ALREADY_PROCESSING = 'message_already_processing'
+  static readonly MESSAGE_ALREADY_FAILED = 'message_already_failed'
+  static readonly MESSAGE_ALREADY_SCHEDULED = 'message_already_scheduled'
+  static readonly MESSAGE_TARGET_NOT_EMAIL = 'message_target_not_email'
+  static readonly MESSAGE_TARGET_NOT_SMS = 'message_target_not_sms'
+  static readonly MESSAGE_TARGET_NOT_PUSH = 'message_target_not_push'
+  static readonly MESSAGE_MISSING_SCHEDULE = 'message_missing_schedule'
 
   /** Targets */
-  static readonly TARGET_PROVIDER_INVALID_TYPE = 'target_provider_invalid_type';
+  static readonly TARGET_PROVIDER_INVALID_TYPE = 'target_provider_invalid_type'
 
   /** Schedules */
-  static readonly SCHEDULE_NOT_FOUND = 'schedule_not_found';
+  static readonly SCHEDULE_NOT_FOUND = 'schedule_not_found'
 
   /** MISC */
-  static readonly MISSING_REQUIRED_PARMS = 'missing_params';
-  static readonly INVALID_PARAMS = 'invalid_params';
-  static readonly UPDATE_FAILED = 'update_failed';
-  static readonly DELETE_FAILED = 'delete_failed';
-  static readonly CREATE_FAILED = 'create_failed';
-  static readonly INVALID_OPERATION = 'invalid_operation';
+  static readonly MISSING_REQUIRED_PARMS = 'missing_params'
+  static readonly INVALID_PARAMS = 'invalid_params'
+  static readonly UPDATE_FAILED = 'update_failed'
+  static readonly DELETE_FAILED = 'delete_failed'
+  static readonly CREATE_FAILED = 'create_failed'
+  static readonly INVALID_OPERATION = 'invalid_operation'
 
   static fromValidation(error: any): Exception {
     const messages = Object.values(error.errors)
       .map((val: any) => val.message)
-      .join(', ');
-    return new Exception(undefined, `Validation failed: ${messages}`);
+      .join(', ')
+    return new Exception(undefined, `Validation failed: ${messages}`)
   }
 
-  protected type: string = '';
-  protected publish: boolean;
-  protected details: Record<string, any> = {};
+  protected type: string = ''
+  protected publish: boolean
+  protected details: Record<string, any> = {}
 
-  constructor(message: string);
+  constructor(message: string)
   constructor(
     type?: string,
     message?: string,
     code?: number | string | null,
     previous?: Error,
-  );
+  )
   constructor(
     type: string = Exception.GENERAL_UNKNOWN,
     message: string | undefined = undefined,
@@ -333,27 +333,27 @@ export class Exception extends HttpException {
       (message === undefined || message === null) &&
       !/^[a-z0-9_]+$/.test(type)
     ) {
-      message = type;
-      type = Exception.GENERAL_UNKNOWN;
+      message = type
+      type = Exception.GENERAL_UNKNOWN
     }
 
-    const errorCode = code ?? errorCodes[type]?.code;
+    const errorCode = code ?? errorCodes[type]?.code
     const parsedCode =
       typeof errorCode === 'string' && !isNaN(Number(errorCode))
         ? parseInt(errorCode)
-        : errorCode;
-    const finalCode = parsedCode ?? 500;
+        : errorCode
+    const finalCode = parsedCode ?? 500
 
-    super(message as string, finalCode as number);
+    super(message as string, finalCode as number)
 
-    this.type = type;
-    this.name = this.constructor.name;
+    this.type = type
+    this.name = this.constructor.name
 
-    super.message = message ?? (errorCodes[type]?.description as string);
-    this.publish = errorCodes[type]?.publish ?? this.getStatus() >= 500;
+    super.message = message ?? (errorCodes[type]?.description as string)
+    this.publish = errorCodes[type]?.publish ?? this.getStatus() >= 500
 
     if (previous) {
-      this.stack = previous.stack;
+      this.stack = previous.stack
     }
   }
 
@@ -362,7 +362,7 @@ export class Exception extends HttpException {
    * @returns {string}
    */
   public getType(): string {
-    return this.type;
+    return this.type
   }
 
   /**
@@ -370,7 +370,7 @@ export class Exception extends HttpException {
    * @param {string} type
    */
   public setType(type: string): void {
-    this.type = type;
+    this.type = type
   }
 
   /**
@@ -378,24 +378,24 @@ export class Exception extends HttpException {
    * @returns {boolean}
    */
   public isPublishable(): boolean {
-    return this.publish;
+    return this.publish
   }
 
   addDetails(values: Record<string, any>) {
-    this.details = values;
-    return this;
+    this.details = values
+    return this
   }
 
   getDetails() {
-    return this.details;
+    return this.details
   }
 }
 
 interface ErrorCode {
-  name: string;
-  description: string;
-  code: number;
-  publish?: boolean;
+  name: string
+  description: string
+  code: number
+  publish?: boolean
 }
 
 export const errorCodes: Record<string, ErrorCode> = {
@@ -1573,4 +1573,4 @@ export const errorCodes: Record<string, ErrorCode> = {
       'An error occurred while building the query. Please check your query and try again.',
     code: 400,
   },
-};
+}

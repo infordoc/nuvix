@@ -1,17 +1,17 @@
-import { OAuth2 } from '../OAuth2';
+import { OAuth2 } from '../OAuth2'
 
 export class GoogleOAuth2 extends OAuth2 {
-  protected version: string = 'v4';
-  protected user: Record<string, any> = {};
-  protected tokens: Record<string, any> = {};
+  protected version: string = 'v4'
+  protected user: Record<string, any> = {}
+  protected tokens: Record<string, any> = {}
   protected override scopes: string[] = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'openid',
-  ];
+  ]
 
   public getName(): string {
-    return 'google';
+    return 'google'
   }
 
   public getLoginURL(): string {
@@ -24,7 +24,7 @@ export class GoogleOAuth2 extends OAuth2 {
         state: JSON.stringify(this.state),
         response_type: 'code',
       }).toString()
-    );
+    )
   }
 
   protected async getTokens(code: string): Promise<Record<string, any>> {
@@ -35,15 +35,15 @@ export class GoogleOAuth2 extends OAuth2 {
         client_secret: this.appSecret,
         redirect_uri: this.callback,
         grant_type: 'authorization_code',
-      });
+      })
 
       this.tokens = await this.request(
         'POST',
         `https://oauth2.googleapis.com/token?${params.toString()}`,
-      );
+      )
     }
 
-    return this.tokens;
+    return this.tokens
   }
 
   public async refreshTokens(
@@ -54,38 +54,38 @@ export class GoogleOAuth2 extends OAuth2 {
       client_id: this.appID,
       client_secret: this.appSecret,
       grant_type: 'refresh_token',
-    });
+    })
 
     this.tokens = await this.request(
       'POST',
       `https://oauth2.googleapis.com/token?${params.toString()}`,
-    );
+    )
 
     if (!this.tokens['refresh_token']) {
-      this.tokens['refresh_token'] = refreshToken;
+      this.tokens['refresh_token'] = refreshToken
     }
 
-    return this.tokens;
+    return this.tokens
   }
 
   public async getUserID(accessToken: string): Promise<string> {
-    const user = await this.getUser(accessToken);
-    return user['sub'] || '';
+    const user = await this.getUser(accessToken)
+    return user['sub'] || ''
   }
 
   public async getUserEmail(accessToken: string): Promise<string> {
-    const user = await this.getUser(accessToken);
-    return user['email'] || '';
+    const user = await this.getUser(accessToken)
+    return user['email'] || ''
   }
 
   public async isEmailVerified(accessToken: string): Promise<boolean> {
-    const user = await this.getUser(accessToken);
-    return !!user['email_verified'];
+    const user = await this.getUser(accessToken)
+    return !!user['email_verified']
   }
 
   public async getUserName(accessToken: string): Promise<string> {
-    const user = await this.getUser(accessToken);
-    return user['name'] || '';
+    const user = await this.getUser(accessToken)
+    return user['name'] || ''
   }
 
   protected async getUser(accessToken: string): Promise<Record<string, any>> {
@@ -93,9 +93,9 @@ export class GoogleOAuth2 extends OAuth2 {
       this.user = await this.request(
         'GET',
         `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${encodeURIComponent(accessToken)}`,
-      );
+      )
     }
 
-    return this.user;
+    return this.user
   }
 }

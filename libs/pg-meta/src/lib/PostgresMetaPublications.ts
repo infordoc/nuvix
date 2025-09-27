@@ -1,75 +1,71 @@
-import { ident, literal } from 'pg-format';
-import { publicationsSql } from './sql/index';
-import {
-  PostgresMetaResult,
-  PostgresPublication,
-  PostgresTable,
-} from './types';
-import { PgMetaException } from '../extra/execption';
+import { ident, literal } from 'pg-format'
+import { publicationsSql } from './sql/index'
+import { PostgresMetaResult, PostgresPublication, PostgresTable } from './types'
+import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaPublications {
-  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+  query: (sql: string) => Promise<PostgresMetaResult<any>>
 
   constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
-    this.query = query;
+    this.query = query
   }
 
   async list({
     limit,
     offset,
   }: {
-    limit?: number;
-    offset?: number;
+    limit?: number
+    offset?: number
   }): Promise<PostgresMetaResult<PostgresPublication[]>> {
-    let sql = publicationsSql;
+    let sql = publicationsSql
     if (limit) {
-      sql = `${sql} LIMIT ${limit}`;
+      sql = `${sql} LIMIT ${limit}`
     }
     if (offset) {
-      sql = `${sql} OFFSET ${offset}`;
+      sql = `${sql} OFFSET ${offset}`
     }
-    return this.query(sql);
+    return this.query(sql)
   }
 
   async retrieve({
     id,
   }: {
-    id: number;
-  }): Promise<PostgresMetaResult<PostgresPublication>>;
+    id: number
+  }): Promise<PostgresMetaResult<PostgresPublication>>
   async retrieve({
     name,
   }: {
-    name: string;
-  }): Promise<PostgresMetaResult<PostgresPublication>>;
+    name: string
+  }): Promise<PostgresMetaResult<PostgresPublication>>
   async retrieve({
     id,
     name,
   }: {
-    id?: number;
-    name?: string;
+    id?: number
+    name?: string
   }): Promise<PostgresMetaResult<PostgresPublication>> {
     if (id) {
-      const sql = `${publicationsSql} WHERE p.oid = ${literal(id)};`;
-      const { data, error } = await this.query(sql);
+      const sql = `${publicationsSql} WHERE p.oid = ${literal(id)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a publication with ID ${id}`);
+        throw new PgMetaException(`Cannot find a publication with ID ${id}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else if (name) {
-      const sql = `${publicationsSql} WHERE p.pubname = ${literal(name)};`;
-      const { data, error } = await this.query(sql);
+      const sql = `${publicationsSql} WHERE p.pubname = ${literal(name)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a publication named ${name}`);
+        throw new PgMetaException(`Cannot find a publication named ${name}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else {
-      throw new PgMetaException('Invalid parameters on publication retrieve');
+      throw new PgMetaException('Invalid parameters on publication retrieve')
     }
   }
 
@@ -81,46 +77,46 @@ export default class PostgresMetaPublications {
     publish_truncate = false,
     tables = null,
   }: {
-    name: string;
-    publish_insert?: boolean;
-    publish_update?: boolean;
-    publish_delete?: boolean;
-    publish_truncate?: boolean;
-    tables?: string[] | null;
+    name: string
+    publish_insert?: boolean
+    publish_update?: boolean
+    publish_delete?: boolean
+    publish_truncate?: boolean
+    tables?: string[] | null
   }): Promise<PostgresMetaResult<PostgresPublication>> {
-    let tableClause: string;
+    let tableClause: string
     if (tables === undefined || tables === null) {
-      tableClause = 'FOR ALL TABLES';
+      tableClause = 'FOR ALL TABLES'
     } else if (tables.length === 0) {
-      tableClause = '';
+      tableClause = ''
     } else {
       tableClause = `FOR TABLE ${tables
         .map(t => {
           if (!t.includes('.')) {
-            return ident(t);
+            return ident(t)
           }
 
-          const [schema, ...rest] = t.split('.');
-          const table = rest.join('.');
-          return `${ident(schema!)}.${ident(table)}`;
+          const [schema, ...rest] = t.split('.')
+          const table = rest.join('.')
+          return `${ident(schema!)}.${ident(table)}`
         })
-        .join(',')}`;
+        .join(',')}`
     }
 
-    let publishOps = [];
-    if (publish_insert) publishOps.push('insert');
-    if (publish_update) publishOps.push('update');
-    if (publish_delete) publishOps.push('delete');
-    if (publish_truncate) publishOps.push('truncate');
+    let publishOps = []
+    if (publish_insert) publishOps.push('insert')
+    if (publish_update) publishOps.push('update')
+    if (publish_delete) publishOps.push('delete')
+    if (publish_truncate) publishOps.push('truncate')
 
     const sql = `
 CREATE PUBLICATION ${ident(name)} ${tableClause}
-  WITH (publish = '${publishOps.join(',')}');`;
-    const { error } = await this.query(sql);
+  WITH (publish = '${publishOps.join(',')}');`
+    const { error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return this.retrieve({ name });
+    return this.retrieve({ name })
   }
 
   async update(
@@ -134,13 +130,13 @@ CREATE PUBLICATION ${ident(name)} ${tableClause}
       publish_truncate,
       tables,
     }: {
-      name?: string;
-      owner?: string;
-      publish_insert?: boolean;
-      publish_update?: boolean;
-      publish_delete?: boolean;
-      publish_truncate?: boolean;
-      tables?: string[] | null;
+      name?: string
+      owner?: string
+      publish_insert?: boolean
+      publish_update?: boolean
+      publish_delete?: boolean
+      publish_truncate?: boolean
+      tables?: string[] | null
     },
   ): Promise<PostgresMetaResult<PostgresPublication>> {
     const sql = `
@@ -163,12 +159,12 @@ declare
             : tables
                 .map(t => {
                   if (!t.includes('.')) {
-                    return ident(t);
+                    return ident(t)
                   }
 
-                  const [schema, ...rest] = t.split('.');
-                  const table = rest.join('.');
-                  return `${ident(schema!)}.${ident(table)}`;
+                  const [schema, ...rest] = t.split('.')
+                  const table = rest.join('.')
+                  return `${ident(schema!)}.${ident(table)}`
                 })
                 .join(','),
         )
@@ -237,26 +233,26 @@ begin
 end $$;
 
 with publications as (${publicationsSql}) select * from publications where name = (select name from pg_meta_publication_tmp);
-`;
-    const { data, error } = await this.query(sql);
+`
+    const { data, error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return { data: data[0], error };
+    return { data: data[0], error }
   }
 
   async remove(id: number): Promise<PostgresMetaResult<PostgresPublication>> {
-    const { data: publication, error } = await this.retrieve({ id });
+    const { data: publication, error } = await this.retrieve({ id })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    const sql = `DROP PUBLICATION IF EXISTS ${ident(publication!.name)};`;
+    const sql = `DROP PUBLICATION IF EXISTS ${ident(publication!.name)};`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return { data: publication!, error: null };
+    return { data: publication!, error: null }
   }
 }

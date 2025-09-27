@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Functions extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -13,9 +13,9 @@ export class Functions extends BaseQueryPipe {
     'entrypoint',
     'commands',
     'installationId',
-  ];
+  ]
 
   public constructor() {
-    super('functions', Functions.ALLOWED_ATTRIBUTES);
+    super('functions', Functions.ALLOWED_ATTRIBUTES)
   }
 }

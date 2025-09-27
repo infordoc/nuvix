@@ -1,4 +1,4 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Logs extends BaseQueryPipe {
   public static ALLOWED_ATTRIBUTES = [
@@ -8,9 +8,9 @@ export class Logs extends BaseQueryPipe {
     'requestMethod',
     'requestPath',
     'deploymentId',
-  ];
+  ]
 
   public constructor() {
-    super('executions', Logs.ALLOWED_ATTRIBUTES); //TODO: Update this later
+    super('executions', Logs.ALLOWED_ATTRIBUTES) //TODO: Update this later
   }
 }

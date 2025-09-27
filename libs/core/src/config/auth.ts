@@ -1,9 +1,9 @@
-import { configuration } from '@nuvix/utils';
+import { configuration } from '@nuvix/utils'
 
 export interface AuthMethod {
-  name: string;
-  key: string;
-  enabled: boolean;
+  name: string
+  key: string
+  enabled: boolean
 }
 
 export const defaultAuthConfig = {
@@ -18,7 +18,7 @@ export const defaultAuthConfig = {
   membershipsUserName: false,
   membershipsUserEmail: false,
   membershipsMfa: false,
-};
+}
 
 const authMethods: Record<string, AuthMethod> = {
   'email-password': {
@@ -57,6 +57,6 @@ const authMethods: Record<string, AuthMethod> = {
     key: 'phone',
     enabled: true,
   },
-};
+}
 
-export default authMethods;
+export default authMethods

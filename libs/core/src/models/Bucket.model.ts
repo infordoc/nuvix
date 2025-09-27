@@ -1,51 +1,51 @@
-import { Exclude, Expose } from 'class-transformer';
-import { BaseModel } from '@nuvix/core/models/base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from '@nuvix/core/models/base.model'
 
 @Exclude()
 export class BucketModel extends BaseModel {
   /**
    * Whether file-level security is enabled.
    */
-  @Expose() fileSecurity: boolean = false;
+  @Expose() fileSecurity: boolean = false
 
   /**
    * Bucket name.
    */
-  @Expose() name: string = '';
+  @Expose() name: string = ''
 
   /**
    * Bucket enabled.
    */
-  @Expose() enabled: boolean = true;
+  @Expose() enabled: boolean = true
 
   /**
    * Maximum file size supported.
    */
-  @Expose() maximumFileSize: number = 0;
+  @Expose() maximumFileSize: number = 0
 
   /**
    * Allowed file extensions.
    */
-  @Expose() allowedFileExtensions: string[] = [];
+  @Expose() allowedFileExtensions: string[] = []
 
   /**
    * Compression algorithm chosen for compression.
    */
-  @Expose() compression: string = '';
+  @Expose() compression: string = ''
 
   /**
    * Bucket is encrypted.
    */
-  @Expose() encryption: boolean = true;
+  @Expose() encryption: boolean = true
 
   /**
    * Virus scanning is enabled.
    */
-  @Expose() antivirus: boolean = true;
+  @Expose() antivirus: boolean = true
 
   constructor(partial: Partial<BucketModel>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 
   /**
@@ -54,7 +54,7 @@ export class BucketModel extends BaseModel {
    * @return string
    */
   getName(): string {
-    return 'Bucket';
+    return 'Bucket'
   }
 
   /**
@@ -63,6 +63,6 @@ export class BucketModel extends BaseModel {
    * @return string
    */
   getType(): string {
-    return 'MODEL_BUCKET';
+    return 'MODEL_BUCKET'
   }
 }

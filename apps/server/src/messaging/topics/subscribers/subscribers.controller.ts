@@ -10,13 +10,13 @@ import {
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { SubscribersService } from './subscribers.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { SubscribersService } from './subscribers.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ApiInterceptor,
   ResponseInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
+} from '@nuvix/core/resolvers/interceptors'
 import {
   AuditEvent,
   ProjectDatabase,
@@ -26,12 +26,12 @@ import {
   Scope,
   Sdk,
   Auth,
-} from '@nuvix/core/decorators';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/decorators'
+import { Models } from '@nuvix/core/helper'
 
-import { Database, Query as Queries } from '@nuvix/db';
-import { SubscribersQueryPipe } from '@nuvix/core/pipes/queries';
-import type { CreateSubscriberDTO } from './DTO/subscriber.dto';
+import { Database, Query as Queries } from '@nuvix/db'
+import { SubscribersQueryPipe } from '@nuvix/core/pipes/queries'
+import type { CreateSubscriberDTO } from './DTO/subscriber.dto'
 
 @Namespace('messaging')
 @UseGuards(ProjectGuard)
@@ -59,7 +59,7 @@ export class SubscribersController {
       db,
       topicId,
       input,
-    });
+    })
   }
 
   @Get()
@@ -81,7 +81,7 @@ export class SubscribersController {
       topicId,
       queries,
       search,
-    });
+    })
   }
 
   @Get(':subscriberId')
@@ -97,7 +97,7 @@ export class SubscribersController {
     @Param('subscriberId') subscriberId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.subscribersService.getSubscriber(db, topicId, subscriberId);
+    return this.subscribersService.getSubscriber(db, topicId, subscriberId)
   }
 
   @Delete(':subscriberId')
@@ -115,6 +115,6 @@ export class SubscribersController {
     @Param('subscriberId') subscriberId: string,
     @ProjectDatabase() db: Database,
   ) {
-    return this.subscribersService.deleteSubscriber(db, topicId, subscriberId);
+    return this.subscribersService.deleteSubscriber(db, topicId, subscriberId)
   }
 }

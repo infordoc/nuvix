@@ -1,53 +1,53 @@
-import { IsIn, IsOptional, IsString, IsArray } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsArray } from 'class-validator'
 
 export class TriggerUpdateDTO {
   @IsOptional()
   @IsString()
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsIn(['ORIGIN', 'REPLICA', 'ALWAYS', 'DISABLED'])
-  enabled_mode?: 'ORIGIN' | 'REPLICA' | 'ALWAYS' | 'DISABLED';
+  enabled_mode?: 'ORIGIN' | 'REPLICA' | 'ALWAYS' | 'DISABLED'
 
   @IsOptional()
   @IsString()
-  table?: string;
+  table?: string
 
   @IsOptional()
   @IsString()
-  schema?: string;
+  schema?: string
 
   @IsOptional()
   @IsString()
-  condition?: string;
+  condition?: string
 
   @IsOptional()
   @IsIn(['ROW', 'STATEMENT'])
-  orientation?: 'ROW' | 'STATEMENT';
+  orientation?: 'ROW' | 'STATEMENT'
 
   @IsOptional()
   @IsIn(['BEFORE', 'AFTER', 'INSTEAD OF'])
-  activation?: 'BEFORE' | 'AFTER' | 'INSTEAD OF';
+  activation?: 'BEFORE' | 'AFTER' | 'INSTEAD OF'
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  events?: string[];
+  events?: string[]
 
   @IsOptional()
   @IsString()
-  function_schema?: string;
+  function_schema?: string
 
   @IsOptional()
   @IsString()
-  function_name?: string;
+  function_name?: string
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  function_args?: string[];
+  function_args?: string[]
 
   @IsOptional()
   @IsString()
-  comment?: string;
+  comment?: string
 }

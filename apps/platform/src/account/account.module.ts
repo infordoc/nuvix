@@ -1,8 +1,8 @@
-import { Module } from '@nestjs/common';
-import { AccountService } from './account.service';
-import { AccountController } from './account.controller';
-import { BullModule } from '@nestjs/bullmq';
-import { QueueFor } from '@nuvix/utils';
+import { Module } from '@nestjs/common'
+import { AccountService } from './account.service'
+import { AccountController } from './account.controller'
+import { BullModule } from '@nestjs/bullmq'
+import { QueueFor } from '@nuvix/utils'
 
 @Module({
   imports: [

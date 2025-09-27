@@ -1,6 +1,6 @@
-import { Controller, Get, Redirect } from '@nestjs/common';
-import { AppService } from './app.service';
-import { configuration } from '@nuvix/utils';
+import { Controller, Get, Redirect } from '@nestjs/common'
+import { AppService } from './app.service'
+import { configuration } from '@nuvix/utils'
 
 @Controller()
 export class AppController {
@@ -12,6 +12,6 @@ export class AppController {
 
   @Get('favicon.ico')
   async getFavicon() {
-    return this.appService.getFavicon();
+    return this.appService.getFavicon()
   }
 }

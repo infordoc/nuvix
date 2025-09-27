@@ -4,44 +4,44 @@ import type {
   PostgresTable,
   PostgresType,
   PostgresView,
-} from '../lib/index';
-import type { GeneratorMetadata } from '../lib/generators';
-import { PostgresForeignTable } from '../lib/types';
+} from '../lib/index'
+import type { GeneratorMetadata } from '../lib/generators'
+import { PostgresForeignTable } from '../lib/types'
 
-type Operation = 'Select' | 'Insert' | 'Update';
-export type AccessControl = 'internal' | 'public' | 'private' | 'package';
+type Operation = 'Select' | 'Insert' | 'Update'
+export type AccessControl = 'internal' | 'public' | 'private' | 'package'
 
 type SwiftGeneratorOptions = {
-  accessControl: AccessControl;
-};
+  accessControl: AccessControl
+}
 
 type SwiftEnumCase = {
-  formattedName: string;
-  rawValue: string;
-};
+  formattedName: string
+  rawValue: string
+}
 
 type SwiftEnum = {
-  formattedEnumName: string;
-  protocolConformances: string[];
-  cases: SwiftEnumCase[];
-};
+  formattedEnumName: string
+  protocolConformances: string[]
+  cases: SwiftEnumCase[]
+}
 
 type SwiftAttribute = {
-  formattedAttributeName: string;
-  formattedType: string;
-  rawName: string;
-  isIdentity: boolean;
-};
+  formattedAttributeName: string
+  formattedType: string
+  rawName: string
+  isIdentity: boolean
+}
 
 type SwiftStruct = {
-  formattedStructName: string;
-  protocolConformances: string[];
-  attributes: SwiftAttribute[];
-  codingKeysEnum: SwiftEnum | undefined;
-};
+  formattedStructName: string
+  protocolConformances: string[]
+  attributes: SwiftAttribute[]
+  codingKeysEnum: SwiftEnum | undefined
+}
 
 function formatForSwiftSchemaName(schema: string): string {
-  return `${formatForSwiftTypeName(schema)}Schema`;
+  return `${formatForSwiftTypeName(schema)}Schema`
 }
 
 function pgEnumToSwiftEnum(pgEnum: PostgresType): SwiftEnum {
@@ -52,9 +52,9 @@ function pgEnumToSwiftEnum(pgEnum: PostgresType): SwiftEnum {
       return {
         formattedName: formatForSwiftPropertyName(case_),
         rawValue: case_,
-      };
+      }
     }),
-  };
+  }
 }
 
 function pgTypeToSwiftStruct(
@@ -73,18 +73,18 @@ function pgTypeToSwiftStruct(
 ): SwiftStruct {
   const columnEntries: SwiftAttribute[] =
     columns?.map(column => {
-      let nullable: boolean;
+      let nullable: boolean
 
       if (operation === 'Insert') {
         nullable =
           column.is_nullable ||
           column.is_identity ||
           column.is_generated ||
-          !!column.default_value;
+          !!column.default_value
       } else if (operation === 'Update') {
-        nullable = true;
+        nullable = true
       } else {
-        nullable = column.is_nullable;
+        nullable = column.is_nullable
       }
 
       return {
@@ -96,15 +96,15 @@ function pgTypeToSwiftStruct(
           tables,
         }),
         isIdentity: column.is_identity,
-      };
-    }) ?? [];
+      }
+    }) ?? []
 
   return {
     formattedStructName: `${formatForSwiftTypeName(table.name)}${operation}`,
     attributes: columnEntries,
     protocolConformances: ['Codable', 'Hashable', 'Sendable'],
     codingKeysEnum: generateCodingKeysEnumFromAttributes(columnEntries),
-  };
+  }
 }
 
 function generateCodingKeysEnumFromAttributes(
@@ -118,10 +118,10 @@ function generateCodingKeysEnumFromAttributes(
           return {
             formattedName: attribute.formattedAttributeName,
             rawValue: attribute.rawName,
-          };
+          }
         }),
       }
-    : undefined;
+    : undefined
 }
 
 function pgCompositeTypeToSwiftStruct(
@@ -135,13 +135,13 @@ function pgCompositeTypeToSwiftStruct(
   const typeWithRetrievedAttributes = {
     ...type,
     attributes: type.attributes.map(attribute => {
-      const type = types.find(type => type.id === attribute.type_id);
+      const type = types.find(type => type.id === attribute.type_id)
       return {
         ...attribute,
         type,
-      };
+      }
     }),
-  };
+  }
 
   const attributeEntries: SwiftAttribute[] =
     typeWithRetrievedAttributes.attributes.map(attribute => {
@@ -154,19 +154,19 @@ function pgCompositeTypeToSwiftStruct(
         }),
         rawName: attribute.name,
         isIdentity: false,
-      };
-    });
+      }
+    })
 
   return {
     formattedStructName: formatForSwiftTypeName(type.name),
     attributes: attributeEntries,
     protocolConformances: ['Codable', 'Hashable', 'Sendable'],
     codingKeysEnum: generateCodingKeysEnumFromAttributes(attributeEntries),
-  };
+  }
 }
 
 function generateProtocolConformances(protocols: string[]): string {
-  return protocols.length === 0 ? '' : `: ${protocols.join(', ')}`;
+  return protocols.length === 0 ? '' : `: ${protocols.join(', ')}`
 }
 
 function generateEnum(
@@ -180,28 +180,28 @@ function generateEnum(
         `${ident(level + 1)}case ${case_.formattedName} = "${case_.rawValue}"`,
     ),
     `${ident(level)}}`,
-  ];
+  ]
 }
 
 function generateStruct(
   struct: SwiftStruct,
   { accessControl, level }: SwiftGeneratorOptions & { level: number },
 ): string[] {
-  const identity = struct.attributes.find(column => column.isIdentity);
+  const identity = struct.attributes.find(column => column.isIdentity)
 
-  let protocolConformances = struct.protocolConformances;
+  let protocolConformances = struct.protocolConformances
   if (identity) {
-    protocolConformances.push('Identifiable');
+    protocolConformances.push('Identifiable')
   }
 
   let output = [
     `${ident(level)}${accessControl} struct ${struct.formattedStructName}${generateProtocolConformances(struct.protocolConformances)} {`,
-  ];
+  ]
 
   if (identity && identity.formattedAttributeName !== 'id') {
     output.push(
       `${ident(level + 1)}${accessControl} var id: ${identity.formattedType} { ${identity.formattedAttributeName} }`,
-    );
+    )
   }
 
   output.push(
@@ -209,7 +209,7 @@ function generateStruct(
       attribute =>
         `${ident(level + 1)}${accessControl} let ${attribute.formattedAttributeName}: ${attribute.formattedType}`,
     ),
-  );
+  )
 
   if (struct.codingKeysEnum) {
     output.push(
@@ -217,12 +217,12 @@ function generateStruct(
         accessControl,
         level: level + 1,
       }),
-    );
+    )
   }
 
-  output.push(`${ident(level)}}`);
+  output.push(`${ident(level)}}`)
 
-  return output;
+  return output
 }
 
 export const apply = async ({
@@ -240,12 +240,12 @@ export const apply = async ({
       t.id,
       [],
     ]),
-  );
+  )
 
   columns
     .filter(c => c.table_id in columnsByTableId)
     .sort(({ name: a }, { name: b }) => a.localeCompare(b))
-    .forEach(c => columnsByTableId[c.table_id]?.push(c));
+    .forEach(c => columnsByTableId[c.table_id]?.push(c))
 
   let output = [
     'import Foundation',
@@ -256,21 +256,21 @@ export const apply = async ({
       .flatMap(schema => {
         const schemaTables = [...tables, ...foreignTables]
           .filter(table => table.schema === schema.name)
-          .sort(({ name: a }, { name: b }) => a.localeCompare(b));
+          .sort(({ name: a }, { name: b }) => a.localeCompare(b))
 
         const schemaViews = [...views, ...materializedViews]
           .filter(table => table.schema === schema.name)
-          .sort(({ name: a }, { name: b }) => a.localeCompare(b));
+          .sort(({ name: a }, { name: b }) => a.localeCompare(b))
 
         const schemaEnums = types
           .filter(type => type.schema === schema.name && type.enums.length > 0)
-          .sort(({ name: a }, { name: b }) => a.localeCompare(b));
+          .sort(({ name: a }, { name: b }) => a.localeCompare(b))
 
         const schemaCompositeTypes = types
           .filter(
             type => type.schema === schema.name && type.attributes.length > 0,
           )
-          .sort(({ name: a }, { name: b }) => a.localeCompare(b));
+          .sort(({ name: a }, { name: b }) => a.localeCompare(b))
 
         return [
           `${accessControl} enum ${formatForSwiftSchemaName(schema.name)} {`,
@@ -315,12 +315,12 @@ export const apply = async ({
             ),
           ),
           '}',
-        ];
+        ]
       }),
-  ];
+  ]
 
-  return output.join('\n');
-};
+  return output.join('\n')
+}
 
 // TODO: Make this more robust. Currently doesn't handle range types - returns them as string.
 const pgTypeToSwiftType = (
@@ -332,22 +332,22 @@ const pgTypeToSwiftType = (
     tables,
   }: { types: PostgresType[]; views: PostgresView[]; tables: PostgresTable[] },
 ): string => {
-  let swiftType: string;
+  let swiftType: string
 
   if (pgType === 'bool') {
-    swiftType = 'Bool';
+    swiftType = 'Bool'
   } else if (pgType === 'int2') {
-    swiftType = 'Int16';
+    swiftType = 'Int16'
   } else if (pgType === 'int4') {
-    swiftType = 'Int32';
+    swiftType = 'Int32'
   } else if (pgType === 'int8') {
-    swiftType = 'Int64';
+    swiftType = 'Int64'
   } else if (pgType === 'float4') {
-    swiftType = 'Float';
+    swiftType = 'Float'
   } else if (pgType === 'float8') {
-    swiftType = 'Double';
+    swiftType = 'Double'
   } else if (pgType === 'uuid') {
-    swiftType = 'UUID';
+    swiftType = 'UUID'
   } else if (
     [
       'bytea',
@@ -363,42 +363,42 @@ const pgTypeToSwiftType = (
       'vector',
     ].includes(pgType)
   ) {
-    swiftType = 'String';
+    swiftType = 'String'
   } else if (['json', 'jsonb'].includes(pgType)) {
-    swiftType = 'AnyJSON';
+    swiftType = 'AnyJSON'
   } else if (pgType === 'void') {
-    swiftType = 'Void';
+    swiftType = 'Void'
   } else if (pgType === 'record') {
-    swiftType = 'JSONObject';
+    swiftType = 'JSONObject'
   } else if (pgType.startsWith('_')) {
-    swiftType = `[${pgTypeToSwiftType(pgType.substring(1), false, { types, views, tables })}]`;
+    swiftType = `[${pgTypeToSwiftType(pgType.substring(1), false, { types, views, tables })}]`
   } else {
     const enumType = types.find(
       type => type.name === pgType && type.enums.length > 0,
-    );
+    )
 
     const compositeTypes = [...types, ...views, ...tables].find(
       type => type.name === pgType,
-    );
+    )
 
     if (enumType) {
-      swiftType = `${formatForSwiftTypeName(enumType.name)}`;
+      swiftType = `${formatForSwiftTypeName(enumType.name)}`
     } else if (compositeTypes) {
       // Append a `Select` to the composite type, as that is how is named in the generated struct.
-      swiftType = `${formatForSwiftTypeName(compositeTypes.name)}Select`;
+      swiftType = `${formatForSwiftTypeName(compositeTypes.name)}Select`
     } else {
-      swiftType = 'AnyJSON';
+      swiftType = 'AnyJSON'
     }
   }
 
-  return `${swiftType}${nullable ? '?' : ''}`;
-};
+  return `${swiftType}${nullable ? '?' : ''}`
+}
 
 function ident(
   level: number,
   options: { width: number } = { width: 2 },
 ): string {
-  return ' '.repeat(level * options.width);
+  return ' '.repeat(level * options.width)
 }
 
 /**
@@ -415,10 +415,10 @@ function ident(
  */
 function formatForSwiftTypeName(name: string): string {
   // Preserve the initial underscore if it exists
-  let prefix = '';
+  let prefix = ''
   if (name.startsWith('_')) {
-    prefix = '_';
-    name = name.slice(1); // Remove the initial underscore for processing
+    prefix = '_'
+    name = name.slice(1) // Remove the initial underscore for processing
   }
 
   return (
@@ -427,16 +427,16 @@ function formatForSwiftTypeName(name: string): string {
       .split(/[^a-zA-Z0-9]+/)
       .map(word => {
         if (word) {
-          return `${word[0]?.toUpperCase()}${word.slice(1)}`;
+          return `${word[0]?.toUpperCase()}${word.slice(1)}`
         } else {
-          return '';
+          return ''
         }
       })
       .join('')
-  );
+  )
 }
 
-const SWIFT_KEYWORDS = ['in', 'default'];
+const SWIFT_KEYWORDS = ['in', 'default']
 
 /**
  * Converts a Postgres name to pascalCase.
@@ -453,14 +453,14 @@ function formatForSwiftPropertyName(name: string): string {
   const propertyName = name
     .split(/[^a-zA-Z0-9]/)
     .map((word, index) => {
-      const lowerWord = word.toLowerCase();
+      const lowerWord = word.toLowerCase()
       return index !== 0
         ? lowerWord.charAt(0).toUpperCase() + lowerWord.slice(1)
-        : lowerWord;
+        : lowerWord
     })
-    .join('');
+    .join('')
 
   return SWIFT_KEYWORDS.includes(propertyName)
     ? `\`${propertyName}\``
-    : propertyName;
+    : propertyName
 }

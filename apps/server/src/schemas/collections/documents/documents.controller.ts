@@ -11,27 +11,27 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { DocumentsService } from './documents.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix/db';
-import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe';
-import { CurrentDatabase } from '@nuvix/core/decorators/project.decorator';
+} from '@nestjs/common'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { DocumentsService } from './documents.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { Models } from '@nuvix/core/helper/response.helper'
+import type { Database, Query as Queries } from '@nuvix/db'
+import { ParseQueryPipe } from '@nuvix/core/pipes/query.pipe'
+import { CurrentDatabase } from '@nuvix/core/decorators/project.decorator'
 import {
   Auth,
   AuthType,
   Namespace,
   ResModel,
   AuthUser as User,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
 // DTOs
-import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
-import type { UsersDoc } from '@nuvix/utils/types';
+import { CreateDocumentDTO, UpdateDocumentDTO } from './DTO/document.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { DocSchemaGuard } from '@nuvix/core/resolvers/guards'
+import type { UsersDoc } from '@nuvix/utils/types'
 
 @Controller({
   version: ['1'],
@@ -51,7 +51,7 @@ export class DocumentsController {
     @Query('queries', new ParseQueryPipe({ validate: false }))
     queries: Queries[],
   ) {
-    return this.documentsService.getDocuments(db, collectionId, queries);
+    return this.documentsService.getDocuments(db, collectionId, queries)
   }
 
   @Post()
@@ -67,7 +67,7 @@ export class DocumentsController {
       collectionId,
       document,
       user,
-    );
+    )
   }
 
   @Get(':documentId')
@@ -84,7 +84,7 @@ export class DocumentsController {
       collectionId,
       documentId,
       queries,
-    );
+    )
   }
 
   @Patch(':documentId')
@@ -100,7 +100,7 @@ export class DocumentsController {
       collectionId,
       documentId,
       document,
-    );
+    )
   }
 
   @Delete(':documentId')
@@ -111,7 +111,7 @@ export class DocumentsController {
     @Param('collectionId') collectionId: string,
     @Param('documentId') documentId: string,
   ) {
-    return this.documentsService.deleteDocument(db, collectionId, documentId);
+    return this.documentsService.deleteDocument(db, collectionId, documentId)
   }
 
   @Get(':documentId/logs')
@@ -128,6 +128,6 @@ export class DocumentsController {
       collectionId,
       documentId,
       queries,
-    );
+    )
   }
 }

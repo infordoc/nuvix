@@ -9,4 +9,4 @@ export const templates = {
     'otpSession',
   ],
   sms: ['verification', 'login', 'invitation', 'mfaChallenge'],
-};
+}

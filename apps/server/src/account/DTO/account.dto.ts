@@ -6,69 +6,69 @@ import {
   IsObject,
   IsNotEmpty,
   IsBoolean,
-} from 'class-validator';
-import { IsCustomID } from '@nuvix/core/validators/input.validator';
+} from 'class-validator'
+import { IsCustomID } from '@nuvix/core/validators/input.validator'
 
 export class CreateAccountDTO {
   @IsCustomID()
-  userId!: string;
+  userId!: string
 
   @IsEmail({}, { message: 'Invalid email address.' })
-  email!: string;
+  email!: string
 
   @Length(8, 256, { message: 'Password must be between 8 and 256 characters.' })
-  password!: string;
+  password!: string
 
   @IsOptional()
   @IsString()
   @Length(0, 128, {
     message: 'User name can have a maximum length of 128 characters.',
   })
-  name?: string;
+  name?: string
 }
 
 export class UpdatePrefsDTO {
   @IsObject()
-  prefs!: { [key: string]: any };
+  prefs!: { [key: string]: any }
 }
 
 export class UpdateEmailDTO {
   @IsEmail()
-  email!: string;
+  email!: string
 
   @IsNotEmpty()
   @IsString()
-  password!: string;
+  password!: string
 }
 
 export class UpdatePasswordDTO {
   @IsNotEmpty()
   @IsString()
   @Length(8, 256, { message: 'Password must be between 8 and 256 characters.' })
-  password!: string;
+  password!: string
 
   @IsNotEmpty()
   @IsString()
-  oldPassword!: string;
+  oldPassword!: string
 }
 
 export class UpdateNameDTO {
   @IsNotEmpty()
   @IsString()
-  name!: string;
+  name!: string
 }
 
 export class UpdatePhoneDTO {
   @IsNotEmpty()
   @IsString()
-  phone!: string;
+  phone!: string
 
   @IsNotEmpty()
   @IsString()
-  password!: string;
+  password!: string
 }
 
 export class UpdateAccountStatusDTO {
   @IsBoolean()
-  status!: boolean;
+  status!: boolean
 }

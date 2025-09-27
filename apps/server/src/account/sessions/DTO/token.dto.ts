@@ -1,5 +1,5 @@
-import { IsUID } from '@nuvix/core/validators/input.validator.js';
-import { configuration } from '@nuvix/utils';
+import { IsUID } from '@nuvix/core/validators/input.validator.js'
+import { configuration } from '@nuvix/utils'
 import {
   IsString,
   IsUrl,
@@ -11,61 +11,61 @@ import {
   IsEmail,
   IsBoolean,
   IsPhoneNumber,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateOAuth2TokenDTO {
   @IsOptional()
   @IsUrl()
-  success?: string;
+  success?: string
 
   @IsOptional()
   @IsUrl()
-  failure?: string;
+  failure?: string
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @MaxLength(configuration.limits.arrayElementSize, { each: true })
   @ArrayMaxSize(configuration.limits.arrayParamsSize)
-  scopes: string[] = [];
+  scopes: string[] = []
 }
 
 export class CreateMagicURLTokenDTO {
   @IsUID()
-  userId!: string;
+  userId!: string
 
   @IsNotEmpty()
   @IsEmail()
-  email!: string;
+  email!: string
 
   @IsOptional()
   @IsUrl()
-  url?: string;
+  url?: string
 
   @IsOptional()
   @IsBoolean()
-  phrase?: boolean = false;
+  phrase?: boolean = false
 }
 
 export class CreateEmailTokenDTO {
   @IsUID()
-  userId!: string;
+  userId!: string
 
   @IsNotEmpty()
   @IsEmail()
-  email!: string;
+  email!: string
 
   @IsOptional()
   @IsBoolean()
-  phrase?: boolean = false;
+  phrase?: boolean = false
 }
 
 export class CreatePhoneTokenDTO {
   @IsUID()
-  userId!: string;
+  userId!: string
 
   @IsNotEmpty()
   @IsPhoneNumber()
   @IsString()
-  phone!: string;
+  phone!: string
 }

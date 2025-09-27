@@ -10,22 +10,22 @@ import {
   Query,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { IndexesService } from './indexes.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
-import { Models } from '@nuvix/core/helper/response.helper';
-import type { Database, Query as Queries } from '@nuvix/db';
+} from '@nestjs/common'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { IndexesService } from './indexes.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
+import { Models } from '@nuvix/core/helper/response.helper'
+import type { Database, Query as Queries } from '@nuvix/db'
 import {
   CurrentDatabase,
   Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators';
-import { CreateIndexDTO } from './DTO/indexes.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { DocSchemaGuard } from '@nuvix/core/resolvers/guards';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { IndexesQueryPipe } from '@nuvix/core/pipes/queries';
+} from '@nuvix/core/decorators/project.decorator'
+import { Auth, AuthType, Namespace, ResModel } from '@nuvix/core/decorators'
+import { CreateIndexDTO } from './DTO/indexes.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { DocSchemaGuard } from '@nuvix/core/resolvers/guards'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { IndexesQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Controller({
   version: ['1'],
@@ -46,7 +46,7 @@ export class IndexesController {
     @Body() input: CreateIndexDTO,
     @Project() project: ProjectsDoc,
   ) {
-    return this.indexesService.createIndex(db, collectionId, input, project);
+    return this.indexesService.createIndex(db, collectionId, input, project)
   }
 
   @Get()
@@ -56,7 +56,7 @@ export class IndexesController {
     @Param('collectionId') collectionId: string,
     @Query('queries', IndexesQueryPipe) queries?: Queries[],
   ) {
-    return this.indexesService.getIndexes(db, collectionId, queries);
+    return this.indexesService.getIndexes(db, collectionId, queries)
   }
 
   @Get(':indexId')
@@ -66,7 +66,7 @@ export class IndexesController {
     @Param('collectionId') collectionId: string,
     @Param('indexId') indexId: string,
   ) {
-    return this.indexesService.getIndex(db, collectionId, indexId);
+    return this.indexesService.getIndex(db, collectionId, indexId)
   }
 
   @Delete(':indexId')
@@ -78,6 +78,6 @@ export class IndexesController {
     @Param('indexId') indexId: string,
     @Project() project: ProjectsDoc,
   ) {
-    return this.indexesService.deleteIndex(db, collectionId, indexId, project);
+    return this.indexesService.deleteIndex(db, collectionId, indexId, project)
   }
 }

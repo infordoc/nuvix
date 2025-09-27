@@ -1,39 +1,39 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import {
   ArrayNotEmpty,
   IsArray,
   IsEnum,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from 'class-validator'
 
 export class PolicyUpdateDTO {
   @IsString()
-  declare name: string;
+  declare name: string
 
   @IsOptional()
   @IsString()
-  definition?: string;
+  definition?: string
 
   @IsOptional()
   @IsString()
-  check?: string;
+  check?: string
 
   @IsOptional()
   @IsEnum(['PERMISSIVE', 'RESTRICTIVE'])
   @ApiPropertyOptional({ enum: ['PERMISSIVE', 'RESTRICTIVE'] })
-  action?: 'PERMISSIVE' | 'RESTRICTIVE';
+  action?: 'PERMISSIVE' | 'RESTRICTIVE'
 
   @IsOptional()
   @IsEnum(['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'ALL'])
   @ApiPropertyOptional({
     enum: ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'ALL'],
   })
-  command?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'ALL';
+  command?: 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'ALL'
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @ArrayNotEmpty()
-  roles?: string[];
+  roles?: string[]
 }

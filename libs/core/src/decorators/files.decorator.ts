@@ -1,31 +1,31 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common'
 
-import { Exception } from '../extend/exception';
-import { MultipartValue } from '@fastify/multipart';
-import { configuration } from '@nuvix/utils';
+import { Exception } from '../extend/exception'
+import { MultipartValue } from '@fastify/multipart'
+import { configuration } from '@nuvix/utils'
 
 export const UploadedFile = createParamDecorator(
   async (data: string = 'file', ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>();
+    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>()
 
     const files = await request.saveRequestFiles({
       tmpdir: configuration.storage.temp,
-    });
-    const file = files.find(f => f.fieldname === data);
+    })
+    const file = files.find(f => f.fieldname === data)
     if (!file) {
-      throw new Exception(Exception.STORAGE_INVALID_FILE);
+      throw new Exception(Exception.STORAGE_INVALID_FILE)
     }
-    return file;
+    return file
   },
-);
+)
 
 export const MultipartParam = createParamDecorator(
   async (data: string, ctx: ExecutionContext) => {
-    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>();
+    const request: NuvixRequest = ctx.switchToHttp().getRequest<NuvixRequest>()
 
     const param = (request.body as Record<string, unknown>)[
       data
-    ] as MultipartValue;
-    return param ? param.value : undefined;
+    ] as MultipartValue
+    return param ? param.value : undefined
   },
-);
+)

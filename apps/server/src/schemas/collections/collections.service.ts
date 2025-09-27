@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common'
 import {
   Authorization,
   Database,
@@ -8,34 +8,34 @@ import {
   LimitException,
   Permission,
   Query,
-} from '@nuvix/db';
+} from '@nuvix/db'
 import {
   configuration,
   MetricFor,
   MetricPeriod,
   QueueFor,
   SchemaMeta,
-} from '@nuvix/utils';
-import { InjectQueue } from '@nestjs/bullmq';
-import type { Queue } from 'bullmq';
-import { Exception } from '@nuvix/core/extend/exception';
-import usageConfig from '@nuvix/core/config/usage';
+} from '@nuvix/utils'
+import { InjectQueue } from '@nestjs/bullmq'
+import type { Queue } from 'bullmq'
+import { Exception } from '@nuvix/core/extend/exception'
+import usageConfig from '@nuvix/core/config/usage'
 
 import type {
   CreateCollectionDTO,
   UpdateCollectionDTO,
-} from './DTO/collection.dto';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+} from './DTO/collection.dto'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import {
   CollectionsJob,
   CollectionsJobData,
   StatsQueue,
-} from '@nuvix/core/resolvers/queues';
-import type { ProjectsDoc } from '@nuvix/utils/types';
+} from '@nuvix/core/resolvers/queues'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class CollectionsService {
-  private readonly logger = new Logger(CollectionsService.name);
+  private readonly logger = new Logger(CollectionsService.name)
 
   constructor(
     @InjectQueue(QueueFor.COLLECTIONS)
@@ -51,11 +51,11 @@ export class CollectionsService {
    * Create a new collection.
    */
   async createCollection(db: Database, input: CreateCollectionDTO) {
-    const { name, enabled, documentSecurity } = input;
-    let { collectionId, permissions } = input;
+    const { name, enabled, documentSecurity } = input
+    let { collectionId, permissions } = input
 
-    permissions = Permission.aggregate(permissions) ?? [];
-    collectionId = collectionId === 'unique()' ? ID.unique() : collectionId;
+    permissions = Permission.aggregate(permissions) ?? []
+    collectionId = collectionId === 'unique()' ? ID.unique() : collectionId
 
     try {
       await db.createDocument(
@@ -68,33 +68,33 @@ export class CollectionsService {
           name,
           search: `${collectionId} ${name}`,
         }),
-      );
+      )
 
       const collection = await db.getDocument(
         SchemaMeta.collections,
         collectionId,
-      );
+      )
 
       await db.createCollection({
         id: collection.getId(),
         permissions,
         documentSecurity,
         enabled,
-      });
+      })
 
       this.event.emit(
         `schema.${db.schema}.collection.${collectionId}.created`,
         collection,
-      );
-      return collection;
+      )
+      return collection
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.COLLECTION_ALREADY_EXISTS);
+        throw new Exception(Exception.COLLECTION_ALREADY_EXISTS)
       }
       if (error instanceof LimitException) {
-        throw new Exception(Exception.COLLECTION_LIMIT_EXCEEDED);
+        throw new Exception(Exception.COLLECTION_LIMIT_EXCEEDED)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -103,21 +103,21 @@ export class CollectionsService {
    */
   async getCollections(db: Database, queries: Query[] = [], search?: string) {
     if (search) {
-      queries.push(Query.search('search', search));
+      queries.push(Query.search('search', search))
     }
 
-    const filterQueries = Query.groupByType(queries).filters;
-    const collections = await db.find(SchemaMeta.collections, queries);
+    const filterQueries = Query.groupByType(queries).filters
+    const collections = await db.find(SchemaMeta.collections, queries)
     const total = await db.count(
       SchemaMeta.collections,
       filterQueries,
       configuration.limits.limitCount,
-    );
+    )
 
     return {
       collections,
       total,
-    };
+    }
   }
 
   /**
@@ -127,13 +127,13 @@ export class CollectionsService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
-    return collection;
+    return collection
   }
 
   /**
@@ -151,7 +151,7 @@ export class CollectionsService {
     return {
       total: 0, //await audit.countLogsByResource(resource),
       logs: [],
-    };
+    }
   }
 
   /**
@@ -162,21 +162,21 @@ export class CollectionsService {
     collectionId: string,
     input: UpdateCollectionDTO,
   ) {
-    const { name, documentSecurity } = input;
-    let { permissions, enabled } = input;
+    const { name, documentSecurity } = input
+    let { permissions, enabled } = input
 
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
     if (permissions) {
-      permissions = Permission.aggregate(permissions) ?? [];
+      permissions = Permission.aggregate(permissions) ?? []
     }
-    enabled = enabled ?? collection.get('enabled');
+    enabled = enabled ?? collection.get('enabled')
 
     const updatedCollection = await db.updateDocument(
       SchemaMeta.collections,
@@ -187,7 +187,7 @@ export class CollectionsService {
         .set('documentSecurity', documentSecurity)
         .set('enabled', enabled)
         .set('search', `${collectionId} ${name}`),
-    );
+    )
 
     await db.updateCollection({
       id: collection.getId(),
@@ -195,13 +195,13 @@ export class CollectionsService {
       documentSecurity:
         documentSecurity ?? updatedCollection.get('documentSecurity'),
       enabled: updatedCollection.get('enabled'),
-    });
+    })
 
     this.event.emit(
       `schema.${db.schema}.collection.${collectionId}.updated`,
       updatedCollection,
-    );
-    return updatedCollection;
+    )
+    return updatedCollection
   }
 
   /**
@@ -215,26 +215,26 @@ export class CollectionsService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
     if (!(await db.deleteDocument(SchemaMeta.collections, collectionId))) {
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
         'Failed to remove collection from DB',
-      );
+      )
     }
 
     await this.collectionsQueue.add(CollectionsJob.DELETE_COLLECTION, {
       database: db.schema,
       collection,
       project,
-    });
+    })
 
-    await db.purgeCachedCollection(collection.getId());
+    await db.purgeCachedCollection(collection.getId())
   }
 
   /**
@@ -242,52 +242,52 @@ export class CollectionsService {
    * Get Usage.
    */
   async getUsage(db: Database, range: string = '7d') {
-    const periods = usageConfig;
-    const stats: Record<string, any> = {};
-    const usage: Record<string, any> = {};
-    const days = periods[range as keyof typeof periods];
-    const metrics = [MetricFor.COLLECTIONS, MetricFor.DOCUMENTS];
+    const periods = usageConfig
+    const stats: Record<string, any> = {}
+    const usage: Record<string, any> = {}
+    const days = periods[range as keyof typeof periods]
+    const metrics = [MetricFor.COLLECTIONS, MetricFor.DOCUMENTS]
 
     await Authorization.skip(async () => {
       for (const metric of metrics) {
         const result = await db.findOne('stats', qb =>
           qb.equal('metric', metric).equal('period', MetricPeriod.INF),
-        );
+        )
 
-        stats[metric] = { total: result.get('value') };
-        const limit = days.limit;
-        const period = days.period;
+        stats[metric] = { total: result.get('value') }
+        const limit = days.limit
+        const period = days.period
         const results = await db.find('stats', qb =>
           qb
             .equal('metric', metric)
             .equal('period', period)
             .limit(limit)
             .orderDesc('time'),
-        );
+        )
 
-        stats[metric].data = {};
+        stats[metric].data = {}
         for (const result of results) {
           const time = StatsQueue.formatDate(
             period,
             result.get('time') as Date,
-          )!;
+          )!
           stats[metric].data[time] = {
             value: result.get('value'),
-          };
+          }
         }
       }
-    });
+    })
 
     for (const metric of metrics) {
-      usage[metric] = { total: stats[metric].total, data: [] };
-      let leap = Date.now() - days.limit * days.factor;
+      usage[metric] = { total: stats[metric].total, data: [] }
+      let leap = Date.now() - days.limit * days.factor
       while (leap < Date.now()) {
-        leap += days.factor;
-        const formatDate = StatsQueue.formatDate(days.period, new Date(leap))!;
+        leap += days.factor
+        const formatDate = StatsQueue.formatDate(days.period, new Date(leap))!
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,
-        });
+        })
       }
     }
 
@@ -297,7 +297,7 @@ export class CollectionsService {
       documentsTotal: usage[MetricFor.DOCUMENTS].total,
       collections: usage[MetricFor.COLLECTIONS].data,
       documents: usage[MetricFor.DOCUMENTS].data,
-    });
+    })
   }
 
   /**
@@ -311,60 +311,60 @@ export class CollectionsService {
     const collection = await db.getDocument(
       SchemaMeta.collections,
       collectionId,
-    );
+    )
 
     if (collection.empty()) {
-      throw new Exception(Exception.COLLECTION_NOT_FOUND);
+      throw new Exception(Exception.COLLECTION_NOT_FOUND)
     }
 
-    const periods = usageConfig;
-    const stats: Record<string, any> = {};
-    const usage: Record<string, any> = {};
-    const days = periods[range as keyof typeof periods];
+    const periods = usageConfig
+    const stats: Record<string, any> = {}
+    const usage: Record<string, any> = {}
+    const days = periods[range as keyof typeof periods]
     const metrics = [
       MetricFor.SCHEMA_ID_DOCUMENTS.replace('{schemaId}', db.schema),
-    ];
+    ]
 
     await Authorization.skip(async () => {
       for (const metric of metrics) {
         const result: any = await db.findOne('stats', qb =>
           qb.equal('metric', metric).equal('period', MetricPeriod.INF),
-        );
+        )
 
-        stats[metric] = { total: result?.value ?? 0 };
-        const limit = days.limit;
-        const period = days.period;
+        stats[metric] = { total: result?.value ?? 0 }
+        const limit = days.limit
+        const period = days.period
         const results = await db.find('stats', qb =>
           qb
             .equal('metric', metric)
             .equal('period', period)
             .limit(limit)
             .orderDesc('time'),
-        );
+        )
 
-        stats[metric].data = {};
+        stats[metric].data = {}
         for (const result of results) {
           const time = StatsQueue.formatDate(
             period,
             result.get('time') as Date,
-          )!;
+          )!
           stats[metric].data[time] = {
             value: result.get('value'),
-          };
+          }
         }
       }
-    });
+    })
 
     for (const metric of metrics) {
-      usage[metric] = { total: stats[metric].total, data: [] };
-      let leap = Date.now() - days.limit * days.factor;
+      usage[metric] = { total: stats[metric].total, data: [] }
+      let leap = Date.now() - days.limit * days.factor
       while (leap < Date.now()) {
-        leap += days.factor;
-        const formatDate = StatsQueue.formatDate(days.period, new Date(leap))!;
+        leap += days.factor
+        const formatDate = StatsQueue.formatDate(days.period, new Date(leap))!
         usage[metric].data.push({
           value: stats[metric].data[formatDate]?.value ?? 0,
           date: formatDate,
-        });
+        })
       }
     }
 
@@ -372,6 +372,6 @@ export class CollectionsService {
       range,
       documentsTotal: usage[metrics[0]!].total,
       documents: usage[metrics[0]!].data,
-    });
+    })
   }
 }

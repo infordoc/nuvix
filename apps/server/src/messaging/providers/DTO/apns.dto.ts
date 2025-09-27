@@ -1,39 +1,39 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import { PartialType, OmitType } from '@nestjs/swagger'
+import { IsCustomID } from '@nuvix/core/validators'
+import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator'
 
 export class CreateApnsProviderDTO {
   @IsString()
   @IsCustomID()
-  providerId!: string;
+  providerId!: string
 
   @IsString()
   @MaxLength(128)
-  name!: string;
+  name!: string
 
   @IsString()
   @IsOptional()
-  authKey?: string;
+  authKey?: string
 
   @IsString()
   @IsOptional()
-  authKeyId?: string;
+  authKeyId?: string
 
   @IsString()
   @IsOptional()
-  teamId?: string;
+  teamId?: string
 
   @IsString()
   @IsOptional()
-  bundleId?: string;
+  bundleId?: string
 
   @IsBoolean()
   @IsOptional()
-  sandbox?: boolean = false;
+  sandbox?: boolean = false
 
   @IsBoolean()
   @IsOptional()
-  enabled?: boolean;
+  enabled?: boolean
 }
 
 export class UpdateApnsProviderDTO extends PartialType(

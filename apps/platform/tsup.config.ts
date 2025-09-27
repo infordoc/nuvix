@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsup'
 
 export default defineConfig(options => {
   return {
@@ -16,5 +16,5 @@ export default defineConfig(options => {
     shims: true,
     tsconfig: './tsconfig.app.json',
     plugins: [],
-  };
-});
+  }
+})
