@@ -37,4 +37,15 @@ export type ThrottleOptions = {
   limit: number
   ttl?: number // time to live in seconds
   key?: string | ((args: KeyArgs) => string | string[])
+  /**
+   * Get the throttle config from project configuration, if not set then use the default limit and ttl
+   */
+  configKey?: string
 }
+
+export type IResponse<T, E = unknown> = T & E
+
+export type IListResponse<T, E = unknown> = {
+  data: T[]
+  total: number
+} & E

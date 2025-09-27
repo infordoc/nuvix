@@ -1,12 +1,13 @@
 import {
   Body,
   Controller,
+  HttpStatus,
   Req,
   Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-import { Database } from '@nuvix/db'
+import { Database, type Doc } from '@nuvix/db'
 import { AuthType, Namespace } from '@nuvix/core/decorators'
 import { Locale } from '@nuvix/core/decorators/locale.decorator'
 import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
@@ -33,6 +34,7 @@ import {
 } from './DTO/verification.dto'
 import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account' })
 @Namespace('account')
@@ -43,10 +45,12 @@ export class AccountController {
 
   @Post('', {
     summary: 'Create Account',
-    tags: ['sessions'],
     public: true,
     scopes: 'sessions.create',
-    throttle: 10,
+    throttle: {
+      limit: 10,
+      configKey: 'create_account',
+    },
     resModel: Models.ACCOUNT,
     audit: {
       key: 'user.create',
@@ -54,7 +58,8 @@ export class AccountController {
       userId: '{res.$id}',
     },
     sdk: {
-      name: 'createAccount',
+      name: 'create',
+      code: HttpStatus.CREATED,
       descMd: 'docs/references/account/create-account.md',
     },
   })
@@ -63,7 +68,7 @@ export class AccountController {
     @Body() input: CreateAccountDTO,
     @User() user: UsersDoc,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.accountService.createAccount(
       db,
       input.userId,
@@ -77,12 +82,15 @@ export class AccountController {
 
   @Get('', {
     summary: 'Get Account',
-    tags: ['sessions'],
     scopes: 'account',
-    auth: AuthType.SESSION,
+    auth: [AuthType.SESSION, AuthType.JWT],
     resModel: Models.ACCOUNT,
+    sdk: {
+      name: 'get',
+      descMd: '/docs/references/account/get.md',
+    },
   })
-  async getAccount(@User() user: UsersDoc) {
+  async getAccount(@User() user: UsersDoc): Promise<IResponse<UsersDoc>> {
     if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND)
     }
@@ -90,14 +98,23 @@ export class AccountController {
   }
 
   @Delete('', {
+    summary: 'Delete Account',
     scopes: 'account',
     resModel: Models.NONE,
+    auth: AuthType.ADMIN,
     audit: {
       key: 'user.delete',
       resource: 'user/{res.$id}',
     },
+    sdk: {
+      name: 'delete',
+      descMd: '/docs/references/account/delete.md',
+    },
   })
-  async deleteAccount(@AuthDatabase() db: Database, @User() user: UsersDoc) {
+  async deleteAccount(
+    @AuthDatabase() db: Database,
+    @User() user: UsersDoc,
+  ): Promise<void> {
     return this.accountService.deleteAccount(db, user)
   }
 
@@ -106,6 +123,7 @@ export class AccountController {
     tags: ['sessions'],
     scopes: 'account',
     auth: AuthType.JWT,
+    resModel: Models.JWT,
     throttle: {
       limit: 100,
       key: 'userId:{userId}',
@@ -118,7 +136,7 @@ export class AccountController {
   async createJWT(
     @User() user: UsersDoc,
     @Res({ passthrough: true }) response: NuvixRes,
-  ) {
+  ): Promise<Doc<{ jwt: string }>> {
     return this.accountService.createJWT(user, response)
   }
 

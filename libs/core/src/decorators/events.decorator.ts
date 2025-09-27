@@ -11,6 +11,7 @@ type EventCategory = 'user' | 'target' | 'session'
 
 const auditEvents = [
   'identity.delete',
+  'sessions.delete',
   ...event<EventCategory>('user'),
   ...event<EventCategory>('target'),
   ...event<EventCategory>('session'),

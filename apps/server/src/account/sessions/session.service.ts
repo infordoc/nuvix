@@ -105,7 +105,7 @@ export class SessionService {
     })
 
     return {
-      sessions: updatedSessions,
+      data: updatedSessions,
       total: updatedSessions.length,
     }
   }
@@ -541,18 +541,16 @@ export class SessionService {
       ...detector.getOS(),
       ...detector.getClient(),
       ...detector.getDevice(),
-    })
+    }) as SessionsDoc
 
     Authorization.setRole(Role.user(user.getId()).toString())
 
-    const createdSession = await db.createDocument(
-      'sessions',
-      session.set('$permissions', [
-        Permission.read(Role.user(user.getId())),
-        Permission.update(Role.user(user.getId())),
-        Permission.delete(Role.user(user.getId())),
-      ]),
-    )
+    session.set('$permissions', [
+      Permission.read(Role.user(user.getId())),
+      Permission.update(Role.user(user.getId())),
+      Permission.delete(Role.user(user.getId())),
+    ])
+    const createdSession = await db.createDocument('sessions', session)
 
     await db.purgeCachedDocument('users', user.getId())
 
@@ -666,11 +664,7 @@ export class SessionService {
       scopes,
     )
 
-    response
-      .status(302)
-      .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-      .header('Pragma', 'no-cache')
-      .redirect(oauth2.getLoginURL())
+    return oauth2.getLoginURL()
   }
 
   /**

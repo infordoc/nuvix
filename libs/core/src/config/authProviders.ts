@@ -330,7 +330,7 @@ export const oAuthProviders: Record<
 > = appOAuthProviders
 
 export const oAuthProvidersList = Object.entries(oAuthProviders)
-  .filter(([_, provider]) => provider.enabled)
+  .filter(([_, provider]) => provider.enabled && !provider.mock)
   .map(([name]) => name) as (keyof typeof oAuthProviders)[]
 
 export type OAuthProviders = (typeof oAuthProvidersList)[number]
