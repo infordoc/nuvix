@@ -101,8 +101,3 @@ export class UpdatePhoneDTO {
   @IsString()
   declare password: string
 }
-
-export class UpdateAccountStatusDTO {
-  @IsBoolean()
-  status!: boolean
-}

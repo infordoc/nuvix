@@ -276,6 +276,8 @@ export class AccountService {
         )
       }
       await db.purgeCachedDocument('users', user.getId())
+
+      return user
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.GENERAL_BAD_REQUEST)
@@ -733,7 +735,7 @@ export class AccountService {
     secret = secret ?? Auth.codeGenerator(6)
     const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_CONFIRM * 1000)
 
-    const verification = new Doc({
+    const verification = new Doc<Tokens>({
       $id: ID.unique(),
       userId: user.getId(),
       userInternalId: user.getSequence(),

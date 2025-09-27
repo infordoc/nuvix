@@ -2,18 +2,27 @@ import { IsUID } from '@nuvix/core/validators/input.validator.js'
 import { IsUrl, IsOptional, IsNotEmpty, IsString } from 'class-validator'
 
 export class CreateEmailVerificationDTO {
+  /**
+   * URL to redirect the user back to your app from the verification email. Only URLs from hostnames in your project platform list are allowed. This requirement helps to prevent an [open redirect](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html) attack against your project API.
+   */
   @IsOptional()
   @IsUrl()
   url?: string
 }
 
 export class UpdateEmailVerificationDTO {
+  /**
+   * User ID.
+   */
   @IsUID()
-  userId!: string
+  declare userId: string
 
+  /**
+   * Valid verification token.
+   */
   @IsNotEmpty()
   @IsString()
-  secret!: string
+  declare secret: string
 }
 
 export class UpdatePhoneVerificationDTO extends UpdateEmailVerificationDTO {}
