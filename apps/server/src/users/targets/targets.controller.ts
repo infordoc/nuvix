@@ -1,90 +1,139 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
   Param,
-  Patch,
-  Post,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
 import { TargetsService } from './targets.service'
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
+import {
+  CreateTargetDTO,
+  TargetParamDTO,
+  UpdateTargetDTO,
+} from './DTO/target.dto'
 import { Models } from '@nuvix/core/helper/response.helper'
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import {
-  AuditEvent,
   Namespace,
-  ResModel,
-  Scope,
   AuthDatabase,
   Auth,
   AuthType,
+  QueryFilter,
 } from '@nuvix/core/decorators'
-import type { Database } from '@nuvix/db'
+import type { Database, Query } from '@nuvix/db'
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { Delete, Get, Patch, Post } from '@nuvix/core'
+import { ApiTags } from '@nestjs/swagger'
+import { UserParamDTO } from '../DTO/user.dto'
+import { IListResponse, IResponse } from '@nuvix/utils'
+import { TargetsDoc } from '@nuvix/utils/types'
+import { TargetsQueryPipe } from '@nuvix/core/pipes/queries'
 
 @Namespace('users')
-@Controller({ version: ['1'], path: 'users/:id/targets' })
+@ApiTags('targets')
+@Controller({ version: ['1'], path: 'users/:userId/targets' })
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 @Auth([AuthType.ADMIN, AuthType.KEY])
 export class TargetsController {
   constructor(private readonly targetsService: TargetsService) {}
 
-  @Post()
-  @Scope('targets.create')
-  @ResModel(Models.TARGET)
-  @AuditEvent('target.create', 'target/{res.$id}')
+  @Post('', {
+    summary: 'Create user target',
+    scopes: 'targets.create',
+    model: Models.TARGET,
+    audit: {
+      key: 'target.create',
+      resource: 'target/{res.$id}',
+    },
+    sdk: {
+      name: 'createTarget',
+      descMd: '/docs/references/users/create-target.md',
+    },
+  })
   async addTarget(
     @AuthDatabase() db: Database,
-    @Param('id') id: string,
+    @Param() { userId }: UserParamDTO,
     @Body() createTargetDTO: CreateTargetDTO,
-  ): Promise<any> {
-    return this.targetsService.createTarget(db, id, createTargetDTO)
+  ): Promise<IResponse<TargetsDoc>> {
+    return this.targetsService.createTarget(db, userId, createTargetDTO)
   }
 
-  @Get()
-  @ResModel(Models.TARGET, { list: true })
+  @Get('', {
+    summary: 'List user targets',
+    scopes: 'targets.read',
+    model: {
+      type: Models.TARGET,
+      list: true,
+    },
+    sdk: {
+      name: 'listTargets',
+      descMd: '/docs/references/users/list-user-targets.md',
+    },
+  })
   async getTargets(
     @AuthDatabase() db: Database,
-    @Param('id') id: string,
-  ): Promise<any> {
-    return this.targetsService.getTargets(db, id)
+    @Param() { userId }: UserParamDTO,
+    @QueryFilter(TargetsQueryPipe) queries?: Query[],
+  ): Promise<IListResponse<TargetsDoc>> {
+    return this.targetsService.getTargets(db, userId, queries)
   }
 
-  @Get(':targetId')
-  @ResModel(Models.TARGET)
+  @Get(':targetId', {
+    summary: 'Get user target',
+    scopes: 'targets.read',
+    model: Models.TARGET,
+    sdk: {
+      name: 'getTarget',
+      descMd: '/docs/references/users/get-user-target.md',
+    },
+  })
   async getTarget(
     @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
-  ): Promise<any> {
-    return this.targetsService.getTarget(db, id, targetId)
+    @Param() { userId, targetId }: TargetParamDTO,
+  ): Promise<IResponse<TargetsDoc>> {
+    return this.targetsService.getTarget(db, userId, targetId)
   }
 
-  @Patch(':targetId')
-  @ResModel(Models.TARGET)
+  @Patch(':targetId', {
+    summary: 'Update user target',
+    scopes: 'targets.update',
+    model: Models.TARGET,
+    audit: {
+      key: 'target.update',
+      resource: 'target/{res.$id}',
+    },
+    sdk: {
+      name: 'updateTarget',
+      descMd: '/docs/references/users/update-target.md',
+    },
+  })
   async updateTarget(
     @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
+    @Param() { userId, targetId }: TargetParamDTO,
     @Body() input: UpdateTargetDTO,
-  ): Promise<any> {
-    return this.targetsService.updateTarget(db, id, targetId, input)
+  ): Promise<IResponse<TargetsDoc>> {
+    return this.targetsService.updateTarget(db, userId, targetId, input)
   }
 
-  @Delete(':targetId')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':targetId', {
+    summary: 'Delete user target',
+    scopes: 'targets.delete',
+    model: Models.NONE,
+    audit: {
+      key: 'target.delete',
+      resource: 'target/{params.targetId}',
+    },
+    sdk: {
+      name: 'deleteTarget',
+      descMd: '/docs/references/users/delete-target.md',
+    },
+  })
   async deleteTarget(
     @AuthDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('targetId') targetId: string,
-  ) {
-    return this.targetsService.deleteTarget(db, id, targetId)
+    @Param() { userId, targetId }: TargetParamDTO,
+  ): Promise<void> {
+    return this.targetsService.deleteTarget(db, userId, targetId)
   }
 }

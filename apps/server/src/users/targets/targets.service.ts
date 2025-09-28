@@ -111,7 +111,7 @@ export class TargetsService {
     queries.push(Query.equal('userId', [userId]))
 
     return {
-      targets: await db.find('targets', queries),
+      data: await db.find('targets', queries),
       total: await db.count(
         'targets',
         queries,
@@ -240,7 +240,5 @@ export class TargetsService {
     await db.purgeCachedDocument('users', user.getId())
 
     // TODO: Implement queue for deletes
-
-    return {}
   }
 }

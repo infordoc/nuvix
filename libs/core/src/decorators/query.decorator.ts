@@ -50,7 +50,7 @@ export function QuerySearch() {
         name: 'search',
         required: false,
         type: String,
-        description: `Search term to filter results. [Learn more about search](https://docs.nuvix.in/database/search).`,
+        description: `Search term to filter your list results. Max length: 256 chars.`,
       })(target, propertyKey, descriptor)
     }
   }

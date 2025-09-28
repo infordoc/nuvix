@@ -49,7 +49,7 @@ import type {
   Users,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { Audit } from '@nuvix/audit'
+import { Audit, AuditDoc } from '@nuvix/audit'
 import type { LocaleTranslator } from '@nuvix/core/helper'
 import usageConfig from '@nuvix/core/config/usage'
 import { StatsQueue } from '@nuvix/core/resolvers'
@@ -77,7 +77,7 @@ export class UsersService {
     const filterQueries = Query.groupByType(queries)['filters']
 
     return {
-      users: await db.find('users', queries),
+      data: await db.find('users', queries),
       total: await db.count(
         'users',
         filterQueries,
@@ -638,13 +638,26 @@ export class UsersService {
   /**
    * Get all memberships
    */
-  async getMemberships(db: Database, userId: string) {
+  async getMemberships(
+    db: Database,
+    userId: string,
+    queries: Query[] = [],
+    search?: string,
+  ) {
     const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
       throw new Exception(Exception.USER_NOT_FOUND)
     }
-    const memberships = user.get('memberships', []) as MembershipsDoc[]
+
+    // Set internal queries
+    queries.push(Query.equal('userInternalId', [user.getSequence()]))
+
+    if (search) {
+      queries.push(Query.search('search', search))
+    }
+
+    const memberships = await db.find('memberships', queries)
 
     for (const membership of memberships) {
       const team = await db.getDocument('teams', membership.get('teamId'))
@@ -656,7 +669,7 @@ export class UsersService {
     }
 
     return {
-      memberships: memberships,
+      data: memberships,
       total: memberships.length,
     }
   }
@@ -684,7 +697,7 @@ export class UsersService {
 
     const audit = new Audit(db)
     const logs: any[] = await audit.getLogsByUser(user.getSequence(), queries)
-    const output = []
+    const output: AuditDoc[] = []
 
     for (const log of logs) {
       const userAgent = log.userAgent || 'UNKNOWN'
@@ -723,13 +736,13 @@ export class UsersService {
           deviceModel: device['deviceModel'],
           countryCode,
           countryName,
-        }),
+        }) as unknown as AuditDoc,
       )
     }
 
     return {
       total: await audit.countLogsByUser(user.getSequence()),
-      logs: output,
+      data: output,
     }
   }
 
@@ -743,7 +756,7 @@ export class UsersService {
 
     const filterQueries = Query.groupByType(queries)['filters']
     return {
-      identities: await db.find('identities', queries),
+      data: await db.find('identities', queries),
       total: await db.count(
         'identities',
         filterQueries,

@@ -46,7 +46,7 @@ export class SessionsService {
     }
 
     return {
-      sessions: sessions,
+      data: sessions,
       total: sessions.length,
     }
   }
