@@ -32,7 +32,7 @@ export class TeamsService {
     const total = await db.count('teams', filterQueries)
 
     return {
-      teams: results,
+      data: results,
       total: total,
     }
   }

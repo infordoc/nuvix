@@ -7,7 +7,7 @@ import {
   UpdateMembershipDTO,
   UpdateMembershipStatusDTO,
 } from './DTO/membership.dto'
-import { configuration, QueueFor } from '@nuvix/utils'
+import { configuration, QueueFor, SessionProvider } from '@nuvix/utils'
 import {
   Authorization,
   AuthorizationException,
@@ -29,9 +29,10 @@ import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
 import { sprintf } from 'sprintf-js'
 import * as fs from 'fs'
 import * as Template from 'handlebars'
-import { AppConfigService } from '@nuvix/core'
+import { AppConfigService, CoreService } from '@nuvix/core'
 import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import type { SmtpConfig } from '@nuvix/core/config/smtp.js'
+import { Detector } from '@nuvix/core/helper'
 
 @Injectable()
 export class MembershipsService {
@@ -39,6 +40,7 @@ export class MembershipsService {
 
   constructor(
     private readonly appConfig: AppConfigService,
+    private readonly coreService: CoreService,
     @InjectQueue(QueueFor.MAILS)
     private readonly mailsQueue: Queue<MailQueueOptions, any, MailJob>,
   ) {}
@@ -394,7 +396,7 @@ export class MembershipsService {
       })
 
     return {
-      memberships: await Promise.all(validMemberships),
+      data: await Promise.all(validMemberships),
       total: total,
     }
   }
@@ -492,10 +494,146 @@ export class MembershipsService {
     db: Database,
     teamId: string,
     memberId: string,
-    input: UpdateMembershipStatusDTO,
-  ) {
-    /**@todo ---- */
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
+    { userId, secret }: UpdateMembershipStatusDTO,
+    request: NuvixRequest,
+    response: NuvixRes,
+    user: UsersDoc,
+    project: ProjectsDoc,
+  ): Promise<Doc<Memberships>> {
+    const protocol = request.protocol
+    const membership = await db.getDocument('memberships', memberId)
+
+    if (membership.empty()) {
+      throw new Exception(Exception.MEMBERSHIP_NOT_FOUND)
+    }
+
+    const team = await Authorization.skip(() => db.getDocument('teams', teamId))
+
+    if (team.empty()) {
+      throw new Exception(Exception.TEAM_NOT_FOUND)
+    }
+
+    if (membership.get('teamInternalId') !== team.getSequence()) {
+      throw new Exception(Exception.TEAM_MEMBERSHIP_MISMATCH)
+    }
+
+    if (Auth.hash(secret) !== membership.get('secret')) {
+      throw new Exception(Exception.TEAM_INVALID_SECRET)
+    }
+
+    if (userId !== membership.get('userId')) {
+      throw new Exception(
+        Exception.TEAM_INVITE_MISMATCH,
+        `Invite does not belong to current user (${user.get('email')})`,
+      )
+    }
+
+    const hasSession = !user.empty()
+    if (!hasSession) {
+      const userData = await db.getDocument('users', userId)
+      user.setAll(userData.toObject())
+    }
+
+    if (membership.get('userInternalId') !== user.getSequence()) {
+      throw new Exception(
+        Exception.TEAM_INVITE_MISMATCH,
+        `Invite does not belong to current user (${user.get('email')})`,
+      )
+    }
+
+    if (membership.get('confirm') === true) {
+      throw new Exception(Exception.MEMBERSHIP_ALREADY_CONFIRMED)
+    }
+
+    membership.set('joined', new Date()).set('confirm', true)
+
+    await Authorization.skip(() =>
+      db.updateDocument(
+        'users',
+        user.getId(),
+        user.set('emailVerification', true),
+      ),
+    )
+
+    // Create session for the user if not logged in
+    if (!hasSession) {
+      Authorization.setRole(Role.user(user.getId()).toString())
+
+      const detector = new Detector(request.headers['user-agent'] ?? 'UNKNWON')
+      const record = this.coreService.getGeoDb().get(request.ip)
+      const authDuration =
+        project.get('auths', {})['duration'] ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG
+      const expire = new Date(Date.now() + authDuration * 1000)
+      const sessionSecret = Auth.tokenGenerator()
+
+      const sessionDoc = new Doc({
+        $id: ID.unique(),
+        $permissions: [
+          Permission.read(Role.user(user.getId())),
+          Permission.update(Role.user(user.getId())),
+          Permission.delete(Role.user(user.getId())),
+        ],
+        userId: user.getId(),
+        userInternalId: user.getSequence(),
+        provider: SessionProvider.EMAIL,
+        providerUid: user.get('email'),
+        secret: Auth.hash(sessionSecret),
+        userAgent: request.headers['user-agent'] || 'UNKNWON',
+        ip: request.ip,
+        factors: ['email'],
+        countryCode: record ? record.country?.iso_code?.toLowerCase() : '--',
+        expire: expire,
+        ...detector.getClient(),
+        ...detector.getOS(),
+        ...detector.getDevice(),
+      })
+
+      await db.createDocument('sessions', sessionDoc)
+      Authorization.setRole(Role.user(userId).toString())
+
+      const domainVerification = request.domainVerification
+      if (!domainVerification) {
+        response.header(
+          'X-Fallback-Cookies',
+          JSON.stringify({
+            [Auth.cookieName]: Auth.encodeSession(user.getId(), sessionSecret),
+          }),
+        )
+      }
+
+      const cookieDomain = Auth.cookieDomain
+      const cookieSamesite = Auth.cookieSamesite
+
+      response.setCookie(
+        Auth.cookieName,
+        Auth.encodeSession(user.getId(), sessionSecret),
+        {
+          expires: new Date(Math.floor(expire.getTime() / 1000)),
+          path: '/',
+          domain: cookieDomain,
+          secure: protocol === 'https',
+          httpOnly: true,
+          sameSite: cookieSamesite,
+        },
+      )
+    }
+
+    const updatedMembership = await db.updateDocument(
+      'memberships',
+      membership.getId(),
+      membership,
+    )
+
+    await db.purgeCachedDocument('users', user.getId())
+
+    await Authorization.skip(() =>
+      db.increaseDocumentAttribute('teams', team.getId(), 'total', 1),
+    )
+
+    return updatedMembership
+      .set('teamName', team.get('name'))
+      .set('userName', user.get('name'))
+      .set('userEmail', user.get('email')) as Doc<Memberships>
   }
 
   /**
@@ -538,7 +676,5 @@ export class MembershipsService {
     if (membership.get('confirm')) {
       await db.decreaseDocumentAttribute('teams', team.getId(), 'total', 1, 0)
     }
-
-    return null
   }
 }
