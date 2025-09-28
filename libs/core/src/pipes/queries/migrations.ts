@@ -1,7 +1,7 @@
 import { BaseQueryPipe } from './base'
 
 export class Migrations extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'status',
     'stage',
     'source',

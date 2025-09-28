@@ -20,9 +20,11 @@ import type { ProjectsDoc, TokensDoc, UsersDoc } from '@nuvix/utils/types'
 import { RecoveryService } from './recovery.service'
 import { Post, Put } from '@nuvix/core'
 import type { IResponse } from '@nuvix/utils'
+import { ApiTags } from '@nestjs/swagger'
 
 @Controller({ version: ['1'], path: 'account/recovery' })
 @Namespace('account')
+@ApiTags('recovery')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 @Auth([AuthType.SESSION, AuthType.JWT])
@@ -88,7 +90,7 @@ export class RecoveryController {
     @User() user: UsersDoc,
     @Body() input: UpdateRecoveryDTO,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<TokensDoc>> {
     // TODO: validate newPassword with password dictionry
     return this.recoveryService.updateRecovery({
       db,

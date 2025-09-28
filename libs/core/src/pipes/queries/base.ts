@@ -14,6 +14,8 @@ import { ParseQueryPipe } from '../query.pipe'
 const APP_DATABASE_QUERY_MAX_VALUES = 100
 
 export class BaseQueryPipe extends ParseQueryPipe {
+  public static ALLOWED_ATTRIBUTES: string[] = []
+
   private static get collections() {
     return {
       ...collections.console,

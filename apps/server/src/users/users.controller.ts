@@ -64,7 +64,7 @@ export class UsersController {
 
   @Get()
   @Scope('users.read')
-  @Route()
+
   @ResModel(Models.USER, { list: true })
   async findAll(
     @AuthDatabase() db: Database,
@@ -76,7 +76,7 @@ export class UsersController {
 
   @Post()
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async create(
@@ -89,7 +89,7 @@ export class UsersController {
 
   @Post('argon2')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithArgon2(
@@ -102,7 +102,7 @@ export class UsersController {
 
   @Post('bcrypt')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithBcrypt(
@@ -115,7 +115,7 @@ export class UsersController {
 
   @Post('md5')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithMd5(
@@ -128,7 +128,7 @@ export class UsersController {
 
   @Post('sha')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithSha(
@@ -141,7 +141,7 @@ export class UsersController {
 
   @Post('phpass')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithPhpass(
@@ -154,7 +154,7 @@ export class UsersController {
 
   @Post('scrypt')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScrypt(
@@ -167,7 +167,7 @@ export class UsersController {
 
   @Post('scrypt-modified')
   @Scope('users.create')
-  @Route()
+
   @ResModel(Models.USER)
   @AuditEvent('user.create', 'user/{res.$id}')
   async createWithScryptModified(

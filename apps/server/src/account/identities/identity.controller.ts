@@ -1,13 +1,13 @@
-import {
-  Controller,
-  Param,
-  Query,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common'
+import { Controller, Param, UseGuards, UseInterceptors } from '@nestjs/common'
 import { Database } from '@nuvix/db'
 import { Query as Queries } from '@nuvix/db'
-import { Auth, AuthType, Namespace, Scope } from '@nuvix/core/decorators'
+import {
+  Auth,
+  AuthType,
+  Namespace,
+  QueryFilter,
+  Scope,
+} from '@nuvix/core/decorators'
 import { AuthDatabase } from '@nuvix/core/decorators/project.decorator'
 import { User } from '@nuvix/core/decorators/project-user.decorator'
 import { Models } from '@nuvix/core/helper/response.helper'
@@ -18,9 +18,9 @@ import { IdentityService } from './identity.service'
 import { IdentityIdParamDTO } from './DTO/identity.dto'
 import type { IdentitiesDoc, UsersDoc } from '@nuvix/utils/types'
 import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries'
-import { ApiTags } from '@nestjs/swagger'
 import { Delete, Get } from '@nuvix/core'
 import type { IListResponse } from '@nuvix/utils'
+import { ApiTags } from '@nestjs/swagger'
 
 @Controller({ version: ['1'], path: 'account/identities' })
 @Namespace('account')
@@ -46,7 +46,7 @@ export class IdentityController {
   async getIdentities(
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-    @Query('queries', IdentitiesQueryPipe) queries?: Queries[],
+    @QueryFilter(IdentitiesQueryPipe) queries?: Queries[],
   ): Promise<IListResponse<IdentitiesDoc>> {
     return this.identityService.getIdentities({ user, db, queries })
   }

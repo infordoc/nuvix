@@ -24,4 +24,4 @@ export enum AuthType {
 export const Auth = Reflector.createDecorator<AuthType | AuthType[]>()
 
 /**@deprecated use Route */
-// export const Sdk = Reflector.createDecorator<any>()
+export const Sdk = Reflector.createDecorator<any>()

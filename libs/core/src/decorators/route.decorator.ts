@@ -75,12 +75,12 @@ export interface RouteOptions {
   /** Description of the route functionality */
   description?: string
   /** Brief summary for API documentation */
-  summary?: string
+  summary: string
   /** Tags for grouping routes in documentation */
   tags?: string[]
   /** Authentication type(s) required for this route */
   auth?: AuthType | AuthType[]
-  /** Whether this endpoint is publicly accessible (no auth required) */
+  /** @deprecated Whether this endpoint is publicly accessible (no auth required) */
   public?: boolean
   /** HTTP method(s) for this route */
   method?: RouteMethod | RouteMethod[]
@@ -158,7 +158,7 @@ const validateRouteOptions = (options: RouteOptions): void => {
   }
 }
 
-export const Route = (options: RouteOptions = {}) => {
+export const Route = (options: RouteOptions) => {
   validateRouteOptions(options)
 
   const decorators = []
@@ -256,26 +256,26 @@ export const Route = (options: RouteOptions = {}) => {
 
 // Convenience decorators for common patterns
 export const GetRoute = (
-  path?: string | string[],
-  options?: Omit<RouteOptions, 'method' | 'path'>,
+  path: string | string[],
+  options: Omit<RouteOptions, 'method' | 'path'>,
 ) => Route({ ...options, method: 'GET', path })
 
 export const PostRoute = (
-  path?: string | string[],
-  options?: Omit<RouteOptions, 'method' | 'path'>,
+  path: string | string[],
+  options: Omit<RouteOptions, 'method' | 'path'>,
 ) => Route({ ...options, method: 'POST', path })
 
 export const PutRoute = (
-  path?: string | string[],
-  options?: Omit<RouteOptions, 'method' | 'path'>,
+  path: string | string[],
+  options: Omit<RouteOptions, 'method' | 'path'>,
 ) => Route({ ...options, method: 'PUT', path })
 
 export const PatchRoute = (
-  path?: string | string[],
-  options?: Omit<RouteOptions, 'method' | 'path'>,
+  path: string | string[],
+  options: Omit<RouteOptions, 'method' | 'path'>,
 ) => Route({ ...options, method: 'PATCH', path })
 
 export const DeleteRoute = (
-  path?: string | string[],
-  options?: Omit<RouteOptions, 'method' | 'path'>,
+  path: string | string[],
+  options: Omit<RouteOptions, 'method' | 'path'>,
 ) => Route({ ...options, method: 'DELETE', path })

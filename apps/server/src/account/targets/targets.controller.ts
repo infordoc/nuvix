@@ -28,7 +28,7 @@ import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account/targets' })
 @Namespace('account')
-@ApiTags('pushTargets')
+@ApiTags('targets', 'pushTargets')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 @Auth(AuthType.SESSION)

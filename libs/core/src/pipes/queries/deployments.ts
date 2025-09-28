@@ -1,7 +1,7 @@
 import { BaseQueryPipe } from './base'
 
 export class Deployments extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'buildSize',
     'sourceSize',
     'totalSize',

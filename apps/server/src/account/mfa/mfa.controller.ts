@@ -34,8 +34,8 @@ import type {
   UsersDoc,
 } from '@nuvix/utils/types'
 import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
-import { ApiTags } from '@nestjs/swagger'
 import type { IResponse } from '@nuvix/utils'
+import { ApiTags } from '@nestjs/swagger'
 
 @Controller({ version: ['1'], path: 'account/mfa' })
 @Namespace('account')
