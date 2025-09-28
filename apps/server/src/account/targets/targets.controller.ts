@@ -1,58 +1,60 @@
 import {
   Body,
   Controller,
-  Delete,
-  HttpCode,
-  HttpStatus,
   Param,
-  Post,
-  Put,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
 
 import { Database } from '@nuvix/db'
-import { AuditEvent, Namespace, Scope, Sdk } from '@nuvix/core/decorators'
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
 import { AuthDatabase } from '@nuvix/core/decorators/project.decorator'
 import { User } from '@nuvix/core/decorators/project-user.decorator'
 import { Models } from '@nuvix/core/helper/response.helper'
 import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
-
 import { TargetsService } from './targets.service'
 import {
   CreatePushTargetDTO,
   TargetIdParamDTO,
   UpdatePushTargetDTO,
 } from './DTO/target.dto'
-import type { UsersDoc } from '@nuvix/utils/types'
+import type { TargetsDoc, UsersDoc } from '@nuvix/utils/types'
+import { Delete, Post, Put } from '@nuvix/core'
+import { ApiTags } from '@nestjs/swagger'
+import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account/targets' })
 @Namespace('account')
+@ApiTags('pushTargets')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth(AuthType.SESSION)
 export class TargetsController {
   constructor(private readonly targetService: TargetsService) {}
 
-  @Post('push')
-  @Scope('account')
-  @AuditEvent('target.create', {
-    resource: 'user/{user.$id}/target/{res.$id}',
-    userId: '{user.$id}',
-  })
-  @ResModel(Models.TARGET)
-  @Sdk({
-    name: 'createPushTarget',
+  @Post('push', {
+    summary: 'Create push target',
+    scopes: 'targets.create',
+    model: Models.TARGET,
+    audit: {
+      key: 'target.create',
+      resource: 'user/{user.$id}/target/{res.$id}',
+      userId: '{user.$id}',
+    },
+    sdk: {
+      name: 'createPushTarget',
+      descMd: '/docs/references/account/create-push-target.md',
+    },
   })
   async createPushTarget(
     @Body() input: CreatePushTargetDTO,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Req() request: NuvixRequest,
-  ) {
+  ): Promise<IResponse<TargetsDoc>> {
     return this.targetService.createPushTarget({
       ...input,
       user,
@@ -61,15 +63,19 @@ export class TargetsController {
     })
   }
 
-  @Put(':targetId/push')
-  @Scope('account')
-  @AuditEvent('target.update', {
-    resource: 'user/{user.$id}/target/{params.targetId}',
-    userId: '{user.$id}',
-  })
-  @ResModel(Models.TARGET)
-  @Sdk({
-    name: 'updatePushTarget',
+  @Put(':targetId/push', {
+    summary: 'Update push target',
+    scopes: 'targets.update',
+    model: Models.TARGET,
+    audit: {
+      key: 'target.update',
+      resource: 'user/{user.$id}/target/{params.targetId}',
+      userId: '{user.$id}',
+    },
+    sdk: {
+      name: 'updatePushTarget',
+      descMd: '/docs/references/account/update-push-target.md',
+    },
   })
   async updatePushTarget(
     @Param() { targetId }: TargetIdParamDTO,
@@ -77,7 +83,7 @@ export class TargetsController {
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Req() request: NuvixRequest,
-  ) {
+  ): Promise<IResponse<TargetsDoc>> {
     return this.targetService.updatePushTarget({
       targetId,
       ...input,
@@ -87,22 +93,25 @@ export class TargetsController {
     })
   }
 
-  @Delete(':targetId/push')
-  @Scope('account')
-  @AuditEvent('target.delete', {
-    resource: 'user/{user.$id}/target/{params.targetId}',
-    userId: '{user.$id}',
-  })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deletePushTarget',
+  @Delete(':targetId/push', {
+    summary: 'Delete push target',
+    scopes: 'targets.delete',
+    model: Models.NONE,
+    audit: {
+      key: 'target.delete',
+      resource: 'user/{user.$id}/target/{params.targetId}',
+      userId: '{user.$id}',
+    },
+    sdk: {
+      name: 'deletePushTarget',
+      descMd: '/docs/references/account/delete-push-target.md',
+    },
   })
   async deletePushTarget(
     @Param() { targetId }: TargetIdParamDTO,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<void> {
     return this.targetService.deletePushTarget({
       targetId,
       user,

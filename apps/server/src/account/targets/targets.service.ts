@@ -13,7 +13,7 @@ import { Auth } from '@nuvix/core/helper/auth.helper'
 import { Detector } from '@nuvix/core/helper/detector.helper'
 import { MessageType } from '@nuvix/utils'
 import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto'
-import type { UsersDoc } from '@nuvix/utils/types'
+import type { Targets, UsersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class TargetsService {
@@ -53,7 +53,7 @@ export class TargetsService {
     try {
       const createdTarget = await db.createDocument(
         'targets',
-        new Doc({
+        new Doc<Targets>({
           $id: finalTargetId,
           $permissions: [
             Permission.read(Role.user(user.getId())),
@@ -153,8 +153,6 @@ export class TargetsService {
 
     // TODO: Handle Delete Queue
     // Delete resource that depends on Targets (like in messaging)
-
-    return {}
   }
 }
 

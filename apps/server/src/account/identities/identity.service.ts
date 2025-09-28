@@ -13,9 +13,10 @@ export class IdentityService {
     db,
     user,
     queries = [],
-  }: WithDB<WithUser<{ queries?: Query[] }>>): Promise<
-    Doc<{ identities: IdentitiesDoc[]; total: number }>
-  > {
+  }: WithDB<WithUser<{ queries?: Query[] }>>): Promise<{
+    data: IdentitiesDoc[]
+    total: number
+  }> {
     queries.push(Query.equal('userInternalId', [user.getSequence()]))
 
     const filterQueries = Query.groupByType(queries)['filters']
@@ -27,10 +28,10 @@ export class IdentityService {
         configuration.limits.limitCount,
       )
 
-      return new Doc({
-        identities: results,
+      return {
+        data: results,
         total: total,
-      })
+      }
     } catch (error: any) {
       if (error.name === 'OrderException') {
         throw new Exception(

@@ -1,20 +1,13 @@
 import {
   Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Query,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-
 import { Database } from '@nuvix/db'
 import { Query as Queries } from '@nuvix/db'
-
-import { AuditEvent, Namespace, Scope, Sdk } from '@nuvix/core/decorators'
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator'
+import { Auth, AuthType, Namespace, Scope } from '@nuvix/core/decorators'
 import { AuthDatabase } from '@nuvix/core/decorators/project.decorator'
 import { User } from '@nuvix/core/decorators/project-user.decorator'
 import { Models } from '@nuvix/core/helper/response.helper'
@@ -23,46 +16,58 @@ import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.intercept
 import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 import { IdentityService } from './identity.service'
 import { IdentityIdParamDTO } from './DTO/identity.dto'
-import type { UsersDoc } from '@nuvix/utils/types'
+import type { IdentitiesDoc, UsersDoc } from '@nuvix/utils/types'
 import { IdentitiesQueryPipe } from '@nuvix/core/pipes/queries'
+import { ApiTags } from '@nestjs/swagger'
+import { Delete, Get } from '@nuvix/core'
+import type { IListResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account/identities' })
 @Namespace('account')
+@Scope('account')
+@ApiTags('identities')
+@Auth([AuthType.SESSION, AuthType.JWT])
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class IdentityController {
   constructor(private readonly identityService: IdentityService) {}
 
-  @Get()
-  @Scope('account')
-  @ResModel(Models.IDENTITY, { list: true })
-  @Sdk({
-    name: 'getIdentities',
+  @Get('', {
+    summary: 'List identities',
+    model: {
+      type: Models.IDENTITY,
+      list: true,
+    },
+    sdk: {
+      name: 'listIdentities',
+      descMd: '/docs/references/account/list-identities.md',
+    },
   })
   async getIdentities(
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Query('queries', IdentitiesQueryPipe) queries?: Queries[],
-  ) {
+  ): Promise<IListResponse<IdentitiesDoc>> {
     return this.identityService.getIdentities({ user, db, queries })
   }
 
-  @Delete(':identityId')
-  @Scope('account')
-  @AuditEvent('identity.delete', {
-    resource: 'user/{user.$id}/identity/{params.identityId}',
-    userId: '{user.$id}',
-  })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deleteIdentity',
-    code: HttpStatus.NO_CONTENT,
+  @Delete(':identityId', {
+    summary: 'Delete identity',
+    model: Models.NONE,
+    audit: {
+      key: 'identity.delete',
+      resource: 'user/{user.$id}/identity/{params.identityId}',
+      userId: '{user.$id}',
+    },
+    sdk: {
+      name: 'deleteIdentity',
+      descMd: '/docs/references/account/delete-identity.md',
+    },
   })
   async deleteIdentity(
     @Param() { identityId }: IdentityIdParamDTO,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<void> {
     return this.identityService.deleteIdentity({
       identityId,
       db,
