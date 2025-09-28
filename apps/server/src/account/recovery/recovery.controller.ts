@@ -68,7 +68,7 @@ export class RecoveryController {
   @Put('', {
     summary: 'Update password recovery (confirmation)',
     scopes: 'sessions.update',
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     throttle: {
       limit: 10,
       key: 'ip:{ip},userId:{param-userId}',

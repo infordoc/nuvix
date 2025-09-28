@@ -50,7 +50,7 @@ export class AccountController {
       limit: 10,
       configKey: 'create_account',
     },
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     audit: {
       key: 'user.create',
       resource: 'user/{res.$id}',
@@ -59,7 +59,7 @@ export class AccountController {
     sdk: {
       name: 'create',
       code: HttpStatus.CREATED,
-      descMd: 'docs/references/account/create-account.md',
+      descMd: 'docs/references/account/create.md',
     },
   })
   async createAccount(
@@ -83,7 +83,7 @@ export class AccountController {
     summary: 'Get Account',
     scopes: 'account',
     auth: [AuthType.SESSION, AuthType.JWT],
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     sdk: {
       name: 'get',
       descMd: '/docs/references/account/get.md',
@@ -99,7 +99,7 @@ export class AccountController {
   @Delete('', {
     summary: 'Delete Account',
     scopes: 'account',
-    resModel: Models.NONE,
+    model: Models.NONE,
     auth: AuthType.ADMIN,
     audit: {
       key: 'user.delete',
@@ -120,7 +120,7 @@ export class AccountController {
   @Get('prefs', {
     summary: 'Get account preferences',
     scopes: 'account',
-    resModel: Models.PREFERENCES,
+    model: Models.PREFERENCES,
     auth: [AuthType.SESSION, AuthType.JWT],
     sdk: {
       name: 'getPrefs',
@@ -134,7 +134,7 @@ export class AccountController {
   @Patch('prefs', {
     summary: 'Update preferences',
     scopes: 'account',
-    resModel: Models.PREFERENCES,
+    model: Models.PREFERENCES,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -156,7 +156,7 @@ export class AccountController {
   @Patch('name', {
     summary: 'Update name',
     scopes: 'account',
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -179,7 +179,7 @@ export class AccountController {
     summary: 'Update password',
     scopes: 'account',
     throttle: 10,
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -208,7 +208,7 @@ export class AccountController {
   @Patch('email', {
     summary: 'Update email',
     scopes: 'account',
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -230,7 +230,7 @@ export class AccountController {
   @Patch('phone', {
     summary: 'Update phone',
     scopes: 'account',
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -259,7 +259,7 @@ export class AccountController {
   @Patch('status', {
     summary: 'Update status',
     scopes: 'account',
-    resModel: Models.ACCOUNT,
+    model: Models.ACCOUNT,
     auth: [AuthType.SESSION, AuthType.JWT],
     audit: {
       key: 'user.update',
@@ -288,7 +288,7 @@ export class AccountController {
     summary: 'Create email verification',
     tags: ['verification'],
     scopes: 'account',
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     auth: [AuthType.SESSION, AuthType.JWT],
     throttle: {
       limit: 10,
@@ -328,7 +328,7 @@ export class AccountController {
     summary: 'Update email verification (confirmation)',
     tags: ['verification'],
     scopes: 'public',
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     auth: [AuthType.SESSION, AuthType.JWT],
     throttle: {
       limit: 10,
@@ -363,7 +363,7 @@ export class AccountController {
     summary: 'Create phone verification',
     tags: ['verification'],
     scopes: 'account',
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     auth: [AuthType.SESSION, AuthType.JWT],
     throttle: {
       limit: 10,
@@ -401,7 +401,7 @@ export class AccountController {
     summary: 'Update phone verification (confirmation)',
     tags: ['verification'],
     scopes: 'public',
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     auth: [AuthType.SESSION, AuthType.JWT],
     throttle: {
       limit: 10,

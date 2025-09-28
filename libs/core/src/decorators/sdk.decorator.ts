@@ -6,7 +6,13 @@ import {
   APP_AUTH_TYPE_KEY,
   APP_AUTH_TYPE_SESSION,
 } from '@nuvix/utils'
-export const Namespace = Reflector.createDecorator<keyof typeof services>()
+import { applyDecorators } from '@nestjs/common'
+import { ApiTags } from '@nestjs/swagger'
+
+export const _Namespace = Reflector.createDecorator<keyof typeof services>()
+export const Namespace = (ns: keyof typeof services) => {
+  return applyDecorators(ApiTags(ns), _Namespace(ns))
+}
 
 export enum AuthType {
   SESSION = APP_AUTH_TYPE_SESSION,
@@ -16,3 +22,6 @@ export enum AuthType {
 }
 
 export const Auth = Reflector.createDecorator<AuthType | AuthType[]>()
+
+/**@deprecated use Route */
+export const Sdk = Reflector.createDecorator<any>()

@@ -22,6 +22,7 @@ const auditEvents = [
   ...event('topic'),
   ...event('subscriber'),
   ...event('message'),
+  ...event('challenge'),
 ] as const
 
 export type AuditEventKey = (typeof auditEvents)[number]

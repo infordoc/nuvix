@@ -1,47 +1,56 @@
+import { ApiProperty } from '@nestjs/swagger'
 import { IsUID, TOTP } from '@nuvix/core/validators'
-import {
-  IsBoolean,
-  IsNotEmpty,
-  IsString,
-  IsIn,
-  IsOptional,
-} from 'class-validator'
+import { IsBoolean, IsNotEmpty, IsString, IsIn } from 'class-validator'
 
 export class UpdateAccountMfaDTO {
+  /**
+   * Enable or disable MFA.
+   */
   @IsBoolean()
   @IsNotEmpty()
-  mfa!: boolean
+  declare mfa: boolean
 }
 
 export class MfaAuthenticatorTypeParamDTO {
+  /**
+   * Type of authenticator. Must be `totp`
+   */
   @IsString()
   @IsNotEmpty()
-  @IsIn([TOTP.TOTP]) // TODO: Add other supported types
-  type!: string
+  @IsIn([TOTP.TOTP])
+  declare type: string
 }
 
 export class VerifyMfaAuthenticatorDTO {
+  /**
+   * Valid verification token.
+   */
   @IsString()
   @IsNotEmpty()
-  otp!: string
+  declare otp: string
 }
 
 export class CreateMfaChallengeDTO {
+  @ApiProperty({
+    description: `Factor used for verification. Must be one of following: \`${TOTP.EMAIL}\`, \`${TOTP.PHONE}\`, \`${TOTP.TOTP}\`, \`${TOTP.RECOVERY_CODE}\`.`,
+  })
   @IsString()
   @IsNotEmpty()
   @IsIn([TOTP.EMAIL, TOTP.PHONE, TOTP.TOTP, TOTP.RECOVERY_CODE])
-  factor!: string
-
-  @IsOptional()
-  @IsUID()
-  userId?: string
+  declare factor: string
 }
 
 export class VerifyMfaChallengeDTO {
+  /**
+   * ID of the challenge.
+   */
   @IsUID()
-  challengeId!: string
+  declare challengeId: string
 
+  /**
+   * Valid verification token.
+   */
   @IsString()
   @IsNotEmpty()
-  otp!: string
+  declare otp: string
 }

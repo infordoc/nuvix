@@ -53,7 +53,7 @@ export class SessionsController {
     summary: 'List Sessions',
     tags: ['sessions'],
     scopes: 'account',
-    resModel: { type: Models.SESSION, list: true },
+    model: { type: Models.SESSION, list: true },
     sdk: {
       name: 'listSessions',
       descMd: '/docs/references/account/list-sessions.md',
@@ -70,7 +70,7 @@ export class SessionsController {
     summary: 'Delete sessions',
     tags: ['sessions'],
     scopes: 'account',
-    resModel: Models.NONE,
+    model: Models.NONE,
     throttle: 100,
     audit: {
       key: 'sessions.delete',
@@ -101,7 +101,7 @@ export class SessionsController {
     summary: 'Get session',
     tags: ['sessions'],
     scopes: 'account',
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     sdk: {
       name: 'getSession',
       descMd: '/docs/references/account/get-session.md',
@@ -119,7 +119,7 @@ export class SessionsController {
     summary: 'Delete session',
     tags: ['sessions'],
     scopes: 'account',
-    resModel: Models.NONE,
+    model: Models.NONE,
     throttle: 100,
     audit: {
       key: 'session.delete',
@@ -152,7 +152,7 @@ export class SessionsController {
     summary: 'Update session',
     tags: ['sessions'],
     scopes: 'account',
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     throttle: 10,
     audit: {
       key: 'session.update',
@@ -181,7 +181,7 @@ export class SessionsController {
     summary: 'Create email password session',
     tags: ['sessions'],
     scopes: 'sessions.create',
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     auth: [],
     throttle: {
       limit: 10,
@@ -222,7 +222,7 @@ export class SessionsController {
     summary: 'Create anonymous session',
     tags: ['sessions'],
     scopes: 'sessions.create',
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     auth: [],
     throttle: {
       limit: 50,
@@ -261,7 +261,7 @@ export class SessionsController {
     summary: 'Create session',
     tags: ['sessions'],
     scopes: 'sessions.create',
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     auth: [],
     throttle: {
       limit: 10,
@@ -341,6 +341,7 @@ export class SessionsController {
     tags: ['sessions'],
     scopes: 'public',
     auth: [],
+    docs: false,
   })
   async OAuth2Callback(
     @Query() input: OAuth2CallbackDTO,
@@ -369,6 +370,7 @@ export class SessionsController {
     tags: ['sessions'],
     scopes: 'public',
     auth: [],
+    docs: false,
   })
   async OAuth2CallbackWithProject(
     @Body() input: OAuth2CallbackDTO,
@@ -406,6 +408,7 @@ export class SessionsController {
       resource: 'user/{res.userId}',
       userId: '{res.userId}',
     },
+    docs: false,
   })
   async OAuth2Redirect(
     @AuthDatabase() db: Database,
@@ -463,7 +466,7 @@ export class SessionsController {
     tags: ['tokens'],
     scopes: 'sessions.create',
     auth: [],
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     throttle: {
       limit: 60,
       key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
@@ -503,7 +506,7 @@ export class SessionsController {
     tags: ['tokens'],
     scopes: 'sessions.create',
     auth: [],
-    resModel: Models.TOKEN,
+    model: Models.TOKEN,
     throttle: {
       limit: 10,
       key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
@@ -543,7 +546,7 @@ export class SessionsController {
     tags: ['sessions'],
     scopes: 'sessions.update',
     auth: [],
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     throttle: {
       limit: 10,
       key: 'ip:{ip},userId:{param-userId}',
@@ -583,7 +586,7 @@ export class SessionsController {
     tags: ['sessions'],
     scopes: 'sessions.update',
     auth: [],
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     throttle: {
       limit: 10,
       key: 'ip:{ip},userId:{param-userId}',
@@ -623,7 +626,7 @@ export class SessionsController {
     tags: ['tokens'],
     scopes: 'sessions.create',
     auth: [],
-    resModel: Models.SESSION,
+    model: Models.SESSION,
     throttle: {
       limit: 10,
       key: ({ body, ip }) => [`phone:${body['phone']}`, `ip:${ip}`],
@@ -663,7 +666,7 @@ export class SessionsController {
     tags: ['tokens'],
     scopes: 'account',
     auth: AuthType.JWT,
-    resModel: Models.JWT,
+    model: Models.JWT,
     throttle: {
       limit: 100,
       key: 'userId:{userId}',

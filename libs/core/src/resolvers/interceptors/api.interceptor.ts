@@ -12,10 +12,10 @@ import { Auth } from '../../helper/auth.helper'
 import { Exception } from '../../extend/exception'
 import { TOTP } from '../../validators/MFA.validator'
 import {
-  Namespace,
   Scope,
   Auth as Auths,
   type AuthType,
+  _Namespace,
 } from '@nuvix/core/decorators'
 import { Scopes } from '@nuvix/core/config/roles'
 import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
@@ -52,7 +52,7 @@ export class ApiInterceptor implements NestInterceptor {
       context.getHandler(),
       context.getClass(),
     ])
-    const namespace = this.reflector.getAllAndOverride(Namespace, [
+    const namespace = this.reflector.getAllAndOverride(_Namespace, [
       context.getHandler(),
       context.getClass(),
     ])

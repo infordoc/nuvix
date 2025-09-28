@@ -1679,7 +1679,6 @@ export class SessionService {
     project: ProjectsDoc
   }) {
     // Check if SMS provider is configured
-    // TODO: import from constants
     if (!this.appConfig.get('sms').enabled) {
       throw new Exception(
         Exception.GENERAL_PHONE_DISABLED,

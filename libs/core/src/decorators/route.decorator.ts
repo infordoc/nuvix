@@ -91,7 +91,7 @@ export interface RouteOptions {
   /** Rate limiting configuration */
   throttle?: number | ThrottleOptions
   /** Response model configuration for serialization */
-  resModel?:
+  model?:
     | Type<any>
     | ResolverTypeContextOptions
     | { type: Type<unknown>; options: ResolverTypeContextOptions }
@@ -99,6 +99,8 @@ export interface RouteOptions {
   sdk?: SdkOptions
   /** Unique operation identifier for OpenAPI */
   operationId?: string
+  /** Include in Open api schema */
+  docs?: boolean
 }
 
 const HTTP_METHOD_DECORATORS = {
@@ -201,8 +203,8 @@ export const Route = (options: RouteOptions = {}) => {
   }
 
   // Response model
-  if (options.resModel) {
-    decorators.push(ResModel(options.resModel as any))
+  if (options.model) {
+    decorators.push(ResModel(options.model as any))
   }
 
   // Prepare description for API documentation
