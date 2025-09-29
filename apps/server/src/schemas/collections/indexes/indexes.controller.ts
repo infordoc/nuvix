@@ -52,7 +52,7 @@ export class IndexesController {
     },
     sdk: {
       name: 'createIndex',
-      descMd: '/docs/references/databases/create-index.md',
+      descMd: '/docs/references/schemas/collections/create-index.md',
     },
   })
   async createIndex(
@@ -70,7 +70,7 @@ export class IndexesController {
     model: { type: Models.INDEX, list: true },
     sdk: {
       name: 'listIndexes',
-      descMd: '/docs/references/databases/list-indexes.md',
+      descMd: '/docs/references/schemas/collections/list-indexes.md',
     },
   })
   async findIndexes(
@@ -87,7 +87,7 @@ export class IndexesController {
     model: Models.INDEX,
     sdk: {
       name: 'getIndex',
-      descMd: '/docs/references/databases/get-index.md',
+      descMd: '/docs/references/schemas/collections/get-index.md',
     },
   })
   async findIndex(
@@ -106,7 +106,7 @@ export class IndexesController {
     },
     sdk: {
       name: 'deleteIndex',
-      descMd: '/docs/references/databases/delete-index.md',
+      descMd: '/docs/references/schemas/collections/delete-index.md',
     },
   })
   async removeIndex(

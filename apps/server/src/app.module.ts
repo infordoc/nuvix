@@ -11,21 +11,12 @@ import { AuditsQueue } from '@nuvix/core/resolvers/queues/audits.queue'
 import { configuration, QueueFor } from '@nuvix/utils'
 import { JwtModule, JwtService } from '@nestjs/jwt'
 // Hooks
-import {
-  ApiHook,
-  AuthHook,
-  CorsHook,
-  HostHook,
-  ProjectHook,
-  StatsHook,
-  AuditHook,
-} from '@nuvix/core/resolvers/hooks'
+import { CorsHook, HostHook, ProjectHook } from '@nuvix/core/resolvers/hooks'
 // Modules
 import { BullModule } from '@nestjs/bullmq'
 import { ScheduleModule } from '@nestjs/schedule'
 import { CoreModule } from '@nuvix/core/core.module'
 import { EventEmitterModule } from '@nestjs/event-emitter'
-import { BaseModule } from './base/base.module'
 import { DatabasesModule } from './databases/databases.module'
 import { AvatarsModule } from './avatars/avatars.module'
 import { UsersModule } from './users/users.module'
@@ -34,11 +25,6 @@ import { TeamsModule } from './teams/teams.module'
 import { StorageModule } from './storage/storage.module'
 import { MessagingModule } from './messaging/messaging.module'
 import { SchemasModule } from './schemas/schemas.module'
-// Controllers
-import { BaseController } from './base/base.controller'
-import { AvatarsController } from './avatars/avatars.controller'
-import { DatabasesController } from './databases/databases.controller'
-
 import { Key } from '@nuvix/core/helper/key.helper'
 import { StatsQueue } from '@nuvix/core/resolvers/queues'
 import { AppConfigService } from '@nuvix/core'
@@ -88,7 +74,6 @@ import { ApiLogsQueue } from '@nuvix/core/resolvers/queues/logs.queue'
       secret: configuration.security.jwtSecret,
       global: true,
     }),
-    BaseModule,
     UsersModule,
     TeamsModule,
     AccountModule,
@@ -112,10 +97,6 @@ export class AppModule implements NestModule, OnModuleInit {
     consumer
       .apply(ProjectHook, HostHook, CorsHook)
       .forRoutes('*')
-      .apply(AuthHook, ApiHook, StatsHook)
-      .forRoutes(BaseController, DatabasesController, AvatarsController)
-      .apply(AuditHook)
-      .forRoutes(DatabasesController)
       .apply(LogsHook)
       .forRoutes('*')
   }

@@ -57,7 +57,7 @@ export class DocumentsController {
     model: { type: Models.DOCUMENT, list: true },
     sdk: {
       name: 'listDocuments',
-      descMd: '/docs/references/databases/list-documents.md',
+      descMd: '/docs/references/schemas/collections/list-documents.md',
     },
   })
   async findDocuments(
@@ -84,7 +84,7 @@ export class DocumentsController {
     },
     sdk: {
       name: 'createDocument',
-      descMd: '/docs/references/databases/create-document.md',
+      descMd: '/docs/references/schemas/collections/create-document.md',
     },
   })
   async createDocument(
@@ -107,7 +107,7 @@ export class DocumentsController {
     model: Models.DOCUMENT,
     sdk: {
       name: 'getDocument',
-      descMd: '/docs/references/databases/get-document.md',
+      descMd: '/docs/references/schemas/collections/get-document.md',
     },
   })
   async findDocument(
@@ -139,7 +139,7 @@ export class DocumentsController {
     },
     sdk: {
       name: 'updateDocument',
-      descMd: '/docs/references/databases/update-document.md',
+      descMd: '/docs/references/schemas/collections/update-document.md',
     },
   })
   async updateDocument(
@@ -169,7 +169,7 @@ export class DocumentsController {
     },
     sdk: {
       name: 'deleteDocument',
-      descMd: '/docs/references/databases/delete-document.md',
+      descMd: '/docs/references/schemas/collections/delete-document.md',
     },
   })
   async removeDocument(
@@ -186,7 +186,7 @@ export class DocumentsController {
     auth: [AuthType.ADMIN, AuthType.KEY],
     sdk: {
       name: 'listDocumentLogs',
-      descMd: '/docs/references/databases/get-document-logs.md',
+      descMd: '/docs/references/schemas/collections/get-document-logs.md',
     },
     docs: false,
   })

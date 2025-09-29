@@ -46,3 +46,24 @@ export class CreateSchema {
   @IsEnum(SchemaType)
   declare type: SchemaType
 }
+
+// Query
+
+export class SchemaQueryDTO {
+  @ApiProperty({
+    description: 'Schema type, either managed, unmanaged or document',
+    enum: SchemaType,
+    example: 'managed',
+  })
+  type?: SchemaType
+}
+
+// Params
+
+export class SchemaParamsDTO {
+  /**
+   * Schema ID.
+   */
+  @IsString()
+  declare schemaId: string
+}

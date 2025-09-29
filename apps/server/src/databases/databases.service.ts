@@ -62,7 +62,7 @@ export class DatabasesService {
 
     const schemas = await qb
     return {
-      schemas: schemas,
+      data: schemas,
       total: schemas.length,
     }
   }

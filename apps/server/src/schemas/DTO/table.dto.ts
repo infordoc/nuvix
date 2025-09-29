@@ -1,0 +1,39 @@
+import { IsInt, IsOptional, IsString } from 'class-validator'
+
+export class TableParamsDTO {
+  /**
+   * Schema ID. (See [Schemas](https://docs.nuvix.in/schemas)).
+   */
+  @IsOptional()
+  @IsString()
+  schemaId: string = 'public'
+
+  /**
+   * Table ID.
+   */
+  @IsString()
+  declare tableId: string
+}
+
+export class FunctionParamsDTO {
+  /**
+   * Schema ID. (See [Schemas](https://docs.nuvix.in/schemas)).
+   */
+  @IsOptional()
+  @IsString()
+  schemaId: string = 'public'
+
+  /**
+   * Function ID.
+   */
+  @IsString()
+  declare functionId: string
+}
+
+export class RowParamsDTO extends TableParamsDTO {
+  /**
+   * Row ID. (See [Schemas](https://docs.nuvix.in/schemas/managed-schema#_id))
+   */
+  @IsInt()
+  declare rowId: number
+}

@@ -72,7 +72,7 @@ export class AttributesController {
     model: { type: Models.ATTRIBUTE, list: true },
     sdk: {
       name: 'listAttributes',
-      descMd: '/docs/references/databases/list-attributes.md',
+      descMd: '/docs/references/schemas/collections/list-attributes.md',
     },
   })
   async findAttributes(
@@ -93,7 +93,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createStringAttribute',
-      descMd: '/docs/references/databases/create-string-attribute.md',
+      descMd: '/docs/references/schemas/collections/create-string-attribute.md',
     },
   })
   async createStringAttribute(
@@ -120,7 +120,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createEmailAttribute',
-      descMd: '/docs/references/databases/create-email-attribute.md',
+      descMd: '/docs/references/schemas/collections/create-email-attribute.md',
     },
   })
   async createEmailAttribute(
@@ -147,7 +147,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createEnumAttribute',
-      descMd: '/docs/references/databases/create-attribute-enum.md',
+      descMd: '/docs/references/schemas/collections/create-attribute-enum.md',
     },
   })
   async createEnumAttribute(
@@ -174,7 +174,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createIpAttribute',
-      descMd: '/docs/references/databases/create-ip-attribute.md',
+      descMd: '/docs/references/schemas/collections/create-ip-attribute.md',
     },
   })
   async createIpAttribute(
@@ -201,7 +201,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createUrlAttribute',
-      descMd: '/docs/references/databases/create-url-attribute.md',
+      descMd: '/docs/references/schemas/collections/create-url-attribute.md',
     },
   })
   async createUrlAttribute(
@@ -228,7 +228,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'createIntegerAttribute',
-      descMd: '/docs/references/databases/create-integer-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/create-integer-attribute.md',
     },
   })
   async createIntegerAttribute(
@@ -255,7 +256,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'createFloatAttribute',
-      descMd: '/docs/references/databases/create-float-attribute.md',
+      descMd: '/docs/references/schemas/collections/create-float-attribute.md',
     },
   })
   async createFloatAttribute(
@@ -282,7 +283,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'createBooleanAttribute',
-      descMd: '/docs/references/databases/create-boolean-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/create-boolean-attribute.md',
     },
   })
   async createBooleanAttribute(
@@ -309,7 +311,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'createDatetimeAttribute',
-      descMd: '/docs/references/databases/create-datetime-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/create-datetime-attribute.md',
     },
   })
   async createDatetimeAttribute(
@@ -336,7 +339,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'createRelationshipAttribute',
-      descMd: '/docs/references/databases/create-relationship-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/create-relationship-attribute.md',
     },
   })
   async createRelationAttribute(
@@ -359,7 +363,7 @@ export class AttributesController {
     model: Models.ATTRIBUTE,
     sdk: {
       name: 'getAttribute',
-      descMd: '/docs/references/databases/get-attribute.md',
+      descMd: '/docs/references/schemas/collections/get-attribute.md',
     },
   })
   async findAttribute(
@@ -379,7 +383,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateStringAttribute',
-      descMd: '/docs/references/databases/update-string-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-string-attribute.md',
     },
   })
   async updateStringAttribute(
@@ -405,7 +409,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateEmailAttribute',
-      descMd: '/docs/references/databases/update-email-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-email-attribute.md',
     },
   })
   async updateEmailAttribute(
@@ -431,7 +435,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateEnumAttribute',
-      descMd: '/docs/references/databases/update-enum-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-enum-attribute.md',
     },
   })
   async updateEnumAttribute(
@@ -457,7 +461,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateIpAttribute',
-      descMd: '/docs/references/databases/update-ip-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-ip-attribute.md',
     },
   })
   async updateIpAttribute(
@@ -483,7 +487,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateUrlAttribute',
-      descMd: '/docs/references/databases/update-url-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-url-attribute.md',
     },
   })
   async updateUrlAttribute(
@@ -509,7 +513,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateIntegerAttribute',
-      descMd: '/docs/references/databases/update-integer-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/update-integer-attribute.md',
     },
   })
   async updateIntegerAttribute(
@@ -535,7 +540,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateFloatAttribute',
-      descMd: '/docs/references/databases/update-float-attribute.md',
+      descMd: '/docs/references/schemas/collections/update-float-attribute.md',
     },
   })
   async updateFloatAttribute(
@@ -561,7 +566,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateBooleanAttribute',
-      descMd: '/docs/references/databases/update-boolean-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/update-boolean-attribute.md',
     },
   })
   async updateBooleanAttribute(
@@ -587,7 +593,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateDatetimeAttribute',
-      descMd: '/docs/references/databases/update-datetime-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/update-datetime-attribute.md',
     },
   })
   async updateDatetimeAttribute(
@@ -613,7 +620,8 @@ export class AttributesController {
     },
     sdk: {
       name: 'updateRelationshipAttribute',
-      descMd: '/docs/references/databases/update-relationship-attribute.md',
+      descMd:
+        '/docs/references/schemas/collections/update-relationship-attribute.md',
     },
   })
   async updateRelationAttribute(
@@ -638,7 +646,7 @@ export class AttributesController {
     },
     sdk: {
       name: 'deleteAttribute',
-      descMd: '/docs/references/databases/delete-attribute.md',
+      descMd: '/docs/references/schemas/collections/delete-attribute.md',
     },
   })
   async removeAttribute(

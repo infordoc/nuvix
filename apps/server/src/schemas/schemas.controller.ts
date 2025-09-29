@@ -1,22 +1,12 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  Head,
-  HttpCode,
-  HttpStatus,
-  Logger,
   Param,
   ParseArrayPipe,
   ParseBoolPipe,
   ParseIntPipe,
-  Patch,
-  Post,
-  Put,
   Query,
   Req,
-  UseFilters,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
@@ -31,33 +21,35 @@ import {
   AuthType,
   CurrentSchema,
   Namespace,
-  Scope,
-  Sdk,
 } from '@nuvix/core/decorators'
 import { DataSource } from '@nuvix/pg'
 import { ParseDuplicatePipe } from '@nuvix/core/pipes'
-import { PermissionsDTO } from './DTO/permissions'
+import { PermissionsDTO } from './DTO/permissions.dto'
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import {
+  FunctionParamsDTO,
+  RowParamsDTO,
+  TableParamsDTO,
+} from './DTO/table.dto'
 
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 @Controller({ version: ['1'], path: ['schemas/:schemaId', 'public'] })
 @UseGuards(ProjectGuard)
 @Namespace('schemas')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.ADMIN, AuthType.JWT, AuthType.SESSION, AuthType.SESSION])
 export class SchemasController {
-  private readonly logger = new Logger(SchemasController.name)
   constructor(private readonly schemasService: SchemasService) {}
 
-  @Get([':tableId', 'tables/:tableId'])
-  @Sdk({
-    name: 'queryTable',
-    description: 'Query a table with optional filters',
-    code: HttpStatus.OK,
+  @Get([':tableId', 'tables/:tableId'], {
+    summary: 'Query table data',
+    description: 'Retrieve data from a specific table with optional pagination',
+    scopes: 'schema.tables.read',
   })
   async queryTable(
-    @Param('tableId') table: string,
+    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @Req() request: NuvixRequest,
     @CurrentSchema() pg: DataSource,
-    @Param('schemaId') schema: string = 'public',
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -73,12 +65,15 @@ export class SchemasController {
     })
   }
 
-  @Post([':tableId', 'tables/:tableId'])
+  @Post([':tableId', 'tables/:tableId'], {
+    summary: 'Insert data into table',
+    description: 'Insert one or more records into a specific table',
+    scopes: 'schema.tables.create',
+  })
   async insertIntoTable(
-    @Param('tableId') table: string,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
-    @Param('schemaId') schema: string = 'public',
+    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @Body() input: Record<string, any> | Record<string, any>[],
     @Query(
       'columns',
@@ -97,12 +92,16 @@ export class SchemasController {
     })
   }
 
-  @Patch([':tableId', 'tables/:tableId'])
+  @Patch([':tableId', 'tables/:tableId'], {
+    summary: 'Update table data',
+    description:
+      'Update existing records in a specific table with optional pagination and force flag',
+    scopes: 'schema.tables.update',
+  })
   async updateTables(
-    @Param('tableId') table: string,
+    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
-    @Param('schemaId') schema: string = 'public',
     @Body() input: Record<string, any>,
     @Query(
       'columns',
@@ -130,12 +129,17 @@ export class SchemasController {
     })
   }
 
-  @Put([':tableId', 'tables/:tableId'])
+  @Put([':tableId', 'tables/:tableId'], {
+    summary: 'Upsert table data',
+    description:
+      'Insert or update records in a specific table (upsert operation)',
+    scopes: ['schema.tables.create', 'schema.tables.update'],
+    docs: false,
+  })
   async upsertTable(
-    @Param('tableId') table: string,
+    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
-    @Param('schemaId') schema: string = 'public',
     @Body() input: Record<string, any> | Record<string, any>[],
     @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
     columns?: string[],
@@ -143,12 +147,15 @@ export class SchemasController {
     @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
   ) {}
 
-  @Delete([':tableId', 'tables/:tableId'])
+  @Delete([':tableId', 'tables/:tableId'], {
+    summary: 'Delete table data',
+    description:
+      'Delete records from a specific table with optional pagination and force flag',
+  })
   async deleteTables(
-    @Param('tableId') table: string,
+    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
-    @Param('schemaId') schema: string = 'public',
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit?: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -167,18 +174,21 @@ export class SchemasController {
     })
   }
 
-  // @Head(':tableId')
-  // async tableMetadata() {
-
-  // }
-
-  @Post(['fn/:functionId', 'rpc/:functionId'])
-  @HttpCode(HttpStatus.OK)
+  @Post(['fn/:functionId', 'rpc/:functionId'], {
+    summary: 'Call database function',
+    description: 'Execute a stored procedure or function in the database',
+    sdk: {
+      name: 'rpc',
+      code: 200,
+    },
+  })
   async callFunction(
-    @Param('functionId') functionName: string,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
-    @Param('schemaId') schema: string = 'public',
+    @Param() {
+      schemaId: schema = 'public',
+      functionId: functionName,
+    }: FunctionParamsDTO,
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit?: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -196,12 +206,14 @@ export class SchemasController {
     })
   }
 
-  @Put(['tables/:tableId/permissions'])
+  @Put(['tables/:tableId/permissions'], {
+    summary: 'Update table permissions',
+    description: 'Manage permissions for a specific table',
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   manageTablePermissions(
     @CurrentSchema() pg: DataSource,
-    @Param('schemaId') schema: string,
-    @Param('tableId') tableId: string,
+    @Param() { schemaId: schema = 'public', tableId }: TableParamsDTO,
     @Body() body: PermissionsDTO,
   ) {
     return this.schemasService.updatePermissions({
@@ -212,14 +224,14 @@ export class SchemasController {
     })
   }
 
-  // TODO: check if schema type is not managed then throw error...
-  @Put(['tables/:tableId/:rowId/permissions'])
+  @Put(['tables/:tableId/:rowId/permissions'], {
+    summary: 'Update row permissions',
+    description: 'Manage permissions for a specific row in a table',
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   manageRowPermissions(
     @CurrentSchema() pg: DataSource,
-    @Param('tableId') tableId: string,
-    @Param('rowId') rowId: number,
-    @Param('schemaId') schema: string,
+    @Param() { schemaId: schema = 'public', tableId, rowId }: RowParamsDTO,
     @Body() body: PermissionsDTO,
   ) {
     return this.schemasService.updatePermissions({
@@ -231,12 +243,14 @@ export class SchemasController {
     })
   }
 
-  @Get(['tables/:tableId/permissions'])
+  @Get(['tables/:tableId/permissions'], {
+    summary: 'Get table permissions',
+    description: 'Retrieve permissions for a specific table',
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   getTablePermissions(
     @CurrentSchema() pg: DataSource,
-    @Param('schemaId') schema: string,
-    @Param('tableId') tableId: string,
+    @Param() { schemaId: schema = 'public', tableId }: TableParamsDTO,
   ) {
     return this.schemasService.getPermissions({
       pg,
@@ -245,13 +259,14 @@ export class SchemasController {
     })
   }
 
-  @Get(['tables/:tableId/:rowId/permissions'])
+  @Get(['tables/:tableId/:rowId/permissions'], {
+    summary: 'Get row permissions',
+    description: 'Retrieve permissions for a specific row in a table',
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   getRowPermissions(
     @CurrentSchema() pg: DataSource,
-    @Param('tableId') tableId: string,
-    @Param('rowId') rowId: number,
-    @Param('schemaId') schema: string,
+    @Param() { schemaId: schema = 'public', tableId, rowId }: RowParamsDTO,
   ) {
     return this.schemasService.getPermissions({
       pg,

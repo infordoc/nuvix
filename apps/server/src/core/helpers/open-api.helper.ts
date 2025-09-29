@@ -1,32 +1,55 @@
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
-import { Exception } from '@nuvix/core/extend/exception'
 import { apiReference } from '@scalar/nestjs-api-reference'
 
 export function openApiSetup(app: NestFastifyApplication) {
   const config = new DocumentBuilder()
     .setTitle('Nuvix API')
-    .setDescription('A powerful BaaS for your next project')
+    .setDescription('A powerful Backend for your next project')
     .setVersion('1.0')
     .addTag('nuvix')
     .addGlobalParameters({
-      name: 'x-project-id',
+      name: 'x-nuvix-project',
       in: 'header',
+      required: true,
+      description: 'Project ID.',
     })
     .addCookieAuth('session')
     .addGlobalResponse({
-      status: 500,
+      status: '5XX',
       description: 'Internal server error',
-      type: Exception,
+      schema: {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'number',
+            description: 'Error code',
+          },
+          type: {
+            type: 'string',
+            description: 'Error type',
+          },
+          message: {
+            type: 'string',
+            description: 'Error message',
+          },
+          version: {
+            type: 'string',
+            description: 'API version',
+          },
+        },
+        required: ['code', 'type', 'message', 'version'],
+      },
     })
     .build()
+
   const documentFactory = () =>
     SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true,
     })
   SwaggerModule.setup('api', app, documentFactory, {
-    swaggerUiEnabled: true,
-    raw: ['json'],
+    raw: true,
+    ui: false,
   })
 
   // TODO: ---------

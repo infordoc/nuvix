@@ -1,13 +1,20 @@
 import {
   Controller,
   UseInterceptors,
-  Get,
   Query,
   ParseDatePipe,
   UseGuards,
+  Req,
 } from '@nestjs/common'
 import { Authorization, type Database } from '@nuvix/db'
-import { ProjectDatabase, ResModel, Scope } from '@nuvix/core/decorators'
+import {
+  Auth,
+  AuthType,
+  ProjectDatabase,
+  ProjectPg,
+  ResModel,
+  Scope,
+} from '@nuvix/core/decorators'
 import { Models } from '@nuvix/core/helper'
 import {
   ConsoleInterceptor,
@@ -15,15 +22,30 @@ import {
   ResponseInterceptor,
   StatsQueue,
 } from '@nuvix/core/resolvers'
-import { MetricFor, MetricPeriod } from '@nuvix/utils'
+import { MetricFor, MetricPeriod, RouteContext, Schemas } from '@nuvix/utils'
+import { Get } from '@nuvix/core'
+import { RouteConfig } from '@nestjs/platform-fastify'
+import { DataSource } from '@nuvix/pg'
+import {
+  ASTToQueryBuilder,
+  Expression,
+  OrderParser,
+  ParsedOrdering,
+  Parser,
+  ParserResult,
+  SelectNode,
+  SelectParser,
+} from '@nuvix/utils/query'
+import { Exception } from '@nuvix/core/extend/exception'
 
 @Controller({ version: ['1'], path: 'project' })
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 @UseGuards(ProjectGuard)
+@Auth([AuthType.ADMIN])
 export class ProjectController {
   constructor() {}
 
-  @Get('usage')
+  @Get('usage', { summary: '' })
   @Scope('project.read')
   @ResModel(Models.USAGE_PROJECT)
   async getUsage(
@@ -246,11 +268,65 @@ export class ProjectController {
     }
   }
 
-  @Get('variables')
+  @Get('variables', { summary: '' })
   async getVariables() {
     return {
       variables: [],
       total: 0,
     }
+  }
+
+  @Get('logs', {
+    summary: 'Get Project Logs',
+    scopes: 'project.read',
+  })
+  @RouteConfig({
+    [RouteContext.SKIP_LOGGING]: true,
+  })
+  async getLogs(@Req() req: NuvixRequest, @ProjectPg() dataSource: DataSource) {
+    const qb = dataSource.qb('api_logs').withSchema(Schemas.System)
+    const astToQueryBuilder = new ASTToQueryBuilder(qb, dataSource)
+
+    const { filter, select, order } = this.getParamsFromUrl(req.url, 'api_logs')
+
+    astToQueryBuilder.applySelect(select)
+    astToQueryBuilder.applyFilters(filter, {
+      applyExtra: true,
+      tableName: 'api_logs',
+    })
+    astToQueryBuilder.applyOrder(order, 'api_logs')
+
+    try {
+      return await qb
+    } catch (e) {
+      throw new Exception(Exception.GENERAL_SERVER_ERROR)
+    }
+  }
+
+  private getParamsFromUrl(
+    url: string,
+    tableName: string,
+  ): {
+    filter?: Expression & ParserResult
+    select?: SelectNode[]
+    order?: ParsedOrdering[]
+  } {
+    const queryString = url.includes('?') ? url.split('?')[1] : ''
+    const urlParams = new URLSearchParams(queryString)
+
+    const _filter = urlParams.get('filter') || ''
+    const filter = _filter
+      ? Parser.create({ tableName }).parse(_filter)
+      : undefined
+
+    const _select = urlParams.get('select') || ''
+    const select = _select
+      ? new SelectParser({ tableName }).parse(_select)
+      : undefined
+
+    const _order = urlParams.get('order') || ''
+    const order = _order ? OrderParser.parse(_order, tableName) : undefined
+
+    return { filter, select, order }
   }
 }

@@ -58,7 +58,7 @@ export class CollectionsController {
     model: { type: Models.COLLECTION, list: true },
     sdk: {
       name: 'listCollections',
-      descMd: '/docs/references/databases/list-collections.md',
+      descMd: '/docs/references/schemas/collections/list-collections.md',
     },
   })
   async findCollections(
@@ -79,7 +79,7 @@ export class CollectionsController {
     },
     sdk: {
       name: 'createCollection',
-      descMd: '/docs/references/databases/create-collection.md',
+      descMd: '/docs/references/schemas/collections/create-collection.md',
     },
   })
   async createCollection(
@@ -95,7 +95,7 @@ export class CollectionsController {
     model: Models.COLLECTION,
     sdk: {
       name: 'getCollection',
-      descMd: '/docs/references/databases/get-collection.md',
+      descMd: '/docs/references/schemas/collections/get-collection.md',
     },
   })
   async findCollection(
@@ -115,7 +115,7 @@ export class CollectionsController {
     },
     sdk: {
       name: 'updateCollection',
-      descMd: '/docs/references/databases/update-collection.md',
+      descMd: '/docs/references/schemas/collections/update-collection.md',
     },
   })
   async updateCollection(
@@ -139,7 +139,7 @@ export class CollectionsController {
     },
     sdk: {
       name: 'deleteCollection',
-      descMd: '/docs/references/databases/delete-collection.md',
+      descMd: '/docs/references/schemas/collections/delete-collection.md',
     },
   })
   async removeCollection(
@@ -156,7 +156,7 @@ export class CollectionsController {
     model: Models.USAGE_COLLECTION,
     sdk: {
       name: 'getCollectionUsage',
-      descMd: '/docs/references/databases/get-collection-usage.md',
+      descMd: '/docs/references/schemas/collections/get-collection-usage.md',
     },
   })
   async getCollectionUsage(
@@ -173,7 +173,7 @@ export class CollectionsController {
     model: { type: Models.LOG, list: true },
     sdk: {
       name: 'listCollectionLogs',
-      descMd: '/docs/references/databases/get-collection-logs.md',
+      descMd: '/docs/references/schemas/collections/get-collection-logs.md',
     },
     docs: false,
   })
