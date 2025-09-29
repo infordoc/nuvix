@@ -11,6 +11,7 @@ import {
   All,
   type Type,
   HttpStatus,
+  HttpCode,
 } from '@nestjs/common'
 import {
   AuditEvent,
@@ -23,8 +24,17 @@ import type { Scopes } from '../config'
 import { Throttle } from './throttle.decorator'
 import { ResModel } from './res-model.decorator'
 import type { ResolverTypeContextOptions } from '../resolvers'
-import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger'
+import {
+  ApiOperation,
+  ApiTags,
+  ApiResponse,
+  ApiExtraModels,
+  getSchemaPath,
+  ApiExcludeEndpoint,
+  ApiExtension,
+} from '@nestjs/swagger'
 import * as fs from 'fs'
+import { Models } from '../helper'
 
 type RouteMethod =
   | 'GET'
@@ -40,6 +50,11 @@ interface ApiResponseConfig {
   status: HttpStatus | number
   description?: string
   type?: Type<any>
+  /**
+   * Content-Type(s) for this response
+   * Example: ['application/json'], ['application/pdf'], ['image/png']
+   */
+  contentTypes?: string[]
 }
 
 /**
@@ -158,12 +173,95 @@ const validateRouteOptions = (options: RouteOptions): void => {
   }
 }
 
-export const Route = (options: RouteOptions) => {
+/**
+ * Decorator to define an API route with integrated features like authentication, authorization, auditing, rate limiting, response modeling, and SDK generation.
+ *
+ * @param options Configuration options for the route
+ * @returns A combination of NestJS and custom decorators applied to the route handler
+ *
+ * @example Create endpoint with detailed options
+ * ```typescript
+ * @Route({
+ *   method: 'POST',
+ *   path: '/files',
+ *   summary: 'Create file',
+ *   scopes: 'files.create',
+ *   model: Models.FILE,
+ *   throttle: {
+ *     limit: configuration.limits.writeRateDefault,
+ *     ttl: configuration.limits.writeRatePeriodDefault,
+ *     key: ({ req, user, ip }) => [
+ *       `ip:${ip}`,
+ *       `userId:${user.getId()}`,
+ *       `chunkId:${req.headers['x-nuvix-id']}`,
+ *     ].join(','),
+ *     configKey: 'bucket_files_create',
+ *   },
+ *   audit: {
+ *     key: 'file.create',
+ *     resource: 'file/{res.$id}',
+ *   },
+ *   sdk: {
+ *     name: 'createFile',
+ *     descMd: '/docs/references/storage/create-file.md',
+ *   },
+ * })
+ * async createFile(
+ *   @ProjectDatabase() db: Database,
+ *   @User() user: Doc,
+ *   @Body() createFileDto: CreateFileDto
+ * ): Promise<FilesDoc> {
+ *   // Implementation here
+ * }
+ * ```
+ *
+ * @example List endpoint with response model
+ * ```typescript
+ * @Route({
+ *   method: 'GET',
+ *   summary: 'List files',
+ *   scopes: 'files.read',
+ *   model: { type: Models.FILE, list: true },
+ *   sdk: {
+ *     name: 'getFiles',
+ *     descMd: '/docs/references/storage/list-files.md',
+ *   },
+ * })
+ * ```
+ *
+ * @example Custom responses for file endpoints
+ * ```typescript
+ * @Route({
+ *   method: 'GET',
+ *   path: ':fileId/download',
+ *   summary: 'Get file for download',
+ *   scopes: 'files.read',
+ *   sdk: {
+ *     name: 'getFileDownload',
+ *     responses: [
+ *       {
+ *         status: 200,
+ *         description: 'Returns the file as binary stream',
+ *         contentTypes: ['application/octet-stream'],
+ *       },
+ *       {
+ *         status: 206,
+ *         description: 'Partial content (range requests)',
+ *         contentTypes: ['application/octet-stream'],
+ *       },
+ *     ],
+ *   },
+ * })
+ * ```
+ */
+export const Route = ({ docs = true, ...options }: RouteOptions) => {
   validateRouteOptions(options)
 
   const decorators = []
 
-  // Handle HTTP method decorators
+  // -------------------------------
+  // 1. HTTP Method & Path
+  // -------------------------------
   const methods = options.method
     ? Array.isArray(options.method)
       ? options.method
@@ -181,80 +279,186 @@ export const Route = (options: RouteOptions) => {
     decorators.push(DecoratorClass(routePath))
   }
 
-  // Authentication
-  if (options.auth) {
-    decorators.push(Auth(options.auth))
-  }
-
-  // Authorization scopes
-  if (options.scopes) {
-    decorators.push(Scope(options.scopes))
-  }
-
-  // Audit events
+  // -------------------------------
+  // 2. Security / Scopes / Audit
+  // -------------------------------
+  if (options.auth) decorators.push(Auth(options.auth))
+  if (options.scopes) decorators.push(Scope(options.scopes))
   if (options.audit) {
     const { key, ...rest } = options.audit
     decorators.push(AuditEvent(key as AuditEventKey, rest))
   }
-
-  // Rate limiting
   if (options.throttle) {
     decorators.push(Throttle(options.throttle as any))
-  }
-
-  // Response model
-  if (options.model) {
-    decorators.push(ResModel(options.model as any))
-  }
-
-  // Prepare description for API documentation
-  let description = options.description
-  if (options.sdk?.descMd) {
-    const markdownContent = readMarkdownFile(options.sdk.descMd)
-    if (markdownContent) {
-      description = markdownContent
+    if (docs) {
+      let properties: Record<string, any> = {
+        limit:
+          typeof options.throttle === 'number'
+            ? options.throttle
+            : options.throttle.limit,
+        ...(typeof options.throttle === 'object' ? options.throttle : {}), // -------------- TODO: add default properties
+      }
+      decorators.push(ApiExtension('x-rateLimit', properties))
     }
   }
 
-  // API tags (groups)
-  const apiTags = options.tags
-  if (apiTags?.length) {
-    decorators.push(ApiTags(...apiTags))
+  // -------------------------------
+  // 3. Response Model
+  // -------------------------------
+  let responseModel: Type<any> | undefined
+  let isList = false
+
+  if (
+    options.model &&
+    typeof options.model === 'object' &&
+    'type' in options.model &&
+    'list' in options.model &&
+    options.model.list
+  ) {
+    isList = true
+    responseModel = options.model.type
+    if (responseModel)
+      decorators.push(ApiExtraModels(responseModel as Type<any>))
   }
 
-  // API operation documentation
-  decorators.push(
-    ApiOperation({
-      summary: options.summary || options.description,
-      description,
-      tags: apiTags,
-      deprecated: options.sdk?.deprecated,
-      operationId: options.operationId || options.sdk?.name,
-    }),
-  )
+  if (options.model && !isList && responseModel !== Models.NONE) {
+    responseModel =
+      typeof options.model === 'object' && 'type' in options.model
+        ? options.model.type
+        : (options.model as Type<any>)
+    decorators.push(ResModel(options.model as any))
+  }
 
-  // Custom API responses
-  if (options.sdk?.responses?.length) {
-    options.sdk.responses.forEach(response => {
+  // -------------------------------
+  // 4. Markdown → Description
+  // -------------------------------
+  let description = options.description
+  if (options.sdk?.descMd && docs) {
+    const markdownContent = readMarkdownFile(options.sdk.descMd)
+    if (markdownContent) description = markdownContent
+  }
+
+  // -------------------------------
+  // 5. Tags & Operation Metadata
+  // -------------------------------
+  if (options.tags?.length && docs) decorators.push(ApiTags(...options.tags))
+
+  if (docs) {
+    decorators.push(
+      ApiOperation({
+        summary: options.summary || options.description,
+        description,
+        tags: options.tags,
+        deprecated: options.sdk?.deprecated,
+        operationId: options.operationId || options.sdk?.name,
+      }),
+    )
+  }
+
+  // -------------------------------
+  // 6. Responses
+  // -------------------------------
+  const defaultCode =
+    options.sdk?.code ??
+    (methods.includes('POST')
+      ? HttpStatus.CREATED
+      : methods.includes('HEAD') ||
+          methods.includes('OPTIONS') ||
+          methods.includes('DELETE')
+        ? HttpStatus.NO_CONTENT
+        : HttpStatus.OK)
+  decorators.push(HttpCode(defaultCode))
+
+  const buildListSchema = (type: any) => ({
+    properties: {
+      data: {
+        type: 'array',
+        items: { $ref: getSchemaPath(type) },
+      },
+      total: { type: 'number' },
+    },
+  })
+
+  if (!options.sdk?.responses?.length && docs) {
+    if (isList) {
       decorators.push(
         ApiResponse({
-          status: response.status,
-          description: response.description,
-          type: response.type,
+          status: defaultCode,
+          description: 'Successful response',
+          schema: buildListSchema(responseModel),
         }),
       )
+    } else {
+      decorators.push(
+        ApiResponse({
+          status: defaultCode,
+          description: 'Successful response',
+          type: responseModel as any,
+        }),
+      )
+    }
+  } else if (docs) {
+    options.sdk?.responses?.forEach(response => {
+      if (response.contentTypes?.length) {
+        const content: Record<string, any> = {}
+        for (const ct of response.contentTypes) {
+          if (
+            ct.startsWith('image/') ||
+            ct === 'application/pdf' ||
+            ct === 'application/octet-stream'
+          ) {
+            content[ct] = {
+              schema: { type: 'string', format: 'binary' },
+            }
+          } else {
+            if (isList && response.type) {
+              content[ct] = { schema: buildListSchema(response.type) }
+            } else {
+              content[ct] = {
+                schema: response.type
+                  ? { $ref: getSchemaPath(response.type) }
+                  : { type: 'object' },
+              }
+            }
+          }
+        }
+
+        decorators.push(
+          ApiResponse({
+            status: response.status,
+            description: response.description,
+            content,
+          }),
+        )
+      } else {
+        if (isList && response.type) {
+          decorators.push(
+            ApiResponse({
+              status: response.status,
+              description: response.description,
+              schema: buildListSchema(response.type),
+            }),
+          )
+        } else {
+          decorators.push(
+            ApiResponse({
+              status: response.status,
+              description: response.description,
+              type: response.type,
+            }),
+          )
+        }
+      }
     })
   }
 
-  // SDK configuration
-  if (options.sdk) {
-    ///
+  if (!docs) {
+    decorators.push(ApiExcludeEndpoint())
   }
 
   return applyDecorators(...decorators)
 }
 
-// Convenience decorators for common patterns
 export const GetRoute = (
   path: string | string[],
   options: Omit<RouteOptions, 'method' | 'path'>,

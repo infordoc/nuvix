@@ -160,6 +160,13 @@ export class FilesController {
     sdk: {
       name: 'getFilePreview',
       descMd: '/docs/references/storage/get-file-preview.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file preview as binary stream',
+          contentTypes: ['image/png', 'image/jpeg', 'image/webp'],
+        },
+      ],
     },
   })
   async previewFile(
@@ -185,6 +192,18 @@ export class FilesController {
     sdk: {
       name: 'getFileDownload',
       descMd: '/docs/references/storage/get-file-download.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file as binary stream',
+          contentTypes: ['application/octet-stream'],
+        },
+        {
+          status: 206,
+          description: 'Partial content (range requests)',
+          contentTypes: ['application/octet-stream'],
+        },
+      ],
     },
   })
   async downloadFile(
@@ -210,6 +229,18 @@ export class FilesController {
     sdk: {
       name: 'getFileView',
       descMd: '/docs/references/storage/get-file-view.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file as binary stream',
+          contentTypes: ['application/octet-stream'],
+        },
+        {
+          status: 206,
+          description: 'Partial content (range requests)',
+          contentTypes: ['application/octet-stream'],
+        },
+      ],
     },
   })
   async viewFile(
