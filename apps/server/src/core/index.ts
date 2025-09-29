@@ -1,1 +1,1 @@
-export * from './helpers/open-api.helper';
+export * from './helpers/open-api.helper'

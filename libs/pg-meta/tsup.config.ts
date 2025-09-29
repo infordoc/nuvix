@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsup'
 
 export default defineConfig({
   entry: ['src/index.ts'],
@@ -14,4 +14,4 @@ export default defineConfig({
   shims: true,
   skipNodeModulesBundle: true,
   tsconfig: './tsconfig.lib.json',
-});
+})

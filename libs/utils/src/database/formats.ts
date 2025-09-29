@@ -5,14 +5,14 @@ import {
   Attribute,
   DatetimeValidator,
   NumericType,
-} from '@nuvix/db';
+} from '@nuvix/db'
 import {
   EmailValidator,
   IPValidator,
   URLValidator,
   WhiteList,
-} from '@nuvix/core/validators';
-import { AttributeFormat } from '@nuvix/utils';
+} from '@nuvix/core/validators'
+import { AttributeFormat } from '@nuvix/utils'
 
 export const formats: Record<string, Format> = {
   [AttributeFormat.EMAIL]: {
@@ -25,8 +25,8 @@ export const formats: Record<string, Format> = {
   },
   [AttributeFormat.ENUM]: {
     callback: attribute => {
-      const elements = (attribute as Attribute).formatOptions?.['elements'];
-      return new WhiteList(elements, true);
+      const elements = (attribute as Attribute).formatOptions?.['elements']
+      return new WhiteList(elements, true)
     },
     type: AttributeType.String,
   },
@@ -40,18 +40,18 @@ export const formats: Record<string, Format> = {
   },
   [AttributeFormat.INTEGER]: {
     callback: (attribute: any) => {
-      const min = attribute.formatOptions.min ?? -Infinity;
-      const max = attribute.formatOptions.max ?? Infinity;
-      return new RangeValidator(min, max, NumericType.INTEGER);
+      const min = attribute.formatOptions.min ?? -Infinity
+      const max = attribute.formatOptions.max ?? Infinity
+      return new RangeValidator(min, max, NumericType.INTEGER)
     },
     type: AttributeType.Integer,
   },
   [AttributeFormat.FLOAT]: {
     callback: (attribute: any) => {
-      const min = attribute.formatOptions.min ?? -Infinity;
-      const max = attribute.formatOptions.max ?? Infinity;
-      return new RangeValidator(min, max, NumericType.FLOAT);
+      const min = attribute.formatOptions.min ?? -Infinity
+      const max = attribute.formatOptions.max ?? Infinity
+      return new RangeValidator(min, max, NumericType.FLOAT)
     },
     type: AttributeType.Float,
   },
-};
+}

@@ -11,30 +11,30 @@ import {
   Query,
   Put,
   UseGuards,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import authMethods from '@nuvix/core/config/auth';
-import { Exception } from '@nuvix/core/extend/exception';
-import { ProjectService } from './projects.service';
+import authMethods from '@nuvix/core/config/auth'
+import { Exception } from '@nuvix/core/extend/exception'
+import { ProjectService } from './projects.service'
 
 // DTO
-import { oAuth2DTO } from './DTO/oauth2.dto';
-import { CreateJwtDTO } from './DTO/create-jwt.dto';
-import { CreateKeyDTO, UpdateKeyDTO } from './DTO/keys.dto';
-import { CreateProjectDTO } from './DTO/create-project.dto';
-import { CreateWebhookDTO, UpdateWebhookDTO } from './DTO/webhook.dto';
+import { oAuth2DTO } from './DTO/oauth2.dto'
+import { CreateJwtDTO } from './DTO/create-jwt.dto'
+import { CreateKeyDTO, UpdateKeyDTO } from './DTO/keys.dto'
+import { CreateProjectDTO } from './DTO/create-project.dto'
+import { CreateWebhookDTO, UpdateWebhookDTO } from './DTO/webhook.dto'
 import {
   UpdateProjectDTO,
   UpdateProjectTeamDTO,
-} from './DTO/update-project.dto';
+} from './DTO/update-project.dto'
 import {
   ProjectApiStatusAllDTO,
   ProjectApiStatusDTO,
-} from './DTO/project-api.dto';
+} from './DTO/project-api.dto'
 import {
   UpdateProjectAllServiceDTO,
   UpdateProjectServiceDTO,
-} from './DTO/project-service.dto';
+} from './DTO/project-service.dto'
 import {
   AuthSessionAlertsDTO,
   AuthLimitDTO,
@@ -45,17 +45,17 @@ import {
   AuthPersonalDataDTO,
   AuthMaxSessionsDTO,
   AuthMockNumbersDTO,
-} from './DTO/project-auth.dto';
-import { CreatePlatformDTO, UpdatePlatformDTO } from './DTO/platform.dto';
-import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { Models } from '@nuvix/core/helper/response.helper';
-import type { Query as Queries } from '@nuvix/db';
-import { AuthGuard } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor';
-import { ResModel, Scope } from '@nuvix/core/decorators';
-import { ProjectsQueryPipe } from '@nuvix/core/pipes/queries';
-import { CreateEnvTokenDTO } from './DTO/env-token.dto';
+} from './DTO/project-auth.dto'
+import { CreatePlatformDTO, UpdatePlatformDTO } from './DTO/platform.dto'
+import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { Models } from '@nuvix/core/helper/response.helper'
+import type { Query as Queries } from '@nuvix/db'
+import { AuthGuard } from '@nuvix/core/resolvers/guards/auth.guard'
+import { ConsoleInterceptor } from '@nuvix/core/resolvers/interceptors/console.interceptor'
+import { ResModel, Scope } from '@nuvix/core/decorators'
+import { ProjectsQueryPipe } from '@nuvix/core/pipes/queries'
+import { CreateEnvTokenDTO } from './DTO/env-token.dto'
 
 @Controller({ version: ['1'], path: 'projects' })
 @UseGuards(AuthGuard)
@@ -67,8 +67,8 @@ export class ProjectsController {
   @Scope('projects.create')
   @ResModel(Models.PROJECT)
   async create(@Body() createProjectDTO: CreateProjectDTO) {
-    const project = await this.projectService.create(createProjectDTO);
-    return project;
+    const project = await this.projectService.create(createProjectDTO)
+    return project
   }
 
   @Get()
@@ -78,15 +78,15 @@ export class ProjectsController {
     @Query('queries', ProjectsQueryPipe) queries: Queries[],
     @Query('search') search?: string,
   ) {
-    const data = await this.projectService.findAll(queries, search);
-    return data;
+    const data = await this.projectService.findAll(queries, search)
+    return data
   }
 
   @Get('env_tokens')
   @Scope('projects.read')
   @ResModel(Models.ENV_TOKEN, { list: true })
   async listEnvTokens() {
-    return this.projectService.listEnvTokens();
+    return this.projectService.listEnvTokens()
   }
 
   @Post('env_tokens')
@@ -96,7 +96,7 @@ export class ProjectsController {
     @Body() body: CreateEnvTokenDTO,
     @Req() req: NuvixRequest,
   ) {
-    return this.projectService.createEnvToken(body, req);
+    return this.projectService.createEnvToken(body, req)
   }
 
   @Put('env_tokens/:tokenId')
@@ -107,16 +107,16 @@ export class ProjectsController {
     @Body('url') url: string,
     @Body('projectId') projectId: string,
   ) {
-    return this.projectService.updateEnvToken(projectId, tokenId, url);
+    return this.projectService.updateEnvToken(projectId, tokenId, url)
   }
 
   @Get(':projectId')
   @Scope('project.read')
   @ResModel(Models.PROJECT)
   async findOne(@Param('projectId') id: string) {
-    const project = await this.projectService.findOne(id);
-    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND);
-    return project;
+    const project = await this.projectService.findOne(id)
+    if (!project) throw new Exception(Exception.PROJECT_NOT_FOUND)
+    return project
   }
 
   @Patch(':projectId')
@@ -126,27 +126,27 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() updateProjectDTO: UpdateProjectDTO,
   ) {
-    return this.projectService.update(id, updateProjectDTO);
+    return this.projectService.update(id, updateProjectDTO)
   }
 
   @Delete(':projectId')
   @Scope('project.delete')
   @ResModel(Models.NONE)
   remove(@Param('projectId') id: string) {
-    return this.projectService.remove(id);
+    return this.projectService.remove(id)
   }
 
   @Post(':projectId/jwts')
   @ResModel(Models.JWT)
   createJwt(@Param('projectId') id: string, @Body() input: CreateJwtDTO) {
-    return this.projectService.createJwt(id, input);
+    return this.projectService.createJwt(id, input)
   }
 
   @Get(':projectId/platforms')
   @ResModel({ type: Models.PLATFORM, list: true })
   async getPlatforms(@Param('projectId') id: string) {
-    const data = await this.projectService.getPlatforms(id);
-    return data;
+    const data = await this.projectService.getPlatforms(id)
+    return data
   }
 
   @Post(':projectId/platforms')
@@ -155,7 +155,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: CreatePlatformDTO,
   ) {
-    return this.projectService.createPlatform(id, input);
+    return this.projectService.createPlatform(id, input)
   }
 
   @Get(':projectId/platforms/:platformId')
@@ -164,7 +164,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('platformId') platformId: string,
   ) {
-    return this.projectService.getPlatform(id, platformId);
+    return this.projectService.getPlatform(id, platformId)
   }
 
   @Put(':projectId/platforms/:platformId')
@@ -174,7 +174,7 @@ export class ProjectsController {
     @Param('platformId') platformId: string,
     @Body() input: UpdatePlatformDTO,
   ) {
-    return this.projectService.updatePlatform(id, platformId, input);
+    return this.projectService.updatePlatform(id, platformId, input)
   }
 
   @Delete(':projectId/platforms/:platformId')
@@ -183,27 +183,27 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('platformId') platformId: string,
   ): Promise<{}> {
-    return this.projectService.deletePlatform(id, platformId);
+    return this.projectService.deletePlatform(id, platformId)
   }
 
   @Get(':projectId/keys')
   @ResModel({ type: Models.KEY, list: true })
   async getKeys(@Param('projectId') id: string) {
-    const data = await this.projectService.getKeys(id);
-    return data;
+    const data = await this.projectService.getKeys(id)
+    return data
   }
 
   @Post(':projectId/keys')
   @ResModel(Models.KEY)
   async createKey(@Param('projectId') id: string, @Body() input: CreateKeyDTO) {
-    const data = await this.projectService.createKey(id, input);
-    return data;
+    const data = await this.projectService.createKey(id, input)
+    return data
   }
 
   @Get(':projectId/keys/:keyId')
   @ResModel(Models.KEY)
   async getKey(@Param('projectId') id: string, @Param('keyId') keyId: string) {
-    return this.projectService.getKey(id, keyId);
+    return this.projectService.getKey(id, keyId)
   }
 
   @Put(':projectId/keys/:keyId')
@@ -213,7 +213,7 @@ export class ProjectsController {
     @Param('keyId') keyId: string,
     @Body() input: UpdateKeyDTO,
   ) {
-    return this.projectService.updateKey(id, keyId, input);
+    return this.projectService.updateKey(id, keyId, input)
   }
 
   @Delete(':projectId/keys/:keyId')
@@ -222,14 +222,14 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('keyId') keyId: string,
   ): Promise<{}> {
-    return this.projectService.deleteKey(id, keyId);
+    return this.projectService.deleteKey(id, keyId)
   }
 
   @Get(':projectId/webhooks')
   @ResModel({ type: Models.WEBHOOK, list: true })
   async getWebhooks(@Param('projectId') id: string) {
-    const data = await this.projectService.getWebhooks(id);
-    return data;
+    const data = await this.projectService.getWebhooks(id)
+    return data
   }
 
   @Post(':projectId/webhooks')
@@ -238,8 +238,8 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: CreateWebhookDTO,
   ) {
-    const data = await this.projectService.createWebhook(id, input);
-    return data;
+    const data = await this.projectService.createWebhook(id, input)
+    return data
   }
 
   @Get(':projectId/webhooks/:webhookId')
@@ -248,7 +248,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('webhookId') webhookId: string,
   ) {
-    return this.projectService.getWebhook(id, webhookId);
+    return this.projectService.getWebhook(id, webhookId)
   }
 
   @Put(':projectId/webhooks/:webhookId')
@@ -258,7 +258,7 @@ export class ProjectsController {
     @Param('webhookId') webhookId: string,
     @Body() input: UpdateWebhookDTO,
   ) {
-    return this.projectService.updateWebhook(id, webhookId, input);
+    return this.projectService.updateWebhook(id, webhookId, input)
   }
 
   @Patch(':projectId/webhooks/:webhookId/signature')
@@ -267,7 +267,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('webhookId') webhookId: string,
   ) {
-    return this.projectService.updateWebhookSignature(id, webhookId);
+    return this.projectService.updateWebhookSignature(id, webhookId)
   }
 
   @Delete(':projectId/webhooks/:webhookId')
@@ -275,7 +275,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Param('webhookId') webhookId: string,
   ): Promise<{}> {
-    return this.projectService.deleteWebhook(id, webhookId);
+    return this.projectService.deleteWebhook(id, webhookId)
   }
 
   @Patch([':projectId/organization', ':projectId/team'])
@@ -287,7 +287,7 @@ export class ProjectsController {
     return this.projectService.updateProjectOrganization(
       id,
       updateProjectTeamDTO,
-    );
+    )
   }
 
   @Patch(':projectId/service')
@@ -296,7 +296,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: UpdateProjectServiceDTO,
   ) {
-    return this.projectService.updateServiceStatus(id, input);
+    return this.projectService.updateServiceStatus(id, input)
   }
 
   @Patch(':projectId/api')
@@ -305,13 +305,13 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: ProjectApiStatusDTO,
   ) {
-    return this.projectService.updateApiStatus(id, input);
+    return this.projectService.updateApiStatus(id, input)
   }
 
   @Patch(':projectId/oauth2')
   @ResModel(Models.PROJECT)
   async updateOAuth2(@Param('projectId') id: string, @Body() input: oAuth2DTO) {
-    return this.projectService.updateOAuth2(id, input);
+    return this.projectService.updateOAuth2(id, input)
   }
 
   @Patch(':projectId/service/all')
@@ -320,7 +320,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: UpdateProjectAllServiceDTO,
   ) {
-    return this.projectService.updateAllServiceStatus(id, input.status);
+    return this.projectService.updateAllServiceStatus(id, input.status)
   }
 
   @Patch(':projectId/api/all')
@@ -329,7 +329,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: ProjectApiStatusAllDTO,
   ) {
-    return this.projectService.updateAllApiStatus(id, input.status);
+    return this.projectService.updateAllApiStatus(id, input.status)
   }
 
   @Patch(':projectId/auth/session-alerts')
@@ -338,7 +338,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthSessionAlertsDTO,
   ) {
-    return this.projectService.updateSessionAlerts(id, input.alerts);
+    return this.projectService.updateSessionAlerts(id, input.alerts)
   }
 
   @Patch(':projectId/auth/limit')
@@ -347,7 +347,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthLimitDTO,
   ) {
-    return this.projectService.updateAuthLimit(id, input.limit);
+    return this.projectService.updateAuthLimit(id, input.limit)
   }
 
   @Patch(':projectId/auth/duration')
@@ -356,7 +356,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthDurationDTO,
   ) {
-    return this.projectService.updateSessionDuration(id, input.duration);
+    return this.projectService.updateSessionDuration(id, input.duration)
   }
 
   @Patch(':projectId/auth/password-history')
@@ -365,7 +365,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthPasswordHistoryDTO,
   ) {
-    return this.projectService.updatePasswordHistory(id, input.limit);
+    return this.projectService.updatePasswordHistory(id, input.limit)
   }
 
   @Patch(':projectId/auth/password-dictionary')
@@ -374,7 +374,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthPasswordDictionaryDTO,
   ) {
-    return this.projectService.updatePasswordDictionary(id, input.enabled);
+    return this.projectService.updatePasswordDictionary(id, input.enabled)
   }
 
   @Patch(':projectId/auth/personal-data')
@@ -383,7 +383,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthPersonalDataDTO,
   ) {
-    return this.projectService.updatePersonalData(id, input.enabled);
+    return this.projectService.updatePersonalData(id, input.enabled)
   }
 
   @Patch(':projectId/auth/max-sessions')
@@ -392,7 +392,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthMaxSessionsDTO,
   ) {
-    return this.projectService.updateMaxSessions(id, input.limit);
+    return this.projectService.updateMaxSessions(id, input.limit)
   }
 
   @Patch(':projectId/auth/mock-numbers')
@@ -401,7 +401,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: AuthMockNumbersDTO,
   ) {
-    return this.projectService.updateMockNumbers(id, input);
+    return this.projectService.updateMockNumbers(id, input)
   }
 
   @Patch(':projectId/auth/:method')
@@ -414,8 +414,8 @@ export class ProjectsController {
     if (
       !Object.keys(authMethods).concat('memberships-privacy').includes(method)
     )
-      throw new Exception(Exception.INVALID_PARAMS, 'Invalid auth method');
-    return this.projectService.updateAuthMethod(id, method, input.status);
+      throw new Exception(Exception.INVALID_PARAMS, 'Invalid auth method')
+    return this.projectService.updateAuthMethod(id, method, input.status)
   }
 
   @Patch(':projectId/smtp')
@@ -424,7 +424,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: UpdateSmtpDTO,
   ) {
-    return this.projectService.updateSMTP(id, input);
+    return this.projectService.updateSMTP(id, input)
   }
 
   @Post(':projectId/smtp/tests')
@@ -432,7 +432,7 @@ export class ProjectsController {
     @Param('projectId') id: string,
     @Body() input: SmtpTestsDTO,
   ): Promise<void> {
-    return this.projectService.testSMTP(id, input);
+    return this.projectService.testSMTP(id, input)
   }
 
   @Get(':projectId/templates/sms/:type/:locale')
@@ -441,17 +441,17 @@ export class ProjectsController {
     @Param('type') type: string,
     @Param('locale') locale: string,
   ) {
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   @Patch(':projectId/templates/sms/:type/:locale')
   async updateSmsTemplate() {
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   @Delete(':projectId/templates/sms/:type/:locale')
   async deleteSmsTemplate() {
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   @Get(':projectId/templates/email/:type/:locale')
@@ -467,16 +467,16 @@ export class ProjectsController {
       senderName: '',
       locale,
       type,
-    };
+    }
   }
 
   @Patch(':projectId/templates/email/:type/:locale')
   async updateEmailTemplate() {
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 
   @Delete(':projectId/templates/email/:type/:locale')
   async deleteEmailTemplate() {
-    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED);
+    throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
   }
 }

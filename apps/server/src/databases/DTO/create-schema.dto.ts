@@ -1,12 +1,12 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { SchemaType } from '@nuvix/utils';
+import { ApiProperty } from '@nestjs/swagger'
+import { SchemaType } from '@nuvix/utils'
 import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateSchema {
   @ApiProperty({
@@ -24,7 +24,7 @@ export class CreateSchema {
     message:
       'name must start with a lowercase letter, may contain lowercase letters, numbers and underscores, and must not start with an underscore',
   })
-  name!: string;
+  name!: string
 
   @ApiProperty({
     description: 'Schema description',
@@ -36,7 +36,7 @@ export class CreateSchema {
   })
   @IsString()
   @IsOptional()
-  description?: string;
+  description?: string
 
   @ApiProperty({
     description: 'Schema type, either managed, unmanaged or document',
@@ -44,5 +44,26 @@ export class CreateSchema {
     example: 'managed',
   })
   @IsEnum(SchemaType)
-  declare type: SchemaType;
+  declare type: SchemaType
+}
+
+// Query
+
+export class SchemaQueryDTO {
+  @ApiProperty({
+    description: 'Schema type, either managed, unmanaged or document',
+    enum: SchemaType,
+    example: 'managed',
+  })
+  type?: SchemaType
+}
+
+// Params
+
+export class SchemaParamsDTO {
+  /**
+   * Schema ID.
+   */
+  @IsString()
+  declare schemaId: string
 }

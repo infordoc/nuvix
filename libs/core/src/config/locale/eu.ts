@@ -26,4 +26,4 @@ export const list = [
   'SI', // Slovenia
   'ES', // Spain
   'SE', // Sweden
-];
+]

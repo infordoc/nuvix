@@ -1,4 +1,4 @@
-export { default as PostgresMeta } from './PostgresMeta';
+export { default as PostgresMeta } from './PostgresMeta'
 export type {
   PostgresMetaOk,
   PostgresMetaError,
@@ -20,8 +20,8 @@ export type {
   PostgresType,
   PostgresVersion,
   PostgresView,
-} from './types';
+} from './types'
 
-export { SchemaCreateDTO as PostgresSchemaCreate } from '../DTO/schema-create.dto';
-export { SchemaUpdateDTO as PostgresSchemaUpdate } from '../DTO/schema-update.dto';
-export { FunctionCreateDTO as PostgresFunctionCreate } from '../DTO/function-create.dto';
+export { SchemaCreateDTO as PostgresSchemaCreate } from '../DTO/schema-create.dto'
+export { SchemaUpdateDTO as PostgresSchemaUpdate } from '../DTO/schema-update.dto'
+export { FunctionCreateDTO as PostgresFunctionCreate } from '../DTO/function-create.dto'

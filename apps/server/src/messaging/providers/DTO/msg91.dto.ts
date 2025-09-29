@@ -1,37 +1,30 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import { PartialType, OmitType } from '@nestjs/swagger'
+import { IsString, IsOptional } from 'class-validator'
+import { CreateProviderDTO } from './base.dto'
 
-export class CreateMsg91ProviderDTO {
-  @IsString()
-  @IsCustomID()
-  providerId!: string;
-
-  @IsString()
-  @MaxLength(128)
-  name!: string;
-
+export class CreateMsg91ProviderDTO extends CreateProviderDTO {
+  /**
+   * Msg91 template ID
+   */
   @IsOptional()
   @IsString()
-  templateId?: string;
+  templateId?: string
 
+  /**
+   * Msg91 sender ID.
+   */
   @IsOptional()
   @IsString()
-  senderId?: string;
+  senderId?: string
 
+  /**
+   * Msg91 auth key.
+   */
   @IsOptional()
   @IsString()
-  authKey?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  enabled?: boolean;
-
-  @IsOptional()
-  @IsString()
-  from?: string;
+  authKey?: string
 }
 
 export class UpdateMsg91ProviderDTO extends PartialType(
-  OmitType(CreateMsg91ProviderDTO, ['providerId']),
+  OmitType(CreateMsg91ProviderDTO, ['providerId'] as const),
 ) {}

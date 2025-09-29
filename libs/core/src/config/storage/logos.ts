@@ -1,7 +1,7 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as path from 'path'
 
-const assetsPath = path.resolve(PROJECT_ROOT, 'assets/storage/logos');
+const assetsPath = path.resolve(PROJECT_ROOT, 'assets/storage/logos')
 
 export const logos = {
   // Based on this list @see http://stackoverflow.com/a/4212908/2299554
@@ -47,4 +47,4 @@ export const logos = {
 
   // Adobe PDF
   // 'application/pdf' :  assetsPath +'/pdf.png',
-};
+}

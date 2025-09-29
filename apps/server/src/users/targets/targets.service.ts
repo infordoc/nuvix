@@ -1,10 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { Exception } from '@nuvix/core/extend/exception';
-import { ID } from '@nuvix/core/helper/ID.helper';
-import { configuration, MessageType } from '@nuvix/utils';
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto';
-import { EmailValidator } from '@nuvix/core/validators/email.validator';
-import { PhoneValidator } from '@nuvix/core/validators/phone.validator';
+import { Injectable } from '@nestjs/common'
+import { Exception } from '@nuvix/core/extend/exception'
+import { ID } from '@nuvix/core/helper/ID.helper'
+import { configuration, MessageType } from '@nuvix/utils'
+import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
+import { EmailValidator } from '@nuvix/core/validators/email.validator'
+import { PhoneValidator } from '@nuvix/core/validators/phone.validator'
 import {
   Database,
   Doc,
@@ -12,9 +12,9 @@ import {
   Permission,
   Query,
   Role,
-} from '@nuvix/db';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { ProvidersDoc } from '@nuvix/utils/types';
+} from '@nuvix/db'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import type { ProvidersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class TargetsService {
@@ -28,40 +28,40 @@ export class TargetsService {
     userId: string,
     { targetId, providerId, ...input }: CreateTargetDTO,
   ) {
-    targetId = targetId === 'unique()' ? ID.unique() : targetId;
+    targetId = targetId === 'unique()' ? ID.unique() : targetId
 
-    let provider!: ProvidersDoc;
+    let provider!: ProvidersDoc
     if (providerId) {
-      provider = await db.getDocument('providers', providerId);
+      provider = await db.getDocument('providers', providerId)
     }
 
     switch (input.providerType as MessageType) {
       case MessageType.EMAIL:
         if (!new EmailValidator().$valid(input.identifier)) {
-          throw new Exception(Exception.GENERAL_INVALID_EMAIL);
+          throw new Exception(Exception.GENERAL_INVALID_EMAIL)
         }
-        break;
+        break
       case MessageType.PUSH:
-        break;
+        break
       case MessageType.SMS:
         if (!new PhoneValidator().$valid(input.identifier)) {
-          throw new Exception(Exception.GENERAL_INVALID_PHONE);
+          throw new Exception(Exception.GENERAL_INVALID_PHONE)
         }
-        break;
+        break
       default:
-        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
+        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE)
     }
 
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const existingTarget = await db.getDocument('targets', targetId);
+    const existingTarget = await db.getDocument('targets', targetId)
 
     if (!existingTarget.empty()) {
-      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+      throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS)
     }
 
     try {
@@ -82,20 +82,20 @@ export class TargetsService {
           identifier: input.identifier,
           name: input.name,
         }),
-      );
+      )
 
-      await db.purgeCachedDocument('users', user.getId());
+      await db.purgeCachedDocument('users', user.getId())
       this.event.emit(
         `user.${user.getId()}.target.${target.getId()}.create`,
         target,
-      );
+      )
 
-      return target;
+      return target
     } catch (error) {
       if (error instanceof DuplicateException) {
-        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS);
+        throw new Exception(Exception.USER_TARGET_ALREADY_EXISTS)
       }
-      throw error;
+      throw error
     }
   }
 
@@ -103,21 +103,21 @@ export class TargetsService {
    * Get all targets for a user
    */
   async getTargets(db: Database, userId: string, queries: Query[] = []) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
-    queries.push(Query.equal('userId', [userId]));
+    queries.push(Query.equal('userId', [userId]))
 
     return {
-      targets: await db.find('targets', queries),
+      data: await db.find('targets', queries),
       total: await db.count(
         'targets',
         queries,
         configuration.limits.limitCount,
       ),
-    };
+    }
   }
 
   /**
@@ -129,118 +129,116 @@ export class TargetsService {
     targetId: string,
     input: UpdateTargetDTO,
   ) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const target = await db.getDocument('targets', targetId);
+    const target = await db.getDocument('targets', targetId)
 
     if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (user.getId() !== target.get('userId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (input.identifier) {
-      const providerType = target.get('providerType');
+      const providerType = target.get('providerType')
 
       switch (providerType as MessageType) {
         case MessageType.EMAIL:
           if (!new EmailValidator().$valid(input.identifier)) {
-            throw new Exception(Exception.GENERAL_INVALID_EMAIL);
+            throw new Exception(Exception.GENERAL_INVALID_EMAIL)
           }
-          break;
+          break
         case MessageType.PUSH:
-          break;
+          break
         case MessageType.SMS:
           if (!new PhoneValidator().$valid(input.identifier)) {
-            throw new Exception(Exception.GENERAL_INVALID_PHONE);
+            throw new Exception(Exception.GENERAL_INVALID_PHONE)
           }
-          break;
+          break
         default:
-          throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
+          throw new Exception(Exception.PROVIDER_INCORRECT_TYPE)
       }
 
-      target.set('identifier', input.identifier);
+      target.set('identifier', input.identifier)
     }
 
     if (input.providerId) {
-      const provider = await db.getDocument('providers', input.providerId);
+      const provider = await db.getDocument('providers', input.providerId)
 
       if (provider.empty()) {
-        throw new Exception(Exception.PROVIDER_NOT_FOUND);
+        throw new Exception(Exception.PROVIDER_NOT_FOUND)
       }
 
       if (provider.get('type') !== target.get('providerType')) {
-        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE);
+        throw new Exception(Exception.PROVIDER_INCORRECT_TYPE)
       }
 
-      target.set('providerId', provider.getId());
-      target.set('providerInternalId', provider.getSequence());
+      target.set('providerId', provider.getId())
+      target.set('providerInternalId', provider.getSequence())
     }
 
     if (input.name) {
-      target.set('name', input.name);
+      target.set('name', input.name)
     }
 
     const updatedTarget = await db.updateDocument(
       'targets',
       target.getId(),
       target,
-    );
-    await db.purgeCachedDocument('users', user.getId());
+    )
+    await db.purgeCachedDocument('users', user.getId())
 
-    return updatedTarget;
+    return updatedTarget
   }
 
   /**
    * Get A target
    */
   async getTarget(db: Database, userId: string, targetId: string) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const target = await db.getDocument('targets', targetId);
+    const target = await db.getDocument('targets', targetId)
 
     if (target.empty() || target.get('userId') !== userId) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
-    return target;
+    return target
   }
 
   /**
    * Delete a target
    */
   async deleteTarget(db: Database, userId: string, targetId: string) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const target = await db.getDocument('targets', targetId);
+    const target = await db.getDocument('targets', targetId)
 
     if (target.empty()) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
     if (user.getId() !== target.get('userId')) {
-      throw new Exception(Exception.USER_TARGET_NOT_FOUND);
+      throw new Exception(Exception.USER_TARGET_NOT_FOUND)
     }
 
-    await db.deleteDocument('targets', target.getId());
-    await db.purgeCachedDocument('users', user.getId());
+    await db.deleteDocument('targets', target.getId())
+    await db.purgeCachedDocument('users', user.getId())
 
     // TODO: Implement queue for deletes
-
-    return {};
   }
 }

@@ -1,8 +1,8 @@
-import * as prettier from 'prettier';
-import SqlFormatter from 'prettier-plugin-sql';
-import { parse, deparse } from 'pgsql-parser';
-import { FormatterOptions } from './types';
-import { PgMetaException } from '../extra/execption';
+import * as prettier from 'prettier'
+import SqlFormatter from 'prettier-plugin-sql'
+import { parse, deparse } from 'pgsql-parser'
+import { FormatterOptions } from './types'
+import { PgMetaException } from '../extra/execption'
 
 const DEFAULT_FORMATTER_OPTIONS = {
   plugins: [SqlFormatter],
@@ -10,23 +10,23 @@ const DEFAULT_FORMATTER_OPTIONS = {
   language: 'postgresql',
   database: 'postgresql',
   parser: 'sql',
-};
+}
 
 /**
  * Parses a SQL string into an AST.
  */
 export function Parse(sql: string): ParseReturnValues {
   try {
-    const data = parse(sql);
+    const data = parse(sql)
 
-    return { data, error: null };
+    return { data, error: null }
   } catch (error: any) {
-    throw new PgMetaException(error.message);
+    throw new PgMetaException(error.message)
   }
 }
 interface ParseReturnValues {
-  data: object | null;
-  error: null | Error;
+  data: object | null
+  error: null | Error
 }
 
 /**
@@ -34,15 +34,15 @@ interface ParseReturnValues {
  */
 export async function Deparse(parsedSql: object): Promise<DeparseReturnValues> {
   try {
-    const data = await deparse(parsedSql, {});
-    return { data, error: null };
+    const data = await deparse(parsedSql, {})
+    return { data, error: null }
   } catch (error: any) {
-    throw new PgMetaException(error.message);
+    throw new PgMetaException(error.message)
   }
 }
 interface DeparseReturnValues {
-  data: string | null;
-  error: null | Error;
+  data: string | null
+  error: null | Error
 }
 
 /**
@@ -56,15 +56,15 @@ export async function Format(
     const formatted = await prettier.format(sql, {
       ...DEFAULT_FORMATTER_OPTIONS,
       ...options,
-    });
+    })
 
-    return { data: formatted, error: null };
+    return { data: formatted, error: null }
   } catch (error: any) {
-    console.log(error);
-    throw new PgMetaException(error.message);
+    console.log(error)
+    throw new PgMetaException(error.message)
   }
 }
 interface FormatReturnValues {
-  data: string | null;
-  error: null | Error;
+  data: string | null
+  error: null | Error
 }

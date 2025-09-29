@@ -1,218 +1,333 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Logger,
   Param,
-  ParseIntPipe,
-  Post,
-  Put,
   Query,
   Req,
   Res,
+  StreamableFile,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { FilesService } from './files.service';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Database, Doc, Query as Queries } from '@nuvix/db';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard';
+} from '@nestjs/common'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { FilesService } from './files.service'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { Database, Doc, Query as Queries } from '@nuvix/db'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
 import {
   MultipartParam,
-  ResModel,
   ProjectDatabase,
   UploadedFile,
   Project,
   Namespace,
-} from '@nuvix/core/decorators';
-
-import { UpdateFileDTO } from './DTO/file.dto';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
-import { type SavedMultipartFile } from '@fastify/multipart';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Exception } from '@nuvix/core/extend/exception';
-import { FilesQueryPipe } from '@nuvix/core/pipes/queries';
+  AuthType,
+  Auth,
+  QueryFilter,
+  QuerySearch,
+} from '@nuvix/core/decorators'
+import {
+  FileParamsDTO,
+  PreviewFileQueryDTO,
+  UpdateFileDTO,
+} from './DTO/file.dto'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { type SavedMultipartFile } from '@fastify/multipart'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Exception } from '@nuvix/core/extend/exception'
+import { FilesQueryPipe } from '@nuvix/core/pipes/queries'
+import { Delete, Get, Post, Put } from '@nuvix/core'
+import { configuration, IListResponse, IResponse } from '@nuvix/utils'
+import { BucketParamsDTO } from '../DTO/bucket.dto'
+import { FilesDoc } from '@nuvix/utils/types'
+import { ApiBody } from '@nestjs/swagger'
 
 @Namespace('storage')
 @UseGuards(ProjectGuard)
-@Controller({ version: ['1'], path: 'storage/buckets/:id/files' })
+@Controller({ version: ['1'], path: 'storage/buckets/:bucketId/files' })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
+@Auth([AuthType.ADMIN, AuthType.SESSION, AuthType.JWT, AuthType.KEY])
 export class FilesController {
-  private readonly logger = new Logger(FilesController.name);
   constructor(private readonly filesService: FilesService) {}
 
-  @Get()
-  @ResModel({ type: Models.FILE, list: true })
+  @Get('', {
+    summary: 'List files',
+    scopes: 'files.read',
+    model: { type: Models.FILE, list: true },
+    sdk: {
+      name: 'getFiles',
+      descMd: '/docs/references/storage/list-files.md',
+    },
+  })
   async getFiles(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Query('queries', FilesQueryPipe) queries?: Queries[],
-    @Query('search') search?: string,
-  ) {
-    return this.filesService.getFiles(db, id, queries, search);
+    @Param() { bucketId }: BucketParamsDTO,
+    @QueryFilter(FilesQueryPipe) queries?: Queries[],
+    @QuerySearch() search?: string,
+  ): Promise<IListResponse<FilesDoc>> {
+    return this.filesService.getFiles(db, bucketId, queries, search)
   }
 
-  @Post()
-  @ResModel(Models.FILE)
+  @Post('', {
+    summary: 'Create file',
+    scopes: 'files.create',
+    model: Models.FILE,
+    throttle: {
+      limit: configuration.limits.writeRateDefault,
+      ttl: configuration.limits.writeRatePeriodDefault,
+      key: ({ req, user, ip }) =>
+        [
+          `ip:${ip}`,
+          `userId:${user.getId()}`,
+          `chunkId:${req.headers['x-nuvix-id']}`,
+        ].join(','),
+      configKey: 'bucket_files_create',
+    },
+    audit: {
+      key: 'file.create',
+      resource: 'file/{res.$id}',
+    },
+    sdk: {
+      name: 'createFile',
+      descMd: '/docs/references/storage/create-file.md',
+    },
+  })
+  @ApiBody({
+    description: 'Multipart form data with a file field.',
+    schema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description:
+            "File ID. Choose a custom ID or generate a random ID with `ID.unique()`. Valid chars are a-z, A-Z, 0-9, period, hyphen, and underscore. Can't start with a special char. Max length is 36 chars.",
+        },
+        permissions: {
+          type: 'array',
+          description:
+            'An array of permission strings. By default, only the current user is granted all permissions. [Learn more about permissions](https://docs.nuvix.in/permissions).',
+          items: { type: 'string' },
+        },
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['fileId', 'file'],
+    },
+  })
   async createFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
+    @Param() { bucketId }: BucketParamsDTO,
     @MultipartParam('fileId') fileId: string,
     @MultipartParam('permissions') permissions: string[] = [],
     @UploadedFile() file: SavedMultipartFile,
     @Req() req: NuvixRequest,
     @User() user: Doc,
     @Project() project: Doc,
-  ) {
+  ): Promise<IResponse<FilesDoc>> {
     if (!fileId)
-      throw new Exception(Exception.INVALID_PARAMS, 'fileId is required');
+      throw new Exception(Exception.INVALID_PARAMS, 'fileId is required')
     return this.filesService.createFile(
       db,
-      id,
+      bucketId,
       { fileId, permissions },
       file,
       req,
       user,
       project,
-    );
+    )
   }
 
-  @Get(':fileId')
-  @ResModel(Models.FILE)
+  @Get(':fileId', {
+    summary: 'Get file',
+    scopes: 'files.read',
+    model: Models.FILE,
+    sdk: {
+      name: 'getFile',
+      descMd: '/docs/references/storage/get-file.md',
+    },
+  })
   async getFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
-  ) {
-    return this.filesService.getFile(db, id, fileId);
+    @Param() { fileId, bucketId }: FileParamsDTO,
+  ): Promise<IResponse<FilesDoc>> {
+    return this.filesService.getFile(db, bucketId, fileId)
   }
 
-  @Get(':fileId/preview')
+  @Get(':fileId/preview', {
+    summary: 'Get file preview',
+    scopes: 'files.read',
+    sdk: {
+      name: 'getFilePreview',
+      descMd: '/docs/references/storage/get-file-preview.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file preview as binary stream',
+          contentTypes: ['image/png', 'image/jpeg', 'image/webp'],
+        },
+      ],
+    },
+  })
   async previewFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
-    @Req() req: NuvixRequest,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Project() project: Doc,
-    @Query('width', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
-    width?: string,
-    @Query('height', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
-    height?: string,
-    @Query('gravity', ParseDuplicatePipe) gravity?: string,
-    @Query('quality', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
-    quality?: string,
-    @Query(
-      'borderWidth',
-      ParseDuplicatePipe,
-      new ParseIntPipe({ optional: true }),
-    )
-    borderWidth?: string,
-    @Query('borderColor', ParseDuplicatePipe) borderColor?: string,
-    @Query(
-      'borderRadius',
-      ParseDuplicatePipe,
-      new ParseIntPipe({ optional: true }),
-    )
-    borderRadius?: string,
-    @Query('opacity', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
-    opacity?: string,
-    @Query('rotation', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
-    rotation?: string,
-    @Query('background', ParseDuplicatePipe) background?: string,
-    @Query('output', ParseDuplicatePipe) output?: string,
-  ) {
+    @Query() queryParams: PreviewFileQueryDTO,
+  ): Promise<StreamableFile> {
     return this.filesService.previewFile(
       db,
-      id,
+      bucketId,
       fileId,
       {
-        width,
-        height,
-        gravity,
-        quality,
-        borderWidth,
-        borderColor,
-        borderRadius,
-        opacity,
-        rotation,
-        background,
-        output,
-      } as any,
+        ...queryParams,
+      } as any, // TODO: improve type & vlidation
       project,
-    );
+    )
   }
 
-  @Get(':fileId/download')
+  @Get(':fileId/download', {
+    summary: 'Get file for download',
+    scopes: 'files.read',
+    sdk: {
+      name: 'getFileDownload',
+      descMd: '/docs/references/storage/get-file-download.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file as binary stream',
+          contentTypes: ['application/octet-stream'],
+        },
+        {
+          status: 206,
+          description: 'Partial content (range requests)',
+          contentTypes: ['application/octet-stream'],
+        },
+      ],
+    },
+  })
   async downloadFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Req() req: NuvixRequest,
-    @Res({ passthrough: true }) res: any,
+    @Res({ passthrough: true }) res: NuvixRes,
     @Project() project: Doc,
-  ) {
-    return this.filesService.downloadFile(db, id, fileId, res, req, project);
+  ): Promise<StreamableFile> {
+    return this.filesService.downloadFile(
+      db,
+      bucketId,
+      fileId,
+      res,
+      req,
+      project,
+    )
   }
 
-  @Get(':fileId/view')
+  @Get(':fileId/view', {
+    summary: 'Get file for view',
+    scopes: 'files.read',
+    sdk: {
+      name: 'getFileView',
+      descMd: '/docs/references/storage/get-file-view.md',
+      responses: [
+        {
+          status: 200,
+          description: 'Returns the file as binary stream',
+          contentTypes: ['application/octet-stream'],
+        },
+        {
+          status: 206,
+          description: 'Partial content (range requests)',
+          contentTypes: ['application/octet-stream'],
+        },
+      ],
+    },
+  })
   async viewFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Req() req: NuvixRequest,
-    @Res({ passthrough: true }) res: any,
+    @Res({ passthrough: true }) res: NuvixRes,
     @Project() project: Doc,
-  ) {
-    return this.filesService.viewFile(db, id, fileId, res, req, project);
+  ): Promise<StreamableFile> {
+    return this.filesService.viewFile(db, bucketId, fileId, res, req, project)
   }
 
-  @Get(':fileId/push')
+  @Get(':fileId/push', {
+    summary: 'Get file for push notification',
+    scopes: 'files.read',
+    // No need to document this endpoint in the SDK as it's used internally for push notifications
+  })
   async getFileForPushNotification(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Query('jwt') jwt: string,
     @Req() req: NuvixRequest,
-    @Res({ passthrough: true }) res: any,
+    @Res({ passthrough: true }) res: NuvixRes,
     @Project() project: Doc,
-  ) {
+  ): Promise<StreamableFile> {
     return this.filesService.getFileForPushNotification(
       db,
-      id,
+      bucketId,
       fileId,
       jwt,
       req,
       res,
       project,
-    );
+    )
   }
 
-  @Put(':fileId')
-  @ResModel(Models.FILE)
+  @Put(':fileId', {
+    summary: 'Update file',
+    scopes: 'files.update',
+    model: Models.FILE,
+    throttle: {
+      limit: configuration.limits.writeRateDefault,
+      ttl: configuration.limits.writeRatePeriodDefault,
+      key: ({ user, ip }) => [`ip:${ip}`, `userId:${user.getId()}`].join(','),
+      configKey: 'bucket_files_update',
+    },
+    audit: {
+      key: 'file.update',
+      resource: 'file/{res.$id}',
+    },
+    sdk: {
+      name: 'updateFile',
+      descMd: '/docs/references/storage/update-file.md',
+    },
+  })
   async updateFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Body() updateFileDTO: UpdateFileDTO,
-  ) {
-    return this.filesService.updateFile(db, id, fileId, updateFileDTO);
+  ): Promise<IResponse<FilesDoc>> {
+    return this.filesService.updateFile(db, bucketId, fileId, updateFileDTO)
   }
 
-  @Delete(':fileId')
-  @ResModel(Models.NONE)
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(':fileId', {
+    summary: 'Delete file',
+    scopes: 'files.delete',
+    model: Models.NONE,
+    throttle: {
+      limit: configuration.limits.writeRateDefault,
+      ttl: configuration.limits.writeRatePeriodDefault,
+      key: ({ user, ip }) => [`ip:${ip}`, `userId:${user.getId()}`].join(','),
+      configKey: 'bucket_files_delete',
+    },
+    audit: {
+      key: 'file.delete',
+      resource: 'file/{params.fileId}',
+    },
+    sdk: {
+      name: 'deleteFile',
+      descMd: '/docs/references/storage/delete-file.md',
+    },
+  })
   async deleteFile(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Param('fileId') fileId: string,
+    @Param() { fileId, bucketId }: FileParamsDTO,
     @Project() project: Doc,
-  ) {
-    return this.filesService.deleteFile(db, id, fileId, project);
+  ): Promise<void> {
+    return this.filesService.deleteFile(db, bucketId, fileId, project)
   }
 }

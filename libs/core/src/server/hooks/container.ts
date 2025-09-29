@@ -1,19 +1,19 @@
-import { InjectionToken, Type } from '@nestjs/common';
-import { MiddlewareConfiguration } from '@nestjs/common/interfaces/middleware/middleware-configuration.interface';
-import { getClassScope } from '@nestjs/core/helpers/get-class-scope.js';
-import { isDurable } from '@nestjs/core/helpers/is-durable.js';
-import { NestContainer } from '@nestjs/core/injector/container.js';
-import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js';
+import { InjectionToken, Type } from '@nestjs/common'
+import { MiddlewareConfiguration } from '@nestjs/common/interfaces/middleware/middleware-configuration.interface'
+import { getClassScope } from '@nestjs/core/helpers/get-class-scope.js'
+import { isDurable } from '@nestjs/core/helpers/is-durable.js'
+import { NestContainer } from '@nestjs/core/injector/container.js'
+import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper.js'
 
 export class HooksContainer {
   private readonly middleware = new Map<
     string,
     Map<InjectionToken, InstanceWrapper>
-  >();
+  >()
   private readonly configurationSets = new Map<
     string,
     Set<MiddlewareConfiguration>
-  >();
+  >()
 
   constructor(private readonly container: NestContainer) {}
 
@@ -21,27 +21,27 @@ export class HooksContainer {
     moduleKey: string,
   ): Map<InjectionToken, InstanceWrapper> {
     if (!this.middleware.has(moduleKey)) {
-      const moduleRef = this.container.getModuleByKey(moduleKey)!;
-      this.middleware.set(moduleKey, moduleRef.middlewares);
+      const moduleRef = this.container.getModuleByKey(moduleKey)!
+      this.middleware.set(moduleKey, moduleRef.middlewares)
     }
-    return this.middleware.get(moduleKey)!;
+    return this.middleware.get(moduleKey)!
   }
 
   public getConfigurations(): Map<string, Set<MiddlewareConfiguration>> {
-    return this.configurationSets;
+    return this.configurationSets
   }
 
-  private a = 0;
+  private a = 0
 
   public insertConfig(
     configList: MiddlewareConfiguration[],
     moduleKey: string,
   ) {
-    const middleware = this.getMiddlewareCollection(moduleKey);
-    const targetConfig = this.getTargetConfig(moduleKey)!;
-    const configurations = configList || [];
+    const middleware = this.getMiddlewareCollection(moduleKey)
+    const targetConfig = this.getTargetConfig(moduleKey)!
+    const configurations = configList || []
     const insertMiddleware = <T extends Type<unknown>>(metatype: T) => {
-      const token = metatype;
+      const token = metatype
       middleware.set(
         token,
         new InstanceWrapper({
@@ -51,22 +51,19 @@ export class HooksContainer {
           metatype,
           token,
         }),
-      );
-    };
+      )
+    }
     configurations.forEach(config => {
-      [].concat(config.middleware).map(insertMiddleware);
-      targetConfig.add(config);
-    });
-    this.a++;
+      ;[].concat(config.middleware).map(insertMiddleware)
+      targetConfig.add(config)
+    })
+    this.a++
   }
 
   private getTargetConfig(moduleName: string) {
     if (!this.configurationSets.has(moduleName)) {
-      this.configurationSets.set(
-        moduleName,
-        new Set<MiddlewareConfiguration>(),
-      );
+      this.configurationSets.set(moduleName, new Set<MiddlewareConfiguration>())
     }
-    return this.configurationSets.get(moduleName);
+    return this.configurationSets.get(moduleName)
   }
 }

@@ -1,118 +1,137 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
   Param,
-  Patch,
-  Post,
-  Put,
   Req,
   Session,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
-import { AuditEvent, Scope, Sdk, Throttle } from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Exception } from '@nuvix/core/extend/exception';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { MfaService } from './mfa.service';
+import { Database, type Doc } from '@nuvix/db'
+import { Auth, AuthType, Namespace, Scope } from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Exception } from '@nuvix/core/extend/exception'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { MfaService } from './mfa.service'
 import {
   CreateMfaChallengeDTO,
   MfaAuthenticatorTypeParamDTO,
   UpdateAccountMfaDTO,
   VerifyMfaChallengeDTO,
   VerifyMfaAuthenticatorDTO,
-} from './DTO/mfa.dto';
-import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types';
+} from './DTO/mfa.dto'
+import type {
+  ChallengesDoc,
+  ProjectsDoc,
+  SessionsDoc,
+  UsersDoc,
+} from '@nuvix/utils/types'
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account/mfa' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.SESSION, AuthType.JWT])
+@Scope('account')
 export class MfaController {
   constructor(private readonly mfaService: MfaService) {}
 
-  @Patch()
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @ResModel(Models.ACCOUNT)
-  @Sdk({
-    name: 'updateMfa',
+  @Patch('', {
+    summary: 'Update MFA',
+    model: Models.ACCOUNT,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'updateMFA',
+      descMd: '/docs/references/account/update-mfa.md',
+    },
   })
   async updateMfa(
     @Body() { mfa }: UpdateAccountMfaDTO,
     @User() user: UsersDoc,
     @Session() session: SessionsDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.mfaService.updateMfa({
       mfa,
       session,
       user,
       db,
-    });
+    })
   }
 
-  @Get('factors')
-  @Scope('account')
-  @ResModel(Models.MFA_FACTORS)
-  @Sdk({
-    name: 'listMfaFactors',
+  @Get('factors', {
+    summary: 'List factors',
+    model: Models.MFA_CHALLENGE,
+    sdk: {
+      name: 'listMfaFactors',
+      descMd: '/docs/references/account/list-mfa-factors.md',
+    },
   })
-  async getMfaFactors(@User() user: UsersDoc) {
-    return this.mfaService.getMfaFactors(user);
+  async getMfaFactors(
+    @User() user: UsersDoc,
+  ): Promise<IResponse<Doc<{ [key: string]: boolean }>>> {
+    return this.mfaService.getMfaFactors(user)
   }
 
-  @Post('authenticators/:type')
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @ResModel(Models.MFA_TYPE)
-  @Sdk({
-    name: 'createMfaAuthenticator',
+  @Post('authenticators/:type', {
+    summary: 'Create authenticator',
+    model: Models.MFA_TYPE,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'createMfaAuthenticator',
+      descMd: '/docs/references/account/create-mfa-authenticator.md',
+    },
   })
   async createMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @Project() project: ProjectsDoc,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<
+    IResponse<
+      Doc<{
+        secret: string
+        uri: string
+      }>
+    >
+  > {
     return this.mfaService.createMfaAuthenticator({
       type,
       project,
       user,
       db,
-    });
+    })
   }
 
-  @Put('authenticators/:type')
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @ResModel(Models.ACCOUNT)
-  @Sdk({
-    name: 'updateMfaAuthenticator',
+  @Put('authenticators/:type', {
+    summary: 'Update authenticator (confirmation)',
+    model: Models.ACCOUNT,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'updateMfaAuthenticator',
+      descMd: '/docs/references/account/update-mfa-authenticator.md',
+    },
   })
   async verifyMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
@@ -120,140 +139,176 @@ export class MfaController {
     @User() user: UsersDoc,
     @Session() session: SessionsDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.mfaService.verifyMfaAuthenticator({
       type,
       otp,
       user,
       session,
       db,
-    });
+    })
   }
 
-  @Post('recovery-codes')
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @ResModel(Models.MFA_RECOVERY_CODES)
-  @Sdk({
-    name: 'createMfaRecoveryCodes',
+  @Post('recovery-codes', {
+    summary: 'Create MFA recovery codes',
+    model: Models.MFA_RECOVERY_CODES,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'createMfaRecoveryCodes',
+      descMd: '/docs/references/account/create-mfa-recovery-codes.md',
+    },
   })
   async createMfaRecoveryCodes(
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-  ) {
-    return this.mfaService.createMfaRecoveryCodes({ user, db });
+  ): Promise<
+    IResponse<
+      Doc<{
+        recoveryCodes: string[]
+      }>
+    >
+  > {
+    return this.mfaService.createMfaRecoveryCodes({ user, db })
   }
 
-  @Patch('recovery-codes')
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @ResModel(Models.MFA_RECOVERY_CODES)
-  @Sdk({
-    name: 'updateMfaRecoveryCodes',
+  @Patch('recovery-codes', {
+    summary: 'Update MFA recovery codes (regenerate)',
+    model: Models.MFA_RECOVERY_CODES,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'updateMfaRecoveryCodes',
+      descMd: '/docs/references/account/update-mfa-recovery-codes.md',
+    },
   })
   async updateMfaRecoveryCodes(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
-  ) {
-    return this.mfaService.updateMfaRecoveryCodes({ db, user });
+  ): Promise<
+    IResponse<
+      Doc<{
+        recoveryCodes: string[]
+      }>
+    >
+  > {
+    return this.mfaService.updateMfaRecoveryCodes({ db, user })
   }
 
-  @Get('recovery-codes')
-  @Scope('account')
-  @ResModel(Models.MFA_RECOVERY_CODES)
-  @Sdk({
-    name: 'getMfaRecoveryCodes',
+  @Get('recovery-codes', {
+    summary: 'List MFA recovery codes',
+    model: Models.MFA_RECOVERY_CODES,
+    sdk: {
+      name: 'getMfaRecoveryCodes',
+      descMd: '/docs/references/account/get-mfa-recovery-codes.md',
+    },
   })
-  async getMfaRecoveryCodes(@User() user: UsersDoc) {
-    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', []);
+  async getMfaRecoveryCodes(@User() user: UsersDoc): Promise<
+    IResponse<{
+      recoveryCodes: string[]
+    }>
+  > {
+    const mfaRecoveryCodes = user.get('mfaRecoveryCodes', [])
 
     if (!mfaRecoveryCodes || mfaRecoveryCodes.length === 0) {
-      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND);
+      throw new Exception(Exception.USER_RECOVERY_CODES_NOT_FOUND)
     }
 
     return {
       recoveryCodes: mfaRecoveryCodes,
-    };
+    }
   }
 
-  @Delete('authenticators/:type')
-  @Scope('account')
-  @AuditEvent('user.update', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
-  })
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ResModel(Models.NONE)
-  @Sdk({
-    name: 'deleteMfaAuthenticator',
+  @Delete('authenticators/:type', {
+    summary: 'Delete authenticator',
+    model: Models.NONE,
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'deleteMfaAuthenticator',
+      descMd: '/docs/references/account/delete-mfa-authenticator.md',
+    },
   })
   async deleteMfaAuthenticator(
     @Param() { type }: MfaAuthenticatorTypeParamDTO,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<void> {
     return this.mfaService.deleteMfaAuthenticator({
       type,
       user,
       db,
-    });
+    })
   }
 
-  @Post('challenge')
-  @Scope('account')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{userId}',
-  })
-  @ResModel(Models.MFA_CHALLENGE)
-  @Sdk({
-    name: 'createMfaChallenge',
+  @Post('challenge', {
+    summary: 'Create MFA challenge',
+    model: Models.MFA_CHALLENGE,
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{userId}',
+    },
+    audit: {
+      key: 'challenge.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createMfaChallenge',
+      descMd: '/docs/references/account/create-mfa-challenge.md',
+    },
   })
   async createMfaChallenge(
-    @Body() input: CreateMfaChallengeDTO,
+    @Body() { factor }: CreateMfaChallengeDTO,
     @Req() request: NuvixRequest,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Project() project: ProjectsDoc,
     @Locale() locale: LocaleTranslator,
-  ) {
+  ): Promise<IResponse<ChallengesDoc>> {
     return this.mfaService.createMfaChallenge({
-      ...input,
+      factor,
       userAgent: request.headers['user-agent'] || 'UNKNOWN',
       user,
       db,
       project,
       locale,
-    });
+    })
   }
 
-  @Put('challenge')
-  @Scope('account')
-  @ResModel(Models.SESSION)
-  @Throttle({
-    limit: 10,
-    key: 'challengeId:{param-challengeId}',
-  })
-  @Sdk({
-    name: 'updateMfaChallenge',
+  @Put('challenge', {
+    summary: 'Update MFA challenge (confirmation)',
+    model: Models.SESSION,
+    throttle: {
+      limit: 10,
+      key: 'challengeId:{param-challengeId}',
+    },
+    audit: {
+      key: 'challenge.update',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
   })
   async updateMfaChallenge(
     @Body() input: VerifyMfaChallengeDTO,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Session() session: SessionsDoc,
-  ) {
+  ): Promise<IResponse<SessionsDoc>> {
     return this.mfaService.updateMfaChallenge({
       ...input,
       user,
       db,
       session,
-    });
+    })
   }
 }

@@ -1,42 +1,43 @@
+import { ApiPropertyOptional } from '@nestjs/swagger'
 import {
   IsArray,
   IsBoolean,
   IsEnum,
-  IsObject,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from 'class-validator'
 
 export class TableUpdateDTO {
   @IsOptional()
   @IsString()
-  name?: string;
+  name?: string
 
   @IsOptional()
   @IsString()
-  schema?: string;
+  schema?: string
 
   @IsOptional()
   @IsString()
-  comment?: string;
+  comment?: string
 
   @IsOptional()
   @IsBoolean()
-  rls_enabled?: boolean;
+  rls_enabled?: boolean
 
   @IsOptional()
   @IsBoolean()
-  rls_forced?: boolean;
+  rls_forced?: boolean
 
   @IsOptional()
   @IsEnum(['DEFAULT', 'INDEX', 'FULL', 'NOTHING'])
-  replica_identity?: 'DEFAULT' | 'INDEX' | 'FULL' | 'NOTHING';
+  @ApiPropertyOptional({ enum: ['DEFAULT', 'INDEX', 'FULL', 'NOTHING'] })
+  replica_identity?: 'DEFAULT' | 'INDEX' | 'FULL' | 'NOTHING'
 
   @IsOptional()
   @IsString()
-  replica_identity_index?: string;
+  replica_identity_index?: string
 
   @IsOptional()
   @IsArray()
-  primary_keys?: { name: string }[];
+  primary_keys?: { name: string }[]
 }

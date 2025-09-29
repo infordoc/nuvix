@@ -1,46 +1,46 @@
-import { Exclude, Expose } from 'class-transformer';
-import BaseModel from '@nuvix/core/models/base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from '@nuvix/core/models/base.model'
 
 @Exclude()
 export class IdentityModel extends BaseModel {
   /**
    * User ID.
    */
-  @Expose() userId: string = '';
+  @Expose() userId: string = ''
 
   /**
    * Identity Provider.
    */
-  @Expose() provider: string = '';
+  @Expose() provider: string = ''
 
   /**
    * ID of the User in the Identity Provider.
    */
-  @Expose() providerUid: string = '';
+  @Expose() providerUid: string = ''
 
   /**
    * Email of the User in the Identity Provider.
    */
-  @Expose() providerEmail: string = '';
+  @Expose() providerEmail: string = ''
 
   /**
    * Identity Provider Access Token.
    */
-  @Expose() providerAccessToken: string = '';
+  @Expose() providerAccessToken: string = ''
 
   /**
    * The date of when the access token expires in ISO 8601 format.
    */
-  @Expose() declare providerAccessTokenExpiry: string; // No default value
+  @Expose() declare providerAccessTokenExpiry: string // No default value
 
   /**
    * Identity Provider Refresh Token.
    */
-  @Expose() providerRefreshToken: string = '';
+  @Expose() providerRefreshToken: string = ''
 
   constructor(partial: Partial<IdentityModel>) {
-    super();
-    Object.assign(this, partial);
+    super()
+    Object.assign(this, partial)
   }
 
   /**
@@ -49,6 +49,6 @@ export class IdentityModel extends BaseModel {
    * @return string
    */
   getName(): string {
-    return 'Identity';
+    return 'Identity'
   }
 }

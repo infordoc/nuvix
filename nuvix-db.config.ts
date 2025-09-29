@@ -1,5 +1,5 @@
-import { NuvixDBConfig } from '@nuvix/db/config';
-import collections from '@nuvix/utils/collections';
+import { NuvixDBConfig } from '@nuvix/db'
+import collections from '@nuvix/utils/collections'
 
 const config: NuvixDBConfig = {
   collections: Array.from(
@@ -12,11 +12,16 @@ const config: NuvixDBConfig = {
         ...Object.values(collections.console).map(collection =>
           collection.$id === 'teams'
             ? { ...collection, $id: 'organizations', name: 'organizations' }
-            : Object.keys({ ...collections.auth, ...collections.common }).includes(collection.$id)
-              ? undefined as any
+            : Object.keys({
+                  ...collections.auth,
+                  ...collections.common,
+                }).includes(collection.$id)
+              ? (undefined as any)
               : collection,
         ),
-      ].filter(Boolean).filter(c => c.attributes?.length > 0),
+      ]
+        .filter(Boolean)
+        .filter(c => c.attributes?.length > 0),
     ),
   ),
 
@@ -33,6 +38,6 @@ const config: NuvixDBConfig = {
     debug: false,
     strict: true,
   },
-};
+}
 
-export default config;
+export default config

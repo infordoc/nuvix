@@ -1,20 +1,20 @@
-import { Database, Query } from '@nuvix/db';
-import { CreateSubscriberDTO } from './DTO/subscriber.dto';
+import { Database, Query } from '@nuvix/db'
+import { CreateSubscriberDTO } from './DTO/subscriber.dto'
 
 interface DB {
-  db: Database;
+  db: Database
 }
 
 interface QandS {
-  queries?: Query[];
-  search?: string;
+  queries?: Query[]
+  search?: string
 }
 
 export interface CreateSubscriber extends DB {
-  input: CreateSubscriberDTO;
-  topicId: string;
+  input: CreateSubscriberDTO
+  topicId: string
 }
 
 export interface ListSubscribers extends DB, QandS {
-  topicId: string;
+  topicId: string
 }

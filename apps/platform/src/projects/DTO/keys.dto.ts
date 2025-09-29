@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/swagger'
 import {
   IsArray,
   IsDateString,
@@ -6,21 +6,21 @@ import {
   IsString,
   MaxLength,
   MinLength,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateKeyDTO {
   @IsString()
   @MaxLength(128)
   @MinLength(1)
-  name!: string;
+  name!: string
 
   @IsOptional()
   @IsArray()
-  scopes!: string[];
+  scopes!: string[]
 
   @IsOptional()
   @IsDateString()
-  expire!: string;
+  expire!: string
 }
 
 export class UpdateKeyDTO extends PartialType(CreateKeyDTO) {}

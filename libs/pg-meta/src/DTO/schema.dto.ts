@@ -1,20 +1,20 @@
-import { TransformStringToBoolean } from '@nuvix/core/validators';
-import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional } from 'class-validator';
+import { TransformStringToBoolean } from '@nuvix/core/validators'
+import { Type } from 'class-transformer'
+import { IsBoolean, IsInt, IsOptional } from 'class-validator'
 
 export class SchemaQueryDTO {
   @IsOptional()
   @TransformStringToBoolean()
   @IsBoolean()
-  include_system_schemas?: boolean;
+  include_system_schemas?: boolean
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  limit?: number;
+  limit?: number
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  offset?: number;
+  offset?: number
 }

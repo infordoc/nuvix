@@ -1,41 +1,41 @@
-import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator'
 
 export class TableCreateDTO {
   @IsString()
-  declare name: string;
+  declare name: string
 
   @IsOptional()
   @IsString()
-  schema?: string;
+  schema?: string
 
   @IsOptional()
   @IsString()
-  comment?: string;
+  comment?: string
 
   @IsOptional()
   @IsObject()
-  columns?: any[];
+  columns?: any[]
 
   @IsOptional()
   @IsObject()
-  primaryKeys?: any[];
+  primaryKeys?: any[]
 
   @IsOptional()
   @IsObject()
-  foreignKeys?: any[];
+  foreignKeys?: any[]
 
   @IsOptional()
   @IsBoolean()
-  isPartition?: boolean;
+  isPartition?: boolean
 
   @IsOptional()
   @IsString()
-  partitionOf?: string;
+  partitionOf?: string
 
   @IsOptional()
   @IsObject()
   partitioning?: {
-    strategy: string;
-    columns: any[];
-  };
+    strategy: string
+    columns: any[]
+  }
 }

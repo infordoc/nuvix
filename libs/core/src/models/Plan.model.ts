@@ -1,102 +1,102 @@
-import { Exclude, Expose } from 'class-transformer';
-import BaseModel from './base.model';
+import { Exclude, Expose } from 'class-transformer'
+import { BaseModel } from './base.model'
 
 @Exclude()
 export class BillingPlanModel extends BaseModel {
   /**
    * Plan name
    */
-  @Expose() declare name: string;
+  @Expose() declare name: string
   /**
    * Price
    */
-  @Expose() declare price: number;
+  @Expose() declare price: number
   /**
    * Trial days
    */
-  @Expose() declare trial: number;
+  @Expose() declare trial: number
   /**
    * Bandwidth
    */
-  @Expose() declare bandwidth: number;
+  @Expose() declare bandwidth: number
   /**
    * Storage
    */
-  @Expose() declare storage: number;
+  @Expose() declare storage: number
   /**
    * Members
    */
-  @Expose() declare members: number;
+  @Expose() declare members: number
   /**
    * Webhooks
    */
-  @Expose() declare webhooks: number;
+  @Expose() declare webhooks: number
   /**
    * Platofrms
    */
-  @Expose() declare platforms: number;
+  @Expose() declare platforms: number
   /**
    * Users
    */
-  @Expose() declare users: number;
+  @Expose() declare users: number
   /**
    * Teams
    */
-  @Expose() declare teams: number;
+  @Expose() declare teams: number
   /**
    * Databases
    */
-  @Expose() declare databases: number;
+  @Expose() declare databases: number
   /**
    * Buckets
    */
-  @Expose() declare buckets: number;
+  @Expose() declare buckets: number
   /**
    * File size
    */
-  @Expose() declare fileSize: number;
+  @Expose() declare fileSize: number
   /**
    * Functions
    */
-  @Expose() declare functions: number;
+  @Expose() declare functions: number
   /**
    * Function executions
    */
-  @Expose() declare executions: number;
+  @Expose() declare executions: number
   /**
    * Realtime connections
    */
-  @Expose() declare realtime: number;
+  @Expose() declare realtime: number
   /**
    * Log days
    */
-  @Expose() declare logs: number;
+  @Expose() declare logs: number
   /**
    * Additional resources
    */
-  @Expose() declare addons: object;
+  @Expose() declare addons: object
   /**
    * Custom SMTP
    */
-  @Expose() declare customSmtp: boolean;
+  @Expose() declare customSmtp: boolean
   /**
    * nuvix branding in email
    */
-  @Expose() declare emailBranding: boolean;
+  @Expose() declare emailBranding: boolean
   /**
    * Does plan require payment method
    */
-  @Expose() declare requiresPaymentMethod: boolean;
+  @Expose() declare requiresPaymentMethod: boolean
   /**
    * Does plan require billing address
    */
-  @Expose() declare requiresBillingAddress: boolean;
+  @Expose() declare requiresBillingAddress: boolean
   /**
    * Is the billing plan available
    */
-  @Expose() declare isAvailable: boolean;
+  @Expose() declare isAvailable: boolean
   /**
    * Can user change the plan themselves
    */
-  @Expose() declare selfService: boolean;
+  @Expose() declare selfService: boolean
 }

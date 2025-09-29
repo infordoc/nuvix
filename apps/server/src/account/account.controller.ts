@@ -1,40 +1,24 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  Patch,
-  Post,
-  Put,
+  HttpStatus,
   Req,
   Res,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { Database } from '@nuvix/db';
-import {
-  AuditEvent,
-  AuthType,
-  Route,
-  Scope,
-  Sdk,
-  Throttle,
-} from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { Exception } from '@nuvix/core/extend/exception';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
-import { AccountService } from './account.service';
+} from '@nestjs/common'
+import { Database } from '@nuvix/db'
+import { AuthType, Namespace } from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { Exception } from '@nuvix/core/extend/exception'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
+import { AccountService } from './account.service'
 import {
   CreateAccountDTO,
   UpdateEmailDTO,
@@ -42,36 +26,48 @@ import {
   UpdatePasswordDTO,
   UpdatePhoneDTO,
   UpdatePrefsDTO,
-} from './DTO/account.dto';
+} from './DTO/account.dto'
 import {
   CreateEmailVerificationDTO,
   UpdateEmailVerificationDTO,
   UpdatePhoneVerificationDTO,
-} from './DTO/verification.dto';
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
+} from './DTO/verification.dto'
+import type { ProjectsDoc, TokensDoc, UsersDoc } from '@nuvix/utils/types'
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import type { IResponse } from '@nuvix/utils'
 
 @Controller({ version: ['1'], path: 'account' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
 export class AccountController {
   constructor(private readonly accountService: AccountService) {}
 
-  @Public()
-  @Post()
-  @Scope('sessions.create')
-  @Route()
-  @ResModel(Models.ACCOUNT)
-  @Throttle(10)
-  @AuditEvent('user.create', {
-    resource: 'user/{res.$id}',
-    userId: '{res.$id}',
+  @Post('', {
+    summary: 'Create Account',
+    scopes: 'sessions.create',
+    throttle: {
+      limit: 10,
+      configKey: 'create_account',
+    },
+    model: Models.ACCOUNT,
+    audit: {
+      key: 'user.create',
+      resource: 'user/{res.$id}',
+      userId: '{res.$id}',
+    },
+    sdk: {
+      name: 'create',
+      code: HttpStatus.CREATED,
+      descMd: 'docs/references/account/create.md',
+    },
   })
   async createAccount(
     @AuthDatabase() db: Database,
     @Body() input: CreateAccountDTO,
     @User() user: UsersDoc,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.accountService.createAccount(
       db,
       input.userId,
@@ -80,175 +76,232 @@ export class AccountController {
       input.name,
       user,
       project,
-    );
+    )
   }
 
-  @Get()
-  @Scope('account')
-  @Route()
-  @ResModel(Models.ACCOUNT)
-  async getAccount(@User() user: UsersDoc) {
+  @Get('', {
+    summary: 'Get Account',
+    scopes: 'account',
+    auth: [AuthType.SESSION, AuthType.JWT],
+    model: Models.ACCOUNT,
+    sdk: {
+      name: 'get',
+      descMd: '/docs/references/account/get.md',
+    },
+  })
+  async getAccount(@User() user: UsersDoc): Promise<IResponse<UsersDoc>> {
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
-    return user;
+    return user
   }
 
-  @Delete()
-  @Scope('account')
-  @Route()
-  @ResModel(Models.NONE)
-  @AuditEvent('user.delete', 'user/{res.$id}')
-  async deleteAccount(@AuthDatabase() db: Database, @User() user: UsersDoc) {
-    return this.accountService.deleteAccount(db, user);
-  }
-
-  @Post(['jwts', 'jwt'])
-  @Scope('account')
-  @ResModel(Models.JWT)
-  @Throttle({
-    limit: 100,
-    key: 'userId:{userId}',
+  @Delete('', {
+    summary: 'Delete Account',
+    scopes: 'account',
+    model: Models.NONE,
+    auth: AuthType.ADMIN,
+    audit: {
+      key: 'user.delete',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'delete',
+      descMd: '/docs/references/account/delete.md',
+    },
   })
-  @Sdk({
-    name: 'createJWT',
-    auth: AuthType.JWT,
-  })
-  async createJWT(
+  async deleteAccount(
+    @AuthDatabase() db: Database,
     @User() user: UsersDoc,
-    @Res({ passthrough: true }) response: NuvixRes,
-  ) {
-    return this.accountService.createJWT(user, response);
+  ): Promise<void> {
+    return this.accountService.deleteAccount(db, user)
   }
 
-  @Get('prefs')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.PREFERENCES)
-  getPrefs(@User() user: UsersDoc) {
-    return user.get('prefs', {});
+  @Get('prefs', {
+    summary: 'Get account preferences',
+    scopes: 'account',
+    model: Models.PREFERENCES,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    sdk: {
+      name: 'getPrefs',
+      descMd: '/docs/references/account/get-prefs.md',
+    },
+  })
+  getPrefs(@User() user: UsersDoc): IResponse<Record<string, unknown>> {
+    return user.get('prefs', {})
   }
 
-  @Patch('prefs')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.PREFERENCES)
-  @AuditEvent('user.update', 'user/{res.$id}')
+  @Patch('prefs', {
+    summary: 'Update preferences',
+    scopes: 'account',
+    model: Models.PREFERENCES,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updatePrefs',
+      descMd: '/docs/references/account/update-prefs.md',
+    },
+  })
   async updatePrefs(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() input: UpdatePrefsDTO,
-  ) {
-    return this.accountService.updatePrefs(db, user, input.prefs);
+  ): Promise<IResponse<Record<string, unknown>>> {
+    return this.accountService.updatePrefs(db, user, input.prefs)
   }
 
-  @Patch('name')
-  @Scope('account')
-  @ResModel(Models.ACCOUNT)
-  @AuditEvent('user.update', 'user/{res.$id}')
-  @Sdk({
-    name: 'updateName',
+  @Patch('name', {
+    summary: 'Update name',
+    scopes: 'account',
+    model: Models.ACCOUNT,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updateName',
+      descMd: '/docs/references/account/update-name.md',
+    },
   })
   async updateName(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { name }: UpdateNameDTO,
-  ) {
-    return this.accountService.updateName(db, name, user);
+  ): Promise<IResponse<UsersDoc>> {
+    return this.accountService.updateName(db, name, user)
   }
 
-  @Patch('password')
-  @Scope('account')
-  @Throttle(10)
-  @ResModel(Models.ACCOUNT)
-  @AuditEvent('user.update', 'user/{res.$id}')
-  @Sdk({
-    name: 'updatePassword',
+  @Patch('password', {
+    summary: 'Update password',
+    scopes: 'account',
+    throttle: 10,
+    model: Models.ACCOUNT,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updatePassword',
+      descMd: '/docs/references/account/update-password.md',
+    },
   })
   async updatePassword(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { password, oldPassword }: UpdatePasswordDTO,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.accountService.updatePassword({
       db: db,
       password,
       oldPassword,
       user,
       project,
-    });
+    })
   }
 
-  @Patch('email')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.ACCOUNT)
-  @AuditEvent('user.update', 'user/{res.$id}')
+  @Patch('email', {
+    summary: 'Update email',
+    scopes: 'account',
+    model: Models.ACCOUNT,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updateEmail',
+      descMd: '/docs/references/account/update-email.md',
+    },
+  })
   async updateEmail(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() updateEmailDTO: UpdateEmailDTO,
-  ) {
-    return this.accountService.updateEmail(db, user, updateEmailDTO);
+  ): Promise<IResponse<UsersDoc>> {
+    return this.accountService.updateEmail(db, user, updateEmailDTO)
   }
 
-  @Patch('phone')
-  @Scope('account')
-  @ResModel(Models.ACCOUNT)
-  @AuditEvent('user.update', 'user/{res.$id}')
-  @Sdk({
-    name: 'updatePhone',
+  @Patch('phone', {
+    summary: 'Update phone',
+    scopes: 'account',
+    model: Models.ACCOUNT,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updatePhone',
+      descMd: '/docs/references/account/update-phone.md',
+    },
   })
   async updatePhone(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Body() { password, phone }: UpdatePhoneDTO,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.accountService.updatePhone({
       db: db,
       password,
       phone,
       user,
       project,
-    });
+    })
   }
 
-  @Patch('status')
-  @Scope('account')
-  @ResModel(Models.ACCOUNT)
-  @AuditEvent('user.update', 'user/{res.$id}')
-  @Sdk({
-    name: 'updateStatus',
+  @Patch('status', {
+    summary: 'Update status',
+    scopes: 'account',
+    model: Models.ACCOUNT,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    audit: {
+      key: 'user.update',
+      resource: 'user/{res.$id}',
+    },
+    sdk: {
+      name: 'updateStatus',
+      descMd: '/docs/references/account/update-status.md',
+    },
   })
   async updateStatus(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
-  ) {
+  ): Promise<IResponse<UsersDoc>> {
     return this.accountService.updateStatus({
       db: db,
       user,
       request,
       response,
-    });
+    })
   }
 
-  @Post('verification')
-  @Scope('account')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('verification.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @ResModel(Models.TOKEN)
-  @Sdk({
-    name: 'createVerification',
+  @Post('verification', {
+    summary: 'Create email verification',
+    scopes: 'account',
+    model: Models.TOKEN,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'verification.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createVerification',
+      descMd: '/docs/references/account/create-email-verification.md',
+    },
   })
   async createEmailVerification(
     @Body() { url }: CreateEmailVerificationDTO,
@@ -258,7 +311,7 @@ export class AccountController {
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
     @Locale() locale: LocaleTranslator,
-  ) {
+  ): Promise<IResponse<TokensDoc>> {
     return this.accountService.createEmailVerification({
       url,
       request,
@@ -267,52 +320,61 @@ export class AccountController {
       user,
       db,
       locale,
-    });
+    })
   }
 
-  @Public()
-  @Put('verification')
-  @Scope('public')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('verification.update', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @ResModel(Models.TOKEN)
-  @Sdk({
-    name: 'updateEmailVerification',
+  @Put('verification', {
+    summary: 'Update email verification (confirmation)',
+    scopes: 'public',
+    model: Models.TOKEN,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'verification.update',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'updateVerification',
+      descMd: '/docs/references/account/update-email-verification.md',
+    },
   })
   async updateEmailVerification(
     @Body() { userId, secret }: UpdateEmailVerificationDTO,
     @Res({ passthrough: true }) response: NuvixRes,
     @User() user: UsersDoc,
     @AuthDatabase() db: Database,
-  ) {
+  ): Promise<IResponse<TokensDoc>> {
     return this.accountService.updateEmailVerification({
       userId,
       secret,
       response,
       user,
       db,
-    });
+    })
   }
 
-  @Post('verification/phone')
-  @Scope('account')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('verification.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @ResModel(Models.TOKEN)
-  @Sdk({
-    name: 'createPhoneVerification',
+  @Post('verification/phone', {
+    summary: 'Create phone verification',
+    scopes: 'account',
+    model: Models.TOKEN,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'verification.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createPhoneVerification',
+      descMd: '/docs/references/account/create-phone-verification.md',
+    },
   })
   async createPhoneVerification(
     @Req() request: NuvixRequest,
@@ -321,7 +383,7 @@ export class AccountController {
     @AuthDatabase() db: Database,
     @Project() project: ProjectsDoc,
     @Locale() locale: LocaleTranslator,
-  ) {
+  ): Promise<IResponse<TokensDoc>> {
     return this.accountService.createPhoneVerification({
       request,
       response,
@@ -329,23 +391,27 @@ export class AccountController {
       db,
       project,
       locale,
-    });
+    })
   }
 
-  @Public()
-  @Put('verification/phone')
-  @Scope('public')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('verification.update', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @ResModel(Models.TOKEN)
-  @Sdk({
-    name: 'updatePhoneVerification',
+  @Put('verification/phone', {
+    summary: 'Update phone verification (confirmation)',
+    scopes: 'public',
+    model: Models.TOKEN,
+    auth: [AuthType.SESSION, AuthType.JWT],
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'verification.update',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'updatePhoneVerification',
+      descMd: '/docs/references/account/update-phone-verification.md',
+    },
   })
   async updatePhoneVerification(
     @Body() { userId, secret }: UpdatePhoneVerificationDTO,
@@ -357,6 +423,6 @@ export class AccountController {
       secret,
       user,
       db,
-    });
+    })
   }
 }

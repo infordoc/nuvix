@@ -1,7 +1,7 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as path from 'path'
 
-const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/os');
+const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/os')
 
 export const osCodes = {
   // Codes based on: https://github.com/matomo-org/device-detector/blob/master/Parser/Client/Browser.php
@@ -91,4 +91,4 @@ export const osCodes = {
     'POS' : 'palmOS',
     'WOS' : 'webOS'
     */
-};
+}

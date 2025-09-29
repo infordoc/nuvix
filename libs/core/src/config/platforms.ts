@@ -1,6 +1,6 @@
-export const APP_PLATFORM_SERVER = 'server';
-export const APP_PLATFORM_CLIENT = 'client';
-export const APP_PLATFORM_CONSOLE = 'console';
+export const APP_PLATFORM_SERVER = 'server'
+export const APP_PLATFORM_CLIENT = 'client'
+export const APP_PLATFORM_CONSOLE = 'console'
 
 export const platforms = {
   [APP_PLATFORM_CLIENT]: {
@@ -443,4 +443,4 @@ export const platforms = {
       },
     ],
   },
-};
+}

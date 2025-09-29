@@ -1,15 +1,15 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Topics extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'name',
     'description',
     'emailTotal',
     'smsTotal',
     'pushTotal',
-  ];
+  ]
 
   public constructor() {
-    super('topics', Topics.ALLOWED_ATTRIBUTES);
+    super('topics', Topics.ALLOWED_ATTRIBUTES)
   }
 }

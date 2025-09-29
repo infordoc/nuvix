@@ -1,13 +1,13 @@
-import { ProjectsDoc } from '@nuvix/utils/types';
-import { Client } from 'pg';
+import { ProjectsDoc } from '@nuvix/utils/types'
+import { Client } from 'pg'
 
 interface SetupDatabaseMeta {
-  request?: NuvixRequest;
-  res?: NuvixRes;
-  project?: ProjectsDoc;
-  extra?: Record<string, any>;
-  extraPrefix?: string;
-  client: Client;
+  request?: NuvixRequest
+  res?: NuvixRes
+  project?: ProjectsDoc
+  extra?: Record<string, any>
+  extraPrefix?: string
+  client: Client
 }
 
 export const setupDatabaseMeta = async ({
@@ -18,15 +18,15 @@ export const setupDatabaseMeta = async ({
   extraPrefix,
 }: SetupDatabaseMeta) => {
   const escapeString = (value: string): string => {
-    return `'${value.replace(/'/g, "''")}'`;
-  };
+    return `'${value.replace(/'/g, "''")}'`
+  }
 
-  const sqlChunks: string[] = [];
+  const sqlChunks: string[] = []
 
   if (request) {
-    const headers: Record<string, string | string[]> = {};
+    const headers: Record<string, string | string[]> = {}
     for (const [k, v] of Object.entries(request.headers ?? {})) {
-      headers[k.toLowerCase()] = v!;
+      headers[k.toLowerCase()] = v!
     }
     sqlChunks.push(`
       SET "request.method" = ${escapeString(request.method?.toUpperCase() || 'GET')};
@@ -35,44 +35,44 @@ export const setupDatabaseMeta = async ({
       SET "request.headers" = ${escapeString(JSON.stringify(headers))};
       SET "request.cookies" = ${escapeString(JSON.stringify(request.cookies ?? {}))};
       SET "request.ip" = ${escapeString(request.ip || '')};
-    `);
+    `)
   }
 
   if (project && !project.empty()) {
     const projectData = {
       id: project.getId(),
       name: project.get('name'),
-    };
+    }
     sqlChunks.push(
       `SET app.project = ${escapeString(JSON.stringify(projectData))};`,
-    );
+    )
   }
 
   if (extra) {
     const processValue = (obj: any, prefix: string = '') => {
       for (const [key, value] of Object.entries(obj)) {
         if (key && value != null) {
-          const fullKey = prefix ? `${prefix}.${key}` : key;
+          const fullKey = prefix ? `${prefix}.${key}` : key
 
           if (typeof value === 'object' && !Array.isArray(value)) {
             // Recursively process nested objects
-            processValue(value, fullKey);
+            processValue(value, fullKey)
           } else {
             // Set the value for primitive types and arrays
             const finalKey = extraPrefix
               ? `"${extraPrefix}.${fullKey}"`
-              : `"${fullKey}"`;
-            sqlChunks.push(`SET ${finalKey} = ${escapeString(String(value))};`);
+              : `"${fullKey}"`
+            sqlChunks.push(`SET ${finalKey} = ${escapeString(String(value))};`)
           }
         }
       }
-    };
+    }
 
-    processValue(extra);
+    processValue(extra)
   }
 
-  if (!sqlChunks.length) return;
+  if (!sqlChunks.length) return
 
-  const finalSQL = `DO $$ BEGIN ${sqlChunks.join('\n')} END $$;`;
-  await client.query(finalSQL);
-};
+  const finalSQL = `DO $$ BEGIN ${sqlChunks.join('\n')} END $$;`
+  await client.query(finalSQL)
+}

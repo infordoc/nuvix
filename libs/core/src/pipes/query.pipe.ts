@@ -1,47 +1,47 @@
-import { ArgumentMetadata, PipeTransform } from '@nestjs/common';
-import { Exception } from '../extend/exception';
+import { ArgumentMetadata, PipeTransform } from '@nestjs/common'
+import { Exception } from '../extend/exception'
 import {
   QueriesValidator,
   Query,
   QueryException,
   type BaseValidator,
-} from '@nuvix/db';
+} from '@nuvix/db'
 
 interface Options {
-  validators?: BaseValidator[];
-  maxLength?: number;
-  validate?: boolean;
+  validators?: BaseValidator[]
+  maxLength?: number
+  validate?: boolean
 }
 
 export class ParseQueryPipe
   extends QueriesValidator
   implements PipeTransform<string | string[], Query[]>
 {
-  private readonly options: Options;
-  private readonly fields: string[];
+  private readonly options: Options
+  private readonly fields: string[]
 
-  constructor(...fields: string[]);
-  constructor(fields: string[], options?: Options);
-  constructor(options: Options);
+  constructor(...fields: string[])
+  constructor(fields: string[], options?: Options)
+  constructor(options: Options)
   constructor(...fieldsOrOptions: any[]) {
-    let fields: string[];
-    let options: Options;
+    let fields: string[]
+    let options: Options
     if (Array.isArray(fieldsOrOptions[0])) {
-      fields = fieldsOrOptions[0] as string[];
-      options = (fieldsOrOptions[1] as Options) || {};
+      fields = fieldsOrOptions[0] as string[]
+      options = (fieldsOrOptions[1] as Options) || {}
     } else if (typeof fieldsOrOptions[0] === 'string') {
-      fields = fieldsOrOptions as string[];
-      options = {};
+      fields = fieldsOrOptions as string[]
+      options = {}
     } else {
-      fields = [];
-      options = (fieldsOrOptions[0] as Options) || {};
+      fields = []
+      options = (fieldsOrOptions[0] as Options) || {}
     }
-    super(options.validators, options.maxLength);
-    this.fields = fields;
+    super(options.validators, options.maxLength)
+    this.fields = fields
     this.options = {
       ...options,
       validate: options.validate ?? true,
-    };
+    }
   }
 
   transform(value: any, metadata: ArgumentMetadata): Query[] {
@@ -49,35 +49,35 @@ export class ParseQueryPipe
       throw new Exception(
         Exception.GENERAL_QUERY_INVALID,
         'ParseQueryPipe can only be used with query parameters',
-      );
+      )
     }
 
     if (this.isEmpty(value)) {
-      return [];
+      return []
     }
 
-    const queries = Array.isArray(value) ? value : [value];
+    const queries = Array.isArray(value) ? value : [value]
 
     try {
-      const parsedQueries = Query.parseQueries(queries);
+      const parsedQueries = Query.parseQueries(queries)
       if (this.options.validate && !this.$valid(queries)) {
-        throw new Exception(Exception.GENERAL_QUERY_INVALID, this.$description);
+        throw new Exception(Exception.GENERAL_QUERY_INVALID, this.$description)
       }
-      return parsedQueries;
+      return parsedQueries
     } catch (error) {
       if (error instanceof Exception) {
-        throw error;
+        throw error
       }
       throw new Exception(
         Exception.GENERAL_QUERY_INVALID,
         error instanceof QueryException
           ? error.message
           : `Failed to parse query: ${(error as Error)?.message ?? 'Unknown error'}`,
-      );
+      )
     }
   }
 
   private isEmpty(value: any): value is null | undefined | '' {
-    return value === null || value === undefined || value === '';
+    return value === null || value === undefined || value === ''
   }
 }

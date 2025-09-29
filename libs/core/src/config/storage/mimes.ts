@@ -62,4 +62,4 @@ export const mimes = [
 
   // Adobe PDF
   'application/pdf',
-];
+]

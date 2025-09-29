@@ -1,14 +1,14 @@
-import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
-import { Hook } from '@nuvix/core/server';
-import { Doc } from '@nuvix/db';
-import { Context, QueueFor } from '@nuvix/utils';
-import type { Queue } from 'bullmq';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import type { ApiLogsQueueJobData } from '../queues/logs.queue';
-import { Auth, type Key } from '@nuvix/core/helper';
-import { AppConfigService } from '@nuvix/core/config.service';
-import { AuthType } from '@nuvix/core/decorators';
+import { InjectQueue } from '@nestjs/bullmq'
+import { Injectable } from '@nestjs/common'
+import { Hook } from '@nuvix/core/server'
+import { Doc } from '@nuvix/db'
+import { Context, QueueFor } from '@nuvix/utils'
+import type { Queue } from 'bullmq'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import type { ApiLogsQueueJobData } from '../queues/logs.queue'
+import { Auth, type Key } from '@nuvix/core/helper'
+import { AppConfigService } from '@nuvix/core/config.service'
+import { AuthType } from '@nuvix/core/decorators'
 
 @Injectable()
 export class LogsHook implements Hook {
@@ -24,9 +24,9 @@ export class LogsHook implements Hook {
     next: (err?: Error) => void,
   ) {
     const project: ProjectsDoc =
-      req[Context.Project] ?? new Doc({ $id: 'console' });
-    const user = req[Context.User] ?? new Doc();
-    const skipLogging = req.routeOptions.config.skipLogging || false;
+      req[Context.Project] ?? new Doc({ $id: 'console' })
+    const user = req[Context.User] ?? new Doc()
+    const skipLogging = req.routeOptions.config.skipLogging || false
 
     if (
       project?.empty() ||
@@ -34,20 +34,20 @@ export class LogsHook implements Hook {
       Auth.isPlatformActor ||
       skipLogging
     )
-      return next();
+      return next()
 
-    const namespace = req[Context.Namespace];
-    const path = req.url.split('?')[0] || '/';
-    const { authorization, cookie, ...safeHeaders } = req.headers;
+    const namespace = req[Context.Namespace]
+    const path = req.url.split('?')[0] || '/'
+    const { authorization, cookie, ...safeHeaders } = req.headers
     const headers = Object.entries(safeHeaders)
       .filter(([k]) => !k.toUpperCase().startsWith('X-NUVIX'))
       .reduce(
         (obj, [k, v]) => {
-          obj[k] = v;
-          return obj;
+          obj[k] = v
+          return obj
         },
         {} as Record<string, any>,
-      );
+      )
 
     const metadata: Record<string, any> = {
       ips: req.ips || [req.ip],
@@ -65,20 +65,20 @@ export class LogsHook implements Hook {
       api_key: req[Context.ApiKey]
         ? (req[Context.ApiKey] as Key)?.getKey()
         : null,
-    };
+    }
 
     if (!user.empty()) {
       metadata['user'] = {
         $id: user.getId(),
         name: user.get('name'),
         email: user.get('email'),
-      };
+      }
     }
 
     if (req['error']) {
-      metadata['error'] = req['error'];
+      metadata['error'] = req['error']
     } else if (reply.statusCode >= 400) {
-      metadata['error'] = { message: reply.raw.statusMessage };
+      metadata['error'] = { message: reply.raw.statusMessage }
     }
 
     await this.logsQueue.add('log', {
@@ -97,8 +97,8 @@ export class LogsHook implements Hook {
         region: this.appConfig.get('app').region,
         metadata,
       },
-    });
+    })
 
-    next();
+    next()
   }
 }

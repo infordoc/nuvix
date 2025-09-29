@@ -1,7 +1,7 @@
-import { PROJECT_ROOT } from '@nuvix/utils';
-import * as path from 'path';
+import { PROJECT_ROOT } from '@nuvix/utils'
+import * as path from 'path'
 
-const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/browsers');
+const assetsPath = path.resolve(PROJECT_ROOT, 'assets/avatars/browsers')
 
 export const browserCodes = {
   // Codes based on: https://github.com/matomo-org/device-detector/blob/master/Parser/Client/Browser.pp
@@ -185,4 +185,4 @@ export const browserCodes = {
     'YA' : 'Yandex Browser',
     'XI' : 'Xiino'
     */
-};
+}

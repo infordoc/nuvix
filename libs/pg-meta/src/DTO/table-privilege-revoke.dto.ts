@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsString } from 'class-validator';
+import { IsIn, IsInt, IsString } from 'class-validator'
 
 type PrivilegeType =
   | 'ALL'
@@ -9,14 +9,14 @@ type PrivilegeType =
   | 'TRUNCATE'
   | 'REFERENCES'
   | 'TRIGGER'
-  | 'MAINTAIN';
+  | 'MAINTAIN'
 
 export class TablePrivilegeRevokeDTO {
   @IsInt()
-  declare relation_id: number;
+  declare relation_id: number
 
   @IsString()
-  declare grantee: string;
+  declare grantee: string
 
   @IsIn([
     'ALL',
@@ -29,5 +29,5 @@ export class TablePrivilegeRevokeDTO {
     'TRIGGER',
     'MAINTAIN',
   ])
-  declare privilege_type: PrivilegeType;
+  declare privilege_type: PrivilegeType
 }

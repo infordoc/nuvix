@@ -1,23 +1,23 @@
-import { ApiKey } from '@nuvix/utils';
-import { roles } from '../config/roles';
-import { Doc, RoleName } from '@nuvix/db';
-import { JwtService } from '@nestjs/jwt';
-import { KeysDoc, ProjectsDoc } from '@nuvix/utils/types';
+import { ApiKey } from '@nuvix/utils'
+import { roles } from '../config/roles'
+import { Doc, RoleName } from '@nuvix/db'
+import { JwtService } from '@nestjs/jwt'
+import { KeysDoc, ProjectsDoc } from '@nuvix/utils/types'
 
 interface JWTPayload {
-  name?: string;
-  projectId?: string;
-  disabledMetrics?: string[];
-  hostnameOverride?: boolean;
-  bannerDisabled?: boolean;
-  projectCheckDisabled?: boolean;
-  previewAuthDisabled?: boolean;
-  deploymentStatusIgnored?: boolean;
-  scopes?: string[];
+  name?: string
+  projectId?: string
+  disabledMetrics?: string[]
+  hostnameOverride?: boolean
+  bannerDisabled?: boolean
+  projectCheckDisabled?: boolean
+  previewAuthDisabled?: boolean
+  deploymentStatusIgnored?: boolean
+  scopes?: string[]
 }
 
 export class Key {
-  private static jwtService: JwtService;
+  private static jwtService: JwtService
   constructor(
     protected projectId: string,
     protected type: string,
@@ -29,35 +29,35 @@ export class Key {
   ) {}
 
   public getProjectId(): string {
-    return this.projectId;
+    return this.projectId
   }
 
   public getType(): string {
-    return this.type;
+    return this.type
   }
 
   public getRole(): string {
-    return this.role;
+    return this.role
   }
 
   public getScopes(): string[] {
-    return this.scopes;
+    return this.scopes
   }
 
   public getName(): string {
-    return this.name;
+    return this.name
   }
 
   public getKey(): string {
-    return this.key;
+    return this.key
   }
 
   public isExpired(): boolean {
-    return this.expired;
+    return this.expired
   }
 
   public static setJwtService(jwtService: JwtService) {
-    Key.jwtService = jwtService;
+    Key.jwtService = jwtService
   }
 
   /**
@@ -65,19 +65,19 @@ export class Key {
    * Can be a stored API key or a dynamic key (JWT).
    */
   public static async decode(project: ProjectsDoc, key: string): Promise<Key> {
-    let type: string;
-    let secret: string;
+    let type: string
+    let secret: string
 
     if (key.includes('_')) {
-      [type, secret] = key.split('_', 2) as [string, string];
+      ;[type, secret] = key.split('_', 2) as [string, string]
     } else {
-      type = ApiKey.STANDARD;
-      secret = key;
+      type = ApiKey.STANDARD
+      secret = key
     }
 
-    const role = 'apps';
-    let scopes = roles[role]?.scopes ?? [];
-    let expired = false;
+    const role = 'apps'
+    let scopes = roles[role]?.scopes ?? []
+    let expired = false
 
     const guestKey = new Key(
       project.getId(),
@@ -86,52 +86,52 @@ export class Key {
       roles[RoleName.GUESTS]?.scopes ?? [],
       'UNKNOWN',
       key,
-    );
+    )
 
     switch (type) {
       case ApiKey.DYNAMIC:
         if (!Key.jwtService) {
-          throw new Error('JWT Service is not set for Key decoding');
+          throw new Error('JWT Service is not set for Key decoding')
         }
 
-        let payload: JWTPayload = {};
+        let payload: JWTPayload = {}
         try {
-          payload = (await Key.jwtService.verifyAsync(secret)) as JWTPayload;
+          payload = (await Key.jwtService.verifyAsync(secret)) as JWTPayload
         } catch (error) {
-          expired = true;
+          expired = true
         }
 
-        const name = payload.name ?? 'Dynamic Key';
-        const projectId = payload.projectId ?? '';
-        const projectCheckDisabled = payload.projectCheckDisabled ?? false;
-        scopes = [...(payload.scopes ?? []), ...scopes];
+        const name = payload.name ?? 'Dynamic Key'
+        const projectId = payload.projectId ?? ''
+        const projectCheckDisabled = payload.projectCheckDisabled ?? false
+        scopes = [...(payload.scopes ?? []), ...scopes]
 
         if (!projectCheckDisabled && projectId !== project.getId()) {
-          return guestKey;
+          return guestKey
         }
 
-        return new Key(projectId, type, role, scopes, name, key, expired);
+        return new Key(projectId, type, role, scopes, name, key, expired)
 
       case ApiKey.STANDARD:
         const keyDoc = project.findWhere(
           'keys',
           (item: Doc) => item.get('secret') === key,
-        ) as KeysDoc | null;
+        ) as KeysDoc | null
 
         if (!keyDoc) {
-          return guestKey;
+          return guestKey
         }
 
-        const expire = keyDoc.get('expire');
+        const expire = keyDoc.get('expire')
         if (
           expire &&
           new Date(expire as string).getMilliseconds() < Date.now()
         ) {
-          expired = true;
+          expired = true
         }
 
-        const keyName = keyDoc.get('name', 'UNKNOWN');
-        scopes = [...keyDoc.get('scopes', []), ...scopes];
+        const keyName = keyDoc.get('name', 'UNKNOWN')
+        scopes = [...keyDoc.get('scopes', []), ...scopes]
 
         return new Key(
           project.getId(),
@@ -141,10 +141,10 @@ export class Key {
           keyName,
           key,
           expired,
-        );
+        )
 
       default:
-        return guestKey;
+        return guestKey
     }
   }
 }

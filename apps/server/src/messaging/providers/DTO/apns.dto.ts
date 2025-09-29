@@ -1,41 +1,44 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators';
-import { IsString, IsBoolean, IsOptional, MaxLength } from 'class-validator';
+import { PartialType, OmitType } from '@nestjs/swagger'
+import { IsString, IsBoolean, IsOptional } from 'class-validator'
+import { CreateProviderDTO } from './base.dto'
 
-export class CreateApnsProviderDTO {
-  @IsString()
-  @IsCustomID()
-  providerId!: string;
-
-  @IsString()
-  @MaxLength(128)
-  name!: string;
-
+export class CreateApnsProviderDTO extends CreateProviderDTO {
+  /**
+   * APNS authentication key.
+   */
   @IsString()
   @IsOptional()
-  authKey?: string;
+  authKey?: string
 
+  /**
+   * APNS authentication key ID.
+   */
   @IsString()
   @IsOptional()
-  authKeyId?: string;
+  authKeyId?: string
 
+  /**
+   * APNS team ID.
+   */
   @IsString()
   @IsOptional()
-  teamId?: string;
+  teamId?: string
 
+  /**
+   * APNS bundle ID.
+   */
   @IsString()
   @IsOptional()
-  bundleId?: string;
+  bundleId?: string
 
+  /**
+   * Use APNS sandbox environment.
+   */
   @IsBoolean()
   @IsOptional()
-  sandbox?: boolean = false;
-
-  @IsBoolean()
-  @IsOptional()
-  enabled?: boolean;
+  sandbox?: boolean = false
 }
 
 export class UpdateApnsProviderDTO extends PartialType(
-  OmitType(CreateApnsProviderDTO, ['providerId']),
+  OmitType(CreateApnsProviderDTO, ['providerId'] as const),
 ) {}

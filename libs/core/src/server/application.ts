@@ -1,27 +1,27 @@
-import { HttpServer, NestApplicationOptions } from '@nestjs/common';
+import { HttpServer, NestApplicationOptions } from '@nestjs/common'
 import {
   ApplicationConfig,
   GraphInspector,
   NestApplication,
   NestContainer,
-} from '@nestjs/core';
-import { HooksModule } from './hooks/module';
-import { HooksContainer } from './hooks/container';
-import { optionalRequire } from '@nestjs/core/helpers/optional-require.js';
+} from '@nestjs/core'
+import { HooksModule } from './hooks/module'
+import { HooksContainer } from './hooks/container'
+import { optionalRequire } from '@nestjs/core/helpers/optional-require.js'
 
 const { MicroservicesModule } = optionalRequire(
   '@nestjs/microservices/microservices-module',
   () => require('@nestjs/microservices/microservices-module.js'),
-);
+)
 
 // @ts-ignore
 export class NuvixApplication extends NestApplication {
-  private readonly hooksModule: HooksModule;
+  private readonly hooksModule: HooksModule
   private override readonly middlewareContainer = new HooksContainer(
     this.container,
-  );
+  )
   private override readonly microservicesModule =
-    MicroservicesModule && new MicroservicesModule();
+    MicroservicesModule && new MicroservicesModule()
 
   constructor(
     container: NestContainer,
@@ -30,13 +30,13 @@ export class NuvixApplication extends NestApplication {
     private override readonly graphInspector: GraphInspector,
     appOptions: NestApplicationOptions = {},
   ) {
-    super(container, httpAdapter, config, graphInspector, appOptions);
+    super(container, httpAdapter, config, graphInspector, appOptions)
 
-    this.hooksModule = new HooksModule();
+    this.hooksModule = new HooksModule()
   }
 
   public override async registerModules(): Promise<void> {
-    this.registerWsModule();
+    this.registerWsModule()
 
     if (this.microservicesModule) {
       this.microservicesModule.register(
@@ -44,8 +44,8 @@ export class NuvixApplication extends NestApplication {
         this.graphInspector,
         this.config,
         this.appOptions,
-      );
-      this.microservicesModule.setupClients(this.container);
+      )
+      this.microservicesModule.setupClients(this.container)
     }
 
     await this.hooksModule.register(
@@ -56,13 +56,13 @@ export class NuvixApplication extends NestApplication {
       this.httpAdapter,
       this.graphInspector,
       this.appOptions,
-    );
+    )
   }
 
   private override async registerMiddleware(instance: any) {
     await this.hooksModule.registerMiddleware(
       this.middlewareContainer,
       instance,
-    );
+    )
   }
 }

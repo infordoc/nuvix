@@ -1,28 +1,28 @@
-import { TransformStringToBoolean } from '@nuvix/core/validators';
-import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator';
+import { TransformStringToBoolean } from '@nuvix/core/validators'
+import { Type } from 'class-transformer'
+import { IsBoolean, IsInt, IsOptional, IsString } from 'class-validator'
 
 export class ColumnPrivilegeQueryDTO {
   @IsOptional()
   @TransformStringToBoolean()
   @IsBoolean()
-  include_system_schemas?: boolean;
+  include_system_schemas?: boolean
 
   @IsOptional()
   @IsString()
-  included_schemas?: string;
+  included_schemas?: string
 
   @IsOptional()
   @IsString()
-  excluded_schemas?: string;
+  excluded_schemas?: string
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  limit?: number;
+  limit?: number
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  offset?: number;
+  offset?: number
 }

@@ -1,4 +1,4 @@
-import { defineConfig } from 'tsup';
+import { defineConfig } from 'tsup'
 
 function printStylizedNuvix() {
   const logo = `
@@ -42,12 +42,12 @@ function printStylizedNuvix() {
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-`;
-  console.log('\x1b[38;2;131;189;194m' + logo + '\x1b[0m');
+`
+  console.log('\x1b[38;2;131;189;194m' + logo + '\x1b[0m')
 }
 
 export default defineConfig(options => {
-  printStylizedNuvix();
+  printStylizedNuvix()
 
   return {
     entry: ['src/main.ts'],
@@ -63,5 +63,5 @@ export default defineConfig(options => {
     skipNodeModulesBundle: true,
     shims: true,
     tsconfig: './tsconfig.app.json',
-  };
-});
+  }
+})

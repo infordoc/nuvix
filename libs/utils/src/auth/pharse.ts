@@ -88,7 +88,7 @@ export class PhraseGenerator {
     'Xanadu',
     'Yonder',
     'Zenith',
-  ];
+  ]
 
   // An interesting list of nouns (often fantastical or quirky)
   private static nouns: string[] = [
@@ -176,7 +176,7 @@ export class PhraseGenerator {
     'Werewolf',
     'Wraith',
     'Zombie',
-  ];
+  ]
 
   // A list of "descriptors" to add more flavor and uniqueness to the phrase
   private static descriptors: string[] = [
@@ -223,7 +223,7 @@ export class PhraseGenerator {
     'of the Radiant Dawn',
     'that Glitters',
     'of the Twilight Realm',
-  ];
+  ]
 
   /**
    * Generates a unique, funny, and memorable phrase for use in "magic URLs".
@@ -234,16 +234,16 @@ export class PhraseGenerator {
    */
   public static generate(): string {
     const adjective =
-      this.adjectives[Math.floor(Math.random() * this.adjectives.length)];
-    const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)];
+      this.adjectives[Math.floor(Math.random() * this.adjectives.length)]
+    const noun = this.nouns[Math.floor(Math.random() * this.nouns.length)]
     const descriptor =
-      this.descriptors[Math.floor(Math.random() * this.descriptors.length)];
+      this.descriptors[Math.floor(Math.random() * this.descriptors.length)]
 
     // Generate a short random alphanumeric suffix (e.g., "a1b2")
     // This significantly increases the number of possible unique phrases and helps prevent collisions.
-    const randomSuffix = Math.random().toString(36).substring(2, 6); // Gets 4 random alphanumeric characters
-    const phrase = `${adjective} ${noun} ${descriptor}-${randomSuffix}`;
+    const randomSuffix = Math.random().toString(36).substring(2, 6) // Gets 4 random alphanumeric characters
+    const phrase = `${adjective} ${noun} ${descriptor}-${randomSuffix}`
 
-    return phrase;
+    return phrase
   }
 }

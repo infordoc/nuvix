@@ -7,89 +7,89 @@ import {
   IsOptional,
   IsString,
   Length,
-} from 'class-validator';
+} from 'class-validator'
 
 export class UpdateSmtpDTO {
   @IsBoolean()
-  enabled!: boolean;
+  enabled!: boolean
 
   @IsOptional()
   @IsString()
   @Length(0, 255)
   @IsNotEmpty()
-  senderName!: string;
+  senderName!: string
 
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  senderEmail!: string;
+  senderEmail!: string
 
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  replyTo!: string;
+  replyTo!: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  host!: string;
+  host!: string
 
   @IsOptional()
   @IsInt()
   @IsNotEmpty()
-  port!: number;
+  port!: number
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  username!: string;
+  username!: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  password!: string;
+  password!: string
 
   @IsOptional()
   @IsIn(['tls', 'ssl'])
   @IsNotEmpty()
-  secure!: 'tls' | 'ssl';
+  secure!: 'tls' | 'ssl'
 }
 
 export class SmtpTestsDTO {
   @IsEmail({}, { each: true })
   @Length(0, 10, { each: true })
-  emails!: string[];
+  emails!: string[]
 
   @IsString()
   @Length(0, 255)
   @IsNotEmpty()
-  senderName!: string;
+  senderName!: string
 
   @IsEmail()
   @IsNotEmpty()
-  senderEmail!: string;
+  senderEmail!: string
 
   @IsEmail()
   @IsOptional()
-  replyTo?: string;
+  replyTo?: string
 
   @IsString()
   @IsNotEmpty()
-  host!: string;
+  host!: string
 
   @IsInt()
   @IsOptional()
-  port?: number;
+  port?: number
 
   @IsString()
   @IsOptional()
-  username?: string;
+  username?: string
 
   @IsString()
   @IsOptional()
-  password?: string;
+  password?: string
 
   @IsIn(['tls', 'ssl'])
   @IsOptional()
-  secure?: 'tls' | 'ssl';
+  secure?: 'tls' | 'ssl'
 }

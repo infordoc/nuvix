@@ -1,7 +1,7 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Executions extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'trigger',
     'status',
     'responseStatusCode',
@@ -9,9 +9,9 @@ export class Executions extends BaseQueryPipe {
     'requestMethod',
     'requestPath',
     'deploymentId',
-  ];
+  ]
 
   public constructor() {
-    super('executions', Executions.ALLOWED_ATTRIBUTES);
+    super('executions', Executions.ALLOWED_ATTRIBUTES)
   }
 }

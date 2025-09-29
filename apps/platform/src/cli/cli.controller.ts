@@ -1,5 +1,5 @@
-import { Body, Controller, Post, Query } from '@nestjs/common';
-import { CliService } from './cli.service';
+import { Body, Controller, Post, Query } from '@nestjs/common'
+import { CliService } from './cli.service'
 
 @Controller({ path: 'cli', version: ['1'] })
 export class CliController {
@@ -10,6 +10,6 @@ export class CliController {
     @Query('name') name: string,
     @Body('vars') vars?: Record<string, any>,
   ) {
-    return this.cliService.getTemplate(name, vars);
+    return this.cliService.getTemplate(name, vars)
   }
 }

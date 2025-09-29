@@ -1,39 +1,39 @@
-import { OmitType } from '@nestjs/swagger';
+import { OmitType } from '@nestjs/swagger'
 import {
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreatePlatformDTO {
   @IsString()
   @MinLength(1)
   @MaxLength(128)
-  name!: string;
+  name!: string
 
   @IsString()
   @IsNotEmpty()
-  type!: string;
+  type!: string
 
   @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(256)
-  key!: string;
+  key!: string
 
   @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(256)
-  store!: string;
+  store!: string
 
   @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(256)
-  hostname!: string;
+  hostname!: string
 }
 
 export class UpdatePlatformDTO extends OmitType(CreatePlatformDTO, [

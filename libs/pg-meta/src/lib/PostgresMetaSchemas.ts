@@ -1,16 +1,16 @@
-import { ident, literal } from 'pg-format';
-import { DEFAULT_SYSTEM_SCHEMAS } from './constants';
-import { schemasSql } from './sql/index';
-import { PostgresMetaResult, PostgresSchema } from './types';
-import { SchemaCreateDTO } from '../DTO/schema-create.dto';
-import { SchemaUpdateDTO } from '../DTO/schema-update.dto';
-import { PgMetaException } from '../extra/execption';
+import { ident, literal } from 'pg-format'
+import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
+import { schemasSql } from './sql/index'
+import { PostgresMetaResult, PostgresSchema } from './types'
+import { SchemaCreateDTO } from '../DTO/schema-create.dto'
+import { SchemaUpdateDTO } from '../DTO/schema-update.dto'
+import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaSchemas {
-  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+  query: (sql: string) => Promise<PostgresMetaResult<any>>
 
   constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
-    this.query = query;
+    this.query = query
   }
 
   async list({
@@ -18,62 +18,62 @@ export default class PostgresMetaSchemas {
     limit,
     offset,
   }: {
-    includeSystemSchemas?: boolean;
-    limit?: number;
-    offset?: number;
+    includeSystemSchemas?: boolean
+    limit?: number
+    offset?: number
   } = {}): Promise<PostgresMetaResult<PostgresSchema[]>> {
-    let sql = schemasSql;
+    let sql = schemasSql
     if (!includeSystemSchemas) {
-      sql = `${sql} AND NOT (n.nspname IN (${DEFAULT_SYSTEM_SCHEMAS.map(literal).join(',')}))`;
+      sql = `${sql} AND NOT (n.nspname IN (${DEFAULT_SYSTEM_SCHEMAS.map(literal).join(',')}))`
     }
     if (limit) {
-      sql = `${sql} LIMIT ${limit}`;
+      sql = `${sql} LIMIT ${limit}`
     }
     if (offset) {
-      sql = `${sql} OFFSET ${offset}`;
+      sql = `${sql} OFFSET ${offset}`
     }
-    return this.query(sql);
+    return this.query(sql)
   }
 
   async retrieve({
     id,
   }: {
-    id: number;
-  }): Promise<PostgresMetaResult<PostgresSchema>>;
+    id: number
+  }): Promise<PostgresMetaResult<PostgresSchema>>
   async retrieve({
     name,
   }: {
-    name: string;
-  }): Promise<PostgresMetaResult<PostgresSchema>>;
+    name: string
+  }): Promise<PostgresMetaResult<PostgresSchema>>
   async retrieve({
     id,
     name,
   }: {
-    id?: number;
-    name?: string;
+    id?: number
+    name?: string
   }): Promise<PostgresMetaResult<PostgresSchema>> {
     if (id) {
-      const sql = `${schemasSql} AND n.oid = ${literal(id)};`;
-      const { data, error } = await this.query(sql);
+      const sql = `${schemasSql} AND n.oid = ${literal(id)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a schema with ID ${id}`);
+        throw new PgMetaException(`Cannot find a schema with ID ${id}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else if (name) {
-      const sql = `${schemasSql} AND n.nspname = ${literal(name)};`;
-      const { data, error } = await this.query(sql);
+      const sql = `${schemasSql} AND n.nspname = ${literal(name)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a schema named ${name}`);
+        throw new PgMetaException(`Cannot find a schema named ${name}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else {
-      throw new PgMetaException('Invalid parameters on schema retrieve');
+      throw new PgMetaException('Invalid parameters on schema retrieve')
     }
   }
 
@@ -81,55 +81,55 @@ export default class PostgresMetaSchemas {
     name,
     owner = 'postgres',
   }: SchemaCreateDTO): Promise<PostgresMetaResult<PostgresSchema>> {
-    const sql = `CREATE SCHEMA ${ident(name)} AUTHORIZATION ${ident(owner)};`;
-    const { error } = await this.query(sql);
+    const sql = `CREATE SCHEMA ${ident(name)} AUTHORIZATION ${ident(owner)};`
+    const { error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return this.retrieve({ name });
+    return this.retrieve({ name })
   }
 
   async update(
     id: number,
     { name, owner }: SchemaUpdateDTO,
   ): Promise<PostgresMetaResult<PostgresSchema>> {
-    const { data: old, error } = await this.retrieve({ id });
+    const { data: old, error } = await this.retrieve({ id })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
     const nameSql =
       name === undefined
         ? ''
-        : `ALTER SCHEMA ${ident(old!.name)} RENAME TO ${ident(name)};`;
+        : `ALTER SCHEMA ${ident(old!.name)} RENAME TO ${ident(name)};`
     const ownerSql =
       owner === undefined
         ? ''
-        : `ALTER SCHEMA ${ident(old!.name)} OWNER TO ${ident(owner)};`;
-    const sql = `BEGIN; ${ownerSql} ${nameSql} COMMIT;`;
+        : `ALTER SCHEMA ${ident(old!.name)} OWNER TO ${ident(owner)};`
+    const sql = `BEGIN; ${ownerSql} ${nameSql} COMMIT;`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return this.retrieve({ id });
+    return this.retrieve({ id })
   }
 
   async remove(
     id: number,
     { cascade = false } = {},
   ): Promise<PostgresMetaResult<PostgresSchema>> {
-    const { data: schema, error } = await this.retrieve({ id });
+    const { data: schema, error } = await this.retrieve({ id })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    const sql = `DROP SCHEMA ${ident(schema!.name)} ${cascade ? 'CASCADE' : 'RESTRICT'};`;
+    const sql = `DROP SCHEMA ${ident(schema!.name)} ${cascade ? 'CASCADE' : 'RESTRICT'};`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return { data: schema!, error: null };
+    return { data: schema!, error: null }
   }
 }

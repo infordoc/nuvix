@@ -1,4 +1,4 @@
-import { IsCustomID } from '@nuvix/core/validators/input.validator.js';
+import { IsCustomID } from '@nuvix/core/validators/input.validator.js'
 import {
   IsEmail,
   IsString,
@@ -6,62 +6,62 @@ import {
   IsOptional,
   IsObject,
   IsNotEmpty,
-} from 'class-validator';
+} from 'class-validator'
 
 export class CreateAccountDTO {
   @IsCustomID()
-  declare userId: string;
+  declare userId: string
 
   @IsEmail({}, { message: 'Invalid email address.' })
-  declare email: string;
+  declare email: string
 
   @Length(8, 256, { message: 'Password must be between 8 and 256 characters.' })
-  declare password: string;
+  declare password: string
 
   @IsOptional()
   @IsString()
   @Length(0, 128, {
     message: 'User name can have a maximum length of 128 characters.',
   })
-  name?: string;
+  name?: string
 }
 
 export class UpdatePrefsDTO {
   @IsObject()
-  declare prefs: { [key: string]: any };
+  declare prefs: { [key: string]: any }
 }
 
 export class UpdateEmailDTO {
   @IsEmail()
-  declare email: string;
+  declare email: string
 
   @IsNotEmpty()
   @IsString()
-  declare password: string;
+  declare password: string
 }
 
 export class UpdatePasswordDTO {
   @IsNotEmpty()
   @IsString()
-  declare password: string;
+  declare password: string
 
   @IsNotEmpty()
   @IsString()
-  declare oldPassword: string;
+  declare oldPassword: string
 }
 
 export class UpdateNameDTO {
   @IsNotEmpty()
   @IsString()
-  declare name: string;
+  declare name: string
 }
 
 export class UpdatePhoneDTO {
   @IsNotEmpty()
   @IsString()
-  declare phone: string;
+  declare phone: string
 
   @IsNotEmpty()
   @IsString()
-  declare password: string;
+  declare password: string
 }

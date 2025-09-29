@@ -1,38 +1,38 @@
-import { Database, Doc } from '@nuvix/db';
-import {} from '@nuvix/utils';
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { CoreService } from './core.service.js';
+import { Database, Doc } from '@nuvix/db'
+import {} from '@nuvix/utils'
+import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Cron, CronExpression } from '@nestjs/schedule'
+import { CoreService } from './core.service.js'
 
 // TODO: we have to fully refactor this service to use the new database client and Queue system
 
 @Injectable()
 export class ProjectUsageService {
-  private readonly logger = new Logger(ProjectUsageService.name);
+  private readonly logger = new Logger(ProjectUsageService.name)
 
   constructor(private readonly coreService: CoreService) {}
 
   async addMetric(metric: string, value: number, project?: Doc): Promise<this> {
-    this.logger.log(`Adding metric ${metric} with value ${value}`);
-    const projectId = project?.getSequence() ?? 'global';
-    const key = `project_usage:${projectId}`;
+    this.logger.log(`Adding metric ${metric} with value ${value}`)
+    const projectId = project?.getSequence() ?? 'global'
+    const key = `project_usage:${projectId}`
 
     // Keep track of all IDs to iterate over in cron later
     // await this.cacheDb.sadd('usage_project_ids', projectId);
 
     // await this.cacheDb.hincrby(key, metric, value);
-    return this;
+    return this
   }
 
   reduce(document: Doc): this {
-    this.logger.log(`Reducing metric ${document.getId()}`);
+    this.logger.log(`Reducing metric ${document.getId()}`)
     // this._reduce(document);
-    return this;
+    return this
   }
 
   @Cron(CronExpression.EVERY_12_HOURS)
   async saveMetrics(): Promise<void> {
-    this.logger.log('Saving metrics to database');
+    this.logger.log('Saving metrics to database')
 
     // const projectIds = await this.cacheDb.smembers('usage_project_ids');
     // if (!projectIds.length) {
@@ -122,13 +122,13 @@ export class ProjectUsageService {
   }: DbListionerProps) {
     this.logger.log(
       `Database listener called with event ${event} for document ${document.getId()}`,
-    );
-    let value = 1;
+    )
+    let value = 1
     // if (event === Database.EVENT_DOCUMENT_DELETE) {
     //   value = -1;
     // }
 
-    const collection = document.getCollection().toLowerCase();
+    const collection = document.getCollection().toLowerCase()
     // switch (true) {
     //   case collection === 'teams':
     //     await this.addMetric(METRIC_TEAMS, value, project); // per project
@@ -263,8 +263,8 @@ export class ProjectUsageService {
 }
 
 interface DbListionerProps {
-  event: string;
-  document: Doc;
-  project: Doc;
-  dbForProject: Database;
+  event: string
+  document: Doc
+  project: Doc
+  dbForProject: Database
 }

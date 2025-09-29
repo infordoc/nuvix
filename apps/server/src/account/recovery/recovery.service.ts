@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
-import * as Template from 'handlebars';
-import * as fs from 'fs/promises';
-import path from 'path';
+import { Injectable } from '@nestjs/common'
+import { InjectQueue } from '@nestjs/bullmq'
+import { Queue } from 'bullmq'
+import * as Template from 'handlebars'
+import * as fs from 'fs/promises'
+import path from 'path'
 import {
   Doc,
   Database,
@@ -12,25 +12,25 @@ import {
   Permission,
   Role,
   Authorization,
-} from '@nuvix/db';
-import { Exception } from '@nuvix/core/extend/exception';
-import { Auth } from '@nuvix/core/helper/auth.helper';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { PasswordHistoryValidator } from '@nuvix/core/validators';
+} from '@nuvix/db'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Auth } from '@nuvix/core/helper/auth.helper'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { PasswordHistoryValidator } from '@nuvix/core/validators'
 import {
   MailJob,
   MailQueueOptions,
-} from '@nuvix/core/resolvers/queues/mails.queue';
-import { QueueFor, TokenType, type HashAlgorithm } from '@nuvix/utils';
-import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto';
+} from '@nuvix/core/resolvers/queues/mails.queue'
+import { QueueFor, TokenType, type HashAlgorithm } from '@nuvix/utils'
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
 import type {
   ProjectsDoc,
   Tokens,
   TokensDoc,
   UsersDoc,
-} from '@nuvix/utils/types';
-import { AppConfigService } from '@nuvix/core';
-import type { SmtpConfig } from '@nuvix/core/config/smtp.js';
+} from '@nuvix/utils/types'
+import { AppConfigService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config/smtp.js'
 
 @Injectable()
 export class RecoveryService {
@@ -55,34 +55,34 @@ export class RecoveryService {
     WithUser<
       WithProject<
         WithLocale<{
-          input: CreateRecoveryDTO;
-          ip?: string;
-          userAgent: string;
+          input: CreateRecoveryDTO
+          ip?: string
+          userAgent: string
         }>
       >
     >
   >): Promise<TokensDoc> {
     if (!this.appConfig.getSmtpConfig().host) {
-      throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled');
+      throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled')
     }
 
-    const email = input.email.toLowerCase();
-    let url = input.url;
+    const email = input.email.toLowerCase()
+    let url = input.url
 
-    const profile = await db.findOne('users', [Query.equal('email', [email])]);
+    const profile = await db.findOne('users', [Query.equal('email', [email])])
 
     if (profile.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    user.setAll(profile.toObject());
+    user.setAll(profile.toObject())
 
     if (profile.get('status') === false) {
-      throw new Exception(Exception.USER_BLOCKED);
+      throw new Exception(Exception.USER_BLOCKED)
     }
 
-    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_RECOVERY * 1000);
-    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_RECOVERY);
+    const expire = new Date(Date.now() + Auth.TOKEN_EXPIRATION_RECOVERY * 1000)
+    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_RECOVERY)
 
     const recovery = new Doc<Tokens>({
       $id: ID.unique(),
@@ -93,40 +93,40 @@ export class RecoveryService {
       expire: expire,
       userAgent,
       ip,
-    });
+    })
 
-    Authorization.setRole(Role.user(profile.getId()).toString());
+    Authorization.setRole(Role.user(profile.getId()).toString())
 
     recovery.set('$permissions', [
       Permission.read(Role.user(profile.getId())),
       Permission.update(Role.user(profile.getId())),
       Permission.delete(Role.user(profile.getId())),
-    ]);
-    const createdRecovery = await db.createDocument('tokens', recovery);
+    ])
+    const createdRecovery = await db.createDocument('tokens', recovery)
 
-    await db.purgeCachedDocument('users', profile.getId());
+    await db.purgeCachedDocument('users', profile.getId())
 
     // Parse and merge URL query parameters
-    const urlObj = new URL(url);
-    urlObj.searchParams.set('userId', profile.getId());
-    urlObj.searchParams.set('secret', secret);
-    urlObj.searchParams.set('expire', expire.toISOString());
-    url = urlObj.toString();
+    const urlObj = new URL(url)
+    urlObj.searchParams.set('userId', profile.getId())
+    urlObj.searchParams.set('secret', secret)
+    urlObj.searchParams.set('expire', expire.toISOString())
+    url = urlObj.toString()
 
     const projectName = project.empty()
       ? 'Console'
-      : project.get('name', '[APP-NAME]');
-    let body = locale.getText('emails.recovery.body');
-    let subject = locale.getText('emails.recovery.subject');
+      : project.get('name', '[APP-NAME]')
+    let body = locale.getText('emails.recovery.body')
+    let subject = locale.getText('emails.recovery.subject')
     const customTemplate =
-      project.get('templates', {})[`email.recovery-${locale.default}`] ?? {};
+      project.get('templates', {})[`email.recovery-${locale.default}`] ?? {}
 
     const templatePath = path.join(
       this.appConfig.assetConfig.templates,
       'email-inner-base.tpl',
-    );
-    const templateSource = await fs.readFile(templatePath, 'utf8');
-    const template = Template.compile(templateSource);
+    )
+    const templateSource = await fs.readFile(templatePath, 'utf8')
+    const template = Template.compile(templateSource)
 
     const emailData = {
       body: body,
@@ -134,47 +134,47 @@ export class RecoveryService {
       footer: locale.getText('emails.recovery.footer'),
       thanks: locale.getText('emails.recovery.thanks'),
       signature: locale.getText('emails.recovery.signature'),
-    };
+    }
 
-    body = template(emailData);
+    body = template(emailData)
 
-    const smtp = project.get('smtp', {}) as SmtpConfig;
-    const smtpEnabled = smtp['enabled'] ?? false;
-    const systemConfig = this.appConfig.get('system');
+    const smtp = project.get('smtp', {}) as SmtpConfig
+    const smtpEnabled = smtp['enabled'] ?? false
+    const systemConfig = this.appConfig.get('system')
 
     let senderEmail =
-      systemConfig.emailAddress || this.appConfig.get('app').emailTeam;
+      systemConfig.emailAddress || this.appConfig.get('app').emailTeam
     let senderName =
-      systemConfig.emailName || this.appConfig.get('app').name + ' Server';
-    let replyTo = '';
+      systemConfig.emailName || this.appConfig.get('app').name + ' Server'
+    let replyTo = ''
 
-    const smtpServer: SmtpConfig = {} as SmtpConfig;
+    const smtpServer: SmtpConfig = {} as SmtpConfig
 
     if (smtpEnabled) {
-      if (smtp['senderEmail']) senderEmail = smtp['senderEmail'];
-      if (smtp['senderName']) senderName = smtp['senderName'];
-      if (smtp['replyTo']) replyTo = smtp['replyTo'];
+      if (smtp['senderEmail']) senderEmail = smtp['senderEmail']
+      if (smtp['senderName']) senderName = smtp['senderName']
+      if (smtp['replyTo']) replyTo = smtp['replyTo']
 
-      smtpServer['host'] = smtp['host'];
-      smtpServer['port'] = smtp['port'];
-      smtpServer['username'] = smtp['username'];
-      smtpServer['password'] = smtp['password'];
-      smtpServer['secure'] = smtp['secure'] ?? false;
+      smtpServer['host'] = smtp['host']
+      smtpServer['port'] = smtp['port']
+      smtpServer['username'] = smtp['username']
+      smtpServer['password'] = smtp['password']
+      smtpServer['secure'] = smtp['secure'] ?? false
 
       if (customTemplate) {
         if (customTemplate['senderEmail'])
-          senderEmail = customTemplate['senderEmail'];
+          senderEmail = customTemplate['senderEmail']
         if (customTemplate['senderName'])
-          senderName = customTemplate['senderName'];
-        if (customTemplate['replyTo']) replyTo = customTemplate['replyTo'];
+          senderName = customTemplate['senderName']
+        if (customTemplate['replyTo']) replyTo = customTemplate['replyTo']
 
-        body = customTemplate['message'] || body;
-        subject = customTemplate['subject'] || subject;
+        body = customTemplate['message'] || body
+        subject = customTemplate['subject'] || subject
       }
 
-      smtpServer['replyTo'] = replyTo;
-      smtpServer['senderEmail'] = senderEmail;
-      smtpServer['senderName'] = senderName;
+      smtpServer['replyTo'] = replyTo
+      smtpServer['senderEmail'] = senderEmail
+      smtpServer['senderName'] = senderName
     }
 
     const emailVariables = {
@@ -183,7 +183,7 @@ export class RecoveryService {
       redirect: url,
       project: projectName,
       team: '',
-    };
+    }
 
     await this.mailsQueue.add(MailJob.SEND_EMAIL, {
       email: profile.get('email', ''),
@@ -191,11 +191,11 @@ export class RecoveryService {
       body,
       server: smtpServer,
       variables: emailVariables,
-    });
+    })
 
-    createdRecovery.set('secret', secret);
+    createdRecovery.set('secret', secret)
 
-    return createdRecovery;
+    return createdRecovery
   }
 
   /**
@@ -209,46 +209,46 @@ export class RecoveryService {
   }: WithDB<
     WithProject<WithUser<{ input: UpdateRecoveryDTO }>>
   >): Promise<TokensDoc> {
-    const profile = await db.getDocument('users', input.userId);
+    const profile = await db.getDocument('users', input.userId)
 
     if (profile.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const tokens = profile.get('tokens', []) as TokensDoc[];
+    const tokens = profile.get('tokens', []) as TokensDoc[]
     const verifiedToken = Auth.tokenVerify(
       tokens,
       TokenType.RECOVERY,
       input.secret,
-    );
+    )
 
     if (!verifiedToken) {
-      throw new Exception(Exception.USER_INVALID_TOKEN);
+      throw new Exception(Exception.USER_INVALID_TOKEN)
     }
 
-    Authorization.setRole(Role.user(profile.getId()).toString());
+    Authorization.setRole(Role.user(profile.getId()).toString())
 
     const newPassword = await Auth.passwordHash(
       input.password,
       Auth.DEFAULT_ALGO,
       Auth.DEFAULT_ALGO_OPTIONS,
-    );
+    )
 
-    const historyLimit = project.get('auths', {})['passwordHistory'] ?? 0;
-    let history = profile.get('passwordHistory', []);
+    const historyLimit = project.get('auths', {})['passwordHistory'] ?? 0
+    let history = profile.get('passwordHistory', [])
 
     if (newPassword && historyLimit > 0) {
       const validator = new PasswordHistoryValidator(
         history,
         profile.get('hash') as HashAlgorithm,
         profile.get('hashOptions'),
-      );
+      )
       if (!(await validator.$valid(input.password))) {
-        throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED);
+        throw new Exception(Exception.USER_PASSWORD_RECENTLY_USED)
       }
 
-      history.push(newPassword);
-      history = history.slice(Math.max(0, history.length - historyLimit));
+      history.push(newPassword)
+      history = history.slice(Math.max(0, history.length - historyLimit))
     }
 
     // hooks.trigger('passwordValidator', [db, project, input.password, user, true]);
@@ -263,26 +263,26 @@ export class RecoveryService {
         .set('hash', Auth.DEFAULT_ALGO)
         .set('hashOptions', Auth.DEFAULT_ALGO_OPTIONS)
         .set('emailVerification', true),
-    );
+    )
 
-    user.setAll(updatedProfile.toObject());
+    user.setAll(updatedProfile.toObject())
     const recoveryDocument = await db.getDocument(
       'tokens',
       verifiedToken.getId(),
-    );
+    )
 
     /**
      * We act like we're updating and validating
      * the recovery token but actually we don't need it anymore.
      */
-    await db.deleteDocument('tokens', verifiedToken.getId());
-    await db.purgeCachedDocument('users', profile.getId());
+    await db.deleteDocument('tokens', verifiedToken.getId())
+    await db.purgeCachedDocument('users', profile.getId())
 
-    return recoveryDocument;
+    return recoveryDocument
   }
 }
 
-type WithDB<T = unknown> = { db: Database } & T;
-type WithUser<T = unknown> = { user: UsersDoc } & T;
-type WithProject<T = unknown> = { project: ProjectsDoc } & T;
-type WithLocale<T = unknown> = { locale: LocaleTranslator } & T;
+type WithDB<T = unknown> = { db: Database } & T
+type WithUser<T = unknown> = { user: UsersDoc } & T
+type WithProject<T = unknown> = { project: ProjectsDoc } & T
+type WithLocale<T = unknown> = { locale: LocaleTranslator } & T

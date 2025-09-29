@@ -1,47 +1,44 @@
-import { Database, Query } from '@nuvix/db';
+import { Database, Query } from '@nuvix/db'
 import {
   CreateMailgunProviderDTO,
   UpdateMailgunProviderDTO,
-} from './DTO/mailgun.dto';
+} from './DTO/mailgun.dto'
 import {
   CreateSendgridProviderDTO,
   UpdateSendgridProviderDTO,
-} from './DTO/sendgrid.dto';
+} from './DTO/sendgrid.dto'
 import {
   CreateTwilioProviderDTO,
   UpdateTwilioProviderDTO,
-} from './DTO/twilio.dto';
-import { CreateSMTPProviderDTO, UpdateSMTPProviderDTO } from './DTO/smtp.dto';
-import {
-  CreateMsg91ProviderDTO,
-  UpdateMsg91ProviderDTO,
-} from './DTO/msg91.dto';
+} from './DTO/twilio.dto'
+import { CreateSMTPProviderDTO, UpdateSMTPProviderDTO } from './DTO/smtp.dto'
+import { CreateMsg91ProviderDTO, UpdateMsg91ProviderDTO } from './DTO/msg91.dto'
 import {
   CreateTelesignProviderDTO,
   UpdateTelesignProviderDTO,
-} from './DTO/telesign.dto';
+} from './DTO/telesign.dto'
 import {
   CreateTextmagicProviderDTO,
   UpdateTextmagicProviderDTO,
-} from './DTO/textmagic.dto';
+} from './DTO/textmagic.dto'
 import {
   CreateVonageProviderDTO,
   UpdateVonageProviderDTO,
-} from './DTO/vonage.dto';
-import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto';
-import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto';
+} from './DTO/vonage.dto'
+import { CreateFcmProviderDTO, UpdateFcmProviderDTO } from './DTO/fcm.dto'
+import { CreateApnsProviderDTO, UpdateApnsProviderDTO } from './DTO/apns.dto'
 
 interface DB {
-  db: Database;
+  db: Database
 }
 
 interface QandS {
-  queries?: Query[];
-  search?: string;
+  queries?: Query[]
+  search?: string
 }
 
 interface CreateProviderBase<T> extends DB {
-  input: T;
+  input: T
 }
 
 export interface CreateMailgunProvider
@@ -75,15 +72,15 @@ export type CreateProviderInput =
   | CreateTwilioProviderDTO
   | CreateVonageProviderDTO
   | CreateFcmProviderDTO
-  | CreateApnsProviderDTO;
+  | CreateApnsProviderDTO
 
-export type CreateAnyProvider = CreateProviderBase<CreateProviderInput>;
+export type CreateAnyProvider = CreateProviderBase<CreateProviderInput>
 
 export interface ListProviders extends DB, QandS {}
 
 interface UpdateProviderBase<T> extends DB {
-  input: T;
-  providerId: string;
+  input: T
+  providerId: string
 }
 
 export interface UpdateMailgunProvider

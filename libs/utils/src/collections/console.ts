@@ -5,8 +5,8 @@ import {
   ID,
   IndexType,
   Order,
-} from '@nuvix/db';
-import { authCollections, commonCollections } from './common';
+} from '@nuvix/db'
+import { authCollections, commonCollections } from './common'
 
 export const consoleCollections: Record<string, Collection> = {
   ...authCollections('platform'),
@@ -1179,4 +1179,4 @@ export const consoleCollections: Record<string, Collection> = {
     ],
   },
   ...commonCollections('platform'),
-};
+}

@@ -5,4 +5,4 @@ export const outputExts = {
   gif: 'image/gif',
   png: 'image/png',
   webp: 'image/webp',
-};
+}

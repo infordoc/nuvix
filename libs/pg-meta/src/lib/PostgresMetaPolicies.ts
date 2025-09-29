@@ -1,15 +1,15 @@
-import { ident, literal } from 'pg-format';
-import { DEFAULT_SYSTEM_SCHEMAS } from './constants';
-import { filterByList } from './helpers';
-import { policiesSql } from './sql/index';
-import { PostgresMetaResult, PostgresPolicy } from './types';
-import { PgMetaException } from '../extra/execption';
+import { ident, literal } from 'pg-format'
+import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
+import { filterByList } from './helpers'
+import { policiesSql } from './sql/index'
+import { PostgresMetaResult, PostgresPolicy } from './types'
+import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaPolicies {
-  query: (sql: string) => Promise<PostgresMetaResult<any>>;
+  query: (sql: string) => Promise<PostgresMetaResult<any>>
 
   constructor(query: (sql: string) => Promise<PostgresMetaResult<any>>) {
-    this.query = query;
+    this.query = query
   }
 
   async list({
@@ -19,81 +19,81 @@ export default class PostgresMetaPolicies {
     limit,
     offset,
   }: {
-    includeSystemSchemas?: boolean;
-    includedSchemas?: string[];
-    excludedSchemas?: string[];
-    limit?: number;
-    offset?: number;
+    includeSystemSchemas?: boolean
+    includedSchemas?: string[]
+    excludedSchemas?: string[]
+    limit?: number
+    offset?: number
   } = {}): Promise<PostgresMetaResult<PostgresPolicy[]>> {
-    let sql = policiesSql;
+    let sql = policiesSql
     const filter = filterByList(
       includedSchemas,
       excludedSchemas,
       !includeSystemSchemas ? DEFAULT_SYSTEM_SCHEMAS : undefined,
-    );
+    )
     if (filter) {
-      sql += ` WHERE n.nspname ${filter}`;
+      sql += ` WHERE n.nspname ${filter}`
     }
     if (limit) {
-      sql = `${sql} LIMIT ${limit}`;
+      sql = `${sql} LIMIT ${limit}`
     }
     if (offset) {
-      sql = `${sql} OFFSET ${offset}`;
+      sql = `${sql} OFFSET ${offset}`
     }
-    return this.query(sql);
+    return this.query(sql)
   }
 
   async retrieve({
     id,
   }: {
-    id: number;
-  }): Promise<PostgresMetaResult<PostgresPolicy>>;
+    id: number
+  }): Promise<PostgresMetaResult<PostgresPolicy>>
   async retrieve({
     name,
     table,
     schema,
   }: {
-    name: string;
-    table: string;
-    schema: string;
-  }): Promise<PostgresMetaResult<PostgresPolicy>>;
+    name: string
+    table: string
+    schema: string
+  }): Promise<PostgresMetaResult<PostgresPolicy>>
   async retrieve({
     id,
     name,
     table,
     schema = 'public',
   }: {
-    id?: number;
-    name?: string;
-    table?: string;
-    schema?: string;
+    id?: number
+    name?: string
+    table?: string
+    schema?: string
   }): Promise<PostgresMetaResult<PostgresPolicy>> {
     if (id) {
-      const sql = `${policiesSql} WHERE pol.oid = ${literal(id)};`;
-      const { data, error } = await this.query(sql);
+      const sql = `${policiesSql} WHERE pol.oid = ${literal(id)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a policy with ID ${id}`);
+        throw new PgMetaException(`Cannot find a policy with ID ${id}`)
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else if (name && table) {
       const sql = `${policiesSql} WHERE pol.polname = ${literal(name)} AND n.nspname = ${literal(
         schema,
-      )} AND c.relname = ${literal(table)};`;
-      const { data, error } = await this.query(sql);
+      )} AND c.relname = ${literal(table)};`
+      const { data, error } = await this.query(sql)
       if (error) {
-        return { data, error };
+        return { data, error }
       } else if (data.length === 0) {
         throw new PgMetaException(
           `Cannot find a policy named ${name} for table ${schema}.${table}`,
-        );
+        )
       } else {
-        return { data: data[0], error };
+        return { data: data[0], error }
       }
     } else {
-      throw new PgMetaException('Invalid parameters on policy retrieve');
+      throw new PgMetaException('Invalid parameters on policy retrieve')
     }
   }
 
@@ -107,29 +107,29 @@ export default class PostgresMetaPolicies {
     command = 'ALL',
     roles = ['public'],
   }: {
-    name: string;
-    table: string;
-    schema?: string;
-    definition?: string;
-    check?: string;
-    action?: string;
-    command?: string;
-    roles?: string[];
+    name: string
+    table: string
+    schema?: string
+    definition?: string
+    check?: string
+    action?: string
+    command?: string
+    roles?: string[]
   }): Promise<PostgresMetaResult<PostgresPolicy>> {
     const definitionClause =
-      definition === undefined ? '' : `USING (${definition})`;
-    const checkClause = check === undefined ? '' : `WITH CHECK (${check})`;
+      definition === undefined ? '' : `USING (${definition})`
+    const checkClause = check === undefined ? '' : `WITH CHECK (${check})`
     const sql = `
 CREATE POLICY ${ident(name)} ON ${ident(schema)}.${ident(table)}
   AS ${action}
   FOR ${command}
   TO ${roles.map(ident).join(',')}
-  ${definitionClause} ${checkClause};`;
-    const { error } = await this.query(sql);
+  ${definitionClause} ${checkClause};`
+    const { error } = await this.query(sql)
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
-    return this.retrieve({ name, table, schema });
+    return this.retrieve({ name, table, schema })
   }
 
   async update(
@@ -140,52 +140,52 @@ CREATE POLICY ${ident(name)} ON ${ident(schema)}.${ident(table)}
       check,
       roles,
     }: {
-      name: string;
-      definition?: string;
-      check?: string;
-      roles?: string[];
+      name: string
+      definition?: string
+      check?: string
+      roles?: string[]
     },
   ): Promise<PostgresMetaResult<PostgresPolicy>> {
-    const { data: old, error } = await this.retrieve({ id });
+    const { data: old, error } = await this.retrieve({ id })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
 
-    const alter = `ALTER POLICY ${ident(old!.name)} ON ${ident(old!.schema)}.${ident(old!.table)}`;
+    const alter = `ALTER POLICY ${ident(old!.name)} ON ${ident(old!.schema)}.${ident(old!.table)}`
     const nameSql =
-      name === undefined ? '' : `${alter} RENAME TO ${ident(name)};`;
+      name === undefined ? '' : `${alter} RENAME TO ${ident(name)};`
     const definitionSql =
-      definition === undefined ? '' : `${alter} USING (${definition});`;
+      definition === undefined ? '' : `${alter} USING (${definition});`
     const checkSql =
-      check === undefined ? '' : `${alter} WITH CHECK (${check});`;
+      check === undefined ? '' : `${alter} WITH CHECK (${check});`
     const rolesSql =
-      roles === undefined ? '' : `${alter} TO ${roles.map(ident).join(',')};`;
+      roles === undefined ? '' : `${alter} TO ${roles.map(ident).join(',')};`
 
     // nameSql must be last
-    const sql = `BEGIN; ${definitionSql} ${checkSql} ${rolesSql} ${nameSql} COMMIT;`;
+    const sql = `BEGIN; ${definitionSql} ${checkSql} ${rolesSql} ${nameSql} COMMIT;`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return this.retrieve({ id });
+    return this.retrieve({ id })
   }
 
   async remove(id: number): Promise<PostgresMetaResult<PostgresPolicy>> {
-    const { data: policy, error } = await this.retrieve({ id });
+    const { data: policy, error } = await this.retrieve({ id })
     if (error) {
-      return { data: null, error };
+      return { data: null, error }
     }
     const sql = `DROP POLICY ${ident(policy!.name)} ON ${ident(policy!.schema)}.${ident(
       policy!.table,
-    )};`;
+    )};`
     {
-      const { error } = await this.query(sql);
+      const { error } = await this.query(sql)
       if (error) {
-        return { data: null, error };
+        return { data: null, error }
       }
     }
-    return { data: policy!, error: null };
+    return { data: policy!, error: null }
   }
 }

@@ -1,10 +1,10 @@
-import { Validator } from '@nuvix/db';
+import { Validator } from '@nuvix/db'
 
 export class URLValidator implements Validator {
-  private allowedSchemes: string[];
+  private allowedSchemes: string[]
 
   constructor(allowedSchemes: string[] = []) {
-    this.allowedSchemes = allowedSchemes;
+    this.allowedSchemes = allowedSchemes
   }
 
   /**
@@ -16,10 +16,10 @@ export class URLValidator implements Validator {
    */
   public get $description(): string {
     if (this.allowedSchemes.length > 0) {
-      return `Value must be a valid URL with following schemes (${this.allowedSchemes.join(', ')})`;
+      return `Value must be a valid URL with following schemes (${this.allowedSchemes.join(', ')})`
     }
 
-    return 'Value must be a valid URL';
+    return 'Value must be a valid URL'
   }
 
   /**
@@ -32,16 +32,16 @@ export class URLValidator implements Validator {
    */
   public $valid(value: any): boolean {
     try {
-      const url = new URL(value);
+      const url = new URL(value)
       if (
         this.allowedSchemes.length > 0 &&
         !this.allowedSchemes.includes(url.protocol.replace(':', ''))
       ) {
-        return false;
+        return false
       }
-      return true;
+      return true
     } catch (e) {
-      return false;
+      return false
     }
   }
 }

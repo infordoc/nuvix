@@ -1,4 +1,4 @@
-import { MetricPeriod } from '@nuvix/utils';
+import { MetricPeriod } from '@nuvix/utils'
 
 const usageConfig = {
   '24h': {
@@ -21,6 +21,6 @@ const usageConfig = {
     limit: 90,
     factor: 86400,
   },
-};
+}
 
-export default usageConfig;
+export default usageConfig

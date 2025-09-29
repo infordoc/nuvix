@@ -1,14 +1,14 @@
-import type { Validator } from '@nuvix/db';
-import { Platform } from './platform';
-import type { PlatformsDoc } from '@nuvix/utils/types';
-import { Hostname } from './hostname';
+import type { Validator } from '@nuvix/db'
+import { Platform } from './platform'
+import type { PlatformsDoc } from '@nuvix/utils/types'
+import { Hostname } from './hostname'
 
 export class Origin implements Validator {
-  private hostnames: string[] = [];
-  private schemes: string[] = [];
-  private scheme: string | undefined;
-  private host: string | null = null;
-  private origin: string = '';
+  private hostnames: string[] = []
+  private schemes: string[] = []
+  private scheme: string | undefined
+  private host: string | null = null
+  private origin: string = ''
 
   /**
    * Constructor
@@ -16,8 +16,8 @@ export class Origin implements Validator {
    * @param platforms Array of platform documents
    */
   constructor(platforms: PlatformsDoc[]) {
-    this.hostnames = Platform.getHostnames(platforms);
-    this.schemes = Platform.getSchemes(platforms);
+    this.hostnames = Platform.getHostnames(platforms)
+    this.schemes = Platform.getSchemes(platforms)
   }
 
   /**
@@ -26,20 +26,20 @@ export class Origin implements Validator {
    * @return boolean
    */
   public $valid(origin: any): boolean {
-    this.origin = origin;
-    this.scheme = undefined;
-    this.host = null;
+    this.origin = origin
+    this.scheme = undefined
+    this.host = null
 
     if (typeof origin !== 'string' || !origin) {
-      return false;
+      return false
     }
 
-    this.scheme = this.parseScheme(origin);
+    this.scheme = this.parseScheme(origin)
     try {
-      const url = new URL(origin);
-      this.host = url.hostname.toLowerCase();
+      const url = new URL(origin)
+      this.host = url.hostname.toLowerCase()
     } catch {
-      this.host = '';
+      this.host = ''
     }
 
     const webPlatforms = [
@@ -49,18 +49,18 @@ export class Origin implements Validator {
       Platform.SCHEME_FIREFOX_EXTENSION,
       Platform.SCHEME_SAFARI_EXTENSION,
       Platform.SCHEME_EDGE_EXTENSION,
-    ];
+    ]
 
     if (this.scheme && webPlatforms.includes(this.scheme)) {
-      const validator = new Hostname(this.hostnames);
-      return validator.$valid(this.host);
+      const validator = new Hostname(this.hostnames)
+      return validator.$valid(this.host)
     }
 
     if (this.scheme && this.schemes.includes(this.scheme)) {
-      return true;
+      return true
     }
 
-    return false;
+    return false
   }
 
   /**
@@ -68,18 +68,18 @@ export class Origin implements Validator {
    * @return string
    */
   public get $description(): string {
-    const platform = this.scheme ? Platform.getNameByScheme(this.scheme) : '';
-    const host = this.host ? `(${this.host})` : '';
+    const platform = this.scheme ? Platform.getNameByScheme(this.scheme) : ''
+    const host = this.host ? `(${this.host})` : ''
 
     if (!this.host && !this.scheme) {
-      return 'Invalid Origin.';
+      return 'Invalid Origin.'
     }
 
     if (!platform) {
-      return `Invalid Scheme. The scheme used (${this.scheme}) in the Origin (${this.origin}) is not supported. If you are using a custom scheme, please change it to \`appwrite-callback-<PROJECT_ID>\``;
+      return `Invalid Scheme. The scheme used (${this.scheme}) in the Origin (${this.origin}) is not supported. If you are using a custom scheme, please change it to \`appwrite-callback-<PROJECT_ID>\``
     }
 
-    return `Invalid Origin. Register your new client ${host} as a new ${platform} platform on your project console dashboard`;
+    return `Invalid Origin. Register your new client ${host} as a new ${platform} platform on your project console dashboard`
   }
 
   /**
@@ -89,17 +89,17 @@ export class Origin implements Validator {
    * @return The extracted scheme string (e.g., "http", "exp", "mailto")
    */
   public parseScheme(uri: string): string | undefined {
-    uri = uri.trim();
+    uri = uri.trim()
     if (uri === '') {
-      return undefined;
+      return undefined
     }
 
     try {
-      const url = new URL(uri);
-      return url.protocol.slice(0, -1); // Remove trailing ':'
+      const url = new URL(uri)
+      return url.protocol.slice(0, -1) // Remove trailing ':'
     } catch {
-      const match = uri.match(/^([a-z][a-z0-9+.-]*):/i);
-      return match ? match[1] : undefined;
+      const match = uri.match(/^([a-z][a-z0-9+.-]*):/i)
+      return match ? match[1] : undefined
     }
   }
 }

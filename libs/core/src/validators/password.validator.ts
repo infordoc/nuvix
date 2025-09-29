@@ -1,13 +1,13 @@
-import type { Validator } from '@nuvix/db';
+import type { Validator } from '@nuvix/db'
 
 export class PasswordValidator implements Validator {
-  private allowEmpty: boolean;
+  private allowEmpty: boolean
 
   constructor(allowEmpty: boolean = false) {
-    this.allowEmpty = allowEmpty;
+    this.allowEmpty = allowEmpty
   }
 
-  $description: string = 'Password must be between 8 and 256 characters long.';
+  $description: string = 'Password must be between 8 and 256 characters long.'
 
   /**
    * Is Valid
@@ -18,17 +18,17 @@ export class PasswordValidator implements Validator {
    */
   $valid(value: unknown): boolean {
     if (typeof value !== 'string') {
-      return false;
+      return false
     }
 
     if (this.allowEmpty && value.length === 0) {
-      return true;
+      return true
     }
 
     if (value.length < 8 || value.length > 256) {
-      return false;
+      return false
     }
 
-    return true;
+    return true
   }
 }

@@ -1,14 +1,14 @@
-import { Validator } from '@nuvix/db';
+import { Validator } from '@nuvix/db'
 
 export class EmailValidator implements Validator {
-  private allowEmpty: boolean;
+  private allowEmpty: boolean
 
   constructor(allowEmpty: boolean = false) {
-    this.allowEmpty = allowEmpty;
+    this.allowEmpty = allowEmpty
   }
 
   get $description(): string {
-    return 'Value must be a valid email address';
+    return 'Value must be a valid email address'
   }
 
   /**
@@ -21,10 +21,10 @@ export class EmailValidator implements Validator {
    */
   $valid(value: any): boolean {
     if (this.allowEmpty && value.length === 0) {
-      return true;
+      return true
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(value);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(value)
   }
 }

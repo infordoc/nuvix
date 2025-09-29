@@ -1,14 +1,14 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Subscribers extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'targetId',
     'topicId',
     'userId',
     'providerType',
-  ];
+  ]
 
   public constructor() {
-    super('subscribers', Subscribers.ALLOWED_ATTRIBUTES);
+    super('subscribers', Subscribers.ALLOWED_ATTRIBUTES)
   }
 }

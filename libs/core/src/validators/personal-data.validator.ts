@@ -1,4 +1,4 @@
-import { PasswordValidator } from './password.validator';
+import { PasswordValidator } from './password.validator'
 
 export class PersonalDataValidator extends PasswordValidator {
   constructor(
@@ -9,11 +9,11 @@ export class PersonalDataValidator extends PasswordValidator {
     private strict: boolean = false,
     allowEmpty: boolean = false,
   ) {
-    super(allowEmpty);
+    super(allowEmpty)
   }
 
   override $description: string =
-    'Password must not include any personal data like your name, email, phone number, etc.';
+    'Password must not include any personal data like your name, email, phone number, etc.'
 
   /**
    * Is valid
@@ -24,23 +24,23 @@ export class PersonalDataValidator extends PasswordValidator {
    */
   override $valid(password: string): boolean {
     if (!super.$valid(password)) {
-      return false;
+      return false
     }
 
     if (!this.strict) {
-      password = password.toLowerCase();
-      this.userId = this.userId?.toLowerCase() || null;
-      this.email = this.email?.toLowerCase() || null;
-      this.name = this.name?.toLowerCase() || null;
-      this.phone = this.phone?.toLowerCase() || null;
+      password = password.toLowerCase()
+      this.userId = this.userId?.toLowerCase() || null
+      this.email = this.email?.toLowerCase() || null
+      this.name = this.name?.toLowerCase() || null
+      this.phone = this.phone?.toLowerCase() || null
     }
 
     if (this.userId && password.includes(this.userId)) {
-      return false;
+      return false
     }
 
     if (this.email && password.includes(this.email)) {
-      return false;
+      return false
     }
 
     if (
@@ -48,21 +48,21 @@ export class PersonalDataValidator extends PasswordValidator {
       this.email.includes('@') &&
       password.includes(this.email.split('@')[0]!)
     ) {
-      return false;
+      return false
     }
 
     if (this.name && password.includes(this.name)) {
-      return false;
+      return false
     }
 
     if (this.phone && password.includes(this.phone.replace('+', ''))) {
-      return false;
+      return false
     }
 
     if (this.phone && password.includes(this.phone)) {
-      return false;
+      return false
     }
 
-    return true;
+    return true
   }
 }

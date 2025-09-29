@@ -1,57 +1,66 @@
-import { PartialType, OmitType } from '@nestjs/swagger';
-import { IsCustomID } from '@nuvix/core/validators/input.validator';
+import { PartialType, OmitType } from '@nestjs/swagger'
 import {
   IsString,
   IsOptional,
   IsBoolean,
   IsEmail,
   MaxLength,
-} from 'class-validator';
+} from 'class-validator'
+import { CreateProviderDTO } from './base.dto'
 
-export class CreateMailgunProviderDTO {
-  @IsString()
-  @IsCustomID()
-  providerId!: string;
-
-  @IsString()
-  @MaxLength(128)
-  name!: string;
-
+export class CreateMailgunProviderDTO extends CreateProviderDTO {
+  /**
+   * Mailgun API Key.
+   */
   @IsString()
   @IsOptional()
-  apiKey?: string;
+  apiKey?: string
 
+  /**
+   * Mailgun Domain.
+   */
   @IsString()
   @IsOptional()
-  domain?: string;
+  domain?: string
 
+  /**
+   * Set as EU region.
+   */
   @IsBoolean()
   @IsOptional()
-  isEuRegion?: boolean;
+  isEuRegion?: boolean
 
+  /**
+   * Sender Name.
+   */
   @IsString()
   @MaxLength(128)
   @IsOptional()
-  fromName?: string;
+  fromName?: string
 
+  /**
+   * Sender email address.
+   */
   @IsEmail()
   @IsOptional()
-  fromEmail?: string;
+  fromEmail?: string
 
+  /**
+   * Name set in the reply to field for the mail. Default value is sender name. Reply to name must have reply to email as well.
+   */
   @IsString()
   @MaxLength(128)
   @IsOptional()
-  replyToName?: string;
+  replyToName?: string
 
+  /**
+   * Email set in the reply to field for the mail. Default value is sender email. Reply to email must have reply to name as well.
+   */
   @IsEmail()
   @IsOptional()
-  replyToEmail?: string;
-
-  @IsBoolean()
-  @IsOptional()
-  enabled?: boolean;
+  replyToEmail?: string
 }
 
 export class UpdateMailgunProviderDTO extends PartialType(
-  OmitType(CreateMailgunProviderDTO, ['providerId']),
+  OmitType(CreateMailgunProviderDTO, ['providerId'] as const),
 ) {}

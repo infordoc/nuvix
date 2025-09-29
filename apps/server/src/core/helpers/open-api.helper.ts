@@ -1,28 +1,62 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { apiReference } from '@scalar/nestjs-api-reference';
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
+import { apiReference } from '@scalar/nestjs-api-reference'
 
 export function openApiSetup(app: NestFastifyApplication) {
   const config = new DocumentBuilder()
     .setTitle('Nuvix API')
-    .setDescription('A powerful BaaS for your next project')
+    .setDescription('A powerful Backend for your next project')
     .setVersion('1.0')
     .addTag('nuvix')
-    .build();
+    .addGlobalParameters({
+      name: 'x-nuvix-project',
+      in: 'header',
+      required: true,
+      description: 'Project ID.',
+    })
+    .addCookieAuth('session')
+    .addGlobalResponse({
+      status: '5XX',
+      description: 'Internal server error',
+      schema: {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'number',
+            description: 'Error code',
+          },
+          type: {
+            type: 'string',
+            description: 'Error type',
+          },
+          message: {
+            type: 'string',
+            description: 'Error message',
+          },
+          version: {
+            type: 'string',
+            description: 'API version',
+          },
+        },
+        required: ['code', 'type', 'message', 'version'],
+      },
+    })
+    .build()
+
   const documentFactory = () =>
     SwaggerModule.createDocument(app, config, {
       deepScanRoutes: true,
-    });
-  // SwaggerModule.setup('api', app, documentFactory, {
-  //   swaggerUiEnabled: true,
-  //   raw: ['json'],
-  // });
+    })
+  SwaggerModule.setup('api', app, documentFactory, {
+    raw: true,
+    ui: false,
+  })
 
   // TODO: ---------
   app.getHttpAdapter().get('/reference', (req, res) => {
     apiReference({
       content: documentFactory(),
       withFastify: true,
-    })(req as any, res.raw as any);
-  });
+    })(req as any, res.raw as any)
+  })
 }

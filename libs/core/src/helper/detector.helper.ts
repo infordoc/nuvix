@@ -1,12 +1,12 @@
-import { UAParser } from 'ua-parser-js';
+import { UAParser } from 'ua-parser-js'
 
 export class Detector {
-  private userAgent: string;
-  private parser: UAParser;
+  private userAgent: string
+  private parser: UAParser
 
   constructor(userAgent: string) {
-    this.userAgent = userAgent;
-    this.parser = new UAParser(userAgent);
+    this.userAgent = userAgent
+    this.parser = new UAParser(userAgent)
   }
 
   /**
@@ -15,13 +15,13 @@ export class Detector {
    * @returns OS information as an object.
    */
   getOS(): Record<string, string> {
-    const os = this.parser.getOS();
+    const os = this.parser.getOS()
 
     return {
       osCode: os.name?.toLowerCase().replace(/\s+/g, '_') || '',
       osName: os.name || '',
       osVersion: os.version || '',
-    };
+    }
   }
 
   /**
@@ -30,19 +30,19 @@ export class Detector {
    * @returns Client information as an object.
    */
   getClient(): Record<string, string> {
-    let client;
+    let client
 
     if (this.userAgent.includes('NuvixCLI')) {
-      const version = this.userAgent.split(' ')[0]?.split('/')[1] || '';
+      const version = this.userAgent.split(' ')[0]?.split('/')[1] || ''
       client = {
         type: 'desktop',
         short_name: 'cli',
         name: 'Nuvix CLI',
         version: version,
-      };
+      }
     } else {
-      const browser = this.parser.getBrowser();
-      const engine = this.parser.getEngine();
+      const browser = this.parser.getBrowser()
+      const engine = this.parser.getEngine()
 
       client = {
         type: 'browser',
@@ -51,7 +51,7 @@ export class Detector {
         version: browser.version || '',
         engine: engine.name || '',
         engine_version: engine.version || '',
-      };
+      }
     }
 
     return {
@@ -61,7 +61,7 @@ export class Detector {
       clientVersion: client.version || '',
       clientEngine: client.engine || '',
       clientEngineVersion: client.engine_version || '',
-    };
+    }
   }
 
   /**
@@ -70,12 +70,12 @@ export class Detector {
    * @returns Device information as an object.
    */
   getDevice(): Record<string, string | null> {
-    const device = this.parser.getDevice();
+    const device = this.parser.getDevice()
 
     return {
       deviceName: device.type || null,
       deviceBrand: device.vendor || null,
       deviceModel: device.model || null,
-    };
+    }
   }
 }

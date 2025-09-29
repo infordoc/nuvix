@@ -1,54 +1,54 @@
-import { Injectable } from '@nestjs/common';
-import { Exception } from '@nuvix/core/extend/exception';
-import { ID } from '@nuvix/core/helper/ID.helper';
-import { SessionProvider } from '@nuvix/utils';
-import { Auth } from '@nuvix/core/helper/auth.helper';
-import { Detector } from '@nuvix/core/helper/detector.helper';
+import { Injectable } from '@nestjs/common'
+import { Exception } from '@nuvix/core/extend/exception'
+import { ID } from '@nuvix/core/helper/ID.helper'
+import { SessionProvider } from '@nuvix/utils'
+import { Auth } from '@nuvix/core/helper/auth.helper'
+import { Detector } from '@nuvix/core/helper/detector.helper'
 
-import { Database, Doc, Permission, Role } from '@nuvix/db';
-import { CountryResponse, Reader } from 'maxmind';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { CoreService } from '@nuvix/core';
-import type { ProjectsDoc, Sessions, SessionsDoc } from '@nuvix/utils/types';
-import type { LocaleTranslator } from '@nuvix/core/helper';
+import { Database, Doc, Permission, Role } from '@nuvix/db'
+import { CountryResponse, Reader } from 'maxmind'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { CoreService } from '@nuvix/core'
+import type { ProjectsDoc, Sessions, SessionsDoc } from '@nuvix/utils/types'
+import type { LocaleTranslator } from '@nuvix/core/helper'
 
 @Injectable()
 export class SessionsService {
-  private readonly geoDb: Reader<CountryResponse>;
+  private readonly geoDb: Reader<CountryResponse>
 
   constructor(
     private readonly coreService: CoreService,
     private readonly event: EventEmitter2,
   ) {
-    this.geoDb = this.coreService.getGeoDb();
+    this.geoDb = this.coreService.getGeoDb()
   }
 
   /**
    * Get all sessions
    */
   async getSessions(db: Database, userId: string, locale: LocaleTranslator) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const sessions = user.get('sessions', []) as SessionsDoc[];
+    const sessions = user.get('sessions', []) as SessionsDoc[]
 
     for (const session of sessions) {
       const countryName = locale.getText(
         `countries.${session.get('countryCode')}`,
         locale.getText('locale.country.unknown'),
-      );
+      )
 
-      session.set('countryName', countryName);
-      session.set('current', false);
+      session.set('countryName', countryName)
+      session.set('current', false)
     }
 
     return {
-      sessions: sessions,
+      data: sessions,
       total: sessions.length,
-    };
+    }
   }
 
   /**
@@ -62,19 +62,19 @@ export class SessionsService {
     project: ProjectsDoc,
     locale: LocaleTranslator,
   ) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION);
-    const detector = new Detector(userAgent);
-    const record = this.geoDb.get(ip);
+    const secret = Auth.tokenGenerator(Auth.TOKEN_LENGTH_SESSION)
+    const detector = new Detector(userAgent)
+    const record = this.geoDb.get(ip)
 
     const duration =
-      project.get('auths', {})['duration'] ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG;
-    const expire = new Date(Date.now() + duration * 1000);
+      project.get('auths', {})['duration'] ?? Auth.TOKEN_EXPIRATION_LOGIN_LONG
+    const expire = new Date(Date.now() + duration * 1000)
 
     const session = new Doc<Sessions>({
       $id: ID.unique(),
@@ -94,39 +94,39 @@ export class SessionsService {
       ...detector.getOS(),
       ...detector.getClient(),
       ...detector.getDevice(),
-    });
+    })
 
     const countryName = locale.getText(
       `countries.${session.get('countryCode')}`,
       locale.getText('locale.country.unknown'),
-    );
+    )
 
-    const createdSession = await db.createDocument('sessions', session);
-    createdSession.set('secret', secret).set('countryName', countryName);
+    const createdSession = await db.createDocument('sessions', session)
+    createdSession.set('secret', secret).set('countryName', countryName)
 
     // TODO: Implement queue for events
 
-    return createdSession;
+    return createdSession
   }
 
   /**
    * Delete User Session
    */
   async deleteSession(db: Database, userId: string, sessionId: string) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const session = await db.getDocument('sessions', sessionId);
+    const session = await db.getDocument('sessions', sessionId)
 
     if (session.empty()) {
-      throw new Exception(Exception.USER_SESSION_NOT_FOUND);
+      throw new Exception(Exception.USER_SESSION_NOT_FOUND)
     }
 
-    await db.deleteDocument('sessions', session.getId());
-    await db.purgeCachedDocument('users', user.getId());
+    await db.deleteDocument('sessions', session.getId())
+    await db.purgeCachedDocument('users', user.getId())
 
     // TODO: Implement queue for events
   }
@@ -135,18 +135,18 @@ export class SessionsService {
    * Delete User Sessions
    */
   async deleteSessions(db: Database, userId: string) {
-    const user = await db.getDocument('users', userId);
+    const user = await db.getDocument('users', userId)
 
     if (user.empty()) {
-      throw new Exception(Exception.USER_NOT_FOUND);
+      throw new Exception(Exception.USER_NOT_FOUND)
     }
 
-    const sessions = user.get('sessions', []) as SessionsDoc[];
+    const sessions = user.get('sessions', []) as SessionsDoc[]
 
     for (const session of sessions) {
-      await db.deleteDocument('sessions', session.getId());
+      await db.deleteDocument('sessions', session.getId())
     }
 
-    await db.purgeCachedDocument('users', user.getId());
+    await db.purgeCachedDocument('users', user.getId())
   }
 }

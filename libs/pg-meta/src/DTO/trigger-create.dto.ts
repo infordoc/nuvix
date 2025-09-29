@@ -5,63 +5,63 @@ import {
   IsArray,
   ArrayNotEmpty,
   IsIn,
-} from 'class-validator';
+} from 'class-validator'
 
 export class TriggerCreateDTO {
   @IsString()
   @IsNotEmpty()
-  declare name: string;
+  declare name: string
 
   @IsString()
   @IsNotEmpty()
-  declare table: string;
+  declare table: string
 
   @IsString()
   @IsNotEmpty()
-  declare function_name: string;
+  declare function_name: string
 
   @IsString()
   @IsNotEmpty()
   @IsIn(['BEFORE', 'AFTER', 'INSTEAD OF'])
-  declare activation: string;
+  declare activation: string
 
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
   @IsIn(['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE'], { each: true })
-  declare events: string[];
+  declare events: string[]
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  function_schema?: string;
+  function_schema?: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  schema?: string;
+  schema?: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
   @IsIn(['ROW', 'STATEMENT'])
-  orientation?: string;
+  orientation?: string
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  condition?: string;
+  condition?: string
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  function_args?: string[];
+  function_args?: string[]
 
   @IsOptional()
   @IsString()
-  comment?: string;
+  comment?: string
 
   @IsOptional()
   @IsIn(['ORIGIN', 'REPLICA', 'ALWAYS', 'DISABLED'])
-  enabled_mode?: 'ORIGIN' | 'REPLICA' | 'ALWAYS' | 'DISABLED';
+  enabled_mode?: 'ORIGIN' | 'REPLICA' | 'ALWAYS' | 'DISABLED'
 }

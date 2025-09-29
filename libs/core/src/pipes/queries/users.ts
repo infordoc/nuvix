@@ -1,7 +1,7 @@
-import { BaseQueryPipe } from './base';
+import { BaseQueryPipe } from './base'
 
 export class Users extends BaseQueryPipe {
-  public static ALLOWED_ATTRIBUTES = [
+  public static override ALLOWED_ATTRIBUTES = [
     'name',
     'email',
     'phone',
@@ -11,9 +11,9 @@ export class Users extends BaseQueryPipe {
     'emailVerification',
     'phoneVerification',
     'labels',
-  ];
+  ]
 
   public constructor() {
-    super('users', Users.ALLOWED_ATTRIBUTES);
+    super('users', Users.ALLOWED_ATTRIBUTES)
   }
 }

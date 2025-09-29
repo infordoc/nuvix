@@ -8,7 +8,7 @@ import {
   Logger,
   NestApplicationOptions,
   Type,
-} from '@nestjs/common';
+} from '@nestjs/common'
 import {
   AbstractHttpAdapter,
   ApplicationConfig,
@@ -17,31 +17,31 @@ import {
   NestApplication,
   NestApplicationContext,
   NestContainer,
-} from '@nestjs/core';
-import { NestMicroserviceOptions } from '@nestjs/common/interfaces/microservices/nest-microservice-options.interface';
-import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
-import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface';
+} from '@nestjs/core'
+import { NestMicroserviceOptions } from '@nestjs/common/interfaces/microservices/nest-microservice-options.interface'
+import { loadPackage } from '@nestjs/common/utils/load-package.util.js'
+import { NestApplicationContextOptions } from '@nestjs/common/interfaces/nest-application-context-options.interface'
 
-import { MESSAGES } from '@nestjs/core/constants.js';
-import { ExceptionsZone } from '@nestjs/core/errors/exceptions-zone.js';
-import { loadAdapter } from '@nestjs/core/helpers/load-adapter.js';
-import { rethrow } from '@nestjs/core/helpers/rethrow.js';
-import { Injector } from '@nestjs/core/injector/injector.js';
-import { InstanceLoader } from '@nestjs/core/injector/instance-loader.js';
-import { NoopGraphInspector } from '@nestjs/core/inspector/noop-graph-inspector.js';
+import { MESSAGES } from '@nestjs/core/constants.js'
+import { ExceptionsZone } from '@nestjs/core/errors/exceptions-zone.js'
+import { loadAdapter } from '@nestjs/core/helpers/load-adapter.js'
+import { rethrow } from '@nestjs/core/helpers/rethrow.js'
+import { Injector } from '@nestjs/core/injector/injector.js'
+import { InstanceLoader } from '@nestjs/core/injector/instance-loader.js'
+import { NoopGraphInspector } from '@nestjs/core/inspector/noop-graph-inspector.js'
 import {
   UuidFactory,
   UuidFactoryMode,
-} from '@nestjs/core/inspector/uuid-factory.js';
-import { DependenciesScanner } from '@nestjs/core/scanner.js';
-import { isFunction, isNil } from '@nestjs/common/utils/shared.utils.js';
-import { NuvixApplication } from './application';
+} from '@nestjs/core/inspector/uuid-factory.js'
+import { DependenciesScanner } from '@nestjs/core/scanner.js'
+import { isFunction, isNil } from '@nestjs/common/utils/shared.utils.js'
+import { NuvixApplication } from './application'
 
 type IEntryNestModule =
   | Type<any>
   | DynamicModule
   | ForwardReference
-  | Promise<IEntryNestModule>;
+  | Promise<IEntryNestModule>
 
 /**
  * @publicApi
@@ -49,9 +49,9 @@ type IEntryNestModule =
 export class NuvixFactoryStatic {
   private readonly logger = new Logger('NestFactory', {
     timestamp: true,
-  });
-  private abortOnError = true;
-  private autoFlushLogs = false;
+  })
+  private abortOnError = true
+  private autoFlushLogs = false
 
   /**
    * Creates an instance of NestApplication.
@@ -65,7 +65,7 @@ export class NuvixFactoryStatic {
   public async create<T extends INestApplication = INestApplication>(
     module: IEntryNestModule,
     options?: NestApplicationOptions,
-  ): Promise<T>;
+  ): Promise<T>
   /**
    * Creates an instance of NestApplication with the specified `httpAdapter`.
    *
@@ -81,7 +81,7 @@ export class NuvixFactoryStatic {
     module: IEntryNestModule,
     httpAdapter: AbstractHttpAdapter,
     options?: NestApplicationOptions,
-  ): Promise<T>;
+  ): Promise<T>
   public async create<T extends INestApplication = INestApplication>(
     moduleCls: IEntryNestModule,
     serverOrOptions?: AbstractHttpAdapter | NestApplicationOptions,
@@ -89,14 +89,14 @@ export class NuvixFactoryStatic {
   ): Promise<T> {
     const [httpServer, appOptions] = this.isHttpServer(serverOrOptions!)
       ? [serverOrOptions, options]
-      : [this.createHttpAdapter(), serverOrOptions];
+      : [this.createHttpAdapter(), serverOrOptions]
 
-    const applicationConfig = new ApplicationConfig();
-    const container = new NestContainer(applicationConfig, appOptions);
-    const graphInspector = this.createGraphInspector(appOptions!, container);
+    const applicationConfig = new ApplicationConfig()
+    const container = new NestContainer(applicationConfig, appOptions)
+    const graphInspector = this.createGraphInspector(appOptions!, container)
 
-    this.setAbortOnError(serverOrOptions, options);
-    this.registerLoggerConfiguration(appOptions);
+    this.setAbortOnError(serverOrOptions, options)
+    this.registerLoggerConfiguration(appOptions)
 
     await this.initialize(
       moduleCls,
@@ -105,7 +105,7 @@ export class NuvixFactoryStatic {
       applicationConfig,
       appOptions,
       httpServer,
-    );
+    )
 
     // #CUSTOM: added NuvixApplication instead
     const instance = new NuvixApplication(
@@ -114,12 +114,12 @@ export class NuvixFactoryStatic {
       applicationConfig,
       graphInspector,
       appOptions,
-    );
-    const target = this.createNestInstance(instance);
+    )
+    const target = this.createNestInstance(instance)
     return this.createAdapterProxy<T>(
       target as unknown as NestApplication,
       httpServer,
-    );
+    )
   }
 
   /**
@@ -139,13 +139,13 @@ export class NuvixFactoryStatic {
       '@nestjs/microservices',
       'NestFactory',
       () => require('@nestjs/microservices'),
-    );
-    const applicationConfig = new ApplicationConfig();
-    const container = new NestContainer(applicationConfig, options);
-    const graphInspector = this.createGraphInspector(options!, container);
+    )
+    const applicationConfig = new ApplicationConfig()
+    const container = new NestContainer(applicationConfig, options)
+    const graphInspector = this.createGraphInspector(options!, container)
 
-    this.setAbortOnError(options);
-    this.registerLoggerConfiguration(options);
+    this.setAbortOnError(options)
+    this.registerLoggerConfiguration(options)
 
     await this.initialize(
       moduleCls,
@@ -153,7 +153,7 @@ export class NuvixFactoryStatic {
       graphInspector,
       applicationConfig,
       options,
-    );
+    )
     return this.createNestInstance<INestMicroservice>(
       new NestMicroservice(
         container,
@@ -161,7 +161,7 @@ export class NuvixFactoryStatic {
         graphInspector,
         applicationConfig,
       ),
-    );
+    )
   }
 
   /**
@@ -177,12 +177,12 @@ export class NuvixFactoryStatic {
     moduleCls: IEntryNestModule,
     options?: NestApplicationContextOptions,
   ): Promise<INestApplicationContext> {
-    const applicationConfig = new ApplicationConfig();
-    const container = new NestContainer(applicationConfig, options);
-    const graphInspector = this.createGraphInspector(options!, container);
+    const applicationConfig = new ApplicationConfig()
+    const container = new NestContainer(applicationConfig, options)
+    const graphInspector = this.createGraphInspector(options!, container)
 
-    this.setAbortOnError(options);
-    this.registerLoggerConfiguration(options);
+    this.setAbortOnError(options)
+    this.registerLoggerConfiguration(options)
 
     await this.initialize(
       moduleCls,
@@ -190,22 +190,22 @@ export class NuvixFactoryStatic {
       graphInspector,
       applicationConfig,
       options,
-    );
+    )
 
-    const modules = container.getModules().values();
-    const root = modules.next().value;
+    const modules = container.getModules().values()
+    const root = modules.next().value
 
     const context = this.createNestInstance<NestApplicationContext>(
       new NestApplicationContext(container, options, root),
-    );
+    )
     if (this.autoFlushLogs) {
-      context.flushLogsOnOverride();
+      context.flushLogsOnOverride()
     }
-    return context.init();
+    return context.init()
   }
 
   private createNestInstance<T>(instance: T): T {
-    return this.createProxy(instance);
+    return this.createProxy(instance)
   }
 
   private async initialize(
@@ -218,103 +218,103 @@ export class NuvixFactoryStatic {
   ) {
     UuidFactory.mode = options.snapshot
       ? UuidFactoryMode.Deterministic
-      : UuidFactoryMode.Random;
+      : UuidFactoryMode.Random
 
-    const injector = new Injector({ preview: options.preview! });
+    const injector = new Injector({ preview: options.preview! })
     const instanceLoader = new InstanceLoader(
       container,
       injector,
       graphInspector,
-    );
-    const metadataScanner = new MetadataScanner();
+    )
+    const metadataScanner = new MetadataScanner()
     const dependenciesScanner = new DependenciesScanner(
       container,
       metadataScanner,
       graphInspector,
       config,
-    );
-    container.setHttpAdapter(httpServer);
+    )
+    container.setHttpAdapter(httpServer)
 
-    const teardown = this.abortOnError === false ? rethrow : undefined;
-    await httpServer?.init?.();
+    const teardown = this.abortOnError === false ? rethrow : undefined
+    await httpServer?.init?.()
     try {
-      this.logger.log(MESSAGES.APPLICATION_START);
+      this.logger.log(MESSAGES.APPLICATION_START)
 
       await ExceptionsZone.asyncRun(
         async () => {
-          await dependenciesScanner.scan(module);
-          await instanceLoader.createInstancesOfDependencies();
-          dependenciesScanner.applyApplicationProviders();
+          await dependenciesScanner.scan(module)
+          await instanceLoader.createInstancesOfDependencies()
+          dependenciesScanner.applyApplicationProviders()
         },
         teardown,
         this.autoFlushLogs,
-      );
+      )
     } catch (e) {
-      this.handleInitializationError(e);
+      this.handleInitializationError(e)
     }
   }
 
   private handleInitializationError(err: unknown) {
     if (this.abortOnError) {
-      process.abort();
+      process.abort()
     }
-    rethrow(err);
+    rethrow(err)
   }
 
   private createProxy(target: any) {
-    const proxy = this.createExceptionProxy();
+    const proxy = this.createExceptionProxy()
     return new Proxy(target, {
       get: proxy,
       set: proxy,
-    });
+    })
   }
 
   private createExceptionProxy() {
     return (receiver: Record<string, any>, prop: string) => {
       if (!(prop in receiver)) {
-        return;
+        return
       }
       if (isFunction(receiver[prop])) {
-        return this.createExceptionZone(receiver, prop);
+        return this.createExceptionZone(receiver, prop)
       }
-      return receiver[prop];
-    };
+      return receiver[prop]
+    }
   }
 
   private createExceptionZone(
     receiver: Record<string, any>,
     prop: string,
   ): Function {
-    const teardown = this.abortOnError === false ? rethrow : undefined;
+    const teardown = this.abortOnError === false ? rethrow : undefined
 
     return (...args: unknown[]) => {
-      let result: unknown;
+      let result: unknown
       ExceptionsZone.run(
         () => {
-          result = receiver[prop](...args);
+          result = receiver[prop](...args)
         },
         teardown,
         this.autoFlushLogs,
-      );
+      )
 
-      return result;
-    };
+      return result
+    }
   }
 
   private registerLoggerConfiguration(
     options: NestApplicationContextOptions | undefined,
   ) {
     if (!options) {
-      return;
+      return
     }
-    const { logger, bufferLogs, autoFlushLogs } = options;
+    const { logger, bufferLogs, autoFlushLogs } = options
     if ((logger as boolean) !== true && !isNil(logger)) {
-      Logger.overrideLogger(logger);
+      Logger.overrideLogger(logger)
     }
     if (bufferLogs) {
-      Logger.attachBuffer();
+      Logger.attachBuffer()
     }
-    this.autoFlushLogs = autoFlushLogs ?? true;
+    this.autoFlushLogs = autoFlushLogs ?? true
   }
 
   // #CUSTOM: used fastify instead of express
@@ -323,16 +323,14 @@ export class NuvixFactoryStatic {
       '@nestjs/platform-fastify',
       'HTTP',
       () => require('@nestjs/platform-fastify'),
-    );
-    return new FastifyAdapter(httpServer);
+    )
+    return new FastifyAdapter(httpServer)
   }
 
   private isHttpServer(
     serverOrOptions: AbstractHttpAdapter | NestApplicationOptions,
   ): serverOrOptions is AbstractHttpAdapter {
-    return !!(
-      serverOrOptions && (serverOrOptions as AbstractHttpAdapter).patch
-    );
+    return !!(serverOrOptions && (serverOrOptions as AbstractHttpAdapter).patch)
   }
 
   private setAbortOnError(
@@ -341,7 +339,7 @@ export class NuvixFactoryStatic {
   ) {
     this.abortOnError = this.isHttpServer(serverOrOptions!)
       ? !(options && options.abortOnError === false)
-      : !(serverOrOptions && serverOrOptions.abortOnError === false);
+      : !(serverOrOptions && serverOrOptions.abortOnError === false)
   }
 
   private createAdapterProxy<T>(app: NestApplication, adapter: HttpServer): T {
@@ -352,25 +350,25 @@ export class NuvixFactoryStatic {
             ? result.then(mapToProxy)
             : result instanceof NestApplication
               ? proxy
-              : result;
-        };
+              : result
+        }
 
         if (!(prop in receiver) && prop in adapter) {
           return (...args: unknown[]) => {
-            const result = this.createExceptionZone(adapter, prop)(...args);
-            return mapToProxy(result);
-          };
+            const result = this.createExceptionZone(adapter, prop)(...args)
+            return mapToProxy(result)
+          }
         }
         if (isFunction(receiver[prop])) {
           return (...args: unknown[]) => {
-            const result = receiver[prop](...args);
-            return mapToProxy(result);
-          };
+            const result = receiver[prop](...args)
+            return mapToProxy(result)
+          }
         }
-        return receiver[prop];
+        return receiver[prop]
       },
-    });
-    return proxy as unknown as T;
+    })
+    return proxy as unknown as T
   }
 
   private createGraphInspector(
@@ -379,7 +377,7 @@ export class NuvixFactoryStatic {
   ) {
     return appOptions?.snapshot
       ? new GraphInspector(container)
-      : NoopGraphInspector;
+      : NoopGraphInspector
   }
 }
 
@@ -396,4 +394,4 @@ export class NuvixFactoryStatic {
  *
  * @publicApi
  */
-export const NuvixFactory = new NuvixFactoryStatic();
+export const NuvixFactory = new NuvixFactoryStatic()

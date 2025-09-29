@@ -1,68 +1,73 @@
 import {
   Body,
   Controller,
-  Get,
-  HttpStatus,
   Param,
-  Post,
   Query,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
-import { DatabasesService } from './databases.service';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
+} from '@nestjs/common'
+import { DatabasesService } from './databases.service'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
 import {
   ResponseInterceptor,
   ApiInterceptor,
-} from '@nuvix/core/resolvers/interceptors';
-import { DataSource } from '@nuvix/pg';
-import { Models } from '@nuvix/core/helper';
+} from '@nuvix/core/resolvers/interceptors'
+import { DataSource } from '@nuvix/pg'
+import { Models } from '@nuvix/core/helper'
 import {
+  Auth,
+  AuthType,
   Namespace,
   Project,
   ProjectPg,
-  ResModel,
-  Scope,
-  Sdk,
-} from '@nuvix/core/decorators';
+} from '@nuvix/core/decorators'
 
 // DTO's
-import { CreateSchema } from './DTO/create-schema.dto';
-import type { ProjectsDoc } from '@nuvix/utils/types';
-import { SchemaType } from '@nuvix/utils';
-import { ApiQuery } from '@nestjs/swagger';
+import {
+  CreateSchema,
+  SchemaParamsDTO,
+  SchemaQueryDTO,
+} from './DTO/create-schema.dto'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { IListResponse, SchemaType } from '@nuvix/utils'
+import { Get, Post } from '@nuvix/core'
 
 @Controller({ version: ['1'], path: ['databases', 'database'] })
 @UseGuards(ProjectGuard)
 @Namespace('database')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.ADMIN, AuthType.KEY])
 export class DatabasesController {
   constructor(private readonly databaseService: DatabasesService) {}
 
-  @Get('schemas')
-  @Scope('schema.read')
-  @Sdk({
-    name: 'listSchemas',
-    code: HttpStatus.OK,
+  @Get('schemas', {
+    summary: 'List schemas',
+    description:
+      'Retrieve a list of all schemas in the database with optional filtering by type',
+    scopes: 'schema.read',
+    model: { type: Models.SCHEMA, list: true },
+    sdk: {
+      name: 'listSchemas',
+    },
   })
-  @ResModel(Models.SCHEMA, { list: true })
-  @ApiQuery({
-    name: 'type',
-    enum: SchemaType,
-    required: false,
-  })
-  async getSchemas(@ProjectPg() pg: DataSource, @Query('type') type?: any) {
-    const schemas = await this.databaseService.getSchemas(pg, type);
-    return schemas;
+  async getSchemas(
+    @ProjectPg() pg: DataSource,
+    @Query() { type }: SchemaQueryDTO,
+  ): Promise<IListResponse<unknown>> {
+    const schemas = await this.databaseService.getSchemas(pg, type)
+    return schemas
   }
 
-  @Post('schemas')
-  @Scope('schema.create')
-  @Sdk({
-    name: 'createSchema',
-    code: HttpStatus.CREATED,
+  @Post('schemas', {
+    summary: 'Create schema',
+    description:
+      'Create a new schema in the database. Supports managed, unmanaged, and document schema types',
+    scopes: 'schema.create',
+    model: Models.SCHEMA,
+    sdk: {
+      name: 'createSchema',
+    },
   })
-  @ResModel(Models.SCHEMA)
   async createSchema(
     @ProjectPg() pg: DataSource,
     @Body() body: CreateSchema,
@@ -70,19 +75,24 @@ export class DatabasesController {
   ) {
     const result = await (body.type !== SchemaType.Document
       ? this.databaseService.createSchema(pg, body)
-      : this.databaseService.createDocumentSchema(pg, project, body));
-    return result;
+      : this.databaseService.createDocumentSchema(pg, project, body))
+    return result
   }
 
-  @Get('schemas/:schemaId')
-  @Scope('schema.read')
-  @Sdk({
-    name: 'getSchema',
-    code: HttpStatus.OK,
+  @Get('schemas/:schemaId', {
+    summary: 'Get schema',
+    description: 'Retrieve a specific schema by its ID',
+    scopes: 'schema.read',
+    model: Models.SCHEMA,
+    sdk: {
+      name: 'getSchema',
+    },
   })
-  @ResModel(Models.SCHEMA)
-  async getSchema(@ProjectPg() pg: DataSource, @Param('schemaId') id: string) {
-    const result = await this.databaseService.getSchema(pg, id);
-    return result;
+  async getSchema(
+    @ProjectPg() pg: DataSource,
+    @Param() { schemaId }: SchemaParamsDTO,
+  ) {
+    const result = await this.databaseService.getSchema(pg, schemaId)
+    return result
   }
 }

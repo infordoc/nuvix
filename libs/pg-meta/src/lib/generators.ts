@@ -1,4 +1,4 @@
-import PostgresMeta from './PostgresMeta';
+import PostgresMeta from './PostgresMeta'
 import {
   PostgresColumn,
   PostgresForeignTable,
@@ -10,19 +10,19 @@ import {
   PostgresTable,
   PostgresType,
   PostgresView,
-} from './types';
+} from './types'
 
 export type GeneratorMetadata = {
-  schemas: PostgresSchema[];
-  tables: Omit<PostgresTable, 'columns'>[];
-  foreignTables: Omit<PostgresForeignTable, 'columns'>[];
-  views: Omit<PostgresView, 'columns'>[];
-  materializedViews: Omit<PostgresMaterializedView, 'columns'>[];
-  columns: PostgresColumn[];
-  relationships: PostgresRelationship[];
-  functions: PostgresFunction[];
-  types: PostgresType[];
-};
+  schemas: PostgresSchema[]
+  tables: Omit<PostgresTable, 'columns'>[]
+  foreignTables: Omit<PostgresForeignTable, 'columns'>[]
+  views: Omit<PostgresView, 'columns'>[]
+  materializedViews: Omit<PostgresMaterializedView, 'columns'>[]
+  columns: PostgresColumn[]
+  relationships: PostgresRelationship[]
+  functions: PostgresFunction[]
+  types: PostgresType[]
+}
 
 export async function getGeneratorMetadata(
   pgMeta: PostgresMeta,
@@ -31,21 +31,21 @@ export async function getGeneratorMetadata(
     excludedSchemas: [],
   },
 ): Promise<PostgresMetaResult<GeneratorMetadata | null>> {
-  const includedSchemas = filters.includedSchemas ?? [];
-  const excludedSchemas = filters.excludedSchemas ?? [];
+  const includedSchemas = filters.includedSchemas ?? []
+  const excludedSchemas = filters.excludedSchemas ?? []
 
-  const { data: schemas, error: schemasError } = await pgMeta.schemas.list();
+  const { data: schemas, error: schemasError } = await pgMeta.schemas.list()
   if (schemasError) {
-    return { data: null, error: schemasError };
+    return { data: null, error: schemasError }
   }
 
   const { data: tables, error: tablesError } = await pgMeta.tables.list({
     includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
     excludedSchemas,
     includeColumns: false,
-  });
+  })
   if (tablesError) {
-    return { data: null, error: tablesError };
+    return { data: null, error: tablesError }
   }
 
   const { data: foreignTables, error: foreignTablesError } =
@@ -53,18 +53,18 @@ export async function getGeneratorMetadata(
       includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
       excludedSchemas,
       includeColumns: false,
-    });
+    })
   if (foreignTablesError) {
-    return { data: null, error: foreignTablesError };
+    return { data: null, error: foreignTablesError }
   }
 
   const { data: views, error: viewsError } = await pgMeta.views.list({
     includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
     excludedSchemas,
     includeColumns: false,
-  });
+  })
   if (viewsError) {
-    return { data: null, error: viewsError };
+    return { data: null, error: viewsError }
   }
 
   const { data: materializedViews, error: materializedViewsError } =
@@ -72,44 +72,44 @@ export async function getGeneratorMetadata(
       includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
       excludedSchemas,
       includeColumns: false,
-    });
+    })
   if (materializedViewsError) {
-    return { data: null, error: materializedViewsError };
+    return { data: null, error: materializedViewsError }
   }
 
   const { data: columns, error: columnsError } = await pgMeta.columns.list({
     includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
     excludedSchemas,
-  });
+  })
   if (columnsError) {
-    return { data: null, error: columnsError };
+    return { data: null, error: columnsError }
   }
 
   const { data: relationships, error: relationshipsError } =
-    await pgMeta.relationships.list();
+    await pgMeta.relationships.list()
   if (relationshipsError) {
-    return { data: null, error: relationshipsError };
+    return { data: null, error: relationshipsError }
   }
 
   const { data: functions, error: functionsError } =
     await pgMeta.functions.list({
       includedSchemas: includedSchemas.length > 0 ? includedSchemas : undefined,
       excludedSchemas,
-    });
+    })
   if (functionsError) {
-    return { data: null, error: functionsError };
+    return { data: null, error: functionsError }
   }
 
   const { data: types, error: typesError } = await pgMeta.types.list({
     includeTableTypes: true,
     includeArrayTypes: true,
     includeSystemSchemas: true,
-  });
+  })
   if (typesError) {
-    return { data: null, error: typesError };
+    return { data: null, error: typesError }
   }
 
-  await pgMeta.end();
+  await pgMeta.end()
 
   return {
     data: {
@@ -131,5 +131,5 @@ export async function getGeneratorMetadata(
       types,
     },
     error: null,
-  };
+  }
 }

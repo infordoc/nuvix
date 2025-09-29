@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
-import { ProjectService } from './projects.service';
-import { ProjectsController } from './projects.controller';
-import { JwtModule } from '@nestjs/jwt';
-import { configuration, QueueFor } from '@nuvix/utils';
-import { ProjectController } from './project.controller';
-import { BullModule } from '@nestjs/bullmq';
-import { ProjectsQueue } from '@nuvix/core/resolvers/queues/projects.queue';
+import { Module } from '@nestjs/common'
+import { ProjectService } from './projects.service'
+import { ProjectsController } from './projects.controller'
+import { JwtModule } from '@nestjs/jwt'
+import { configuration, QueueFor } from '@nuvix/utils'
+import { ProjectController } from './project.controller'
+import { BullModule } from '@nestjs/bullmq'
+import { ProjectsQueue } from '@nuvix/core/resolvers/queues/projects.queue'
 
 @Module({
   imports: [

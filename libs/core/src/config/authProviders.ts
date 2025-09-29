@@ -1,10 +1,10 @@
 interface OAuthProvider {
-  name: string;
-  developers: string;
-  sandbox: boolean;
-  enabled: boolean;
-  beta: boolean;
-  mock: boolean;
+  name: string
+  developers: string
+  sandbox: boolean
+  enabled: boolean
+  beta: boolean
+  mock: boolean
 }
 
 const appOAuthProviders = {
@@ -322,23 +322,23 @@ const appOAuthProviders = {
     beta: false,
     mock: true,
   },
-} as const;
+} as const
 
 export const oAuthProviders: Record<
   keyof typeof appOAuthProviders,
   OAuthProvider
-> = appOAuthProviders;
+> = appOAuthProviders
 
 export const oAuthProvidersList = Object.entries(oAuthProviders)
-  .filter(([_, provider]) => provider.enabled)
-  .map(([name]) => name) as (keyof typeof oAuthProviders)[];
+  .filter(([_, provider]) => provider.enabled && !provider.mock)
+  .map(([name]) => name) as (keyof typeof oAuthProviders)[]
 
-export type OAuthProviders = (typeof oAuthProvidersList)[number];
+export type OAuthProviders = (typeof oAuthProvidersList)[number]
 
 export type OAuthProviderType = {
-  key: string;
-  name: string;
-  enabled: boolean;
-  appId: string;
-  secret: string;
-};
+  key: string
+  name: string
+  enabled: boolean
+  appId: string
+  secret: string
+}

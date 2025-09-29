@@ -1,12 +1,29 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
-import { AvatarsService } from './avatars.service';
-import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe';
+import {
+  Controller,
+  Query,
+  Res,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common'
+import { AvatarsService } from './avatars.service'
+import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe'
+import { Get } from '@nuvix/core'
+import { Namespace, Scope } from '@nuvix/core/decorators'
+import { ApiInterceptor, ProjectGuard } from '@nuvix/core/resolvers'
 
 @Controller({ version: ['1'], path: 'avatars' })
+@Namespace('avatars')
+@UseGuards(ProjectGuard)
+@UseInterceptors(ApiInterceptor)
+@Scope('avatars.read')
 export class AvatarsController {
   constructor(private readonly avatarsService: AvatarsService) {}
 
-  @Get('initials')
+  @Get('initials', {
+    summary: 'Generate avatar with initials',
+    description:
+      'Generates an avatar image with user initials based on the provided name and customization options',
+  })
   async generateAvatar(
     @Query('name', ParseDuplicatePipe) name: string = 'NA',
     @Query('width', ParseDuplicatePipe) width: string = '100',
@@ -22,6 +39,6 @@ export class AvatarsController {
       background,
       circle,
       res,
-    });
+    })
   }
 }

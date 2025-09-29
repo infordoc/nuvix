@@ -1,7 +1,7 @@
-import * as path from 'path';
-import { PROJECT_ROOT } from './constants';
-import { Logger } from '@nestjs/common';
-import { parseBoolean, parseNumber } from './helpers';
+import * as path from 'path'
+import { PROJECT_ROOT } from './constants'
+import { Logger } from '@nestjs/common'
+import { parseBoolean, parseNumber } from './helpers'
 
 const nxconfig = () =>
   ({
@@ -48,13 +48,13 @@ const nxconfig = () =>
       jwtSecret: process.env['APP_JWT_SECRET'],
       encryptionKey: process.env['APP_ENCRYPTION_KEY'],
       get dbEncryptionKey() {
-        const key = process.env['APP_DATABASE_ENCRYPTION_KEY'];
+        const key = process.env['APP_DATABASE_ENCRYPTION_KEY']
         if (!key) {
           Logger.warn(
             'The environment variable APP_DATABASE_ENCRYPTION_KEY is not set. Using the default encryption key, which is insecure. Please set a custom key in production environments.',
-          );
+          )
         }
-        return key || 'acd3462d9128abcd'; // 16-byte key for AES-128-GCM
+        return key || 'acd3462d9128abcd' // 16-byte key for AES-128-GCM
       },
     },
 
@@ -238,9 +238,9 @@ const nxconfig = () =>
       .split(',')
       .map(level => level.trim())
       .filter(level => level),
-  }) as const;
+  }) as const
 
-export const configuration = nxconfig();
+export const configuration = nxconfig()
 
 export function validateRequiredConfig() {
   const requiredVars = [
@@ -249,35 +249,35 @@ export function validateRequiredConfig() {
     'APP_REDIS_HOST',
     'APP_DATABASE_ADMIN_PASSWORD',
     'APP_DATABASE_PASSWORD',
-  ];
+  ]
 
-  const missing: string[] = [];
+  const missing: string[] = []
 
   for (const envVar of requiredVars) {
     if (!process.env[envVar]) {
-      missing.push(envVar);
+      missing.push(envVar)
     }
   }
 
-  const inProd = process.env['NODE_ENV'] === 'production';
+  const inProd = process.env['NODE_ENV'] === 'production'
   if (inProd && !process.env['APP_DATABASE_ENCRYPTION_KEY']) {
-    missing.push('APP_DATABASE_ENCRYPTION_KEY');
+    missing.push('APP_DATABASE_ENCRYPTION_KEY')
   }
 
   if (missing.length > 0) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}`,
-    );
+    )
   }
 
   const dbKey =
     process.env['APP_DATABASE_ENCRYPTION_KEY'] ??
-    configuration.security.dbEncryptionKey;
+    configuration.security.dbEncryptionKey
 
-  const keyBytes = Buffer.byteLength(dbKey, 'utf8');
+  const keyBytes = Buffer.byteLength(dbKey, 'utf8')
   if (![16, 24, 32].includes(keyBytes)) {
     throw new Error(
       `DB Encryption key must be 16, 24, or 32 bytes (AES-128/192/256)`,
-    );
+    )
   }
 }

@@ -5,7 +5,7 @@ import {
   ID,
   IndexType,
   Order,
-} from '@nuvix/db';
+} from '@nuvix/db'
 
 export const bucketCollections: Record<string, Collection> = {
   files: {
@@ -171,7 +171,7 @@ export const bucketCollections: Record<string, Collection> = {
       },
     ],
   },
-};
+}
 
 export const dbCollections: Record<string, Collection> = {
   collections: {
@@ -449,4 +449,4 @@ export const dbCollections: Record<string, Collection> = {
       },
     ],
   },
-};
+}

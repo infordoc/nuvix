@@ -1,19 +1,19 @@
-import { HttpException } from '@nestjs/common';
+import { HttpException } from '@nestjs/common'
 
 export class PgMetaException extends HttpException {
   public extra: {
-    errorCode?: string;
-    errorHint?: string;
-    formattedError?: string;
-    [key: string]: any;
-  };
+    errorCode?: string
+    errorHint?: string
+    formattedError?: string
+    [key: string]: any
+  }
   constructor(
     message: string,
     extra?: {
-      errorCode?: string;
-      errorHint?: string;
-      formattedError?: string;
-      [key: string]: any;
+      errorCode?: string
+      errorHint?: string
+      formattedError?: string
+      [key: string]: any
     },
     statusCode: number = 500,
   ) {
@@ -24,8 +24,8 @@ export class PgMetaException extends HttpException {
         ...extra,
       },
       statusCode,
-    );
-    this.extra = extra || {};
+    )
+    this.extra = extra || {}
   }
 
   static createDefaultException(message: string, statusCode: number) {
@@ -36,6 +36,6 @@ export class PgMetaException extends HttpException {
         errorHint: 'Default error hint',
       },
       statusCode,
-    );
+    )
   }
 }

@@ -5,10 +5,10 @@ import type {
   PostgresTable,
   PostgresType,
   PostgresView,
-} from '../lib/index';
-import type { GeneratorMetadata } from '../lib/generators';
+} from '../lib/index'
+import type { GeneratorMetadata } from '../lib/generators'
 
-type Operation = 'Select' | 'Insert' | 'Update';
+type Operation = 'Select' | 'Insert' | 'Update'
 
 export const apply = ({
   schemas,
@@ -22,14 +22,14 @@ export const apply = ({
     .sort(({ name: a }, { name: b }) => a.localeCompare(b))
     .reduce(
       (acc, curr) => {
-        acc[curr.table_id] ??= [];
-        acc[curr.table_id]!.push(curr);
-        return acc;
+        acc[curr.table_id] ??= []
+        acc[curr.table_id]!.push(curr)
+        return acc
       },
       {} as Record<string, PostgresColumn[]>,
-    );
+    )
 
-  const compositeTypes = types.filter(type => type.attributes.length > 0);
+  const compositeTypes = types.filter(type => type.attributes.length > 0)
 
   let output = `
 package database
@@ -87,10 +87,10 @@ ${compositeTypes
     ),
   )
   .join('\n\n')}
-`.trim();
+`.trim()
 
-  return output;
-};
+  return output
+}
 
 /**
  * Converts a Postgres name to PascalCase.
@@ -107,7 +107,7 @@ function formatForGoTypeName(name: string): string {
   return name
     .split(/[^a-zA-Z0-9]/)
     .map(word => `${word[0]?.toUpperCase()}${word.slice(1)}`)
-    .join('');
+    .join('')
 }
 
 function generateTableStruct(
@@ -127,34 +127,34 @@ function generateTableStruct(
   // }
   const columnEntries: [string, string, string][] =
     columns?.map(column => {
-      let nullable: boolean;
+      let nullable: boolean
       if (operation === 'Insert') {
         nullable =
           column.is_nullable ||
           column.is_identity ||
           column.is_generated ||
-          !!column.default_value;
+          !!column.default_value
       } else if (operation === 'Update') {
-        nullable = true;
+        nullable = true
       } else {
-        nullable = column.is_nullable;
+        nullable = column.is_nullable
       }
       return [
         formatForGoTypeName(column.name),
         pgTypeToGoType(column.format, nullable, types),
         column.name,
-      ];
-    }) ?? [];
+      ]
+    }) ?? []
 
   const [maxFormattedNameLength, maxTypeLength] = columnEntries.reduce(
     ([maxFormattedName, maxType], [formattedName, type]) => {
       return [
         Math.max(maxFormattedName, formattedName.length),
         Math.max(maxType, type.length),
-      ];
+      ]
     },
     [0, 0],
-  );
+  )
 
   // Pad the formatted name and type to align the struct fields, then join
   // create the final string representation of the struct fields.
@@ -162,15 +162,15 @@ function generateTableStruct(
     ([formattedName, type, name]) => {
       return `  ${formattedName.padEnd(maxFormattedNameLength)} ${type.padEnd(
         maxTypeLength,
-      )} \`json:"${name}"\``;
+      )} \`json:"${name}"\``
     },
-  );
+  )
 
   return `
 type ${formatForGoTypeName(schema.name)}${formatForGoTypeName(table.name)}${operation} struct {
 ${formattedColumnEntries.join('\n')}
 }
-`.trim();
+`.trim()
 }
 
 function generateTableStructsForOperations(
@@ -182,7 +182,7 @@ function generateTableStructsForOperations(
 ): string[] {
   return operations.map(operation =>
     generateTableStruct(schema, table, columns, types, operation),
-  );
+  )
 }
 
 function generateCompositeTypeStruct(
@@ -194,29 +194,29 @@ function generateCompositeTypeStruct(
   const typeWithRetrievedAttributes = {
     ...type,
     attributes: type.attributes.map(attribute => {
-      const type = types.find(type => type.id === attribute.type_id);
+      const type = types.find(type => type.id === attribute.type_id)
       return {
         ...attribute,
         type,
-      };
+      }
     }),
-  };
+  }
   const attributeEntries: [string, string, string][] =
     typeWithRetrievedAttributes.attributes.map(attribute => [
       formatForGoTypeName(attribute.name),
       pgTypeToGoType(attribute.type!.format, false),
       attribute.name,
-    ]);
+    ])
 
   const [maxFormattedNameLength, maxTypeLength] = attributeEntries.reduce(
     ([maxFormattedName, maxType], [formattedName, type]) => {
       return [
         Math.max(maxFormattedName, formattedName.length),
         Math.max(maxType, type.length),
-      ];
+      ]
     },
     [0, 0],
-  );
+  )
 
   // Pad the formatted name and type to align the struct fields, then join
   // create the final string representation of the struct fields.
@@ -224,15 +224,15 @@ function generateCompositeTypeStruct(
     ([formattedName, type, name]) => {
       return `  ${formattedName.padEnd(maxFormattedNameLength)} ${type.padEnd(
         maxTypeLength,
-      )} \`json:"${name}"\``;
+      )} \`json:"${name}"\``
     },
-  );
+  )
 
   return `
 type ${formatForGoTypeName(schema.name)}${formatForGoTypeName(type.name)} struct {
 ${formattedAttributeEntries.join('\n')}
 }
-`.trim();
+`.trim()
 }
 
 // Note: the type map uses `interface{ } `, not `any`, to remain compatible with
@@ -284,9 +284,9 @@ const GO_TYPE_MAP = {
   // Misc
   void: 'interface{}',
   record: 'map[string]interface{}',
-} as const;
+} as const
 
-type GoType = (typeof GO_TYPE_MAP)[keyof typeof GO_TYPE_MAP];
+type GoType = (typeof GO_TYPE_MAP)[keyof typeof GO_TYPE_MAP]
 
 const GO_NULLABLE_TYPE_MAP: Record<GoType, string> = {
   string: '*string',
@@ -299,49 +299,49 @@ const GO_NULLABLE_TYPE_MAP: Record<GoType, string> = {
   '[]byte': '[]byte',
   'interface{}': 'interface{}',
   'map[string]interface{}': 'map[string]interface{}',
-};
+}
 
 function pgTypeToGoType(
   pgType: string,
   nullable: boolean,
   types: PostgresType[] = [],
 ): string {
-  let goType: GoType | undefined = undefined;
+  let goType: GoType | undefined = undefined
   if (pgType in GO_TYPE_MAP) {
-    goType = GO_TYPE_MAP[pgType as keyof typeof GO_TYPE_MAP];
+    goType = GO_TYPE_MAP[pgType as keyof typeof GO_TYPE_MAP]
   }
 
   // Enums
   const enumType = types.find(
     type => type.name === pgType && type.enums.length > 0,
-  );
+  )
   if (enumType) {
-    goType = 'string';
+    goType = 'string'
   }
 
   if (goType) {
     if (nullable) {
-      return GO_NULLABLE_TYPE_MAP[goType];
+      return GO_NULLABLE_TYPE_MAP[goType]
     }
-    return goType;
+    return goType
   }
 
   // Composite types
   const compositeType = types.find(
     type => type.name === pgType && type.attributes.length > 0,
-  );
+  )
   if (compositeType) {
     // TODO: generate composite types
     // return formatForGoTypeName(pgType)
-    return 'map[string]interface{}';
+    return 'map[string]interface{}'
   }
 
   // Arrays
   if (pgType.startsWith('_')) {
-    const innerType = pgTypeToGoType(pgType.slice(1), nullable);
-    return `[]${innerType} `;
+    const innerType = pgTypeToGoType(pgType.slice(1), nullable)
+    return `[]${innerType} `
   }
 
   // Fallback
-  return 'interface{}';
+  return 'interface{}'
 }

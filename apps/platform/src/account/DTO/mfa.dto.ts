@@ -1,50 +1,52 @@
-import { IsCustomID, TOTP } from '@nuvix/core/validators';
+import { ApiProperty } from '@nestjs/swagger'
+import { IsCustomID, TOTP, MfaType } from '@nuvix/core/validators'
 import {
   IsBoolean,
   IsNotEmpty,
   IsString,
   IsIn,
   IsOptional,
-} from 'class-validator';
+  IsEnum,
+} from 'class-validator'
 
 export class UpdateAccountMfaDTO {
   @IsBoolean()
   @IsNotEmpty()
-  declare mfa: boolean;
+  declare mfa: boolean
 }
 
 export class MfaAuthenticatorTypeParamDTO {
   @IsString()
   @IsNotEmpty()
-  @IsIn([TOTP.TOTP]) // TODO: Add other supported types
-  declare type: string;
+  @IsIn([TOTP.TOTP])
+  declare type: string
 }
 
 export class VerifyMfaAuthenticatorDTO {
   @IsString()
   @IsNotEmpty()
-  declare otp: string;
+  declare otp: string
 }
 
 export class CreateMfaChallengeDTO {
-  @IsString()
   @IsNotEmpty()
-  @IsIn([TOTP.EMAIL, TOTP.PHONE, TOTP.TOTP, TOTP.RECOVERY_CODE])
-  declare factor: string;
+  @IsEnum(MfaType)
+  @ApiProperty({ enum: MfaType, example: MfaType.TOTP })
+  declare factor: MfaType
 
   @IsOptional()
   @IsString()
   @IsCustomID()
-  userId?: string;
+  userId?: string
 }
 
 export class VerifyMfaChallengeDTO {
   @IsString()
   @IsNotEmpty()
   @IsCustomID()
-  declare challengeId: string;
+  declare challengeId: string
 
   @IsString()
   @IsNotEmpty()
-  declare otp: string;
+  declare otp: string
 }

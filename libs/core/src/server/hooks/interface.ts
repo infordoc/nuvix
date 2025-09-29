@@ -1,13 +1,13 @@
-import { LifecycleHook } from 'fastify/types/hooks';
+import { LifecycleHook } from 'fastify/types/hooks'
 
-export type Hooks = LifecycleHook;
+export type Hooks = LifecycleHook
 
 export type AsyncHook<T extends any[] = []> = (
   req: NuvixRequest,
   reply: NuvixRes,
   next: (err?: Error) => void,
   ...args: T
-) => Promise<unknown>;
+) => Promise<unknown>
 
 export interface LifecycleHookMethods {
   /**
@@ -18,7 +18,7 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered before the request body is parsed.
@@ -29,7 +29,7 @@ export interface LifecycleHookMethods {
     reply: NuvixRes,
     next: (err?: Error) => void,
     payload: unknown,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered before the request is validated.
@@ -39,7 +39,7 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered before the request handler is executed.
@@ -49,7 +49,7 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered before the response is serialized.
@@ -60,7 +60,7 @@ export interface LifecycleHookMethods {
     reply: NuvixRes,
     next: (err?: Error) => void,
     // payload: unknown,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered before the response is sent to the client.
@@ -71,7 +71,7 @@ export interface LifecycleHookMethods {
     reply: NuvixRes,
     next: (err?: Error) => void,
     // payload: unknown,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered after the response is sent to the client.
@@ -81,7 +81,7 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered when an error occurs during request processing.
@@ -92,7 +92,7 @@ export interface LifecycleHookMethods {
     reply: NuvixRes,
     next: (err?: Error) => void,
     error: Error, // TODO: -----
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered when a request times out.
@@ -102,7 +102,7 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 
   /**
    * Triggered when a request is aborted by the client.
@@ -112,10 +112,10 @@ export interface LifecycleHookMethods {
     req: NuvixRequest,
     reply: NuvixRes,
     next: (err?: Error) => void,
-  ): Promise<unknown>;
+  ): Promise<unknown>
 }
 
-export type HookMethod = keyof LifecycleHookMethods;
+export type HookMethod = keyof LifecycleHookMethods
 
 export interface Hook extends Partial<LifecycleHookMethods> {}
 
@@ -131,4 +131,4 @@ export const HookMethods = [
   'onError',
   'onTimeout',
   'onRequestAbort',
-] as const;
+] as const

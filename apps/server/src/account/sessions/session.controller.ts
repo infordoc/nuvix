@@ -1,159 +1,196 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
+  HttpStatus,
   Param,
-  Patch,
-  Post,
-  Put,
   Query,
   Req,
   Res,
   UseGuards,
   UseInterceptors,
-} from '@nestjs/common';
+} from '@nestjs/common'
 
-import { Database } from '@nuvix/db';
-import {
-  AuditEvent,
-  Route,
-  Scope,
-  Sdk,
-  Throttle,
-} from '@nuvix/core/decorators';
-import { Locale } from '@nuvix/core/decorators/locale.decorator';
-import { ResModel } from '@nuvix/core/decorators/res-model.decorator';
-import {
-  AuthDatabase,
-  Project,
-} from '@nuvix/core/decorators/project.decorator';
-import { User } from '@nuvix/core/decorators/project-user.decorator';
-import { LocaleTranslator } from '@nuvix/core/helper/locale.helper';
-import { Models } from '@nuvix/core/helper/response.helper';
-import { Public } from '@nuvix/core/resolvers/guards/auth.guard';
-import { ProjectGuard } from '@nuvix/core/resolvers/guards';
-import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor';
-import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor';
+import { Database, type Doc } from '@nuvix/db'
+import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
+import { Locale } from '@nuvix/core/decorators/locale.decorator'
+import { AuthDatabase, Project } from '@nuvix/core/decorators/project.decorator'
+import { User } from '@nuvix/core/decorators/project-user.decorator'
+import { LocaleTranslator } from '@nuvix/core/helper/locale.helper'
+import { Models } from '@nuvix/core/helper/response.helper'
+import { ProjectGuard } from '@nuvix/core/resolvers/guards'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
+import { ResponseInterceptor } from '@nuvix/core/resolvers/interceptors/response.interceptor'
 
-import { SessionService } from './session.service';
+import { SessionService } from './session.service'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
   CreateSessionDTO,
   OAuth2CallbackDTO,
-  ProviderParamDTO,
-} from './DTO/session.dto';
+  type OAuth2CallbackParamDTO,
+  type ProviderParamDTO,
+  type SessionsParamDTO,
+} from './DTO/session.dto'
 import {
   CreateEmailTokenDTO,
   CreateMagicURLTokenDTO,
   CreateOAuth2TokenDTO,
   CreatePhoneTokenDTO,
-} from './DTO/token.dto';
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types';
+} from './DTO/token.dto'
+import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import type { IListResponse, IResponse } from '@nuvix/utils'
 
-@Controller({ version: ['1'], path: 'account' })
+@Namespace('account')
 @UseGuards(ProjectGuard)
+@Controller({ version: ['1'], path: 'account' })
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@Auth([AuthType.SESSION, AuthType.JWT])
 export class SessionsController {
   constructor(private readonly sessionService: SessionService) {}
 
-  @Get('sessions')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.SESSION, { list: true })
+  @Get('sessions', {
+    summary: 'List Sessions',
+    scopes: 'account',
+    model: { type: Models.SESSION, list: true },
+    sdk: {
+      name: 'listSessions',
+      descMd: '/docs/references/account/list-sessions.md',
+    },
+  })
   async getSessions(
     @User() user: UsersDoc,
     @Locale() locale: LocaleTranslator,
-  ) {
-    return this.sessionService.getSessions(user, locale);
+  ): Promise<IListResponse<SessionsDoc>> {
+    return this.sessionService.getSessions(user, locale)
   }
 
-  @Delete('sessions')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.NONE)
-  @Throttle(100)
-  @AuditEvent('session.delete', 'user/{user.$id}')
+  @Delete('sessions', {
+    summary: 'Delete sessions',
+    scopes: 'account',
+    model: Models.NONE,
+    throttle: 100,
+    audit: {
+      key: 'sessions.delete',
+      resource: 'user/{user.$id}',
+    },
+    sdk: {
+      name: 'deleteSessions',
+      descMd: '/docs/references/account/delete-sessions.md',
+    },
+  })
   async deleteSessions(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
-  ) {
+  ): Promise<void> {
     return this.sessionService.deleteSessions(
       db,
       user,
       locale,
       request,
       response,
-    );
+    )
   }
 
-  @Get('sessions/:id')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.SESSION)
+  @Get('sessions/:sessionId', {
+    summary: 'Get session',
+    scopes: 'account',
+    model: Models.SESSION,
+    sdk: {
+      name: 'getSession',
+      descMd: '/docs/references/account/get-session.md',
+    },
+  })
   async getSession(
     @User() user: UsersDoc,
-    @Param('id') sessionId: string,
+    @Param() params: SessionsParamDTO,
     @Locale() locale: LocaleTranslator,
-  ) {
-    return this.sessionService.getSession(user, sessionId, locale);
+  ): Promise<IResponse<SessionsDoc>> {
+    return this.sessionService.getSession(user, params.sessionId, locale)
   }
 
-  @Delete('sessions/:id')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.NONE)
-  @Throttle(100)
-  @AuditEvent('session.delete', 'user/{user.$id}')
+  @Delete('sessions/:sessionId', {
+    summary: 'Delete session',
+    scopes: 'account',
+    model: Models.NONE,
+    throttle: 100,
+    audit: {
+      key: 'session.delete',
+      resource: 'user/{user.$id}',
+    },
+    sdk: {
+      name: 'deleteSession',
+      descMd: '/docs/references/account/delete-session.md',
+    },
+  })
   async deleteSession(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
-    @Param('id') id: string,
+    @Param() params: SessionsParamDTO,
     @Req() request: NuvixRequest,
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
-  ) {
+  ): Promise<void> {
     return this.sessionService.deleteSession(
       db,
       user,
-      id,
+      params.sessionId,
       request,
       response,
       locale,
-    );
+    )
   }
 
-  @Patch('sessions/:id')
-  @Scope('account')
-  @Route()
-  @ResModel(Models.SESSION)
-  @Throttle(10)
-  @AuditEvent('session.update', 'user/{res.userId}')
+  @Patch('sessions/:sessionId', {
+    summary: 'Update session',
+    scopes: 'account',
+    model: Models.SESSION,
+    throttle: 10,
+    audit: {
+      key: 'session.update',
+      resource: 'user/{res.userId}',
+    },
+    sdk: {
+      name: 'updateSession',
+      descMd: '/docs/references/account/update-session.md',
+    },
+  })
   async updateSession(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
-    @Param('id') id: string,
+    @Param() params: SessionsParamDTO,
     @Project() project: ProjectsDoc,
-  ) {
-    return this.sessionService.updateSession(db, user, id, project);
+  ): Promise<IResponse<SessionsDoc>> {
+    return this.sessionService.updateSession(
+      db,
+      user,
+      params.sessionId,
+      project,
+    )
   }
 
-  @Public()
-  @Post(['sessions/email', 'sessions'])
-  @Scope('sessions.create')
-  @Route()
-  @ResModel(Models.SESSION)
-  @Throttle({
-    limit: 10,
-    key: 'email:{param-email}',
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
+  @Post(['sessions/email', 'sessions'], {
+    summary: 'Create email password session',
+    scopes: 'sessions.create',
+    model: Models.SESSION,
+    auth: [],
+    throttle: {
+      limit: 10,
+      key: 'email:{param-email}',
+      configKey: 'create_email_session',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createEmailPasswordSession',
+      descMd: '/docs/references/account/create-session-email-password.md',
+    },
   })
   async createEmailSession(
     @AuthDatabase() db: Database,
@@ -163,7 +200,7 @@ export class SessionsController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<SessionsDoc>> {
     return this.sessionService.createEmailSession(
       db,
       user,
@@ -172,23 +209,28 @@ export class SessionsController {
       response,
       locale,
       project,
-    );
+    )
   }
 
-  @Public()
-  @Post('sessions/anonymous')
-  @Scope('sessions.create')
-  @ResModel(Models.SESSION)
-  @Throttle({
-    limit: 50,
-    key: 'ip:{ip}',
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createAnonymousSession',
+  @Post('sessions/anonymous', {
+    summary: 'Create anonymous session',
+    scopes: 'sessions.create',
+    model: Models.SESSION,
+    auth: [],
+    throttle: {
+      limit: 50,
+      key: 'ip:{ip}',
+      configKey: 'create_anonymous_session',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createAnonymousSession',
+      descMd: '/docs/references/account/create-session-anonymous.md',
+    },
   })
   async createAnonymousSession(
     @AuthDatabase() db: Database,
@@ -197,7 +239,7 @@ export class SessionsController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<SessionsDoc>> {
     return this.sessionService.createAnonymousSession({
       user,
       request,
@@ -205,23 +247,28 @@ export class SessionsController {
       locale,
       project,
       db: db,
-    });
+    })
   }
 
-  @Public()
-  @Post('sessions/token')
-  @Scope('sessions.update')
-  @ResModel(Models.SESSION)
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('session.update', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createSession',
+  @Post('sessions/token', {
+    summary: 'Create session',
+    scopes: 'sessions.create',
+    model: Models.SESSION,
+    auth: [],
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+      configKey: 'create_token_session',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createSession',
+      descMd: '/docs/references/account/create-session.md',
+    },
   })
   async createSession(
     @AuthDatabase() db: Database,
@@ -231,7 +278,7 @@ export class SessionsController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
     @Project() project: ProjectsDoc,
-  ) {
+  ): Promise<IResponse<SessionsDoc>> {
     return this.sessionService.createSession({
       user,
       input,
@@ -240,18 +287,23 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
-  @Public()
-  @Get('sessions/oauth2/:provider')
-  @Scope('sessions.create')
-  @Throttle({
-    limit: 50,
-    key: 'ip:{ip}',
-  })
-  @Sdk({
-    name: 'createOAuth2Session',
+  @Get('sessions/oauth2/:provider', {
+    summary: 'Create OAuth2 session',
+    scopes: 'sessions.create',
+    auth: [],
+    throttle: {
+      limit: 50,
+      key: 'ip:{ip}',
+      configKey: 'create_oauth2_session',
+    },
+    sdk: {
+      name: 'createOAuth2Session',
+      code: HttpStatus.FOUND,
+      descMd: '/docs/references/account/create-session-oauth2.md',
+    },
   })
   async createOAuth2Session(
     @Query() input: CreateOAuth2SessionDTO,
@@ -259,32 +311,40 @@ export class SessionsController {
     @Res() response: NuvixRes,
     @Param() { provider }: ProviderParamDTO,
     @Project() project: ProjectsDoc,
-  ) {
-    return this.sessionService.createOAuth2Session({
+  ): Promise<void> {
+    const url = await this.sessionService.createOAuth2Session({
       input,
       request,
       response,
       provider,
       project,
-    });
+    })
+
+    response
+      .status(302)
+      .header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+      .header('Pragma', 'no-cache')
+      .redirect(url)
   }
 
-  @Public()
-  @Get('sessions/oauth2/callback/:provider/:projectId')
-  @Scope('public')
+  @Get('sessions/oauth2/callback/:provider/:projectId', {
+    summary: 'Get OAuth2 callback',
+    scopes: 'public',
+    auth: [],
+    docs: false,
+  })
   async OAuth2Callback(
     @Query() input: OAuth2CallbackDTO,
     @Req() request: NuvixRequest,
     @Res() response: NuvixRes,
-    @Param('projectId') projectId: string,
-    @Param() { provider }: ProviderParamDTO,
-  ) {
-    const domain = request.host;
-    const protocol = request.protocol;
+    @Param() { projectId, provider }: OAuth2CallbackParamDTO,
+  ): Promise<void> {
+    const domain = request.host
+    const protocol = request.protocol
 
-    const params: Record<string, any> = { ...input };
-    params['provider'] = provider;
-    params['project'] = projectId;
+    const params: Record<string, any> = { ...input }
+    params['provider'] = provider
+    params['project'] = projectId
 
     response
       .status(302)
@@ -292,25 +352,27 @@ export class SessionsController {
       .header('Pragma', 'no-cache')
       .redirect(
         `${protocol}://${domain}/v1/account/sessions/oauth2/${provider}/redirect?${new URLSearchParams(params).toString()}`,
-      );
+      )
   }
 
-  @Public()
-  @Post('sessions/oauth2/callback/:provider/:projectId')
-  @Scope('public')
+  @Post('sessions/oauth2/callback/:provider/:projectId', {
+    summary: 'Get OAuth2 callback',
+    scopes: 'public',
+    auth: [],
+    docs: false,
+  })
   async OAuth2CallbackWithProject(
     @Body() input: OAuth2CallbackDTO,
     @Req() request: NuvixRequest,
     @Res() response: NuvixRes,
-    @Param('projectId') projectId: string,
-    @Param() { provider }: ProviderParamDTO,
-  ) {
-    const domain = request.host;
-    const protocol = request.protocol;
+    @Param() { projectId, provider }: OAuth2CallbackParamDTO,
+  ): Promise<void> {
+    const domain = request.host
+    const protocol = request.protocol
 
-    const params: Record<string, any> = { ...input };
-    params['provider'] = provider;
-    params['project'] = projectId;
+    const params: Record<string, any> = { ...input }
+    params['provider'] = provider
+    params['project'] = projectId
 
     response
       .status(302)
@@ -318,19 +380,23 @@ export class SessionsController {
       .header('Pragma', 'no-cache')
       .redirect(
         `${protocol}://${domain}/v1/account/sessions/oauth2/${provider}/redirect?${new URLSearchParams(params).toString()}`,
-      );
+      )
   }
 
-  @Public()
-  @Get('sessions/oauth2/:provider/redirect')
-  @Scope('public')
-  @Throttle({
-    limit: 50,
-    key: 'ip:{ip}',
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
+  @Get('sessions/oauth2/:provider/redirect', {
+    summary: 'Get OAuth2 callback',
+    scopes: 'public',
+    auth: [],
+    throttle: {
+      limit: 50,
+      key: 'ip:{ip}',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    docs: false,
   })
   async OAuth2Redirect(
     @AuthDatabase() db: Database,
@@ -340,7 +406,7 @@ export class SessionsController {
     @Res() response: NuvixRes,
     @Project() project: ProjectsDoc,
     @Param() { provider }: ProviderParamDTO,
-  ) {
+  ): Promise<void> {
     return this.sessionService.oAuth2Redirect({
       db: db,
       user,
@@ -349,18 +415,22 @@ export class SessionsController {
       request,
       response,
       project,
-    });
+    })
   }
 
-  @Public()
-  @Get('tokens/oauth2/:provider')
-  @Scope('sessions.create')
-  @Throttle({
-    limit: 50,
-    key: 'ip:{ip}',
-  })
-  @Sdk({
-    name: 'createOAuth2Token',
+  @Get('tokens/oauth2/:provider', {
+    summary: 'Create OAuth2 token',
+    scopes: 'sessions.create',
+    auth: [],
+    throttle: {
+      limit: 50,
+      key: 'ip:{ip}',
+    },
+    sdk: {
+      name: 'createOAuth2Token',
+      descMd: '/docs/references/account/create-token-oauth2.md',
+      code: HttpStatus.FOUND,
+    },
   })
   async createOAuth2Token(
     @Query() input: CreateOAuth2TokenDTO,
@@ -375,22 +445,27 @@ export class SessionsController {
       response,
       provider,
       project,
-    });
+    })
   }
 
-  @Public()
-  @Post('tokens/magic-url')
-  @ResModel(Models.TOKEN)
-  @Throttle({
-    limit: 60,
-    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createMagicURLToken',
+  @Post('tokens/magic-url', {
+    summary: 'Create magic URL token',
+    scopes: 'sessions.create',
+    auth: [],
+    model: Models.TOKEN,
+    throttle: {
+      limit: 60,
+      key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createMagicURLToken',
+      descMd: '/docs/references/account/create-token-magic-url.md',
+    },
   })
   async createMagicURLToken(
     @AuthDatabase() db: Database,
@@ -409,23 +484,27 @@ export class SessionsController {
       response,
       locale,
       project,
-    });
+    })
   }
 
-  @Public()
-  @Post('tokens/email')
-  @Scope('sessions.create')
-  @ResModel(Models.TOKEN)
-  @Throttle({
-    limit: 10,
-    key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createEmailToken',
+  @Post('tokens/email', {
+    summary: 'Create email token(OTP)',
+    scopes: 'sessions.create',
+    auth: [],
+    model: Models.TOKEN,
+    throttle: {
+      limit: 10,
+      key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createEmailToken',
+      descMd: '/docs/references/account/create-token-email.md',
+    },
   })
   async createEmailToken(
     @Body() input: CreateEmailTokenDTO,
@@ -444,22 +523,27 @@ export class SessionsController {
       user,
       db: db,
       locale,
-    });
+    })
   }
 
-  @Public()
-  @Put('sessions/magic-url')
-  @ResModel(Models.SESSION)
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'updateMagicURLSession',
+  @Put('sessions/magic-url', {
+    summary: 'Update magic URL session',
+    scopes: 'sessions.update',
+    auth: [],
+    model: Models.SESSION,
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'updateMagicURLSession',
+      descMd: '/docs/references/account/create-session.md',
+    },
   })
   async updateMagicURLSession(
     @AuthDatabase() db: Database,
@@ -478,23 +562,27 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
-  @Public()
-  @Put('sessions/phone')
-  @Throttle({
-    limit: 10,
-    key: 'ip:{ip},userId:{param-userId}',
-  })
-  @Scope('sessions.update')
-  @ResModel(Models.SESSION)
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'updatePhoneSession',
+  @Put('sessions/phone', {
+    summary: 'Update phone session',
+    scopes: 'sessions.update',
+    auth: [],
+    model: Models.SESSION,
+    throttle: {
+      limit: 10,
+      key: 'ip:{ip},userId:{param-userId}',
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'updatePhoneSession',
+      descMd: '/docs/references/account/create-session.md',
+    },
   })
   async updatePhoneSession(
     @AuthDatabase() db: Database,
@@ -513,23 +601,27 @@ export class SessionsController {
       locale,
       project,
       db,
-    });
+    })
   }
 
-  @Public()
-  @Post(['tokens/phone', 'sessions/phone'])
-  @Scope('sessions.create')
-  @Throttle({
-    limit: 10,
-    key: ({ body, ip }) => [`phone:${body['phone']}`, `ip:${ip}`],
-  })
-  @ResModel(Models.TOKEN)
-  @AuditEvent('session.create', {
-    resource: 'user/{res.userId}',
-    userId: '{res.userId}',
-  })
-  @Sdk({
-    name: 'createPhoneToken',
+  @Post(['tokens/phone', 'sessions/phone'], {
+    summary: 'Create phone token',
+    scopes: 'sessions.create',
+    auth: [],
+    model: Models.SESSION,
+    throttle: {
+      limit: 10,
+      key: ({ body, ip }) => [`phone:${body['phone']}`, `ip:${ip}`],
+    },
+    audit: {
+      key: 'session.create',
+      resource: 'user/{res.userId}',
+      userId: '{res.userId}',
+    },
+    sdk: {
+      name: 'createPhoneToken',
+      descMd: '/docs/references/account/create-token-phone.md',
+    },
   })
   async createPhoneToken(
     @AuthDatabase() db: Database,
@@ -548,6 +640,27 @@ export class SessionsController {
       response,
       locale,
       project,
-    });
+    })
+  }
+
+  @Post(['jwts', 'jwt'], {
+    summary: 'Create JWT',
+    scopes: 'account',
+    auth: AuthType.JWT,
+    model: Models.JWT,
+    throttle: {
+      limit: 100,
+      key: 'userId:{userId}',
+    },
+    sdk: {
+      name: 'createJWT',
+      descMd: '/docs/references/account/create-jwt.md',
+    },
+  })
+  async createJWT(
+    @User() user: UsersDoc,
+    @Res({ passthrough: true }) response: NuvixRes,
+  ): Promise<Doc<{ jwt: string }>> {
+    return this.sessionService.createJWT(user, response)
   }
 }

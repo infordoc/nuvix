@@ -7,36 +7,36 @@ import {
   CallHandler,
   ExecutionContext,
   ClassSerializerContextOptions,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { isObject } from '@nestjs/common/utils/shared.utils.js';
-import { loadPackage } from '@nestjs/common/utils/load-package.util.js';
-import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface';
-import { TransformerPackage } from '@nestjs/common/interfaces/external/transformer-package.interface';
-import { Doc } from '@nuvix/db';
+} from '@nestjs/common'
+import { Observable } from 'rxjs'
+import { map } from 'rxjs/operators'
+import { isObject } from '@nestjs/common/utils/shared.utils.js'
+import { loadPackage } from '@nestjs/common/utils/load-package.util.js'
+import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface'
+import { TransformerPackage } from '@nestjs/common/interfaces/external/transformer-package.interface'
+import { Doc } from '@nuvix/db'
 
-export const CLASS_SERIALIZER_OPTIONS = 'CLASS_SERIALIZER_OPTIONS';
+export const CLASS_SERIALIZER_OPTIONS = 'CLASS_SERIALIZER_OPTIONS'
 
-let classTransformer: TransformerPackage = {} as any;
+let classTransformer: TransformerPackage = {} as any
 
 export interface PlainLiteralObject {
-  [key: string]: any;
+  [key: string]: any
 }
 
 // NOTE (external)
 // We need to deduplicate them here due to the circular dependency
 // between core and common packages
-const REFLECTOR = 'Reflector';
+const REFLECTOR = 'Reflector'
 
 export interface ResolverTypeContextOptions
   extends ClassSerializerContextOptions {
-  list?: boolean | string[];
+  list?: boolean | string[]
 }
 
 export interface ClassSerializerInterceptorOptions
   extends ClassTransformOptions {
-  transformerPackage?: TransformerPackage;
+  transformerPackage?: TransformerPackage
 }
 
 @Injectable()
@@ -52,26 +52,26 @@ export class ResponseInterceptor implements NestInterceptor {
       defaultOptions?.transformerPackage ??
       loadPackage('class-transformer', 'ClassSerializerInterceptor', () =>
         require('class-transformer'),
-      );
+      )
 
     if (!defaultOptions?.transformerPackage) {
-      require('class-transformer');
+      require('class-transformer')
     }
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const contextOptions = this.getContextOptions(context);
+    const contextOptions = this.getContextOptions(context)
     const options = {
       ...this.defaultOptions,
       ...contextOptions,
-    };
+    }
     return next
       .handle()
       .pipe(
         map((res: PlainLiteralObject | Array<PlainLiteralObject>) =>
           this.serialize(res, options),
         ),
-      );
+      )
   }
 
   /**
@@ -82,26 +82,26 @@ export class ResponseInterceptor implements NestInterceptor {
     options: ResolverTypeContextOptions,
   ): PlainLiteralObject | Array<PlainLiteralObject> {
     if (!isObject(response) || response instanceof StreamableFile) {
-      return response;
+      return response
     }
 
     if (response instanceof Doc) {
-      response = response.toObject();
+      response = response.toObject()
     }
 
     if (options.list) {
-      const keys = Array.isArray(options.list) ? options.list : undefined;
-      return this.serializeList(response, options, keys);
+      const keys = Array.isArray(options.list) ? options.list : undefined
+      return this.serializeList(response, options, keys)
     }
 
     return Array.isArray(response)
       ? response.map(item => {
           if (item instanceof Doc) {
-            item = item.toObject();
+            item = item.toObject()
           }
-          return this.transformToPlain(item, options);
+          return this.transformToPlain(item, options)
         })
-      : this.transformToPlain(response, options);
+      : this.transformToPlain(response, options)
   }
 
   serializeList(
@@ -110,73 +110,73 @@ export class ResponseInterceptor implements NestInterceptor {
     keys?: string[],
   ): PlainLiteralObject | Array<PlainLiteralObject> {
     if (!isObject(response) || response instanceof StreamableFile) {
-      return response;
+      return response
     }
 
     if (keys && keys.length > 0) {
-      const serializedResponse: PlainLiteralObject = {};
+      const serializedResponse: PlainLiteralObject = {}
 
       for (const key of keys) {
-        const value = (response as PlainLiteralObject)[key];
+        const value = (response as PlainLiteralObject)[key]
         if (Array.isArray(value)) {
           serializedResponse[key] = value.map(item => {
             if (item instanceof Doc) {
-              item = item.toObject();
+              item = item.toObject()
             }
-            return this.transformToPlain(item, options);
-          });
+            return this.transformToPlain(item, options)
+          })
         } else if (isObject(value)) {
           serializedResponse[key] = this.transformToPlain(
             value instanceof Doc ? value.toObject() : value,
             options,
-          );
+          )
         } else {
-          serializedResponse[key] = value;
+          serializedResponse[key] = value
         }
       }
 
-      return serializedResponse;
+      return serializedResponse
     }
 
-    const serializedResponse: PlainLiteralObject = {};
+    const serializedResponse: PlainLiteralObject = {}
 
     for (const key in response) {
-      const value = (response as PlainLiteralObject)[key];
+      const value = (response as PlainLiteralObject)[key]
       if (Array.isArray(value)) {
         serializedResponse[key] = value.map(item => {
           if (item instanceof Doc) {
-            item = item.toObject();
+            item = item.toObject()
           }
-          return this.transformToPlain(item, options);
-        });
+          return this.transformToPlain(item, options)
+        })
       } else {
-        serializedResponse[key] = value;
+        serializedResponse[key] = value
       }
     }
 
-    return serializedResponse;
+    return serializedResponse
   }
 
   transformToPlain(
     plainOrClass: any,
     options: ResolverTypeContextOptions,
   ): PlainLiteralObject {
-    delete options.list;
+    delete options.list
     if (!plainOrClass) {
-      return plainOrClass;
+      return plainOrClass
     }
     if (!options.type) {
-      return classTransformer.classToPlain(plainOrClass, options);
+      return classTransformer.classToPlain(plainOrClass, options)
     }
     if (plainOrClass instanceof options.type) {
-      return classTransformer.classToPlain(plainOrClass, options);
+      return classTransformer.classToPlain(plainOrClass, options)
     }
     const instance = (classTransformer as any).plainToInstance(
       options.type,
       plainOrClass,
       options,
-    );
-    return classTransformer.classToPlain(instance, options);
+    )
+    return classTransformer.classToPlain(instance, options)
   }
 
   protected getContextOptions(
@@ -185,6 +185,6 @@ export class ResponseInterceptor implements NestInterceptor {
     return this.reflector.getAllAndOverride(CLASS_SERIALIZER_OPTIONS, [
       context.getHandler(),
       context.getClass(),
-    ]);
+    ])
   }
 }
