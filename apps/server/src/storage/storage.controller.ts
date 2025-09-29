@@ -1,14 +1,7 @@
 import {
   Body,
   Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Logger,
   Param,
-  Post,
-  Put,
   Query,
   UseGuards,
   UseInterceptors,
@@ -20,16 +13,25 @@ import { Models } from '@nuvix/core/helper/response.helper'
 import { Database, Query as Queries } from '@nuvix/db'
 import { ProjectGuard } from '@nuvix/core/resolvers/guards/project.guard'
 import {
-  ResModel,
   ProjectDatabase,
   Namespace,
   Auth,
   AuthType,
+  QueryFilter,
+  QuerySearch,
 } from '@nuvix/core/decorators'
 
-import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto'
+import {
+  BucketParamsDTO,
+  CreateBucketDTO,
+  UpdateBucketDTO,
+  UsageQueryDTO,
+} from './DTO/bucket.dto'
 import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors/api.interceptor'
 import { BucketsQueryPipe } from '@nuvix/core/pipes/queries'
+import { Delete, Get, Post, Put } from '@nuvix/core'
+import { IListResponse, IResponse } from '@nuvix/utils'
+import { BucketsDoc } from '@nuvix/utils/types'
 
 @Namespace('storage')
 @UseGuards(ProjectGuard)
@@ -37,67 +39,132 @@ import { BucketsQueryPipe } from '@nuvix/core/pipes/queries'
 @Controller({ version: ['1'], path: 'storage' })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
 export class StorageController {
-  private readonly logger = new Logger(StorageController.name)
   constructor(private readonly storageService: StorageService) {}
 
-  @Get('buckets')
-  @ResModel({ type: Models.BUCKET, list: true })
+  @Get('buckets', {
+    summary: 'List buckets',
+    scopes: 'buckets.read',
+    model: { type: Models.BUCKET, list: true },
+    sdk: {
+      name: 'listBuckets',
+      descMd: '/docs/references/storage/list-buckets.md',
+    },
+  })
   async getBuckets(
     @ProjectDatabase() db: Database,
-    @Query('queries', BucketsQueryPipe) queries?: Queries[],
-    @Query('search') search?: string,
-  ) {
+    @QueryFilter(BucketsQueryPipe) queries?: Queries[],
+    @QuerySearch() search?: string,
+  ): Promise<IListResponse<BucketsDoc>> {
     return this.storageService.getBuckets(db, queries, search)
   }
 
-  @Post('buckets')
-  @ResModel(Models.BUCKET)
+  @Post('buckets', {
+    summary: 'Create bucket',
+    scopes: 'buckets.create',
+    model: Models.BUCKET,
+    audit: {
+      key: 'bucket.create',
+      resource: 'bucket/{res.$id}',
+    },
+    sdk: {
+      name: 'createBucket',
+      descMd: '/docs/references/storage/create-bucket.md',
+    },
+  })
   async createBucket(
     @ProjectDatabase() db: Database,
     @Body() createBucketDTO: CreateBucketDTO,
-  ) {
+  ): Promise<IResponse<BucketsDoc>> {
     return this.storageService.createBucket(db, createBucketDTO)
   }
 
-  @Get('buckets/:id')
-  @ResModel(Models.BUCKET)
-  async getBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
-    return this.storageService.getBucket(db, id)
+  @Get('buckets/:bucketId', {
+    summary: 'Get bucket',
+    scopes: 'buckets.read',
+    model: Models.BUCKET,
+    sdk: {
+      name: 'getBucket',
+      descMd: '/docs/references/storage/get-bucket.md',
+    },
+  })
+  async getBucket(
+    @ProjectDatabase() db: Database,
+    @Param() { bucketId }: BucketParamsDTO,
+  ): Promise<IResponse<BucketsDoc>> {
+    return this.storageService.getBucket(db, bucketId)
   }
 
-  @Put('buckets/:id')
-  @ResModel(Models.BUCKET)
+  @Put('buckets/:bucketId', {
+    summary: 'Update bucket',
+    scopes: 'buckets.update',
+    model: Models.BUCKET,
+    audit: {
+      key: 'bucket.update',
+      resource: 'bucket/{res.$id}',
+    },
+    sdk: {
+      name: 'updateBucket',
+      descMd: '/docs/references/storage/update-bucket.md',
+    },
+  })
   async updateBucket(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
+    @Param() { bucketId }: BucketParamsDTO,
     @Body() createBucketDTO: UpdateBucketDTO,
-  ) {
-    return this.storageService.updateBucket(db, id, createBucketDTO)
+  ): Promise<IResponse<BucketsDoc>> {
+    return this.storageService.updateBucket(db, bucketId, createBucketDTO)
   }
 
-  @Delete('buckets/:id')
-  @ResModel(Models.NONE)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteBucket(@ProjectDatabase() db: Database, @Param('id') id: string) {
-    return this.storageService.deleteBucket(db, id)
+  @Delete('buckets/:bucketId', {
+    summary: 'Delete bucket',
+    scopes: 'buckets.delete',
+    model: Models.NONE,
+    audit: {
+      key: 'bucket.delete',
+      resource: 'bucket/{params.bucketId}',
+    },
+    sdk: {
+      name: 'deleteBucket',
+      descMd: '/docs/references/storage/delete-bucket.md',
+    },
+  })
+  async deleteBucket(
+    @ProjectDatabase() db: Database,
+    @Param() { bucketId }: BucketParamsDTO,
+  ): Promise<void> {
+    return this.storageService.deleteBucket(db, bucketId)
   }
 
-  @Get('usage')
-  @ResModel(Models.USAGE_STORAGE)
+  @Get('usage', {
+    summary: 'Get storage usage stats',
+    scopes: 'files.read',
+    model: Models.USAGE_STORAGE,
+    sdk: {
+      name: 'getUsage',
+      descMd: '/docs/references/storage/get-usage.md',
+    },
+  })
   async getUsage(
     @ProjectDatabase() db: Database,
-    @Query('range') range?: string,
-  ) {
+    @Query() { range }: UsageQueryDTO,
+  ): Promise<IResponse<Record<string, any>>> {
     return this.storageService.getStorageUsage(db, range)
   }
 
-  @Get(':id/usage')
-  @ResModel(Models.USAGE_BUCKETS)
+  @Get(':bucket/usage', {
+    summary: 'Get bucket usage stats',
+    scopes: 'files.read',
+    model: Models.USAGE_BUCKETS,
+    sdk: {
+      name: 'getBucketUsage',
+      descMd: '/docs/references/storage/get-bucket-usage.md',
+    },
+  })
   async getBucketUsage(
     @ProjectDatabase() db: Database,
-    @Param('id') id: string,
-    @Query('range') range?: string,
-  ) {
-    return this.storageService.getBucketStorageUsage(db, id, range)
+    @Param() { bucketId }: BucketParamsDTO,
+    @Query() { range }: UsageQueryDTO,
+  ): Promise<IResponse<Record<string, any>>> {
+    return this.storageService.getBucketStorageUsage(db, bucketId, range)
   }
 }

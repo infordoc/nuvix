@@ -1,5 +1,6 @@
 import type { SchemaType } from '@nuvix/pg'
 import type { configuration } from './configuration.js'
+import { UsersDoc } from '../types/'
 
 export type Configuration = typeof configuration
 
@@ -31,6 +32,8 @@ type KeyArgs = {
   ip: string
   params: Record<string, any>
   body: Record<string, any>
+  user: UsersDoc
+  req: NuvixRequest
 }
 
 export type ThrottleOptions = {

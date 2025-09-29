@@ -64,10 +64,10 @@ export class FilesService {
     }
 
     const filterQueries = Query.groupByType(queries).filters
-    const files = await db.find(
+    const files = (await db.find(
       this.getCollectionName(bucket.getSequence()),
       queries,
-    )
+    )) as FilesDoc[]
 
     const total = await db.count(
       this.getCollectionName(bucket.getSequence()),
@@ -76,7 +76,7 @@ export class FilesService {
     )
 
     return {
-      files,
+      data: files,
       total,
     }
   }
@@ -963,9 +963,9 @@ export class FilesService {
       throw new Exception(Exception.USER_UNAUTHORIZED)
     }
 
-    const file = await Authorization.skip(() =>
+    const file = (await Authorization.skip(() =>
       db.getDocument(this.getCollectionName(bucket.getSequence()), fileId),
-    )
+    )) as FilesDoc
 
     if (file.empty()) {
       throw new Exception(Exception.STORAGE_FILE_NOT_FOUND)
@@ -1093,8 +1093,6 @@ export class FilesService {
         'Failed to delete file from device',
       )
     }
-
-    return {}
   }
 }
 

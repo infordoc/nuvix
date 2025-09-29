@@ -36,7 +36,7 @@ export class StorageService {
     const filterQueries = Query.groupByType(queries).filters
 
     return {
-      buckets: await db.find('buckets', queries),
+      data: await db.find('buckets', queries),
       total: await db.count(
         'buckets',
         filterQueries,
