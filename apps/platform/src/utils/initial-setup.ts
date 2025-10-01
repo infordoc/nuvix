@@ -41,7 +41,7 @@ export async function initSetup(
       try {
         await rootClient.connect()
         const res = await rootClient.query(
-          'SELECT 1 FROM pg_database WHERE datname = $1',
+          `SELECT 1 FROM pg_database WHERE datname = $1`,
           [name],
         )
 
@@ -52,8 +52,7 @@ export async function initSetup(
         }
         // set password for postgres user until we implement it in docker image
         await rootClient.query(
-          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD $1`,
-          [config.getDatabaseConfig().postgres.password],
+          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD '${config.getDatabaseConfig().postgres.password}'`,
         )
       } catch (error: any) {
         logger.error("Can't create database.", error.message)
@@ -244,7 +243,7 @@ export async function initSetup(
               password,
             },
             pool: {
-              host,
+              host: config.getDatabaseConfig().postgres.pool.host,
               port: config.getDatabaseConfig().postgres.pool.port,
               password,
             },
@@ -260,7 +259,7 @@ export async function initSetup(
       await cache.flush()
     })
   } catch (error: any) {
-    logger.error(`Error while setting up server: ${error.message}`)
-    throw new Error('Something went worng in server setup process.')
+    logger.error(`Error while setting up server: ${error.message}`, error.stack)
+    throw error
   }
 }

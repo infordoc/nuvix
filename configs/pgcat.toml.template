@@ -1,5 +1,4 @@
 [general]
-host = "${APP_DATABASE_POOL_HOST}"
 port = ${APP_DATABASE_POOL_PORT}
 log_level = "info"
 stats_enabled = true
