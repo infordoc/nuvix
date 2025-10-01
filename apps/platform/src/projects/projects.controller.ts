@@ -278,7 +278,7 @@ export class ProjectsController {
     return this.projectService.deleteWebhook(id, webhookId)
   }
 
-  @Patch([':projectId/organization', ':projectId/team'])
+  @Patch([':projectId/team'])
   @ResModel(Models.PROJECT)
   async updateTeam(
     @Param('projectId') id: string,

@@ -7,7 +7,6 @@ import {
 import { AppService } from './app.service'
 import { AppController } from './app.controller'
 import { AccountModule } from './account/account.module'
-import { OrganizationsModule } from './organizations/organizations.module'
 import { ProjectModule } from './projects/project.module'
 import { CoreModule } from '@nuvix/core/core.module'
 import { MailsQueue } from '@nuvix/core/resolvers/queues'
@@ -25,7 +24,6 @@ import {
 import { ProjectHook } from './resolvers/hooks/project.hook'
 import { PgMetaController, PgMetaModule } from '@nuvix/pg-meta'
 import { AccountController } from './account/account.controller'
-import { OrganizationsController } from './organizations/organizations.controller'
 import { ProjectController } from './projects/project.controller'
 import { ProjectsController } from './projects/projects.controller'
 import { AuditHook } from '@nuvix/core/resolvers/hooks/audit.hook'
@@ -34,6 +32,8 @@ import { Key } from '@nuvix/core/helper/key.helper'
 import { AppConfigService } from '@nuvix/core'
 import { CliModule } from './cli/cli.module'
 import { CliController } from './cli/cli.controller'
+import { TeamsModule } from './teams/teams.module'
+import { TeamsController } from './teams/teams.controller'
 
 @Module({
   imports: [
@@ -73,7 +73,7 @@ import { CliController } from './cli/cli.controller'
       global: true,
     }),
     AccountModule,
-    OrganizationsModule,
+    TeamsModule,
     ProjectModule,
     PgMetaModule,
     CliModule,
@@ -95,7 +95,7 @@ export class AppModule implements NestModule, OnModuleInit {
       .apply(AuthHook, ApiHook, AuditHook)
       .forRoutes(
         AccountController,
-        OrganizationsController,
+        TeamsController,
         ProjectController,
         ProjectsController,
         PgMetaController,

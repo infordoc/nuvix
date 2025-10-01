@@ -15,14 +15,23 @@ import {
 } from 'class-validator'
 
 export class CreateOAuth2TokenDTO {
+  /**
+   * URL to redirect back to your app after a successful login attempt.  Only URLs from hostnames in your project\'s platform list are allowed. This requirement helps to prevent an [open redirect](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html) attack against your project API.
+   */
   @IsOptional()
   @IsUrl()
   success?: string
 
+  /**
+   * URL to redirect back to your app after a failed login attempt.  Only URLs from hostnames in your project\'s platform list are allowed. This requirement helps to prevent an [open redirect](https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html) attack against your project API.
+   */
   @IsOptional()
   @IsUrl()
   failure?: string
 
+  /**
+   * Array of OAuth2 scopes.
+   */
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
