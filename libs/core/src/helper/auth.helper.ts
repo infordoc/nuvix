@@ -22,6 +22,16 @@ const key = configuration.security.encryptionKey
   ? Buffer.from(configuration.security.encryptionKey, 'hex')
   : undefined
 
+export enum UserRole {
+  ADMIN = 'admin',
+  DEVLOPER = 'developer',
+  OWNER = 'owner',
+  APPS = 'apps',
+  SYSTEM = 'system',
+  USERS = 'users',
+  GUESTS = 'guests',
+}
+
 export class Auth {
   private static _isTrustedActor: boolean = false
   private static _isPlatformActor: boolean = false
@@ -128,12 +138,15 @@ export class Auth {
 
     switch (algo) {
       case HashAlgorithm.ARGON2:
-        const aOptions = {
-          hashLength: options['hashLength'],
-          timeCost: options['timeCost'],
-          memoryCost: options['memoryCost'],
-          parallelism: options['parallelism'],
-        }
+        const aOptions =
+          Object.keys(options).length === 0
+            ? undefined
+            : {
+                hashLength: options['hashLength'],
+                timeCost: options['timeCost'],
+                memoryCost: options['memoryCost'],
+                parallelism: options['parallelism'],
+              }
         return hash(string, { raw: false, ...aOptions })
       case HashAlgorithm.BCRYPT:
         const saltRounds = options.saltRounds || 10
@@ -212,7 +225,7 @@ export class Auth {
   }
 
   public static passwordGenerator(length: number = 20): string {
-    return crypto.randomBytes(length).toString('hex').slice(0, length)
+    return crypto.randomBytes(length).toString('hex')
   }
 
   public static tokenGenerator(length: number = 256): string {
@@ -249,7 +262,8 @@ export class Auth {
         token.get('type') !== null &&
         (type === null || token.get('type') === type) &&
         token.get('secret') === this.hash(secret) &&
-        new Date(token.get('expire') as string) >= new Date()
+        new Date(token.get('expire') as string).getTime() >=
+          new Date().getTime()
       ) {
         return token
       }
@@ -268,7 +282,8 @@ export class Auth {
         session.get('expire') !== null &&
         session.get('provider') !== null &&
         session.get('secret') === this.hash(secret) &&
-        new Date(session.get('expire') as string) >= new Date()
+        new Date(session.get('expire') as string).getTime() >=
+          new Date().getTime()
       ) {
         return session.getId()
       }
@@ -298,22 +313,26 @@ export class Auth {
   public static getRoles(user: UsersDoc): string[] {
     const roles: string[] = []
 
-    if (user.getId()) {
-      roles.push(Role.user(user.getId()).toString())
-      roles.push(Role.users().toString())
+    if (!Auth.isPlatformActor && !Auth.isTrustedActor) {
+      if (user.getId()) {
+        roles.push(Role.user(user.getId()).toString())
+        roles.push(Role.users().toString())
 
-      const emailVerified = user.get('emailVerification', false)
-      const phoneVerified = user.get('phoneVerification', false)
+        const emailVerified = user.get('emailVerification', false)
+        const phoneVerified = user.get('phoneVerification', false)
 
-      if (emailVerified || phoneVerified) {
-        roles.push(Role.user(user.getId(), UserDimension.VERIFIED).toString())
-        roles.push(Role.users(UserDimension.VERIFIED).toString())
+        if (emailVerified || phoneVerified) {
+          roles.push(Role.user(user.getId(), UserDimension.VERIFIED).toString())
+          roles.push(Role.users(UserDimension.VERIFIED).toString())
+        } else {
+          roles.push(
+            Role.user(user.getId(), UserDimension.UNVERIFIED).toString(),
+          )
+          roles.push(Role.users(UserDimension.UNVERIFIED).toString())
+        }
       } else {
-        roles.push(Role.user(user.getId(), UserDimension.UNVERIFIED).toString())
-        roles.push(Role.users(UserDimension.UNVERIFIED).toString())
+        return [Role.guests().toString()]
       }
-    } else {
-      return [Role.guests().toString()]
     }
 
     for (const node of (user.get('memberships') || []) as MembershipsDoc[]) {
