@@ -1,25 +1,19 @@
-import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication } from '@nestjs/common'
 import request from 'supertest'
-import { AppModule } from '../src/app.module'
-import { NuvixAdapter } from '@nuvix/core/server'
+import { getApp } from './test-utils/test-app'
+import { configuration } from '@nuvix/utils'
 
 describe('AppController (e2e)', () => {
   let app: INestApplication
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile()
-
-    app = moduleFixture.createNestApplication(new NuvixAdapter())
-    await app.init()
-  })
+  beforeAll(async () => {
+    app = await getApp()
+  }, 30000)
 
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
-      .expect(200)
-      .expect('Hello World!')
+      .expect(302)
+      .expect('Location', configuration.app.consoleURL)
   })
 })
