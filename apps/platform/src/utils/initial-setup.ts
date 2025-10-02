@@ -16,9 +16,9 @@ import { AppConfigService, CoreService } from '@nuvix/core'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { DatabaseRole, DEFAULT_DATABASE } from '@nuvix/utils'
 import { AccountService } from '../account/account.service'
-import { OrganizationsService } from '../organizations/organizations.service'
 import { ProjectService } from '../projects/projects.service'
 import { ProjectsQueue } from '@nuvix/core/resolvers'
+import { TeamsService } from '../teams/teams.service'
 
 export async function initSetup(
   app: NestFastifyApplication,
@@ -186,7 +186,7 @@ export async function initSetup(
       if (config.isSelfHosted) {
         logger.log('Setting up project.')
         const accountService = app.get(AccountService)
-        const orgService = app.get(OrganizationsService)
+        const orgService = app.get(TeamsService)
         const projectService = app.get(ProjectService)
         const projectsQueue = app.get(ProjectsQueue)
 
@@ -217,7 +217,7 @@ export async function initSetup(
         )
 
         const team = await orgService.create(user, {
-          organizationId: 'my-team',
+          teamId: 'my-team',
           name: 'My Team',
         })
 

@@ -532,4 +532,4 @@ export const localeCodes = [
     code: 'zu',
     name: 'Zulu',
   },
-]
+] as const

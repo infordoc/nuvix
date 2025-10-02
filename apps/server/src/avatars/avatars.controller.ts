@@ -1,19 +1,12 @@
-import {
-  Controller,
-  Query,
-  Res,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common'
+import { Controller, Query, Res, UseInterceptors } from '@nestjs/common'
 import { AvatarsService } from './avatars.service'
 import { ParseDuplicatePipe } from '@nuvix/core/pipes/duplicate.pipe'
 import { Get } from '@nuvix/core'
 import { Namespace, Scope } from '@nuvix/core/decorators'
-import { ApiInterceptor, ProjectGuard } from '@nuvix/core/resolvers'
+import { ApiInterceptor } from '@nuvix/core/resolvers'
 
 @Controller({ version: ['1'], path: 'avatars' })
 @Namespace('avatars')
-@UseGuards(ProjectGuard)
 @UseInterceptors(ApiInterceptor)
 @Scope('avatars.read')
 export class AvatarsController {

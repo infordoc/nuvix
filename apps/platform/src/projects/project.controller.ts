@@ -12,8 +12,6 @@ import {
   AuthType,
   ProjectDatabase,
   ProjectPg,
-  ResModel,
-  Scope,
 } from '@nuvix/core/decorators'
 import { Models } from '@nuvix/core/helper'
 import {
@@ -22,9 +20,8 @@ import {
   ResponseInterceptor,
   StatsQueue,
 } from '@nuvix/core/resolvers'
-import { MetricFor, MetricPeriod, RouteContext, Schemas } from '@nuvix/utils'
+import { MetricFor, MetricPeriod, Schemas } from '@nuvix/utils'
 import { Get } from '@nuvix/core'
-import { RouteConfig } from '@nestjs/platform-fastify'
 import { DataSource } from '@nuvix/pg'
 import {
   ASTToQueryBuilder,
@@ -45,9 +42,15 @@ import { Exception } from '@nuvix/core/extend/exception'
 export class ProjectController {
   constructor() {}
 
-  @Get('usage', { summary: '' })
-  @Scope('project.read')
-  @ResModel(Models.USAGE_PROJECT)
+  @Get('usage', {
+    summary: 'Get project usage stats',
+    scopes: 'project.read',
+    model: Models.USAGE_PROJECT,
+    sdk: {
+      name: 'getUsage',
+      descMd: '/docs/references/project/get-usage.md',
+    },
+  })
   async getUsage(
     @ProjectDatabase() projectDb: Database,
     @Query('startDate', new ParseDatePipe()) startDate: Date,
@@ -268,20 +271,9 @@ export class ProjectController {
     }
   }
 
-  @Get('variables', { summary: '' })
-  async getVariables() {
-    return {
-      variables: [],
-      total: 0,
-    }
-  }
-
   @Get('logs', {
     summary: 'Get Project Logs',
     scopes: 'project.read',
-  })
-  @RouteConfig({
-    [RouteContext.SKIP_LOGGING]: true,
   })
   async getLogs(@Req() req: NuvixRequest, @ProjectPg() dataSource: DataSource) {
     const qb = dataSource.qb('api_logs').withSchema(Schemas.System)

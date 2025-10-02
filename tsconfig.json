@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "types": ["vitest/globals"],
     /* === Module System === */
     "module": "esnext",
     "moduleResolution": "bundler",

@@ -7,6 +7,9 @@ export class UpdateProjectDTO extends PartialType(
 ) {}
 
 export class UpdateProjectTeamDTO {
+  /**
+   * Team ID of the team to transfer project to.
+   */
   @IsNotEmpty()
   @IsString()
   declare teamId: string

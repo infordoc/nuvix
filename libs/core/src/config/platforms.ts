@@ -444,3 +444,21 @@ export const platforms = {
     ],
   },
 }
+
+export enum PlatformType {
+  WEB = 'web',
+  FLUTTER_WEB = 'flutter-web',
+  FLUTTER_IOS = 'flutter-ios',
+  FLUTTER_ANDROID = 'flutter-android',
+  FLUTTER_LINUX = 'flutter-linux',
+  FLUTTER_MACOS = 'flutter-macos',
+  FLUTTER_WINDOWS = 'flutter-windows',
+  APPLE_IOS = 'apple-ios',
+  APPLE_MACOS = 'apple-macos',
+  APPLE_WATCHOS = 'apple-watchos',
+  APPLE_TVOS = 'apple-tvos',
+  ANDROID = 'android',
+  UNITY = 'unity',
+  REACT_NATIVE_IOS = 'react-native-ios',
+  REACT_NATIVE_ANDROID = 'react-native-android',
+}

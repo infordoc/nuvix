@@ -9,10 +9,11 @@ import { Reflector } from '@nestjs/core'
 import { Context, IS_PUBLIC_KEY } from '@nuvix/utils'
 import { UsersDoc } from '@nuvix/utils/types'
 
-@Injectable()
 /**
+ * @deprecated
  * Guard to check if the user is authenticated
  */
+@Injectable()
 export class AuthGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
