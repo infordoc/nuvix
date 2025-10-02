@@ -3,11 +3,17 @@ import { IsBoolean, IsIn } from 'class-validator'
 import apis from '@nuvix/core/config/apis'
 
 export class ProjectApiStatusDTO {
+  /**
+   * API name.
+   */
   @IsIn(Object.values(apis).map(api => api.key))
-  api!: string
+  declare api: string
 
+  /**
+   * API status.
+   */
   @IsBoolean()
-  status!: boolean
+  declare status: boolean
 }
 
 export class ProjectApiStatusAllDTO extends OmitType(ProjectApiStatusDTO, [

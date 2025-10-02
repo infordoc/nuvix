@@ -9,10 +9,13 @@ import {
   Role,
 } from '@nuvix/db'
 import { Exception } from '@nuvix/core/extend/exception'
-import { CreateTeamDTO, UpdateTeamPrefsDTO } from './DTO/team.dto'
+import {
+  CreateTeamDTO,
+  UpdateTeamDTO,
+  UpdateTeamPrefsDTO,
+} from './DTO/team.dto'
 import { CoreService } from '@nuvix/core'
 import type { Teams, TeamsDoc, UsersDoc } from '@nuvix/utils/types'
-import { UpdateOrgDTO } from '../organizations/DTO/team.dto'
 
 @Injectable()
 export class TeamsService {
@@ -102,7 +105,7 @@ export class TeamsService {
   /**
    * Update team
    */
-  async update(id: string, input: UpdateOrgDTO) {
+  async update(id: string, input: UpdateTeamDTO) {
     const team = await this.db.getDocument('teams', id)
 
     if (team.empty()) {

@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsBoolean,
   IsEmail,
   IsIn,
@@ -10,85 +11,139 @@ import {
 } from 'class-validator'
 
 export class UpdateSmtpDTO {
+  /**
+   * Enable custom SMTP service
+   */
   @IsBoolean()
-  enabled!: boolean
+  declare enabled: boolean
 
+  /**
+   * Name of the email sender
+   */
   @IsOptional()
   @IsString()
   @Length(0, 255)
   @IsNotEmpty()
-  senderName!: string
+  senderName?: string
 
+  /**
+   * Email of the sender
+   */
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  senderEmail!: string
+  senderEmail?: string
 
+  /**
+   * Reply to email
+   */
   @IsOptional()
   @IsEmail()
   @IsNotEmpty()
-  replyTo!: string
+  replyTo?: string
 
+  /**
+   * SMTP server host name
+   */
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  host!: string
+  host?: string
 
+  /**
+   * SMTP server port
+   */
   @IsOptional()
   @IsInt()
   @IsNotEmpty()
-  port!: number
+  port?: number
 
+  /**
+   * SMTP server username
+   */
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  username!: string
+  username?: string
 
+  /**
+   * SMTP server password
+   */
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  password!: string
+  password?: string
 
+  /**
+   * Does SMTP server use secure connection'
+   */
   @IsOptional()
   @IsIn(['tls', 'ssl'])
   @IsNotEmpty()
-  secure!: 'tls' | 'ssl'
+  secure?: 'tls' | 'ssl'
 }
 
 export class SmtpTestsDTO {
+  /**
+   * Array of emails to send test email to. Maximum of 10 emails are allowed.
+   */
   @IsEmail({}, { each: true })
-  @Length(0, 10, { each: true })
-  emails!: string[]
+  @ArrayMaxSize(10)
+  declare emails: string[]
 
+  /**
+   * Name of the email sender
+   */
   @IsString()
   @Length(0, 255)
   @IsNotEmpty()
-  senderName!: string
+  declare senderName: string
 
+  /**
+   * Email of the sender
+   */
   @IsEmail()
   @IsNotEmpty()
-  senderEmail!: string
+  declare senderEmail: string
 
+  /**
+   * Reply to email
+   */
   @IsEmail()
   @IsOptional()
   replyTo?: string
 
+  /**
+   * SMTP server host name
+   */
   @IsString()
   @IsNotEmpty()
-  host!: string
+  declare host: string
 
+  /**
+   * SMTP server port
+   */
   @IsInt()
   @IsOptional()
   port?: number
 
+  /**
+   * SMTP server username
+   */
   @IsString()
   @IsOptional()
   username?: string
 
+  /**
+   * SMTP server password
+   */
   @IsString()
   @IsOptional()
   password?: string
 
+  /**
+   * Does SMTP server use secure connection
+   */
   @IsIn(['tls', 'ssl'])
   @IsOptional()
   secure?: 'tls' | 'ssl'

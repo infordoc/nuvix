@@ -3,15 +3,21 @@ import { IsBoolean, IsIn } from 'class-validator'
 import { services } from '@nuvix/core/config/services'
 
 export class UpdateProjectServiceDTO {
+  /**
+   * Service name.
+   */
   @IsIn(
     Object.values(services)
       .filter(v => v.optional)
       .map(value => value.key),
   )
-  service!: string
+  declare service: string
 
+  /**
+   * Service status.
+   */
   @IsBoolean()
-  status!: boolean
+  declare status: boolean
 }
 
 export class UpdateProjectAllServiceDTO extends OmitType(
