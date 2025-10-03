@@ -420,7 +420,7 @@ export class MembershipsService {
         Auth.cookieName,
         Auth.encodeSession(user.getId(), sessionSecret),
         {
-          expires: new Date(Math.floor(expire.getTime() / 1000)),
+          expires: expire,
           path: '/',
           domain: cookieDomain,
           secure: protocol === 'https',

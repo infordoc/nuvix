@@ -882,7 +882,9 @@ export class AccountService {
       })
 
       user.delete('$sequence')
-      await Authorization.skip(() => this.db.createDocument('users', user))
+      user = await Authorization.skip(() =>
+        this.db.createDocument('users', user),
+      )
     }
 
     const tokenSecret = Auth.codeGenerator(6)

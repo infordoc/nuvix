@@ -24,18 +24,23 @@ import { AuthHook, ApiHook, AuditHook } from '@nuvix/core/resolvers'
       secret: configuration.security.jwtSecret,
       signOptions: { expiresIn: '15m' },
     }),
-    BullModule.registerQueue({
-      name: QueueFor.PROJECTS,
-      defaultJobOptions: {
-        removeOnComplete: true,
-        removeOnFail: true,
-        attempts: 1,
-        backoff: {
-          type: 'exponential',
-          delay: 1000,
+    BullModule.registerQueue(
+      {
+        name: QueueFor.PROJECTS,
+        defaultJobOptions: {
+          removeOnComplete: true,
+          removeOnFail: true,
+          attempts: 1,
+          backoff: {
+            type: 'exponential',
+            delay: 1000,
+          },
         },
       },
-    }),
+      { name: QueueFor.MAILS },
+      { name: QueueFor.STATS },
+      { name: QueueFor.AUDITS },
+    ),
   ],
   providers: [
     ProjectService,
