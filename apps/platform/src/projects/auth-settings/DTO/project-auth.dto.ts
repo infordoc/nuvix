@@ -13,6 +13,7 @@ import {
 import { IsInt, Min, Max } from 'class-validator'
 import { ProjectParamsDTO } from '../../DTO/create-project.dto'
 import { oAuthProvidersList } from '@nuvix/core/config'
+import { ApiExtraModels } from '@nestjs/swagger'
 
 export class AuthSessionAlertsDTO {
   /**
@@ -86,6 +87,15 @@ export class AuthMaxSessionsDTO {
   declare limit: number
 }
 
+export class MockNumber {
+  @IsString()
+  @IsPhoneNumber()
+  declare phone: string
+
+  @IsString()
+  declare otp: string
+}
+
 export class AuthMockNumbersDTO {
   /**
    * An array of mock numbers and their corresponding verification codes (OTPs). Each number should be a valid E.164 formatted phone number. Maximum of 10 numbers are allowed.
@@ -95,15 +105,6 @@ export class AuthMockNumbersDTO {
   @ValidateNested({ each: true })
   @Type(() => MockNumber)
   declare numbers: MockNumber[]
-}
-
-class MockNumber {
-  @IsString()
-  @IsPhoneNumber()
-  declare phone: string
-
-  @IsString()
-  declare otp: string
 }
 
 export class AuthMembershipPrivacyDTO {

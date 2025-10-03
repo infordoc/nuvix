@@ -55,7 +55,7 @@ export class ProjectController {
     @ProjectDatabase() projectDb: Database,
     @Query('startDate', new ParseDatePipe()) startDate: Date,
     @Query('endDate', new ParseDatePipe()) endDate: Date,
-    @Query('period') period: MetricPeriod = MetricPeriod.DAY,
+    @Query('period') period: any = MetricPeriod.DAY,
   ) {
     const stats: Record<string, any> = {}
     const total: Record<string, number> = {}

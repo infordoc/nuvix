@@ -5,14 +5,14 @@ import { writeFileSync, existsSync, mkdirSync } from 'fs'
 
 export function openApiSetup(app: NestFastifyApplication) {
   const config = new DocumentBuilder()
-    .setTitle('Nuvix API')
-    .setDescription('A powerful Backend for your next project')
+    .setTitle('Nuvix Platform')
+    .setDescription('The platform to manage your Nuvix projects')
     .setVersion('1.0')
-    .addTag('nuvix')
+    .addTag('nuvix', 'platform')
     .addGlobalParameters({
       name: 'X-Nuvix-Project',
       in: 'header',
-      required: true,
+      required: false,
       description: 'Project ID.',
       schema: {
         type: 'string',
@@ -53,7 +53,7 @@ export function openApiSetup(app: NestFastifyApplication) {
     })
 
   const document = documentFactory()
-  const path = configuration.assets.get('public', 'server')
+  const path = configuration.assets.get('public', 'platform')
 
   try {
     if (!existsSync(path)) {

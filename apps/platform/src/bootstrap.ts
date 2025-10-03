@@ -12,11 +12,12 @@ import { Authorization, Role, storage } from '@nuvix/db'
 import cookieParser from '@fastify/cookie'
 import fastifyMultipart from '@fastify/multipart'
 import QueryString from 'qs'
-import path from 'path'
 import { initSetup } from './utils/initial-setup'
 import { ErrorFilter } from '@nuvix/core/filters'
 import { AppConfigService } from '@nuvix/core'
 import { Auth } from '@nuvix/core/helper/auth.helper.js'
+import { SwaggerModule } from '@nestjs/swagger'
+import { openApiSetup } from './utils/open-api'
 
 validateRequiredConfig()
 Authorization.enableAsyncLocalStorage()
@@ -119,6 +120,17 @@ export async function bootstrap() {
 
   app.useGlobalFilters(new ErrorFilter(config))
   await initSetup(app, config as AppConfigService)
+  await SwaggerModule.loadPluginMetadata(async () => {
+    try {
+      // @ts-ignore
+      return await (await import('./metadata')).default()
+    } catch (err) {
+      Logger.warn('No swagger metadata found, skipping...')
+      Logger.debug((err as Error).stack || err)
+      return {}
+    }
+  })
+  openApiSetup(app)
 
   const port = parseNumber(config.root.get('APP_PLATFORM_PORT'), 4100)
   const host = '0.0.0.0'

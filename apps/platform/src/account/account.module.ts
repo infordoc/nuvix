@@ -6,9 +6,13 @@ import { QueueFor } from '@nuvix/utils'
 
 @Module({
   imports: [
-    BullModule.registerQueue({
-      name: QueueFor.MAILS,
-    }),
+    BullModule.registerQueue(
+      {
+        name: QueueFor.MAILS,
+      },
+      { name: QueueFor.STATS },
+      { name: QueueFor.AUDITS },
+    ),
   ],
   controllers: [AccountController],
   providers: [AccountService],

@@ -112,14 +112,30 @@ export class WebhooksService {
       throw new Exception(Exception.WEBHOOK_NOT_FOUND)
     }
 
-    webhook
-      .set('name', input.name)
-      .set('events', input.events)
-      .set('url', input.url)
-      .set('security', input.security)
-      .set('httpUser', input.httpUser)
-      .set('httpPass', input.httpPass)
-      .set('enabled', input.enabled)
+    if (input.name !== undefined) {
+      webhook.set('name', input.name)
+    }
+    if (input.events !== undefined) {
+      webhook.set('events', input.events)
+    }
+    if (input.url !== undefined) {
+      webhook.set('url', input.url)
+    }
+    if (input.security !== undefined) {
+      webhook.set('security', input.security)
+    }
+    if (input.httpUser !== undefined) {
+      webhook.set('httpUser', input.httpUser)
+    }
+    if (input.httpPass !== undefined) {
+      webhook.set('httpPass', input.httpPass)
+    }
+    if (input.enabled !== undefined) {
+      webhook.set('enabled', input.enabled)
+      if (input.enabled) {
+        webhook.set('attempts', 0)
+      }
+    }
 
     if (input.enabled) {
       webhook.set('attempts', 0)
