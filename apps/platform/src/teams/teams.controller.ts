@@ -29,7 +29,7 @@ import { ConsoleInterceptor } from '@nuvix/core/resolvers'
 @Controller({ version: ['1'], path: 'teams' })
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) {}
+  constructor(private readonly teamsService: TeamsService) { }
 
   @Post('', {
     summary: 'Create team',
@@ -54,7 +54,7 @@ export class TeamsController {
   @Get('', {
     summary: 'List teams',
     scopes: ['teams.read'],
-    model: Models.TEAM,
+    model: { type: Models.TEAM, list: true },
     sdk: {
       name: 'list',
       descMd: '/docs/references/teams/list-teams.md',
