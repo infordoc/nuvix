@@ -29,7 +29,7 @@ import { ConsoleInterceptor } from '@nuvix/core/resolvers'
 @Controller({ version: ['1'], path: 'teams' })
 @UseInterceptors(ResponseInterceptor, ConsoleInterceptor)
 export class TeamsController {
-  constructor(private readonly teamsService: TeamsService) { }
+  constructor(private readonly teamsService: TeamsService) {}
 
   @Post('', {
     summary: 'Create team',
