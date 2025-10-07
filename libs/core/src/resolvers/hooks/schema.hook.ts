@@ -10,7 +10,9 @@ import {
   DatabaseRole,
   PROJECT_DB_CLIENT,
   PROJECT_PG,
+  RouteContext,
   Schemas,
+  SchemaType,
   type Schema,
 } from '@nuvix/utils'
 import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
@@ -53,7 +55,17 @@ export class SchemaHook implements Hook {
         if (!schema.enabled) {
           throw new Exception(Exception.SCHEMA_NOT_FOUND)
         }
-        // TODO: Check if schema is publicly accessible
+        const allowed = project.get('metadata')?.['allowedSchemas'] ?? []
+        // May be we will add Document schema too in future
+        if (
+          !allowed.includes(schema.name) &&
+          schema.type !== SchemaType.Document
+        ) {
+          throw new Exception(
+            Exception.GENERAL_ACCESS_FORBIDDEN,
+            `Access denied: Schema '${schema.name}' is not exposed to the API for this project`,
+          )
+        }
       }
 
       const pg = this.coreService.getProjectPg(
@@ -63,14 +75,31 @@ export class SchemaHook implements Hook {
         }),
       )
       request[CURRENT_SCHEMA_PG] = pg
-      if (schema.type === 'document') {
+
+      const requestSchemaType =
+        request.routeOptions.config[RouteContext.SCHEMA_TYPE]
+      if (requestSchemaType) {
+        const types = Array.isArray(requestSchemaType)
+          ? requestSchemaType
+          : [requestSchemaType]
+        if (!types.includes(schema.type)) {
+          throw new Exception(
+            Exception.GENERAL_BAD_REQUEST,
+            `Invalid schema type, expected ${types.join(
+              ' or ',
+            )} but received ${schema.type}`,
+          )
+        }
+      }
+
+      if (schema.type === SchemaType.Document) {
         const db = this.coreService.getProjectDb(client, {
           projectId: project.getId(),
           schema: schema.name,
         })
         request[CURRENT_SCHEMA_DB] = db
       } else {
-        if (mode !== AppMode.ADMIN) {
+        if (mode !== AppMode.ADMIN || !Auth.isPlatformActor) {
           try {
             await client.query(`SET ROLE ${role}`)
           } catch (e) {

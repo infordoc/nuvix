@@ -21,6 +21,7 @@ import {
   AuthType,
   CurrentSchema,
   Namespace,
+  Project,
 } from '@nuvix/core/decorators'
 import { DataSource } from '@nuvix/pg'
 import { ParseDuplicatePipe } from '@nuvix/core/pipes'
@@ -31,13 +32,19 @@ import {
   RowParamsDTO,
   TableParamsDTO,
 } from './DTO/table.dto'
+import type { ProjectsDoc } from '@nuvix/utils/types'
+import { RouteConfig } from '@nestjs/platform-fastify'
+import { RouteContext, SchemaType } from '@nuvix/utils'
 
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 @Controller({ version: ['1'], path: ['schemas/:schemaId', 'public'] })
 @UseGuards(ProjectGuard)
 @Namespace('schemas')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
-@Auth([AuthType.ADMIN, AuthType.JWT, AuthType.SESSION, AuthType.SESSION])
+@Auth([AuthType.ADMIN, AuthType.JWT, AuthType.SESSION, AuthType.KEY])
+@RouteConfig({
+  [RouteContext.SCHEMA_TYPE]: [SchemaType.Managed, SchemaType.Unmanaged],
+})
 export class SchemasController {
   constructor(private readonly schemasService: SchemasService) {}
 
@@ -50,6 +57,7 @@ export class SchemasController {
     @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @Req() request: NuvixRequest,
     @CurrentSchema() pg: DataSource,
+    @Project() project: ProjectsDoc,
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -62,6 +70,7 @@ export class SchemasController {
       offset,
       schema,
       url: request.raw.url || request.url,
+      project,
     })
   }
 
@@ -75,6 +84,7 @@ export class SchemasController {
     @Req() request: NuvixRequest,
     @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @Body() input: Record<string, any> | Record<string, any>[],
+    @Project() project: ProjectsDoc,
     @Query(
       'columns',
       ParseDuplicatePipe,
@@ -89,6 +99,7 @@ export class SchemasController {
       input,
       columns,
       url: request.raw.url || request.url,
+      project,
     })
   }
 
@@ -103,6 +114,7 @@ export class SchemasController {
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
     @Body() input: Record<string, any>,
+    @Project() project: ProjectsDoc,
     @Query(
       'columns',
       ParseDuplicatePipe,
@@ -126,6 +138,7 @@ export class SchemasController {
       limit,
       offset,
       force,
+      project,
     })
   }
 
@@ -156,6 +169,7 @@ export class SchemasController {
     @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
     @CurrentSchema() pg: DataSource,
     @Req() request: NuvixRequest,
+    @Project() project: ProjectsDoc,
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit?: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -171,6 +185,7 @@ export class SchemasController {
       limit,
       offset,
       force,
+      project,
     })
   }
 
@@ -189,6 +204,7 @@ export class SchemasController {
       schemaId: schema = 'public',
       functionId: functionName,
     }: FunctionParamsDTO,
+    @Project() project: ProjectsDoc,
     @Query('limit', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
     limit?: number,
     @Query('offset', ParseDuplicatePipe, new ParseIntPipe({ optional: true }))
@@ -203,6 +219,7 @@ export class SchemasController {
       limit,
       offset,
       args,
+      project,
     })
   }
 
@@ -211,16 +228,21 @@ export class SchemasController {
     description: 'Manage permissions for a specific table',
   })
   @Auth([AuthType.ADMIN, AuthType.KEY])
+  @RouteConfig({
+    [RouteContext.SCHEMA_TYPE]: [SchemaType.Managed],
+  })
   manageTablePermissions(
     @CurrentSchema() pg: DataSource,
     @Param() { schemaId: schema = 'public', tableId }: TableParamsDTO,
     @Body() body: PermissionsDTO,
-  ) {
+    @Project() project: ProjectsDoc,
+  ): Promise<string[]> {
     return this.schemasService.updatePermissions({
       pg,
       permissions: body.permissions,
       tableId,
       schema,
+      project,
     })
   }
 
@@ -228,18 +250,23 @@ export class SchemasController {
     summary: 'Update row permissions',
     description: 'Manage permissions for a specific row in a table',
   })
+  @RouteConfig({
+    [RouteContext.SCHEMA_TYPE]: [SchemaType.Managed],
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   manageRowPermissions(
     @CurrentSchema() pg: DataSource,
     @Param() { schemaId: schema = 'public', tableId, rowId }: RowParamsDTO,
     @Body() body: PermissionsDTO,
-  ) {
+    @Project() project: ProjectsDoc,
+  ): Promise<string[]> {
     return this.schemasService.updatePermissions({
       pg,
       permissions: body.permissions,
       tableId,
       schema,
       rowId,
+      project,
     })
   }
 
@@ -247,15 +274,20 @@ export class SchemasController {
     summary: 'Get table permissions',
     description: 'Retrieve permissions for a specific table',
   })
+  @RouteConfig({
+    [RouteContext.SCHEMA_TYPE]: [SchemaType.Managed],
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   getTablePermissions(
     @CurrentSchema() pg: DataSource,
     @Param() { schemaId: schema = 'public', tableId }: TableParamsDTO,
-  ) {
+    @Project() project: ProjectsDoc,
+  ): Promise<string[]> {
     return this.schemasService.getPermissions({
       pg,
       tableId,
       schema,
+      project,
     })
   }
 
@@ -263,16 +295,21 @@ export class SchemasController {
     summary: 'Get row permissions',
     description: 'Retrieve permissions for a specific row in a table',
   })
+  @RouteConfig({
+    [RouteContext.SCHEMA_TYPE]: [SchemaType.Managed],
+  })
   @Auth([AuthType.ADMIN, AuthType.KEY])
   getRowPermissions(
     @CurrentSchema() pg: DataSource,
     @Param() { schemaId: schema = 'public', tableId, rowId }: RowParamsDTO,
-  ) {
+    @Project() project: ProjectsDoc,
+  ): Promise<string[]> {
     return this.schemasService.getPermissions({
       pg,
       tableId,
       schema,
       rowId,
+      project,
     })
   }
 }
