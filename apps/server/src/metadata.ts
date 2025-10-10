@@ -3328,7 +3328,7 @@ export default async () => {
           },
         ],
         [
-          import('./databases/DTO/create-schema.dto.js'),
+          import('./database/DTO/create-schema.dto.js'),
           {
             CreateSchema: {
               name: {
@@ -5327,9 +5327,9 @@ export default async () => {
           { AppController: { main: {}, getFavicon: {} } },
         ],
         [
-          import('./databases/databases.controller.js'),
+          import('./database/database.controller.js'),
           {
-            DatabasesController: {
+            DatabaseController: {
               getSchemas: {},
               createSchema: { type: Object },
               getSchema: { type: Object },

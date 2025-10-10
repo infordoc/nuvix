@@ -17,7 +17,7 @@ import { BullModule } from '@nestjs/bullmq'
 import { ScheduleModule } from '@nestjs/schedule'
 import { CoreModule } from '@nuvix/core/core.module'
 import { EventEmitterModule } from '@nestjs/event-emitter'
-import { DatabasesModule } from './databases/databases.module'
+import { DatabaseModule } from './database/database.module'
 import { AvatarsModule } from './avatars/avatars.module'
 import { UsersModule } from './users/users.module'
 import { AccountModule } from './account/account.module'
@@ -78,7 +78,7 @@ import { LocaleModule } from './locale/locale.module'
     UsersModule,
     TeamsModule,
     AccountModule,
-    DatabasesModule,
+    DatabaseModule,
     AvatarsModule,
     StorageModule,
     SchemasModule,
