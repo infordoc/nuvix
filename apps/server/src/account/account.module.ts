@@ -25,6 +25,7 @@ import { ApiHook, AuditHook, AuthHook, StatsHook } from '@nuvix/core/resolvers'
       { name: QueueFor.MAILS },
       { name: QueueFor.STATS },
       { name: QueueFor.AUDITS },
+      { name: QueueFor.DELETES },
     ),
   ],
   controllers: [
