@@ -55,6 +55,7 @@ export class PgMetaService {
     return applyTypescriptTemplate({
       ...data!,
       schemasWithCollections,
+      schemasMeta: schemas,
       detectOneToOneRelationships,
     })
   }
