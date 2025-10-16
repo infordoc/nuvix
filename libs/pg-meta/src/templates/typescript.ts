@@ -9,6 +9,7 @@ import type {
 } from '../lib/index'
 import type { GeneratorMetadata } from '../lib/generators'
 import { GENERATE_TYPES_DEFAULT_SCHEMA } from '../constants'
+import type { AttributesDoc, CollectionsDoc } from '@nuvix/utils/types'
 
 export const apply = async ({
   schemas,
@@ -21,8 +22,10 @@ export const apply = async ({
   functions,
   types,
   detectOneToOneRelationships,
+  schemasWithCollections,
 }: GeneratorMetadata & {
   detectOneToOneRelationships: boolean
+  schemasWithCollections: Record<string, CollectionsDoc[]>
 }): Promise<string> => {
   const columnsByTableId = Object.fromEntries<PostgresColumn[]>(
     [...tables, ...foreignTables, ...views, ...materializedViews].map(t => [
@@ -39,6 +42,14 @@ export const apply = async ({
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
+  ${Object.entries(schemasWithCollections).map(([s, collections]) => {
+    return `${JSON.stringify(s)}: {
+        __type: 'document';
+        Types: {
+          ${generateDocSchemaTypes(collections)}
+        }
+      }`
+  })}
   ${schemas
     .sort(({ name: a }, { name: b }) => a.localeCompare(b))
     .map(schema => {
@@ -676,4 +687,20 @@ const pgTypeToTsType = (
 
     return 'unknown'
   }
+}
+
+const generateDocSchemaTypes = (collections: CollectionsDoc[]): string => {
+  return collections
+    .map(collection => {
+      const attributes = collection.get('attributes') as AttributesDoc[]
+      return `${JSON.stringify(collection.get('name'))}: {
+      ${attributes.map(field => {
+        const isOptional = !field.get('required') || field.get('default')
+        let tsType = 'unknown'
+
+        return `${JSON.stringify(field.get('key'))}${isOptional ? '?' : ''}: ${tsType}`
+      })}
+    }`
+    })
+    .join('\n')
 }
