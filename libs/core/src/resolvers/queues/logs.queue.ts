@@ -6,7 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common'
 import { Queue } from './queue'
-import { QueueFor, Schemas } from '@nuvix/utils'
+import { configuration, QueueFor, Schemas } from '@nuvix/utils'
 import { Doc } from '@nuvix/db'
 import { Job } from 'bullmq'
 import { CoreService } from '@nuvix/core/core.service.js'
@@ -23,8 +23,9 @@ export class ApiLogsQueue
   extends Queue
   implements OnModuleInit, OnModuleDestroy
 {
-  private static readonly BATCH_SIZE = 1000
-  private static readonly BATCH_INTERVAL_MS = 2000
+  private static readonly BATCH_SIZE = configuration.limits.batchSize || 5000
+  private static readonly BATCH_INTERVAL_MS =
+    configuration.limits.batchIntervalMs || 3000
   private readonly logger = new Logger(ApiLogsQueue.name)
   private buffer = new Map<number, ApiLogsBuffer>()
   private interval!: NodeJS.Timeout

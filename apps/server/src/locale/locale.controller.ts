@@ -24,7 +24,6 @@ import {
 @UseGuards(ProjectGuard)
 @Namespace('locale')
 @UseInterceptors(ResponseInterceptor, ApiInterceptor)
-@Auth([AuthType.SESSION, AuthType.JWT, AuthType.KEY])
 export class LocaleController {
   constructor(private readonly localeService: LocaleService) {}
 

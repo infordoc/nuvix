@@ -6,7 +6,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common'
 import { Queue } from './queue'
-import { AppMode, QueueFor, Schemas } from '@nuvix/utils'
+import { AppMode, configuration, QueueFor, Schemas } from '@nuvix/utils'
 import { Doc } from '@nuvix/db'
 import { Audit } from '@nuvix/audit'
 import { Job } from 'bullmq'
@@ -24,8 +24,9 @@ export class AuditsQueue
   extends Queue
   implements OnModuleInit, OnModuleDestroy
 {
-  private static readonly BATCH_SIZE = 1000 // Number of logs to process in one batch
-  private static readonly BATCH_INTERVAL_MS = 3000 // Interval in milliseconds to flush
+  private static readonly BATCH_SIZE = configuration.limits.batchSize || 5000
+  private static readonly BATCH_INTERVAL_MS =
+    configuration.limits.batchIntervalMs || 3000
   private readonly logger = new Logger(AuditsQueue.name)
   private buffer = new Map<number, AuditLogsBuffer>()
   private interval!: NodeJS.Timeout

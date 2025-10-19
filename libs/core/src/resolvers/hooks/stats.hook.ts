@@ -1,7 +1,7 @@
 import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
 import { Hook } from '@nuvix/core/server'
-import { Context, MetricFor, QueueFor } from '@nuvix/utils'
+import { configuration, Context, MetricFor, QueueFor } from '@nuvix/utils'
 import { Queue } from 'bullmq'
 import { StatsQueueOptions, StatsQueueJob } from '../queues'
 import { Auth } from '@nuvix/core/helper'
@@ -19,6 +19,8 @@ export class StatsHook implements Hook {
     reply: NuvixRes,
     next: (err?: Error) => void,
   ): Promise<unknown> {
+    if (configuration.app.enableStats === false) return
+
     const project: ProjectsDoc = req[Context.Project]
     if (
       project.empty() ||

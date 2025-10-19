@@ -10,7 +10,7 @@ export interface Select {
   offset?: number
   shape?: 'array' | 'object'
   project: ProjectsDoc
-  context?: Record<string, any>
+  context: Record<string, any>
 }
 
 export interface Insert {
@@ -24,6 +24,7 @@ export interface Insert {
   url: string
   returnPref?: 'minimal' | 'location' | 'full'
   project: ProjectsDoc
+  context: Record<string, any>
 }
 
 export interface Update extends Omit<Insert, 'input'> {
@@ -46,6 +47,7 @@ export interface CallFunction {
   offset?: number
   args?: Record<string, string | number | boolean | null> | any[]
   project: ProjectsDoc
+  context: Record<string, any>
 }
 
 export interface UpdatePermissions {

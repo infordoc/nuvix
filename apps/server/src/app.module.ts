@@ -99,7 +99,7 @@ export class AppModule implements NestModule, OnModuleInit {
     consumer
       .apply(ProjectHook, HostHook, CorsHook)
       .forRoutes('*')
-      .apply(LogsHook)
+      .apply(...(configuration.app.enableLogs ? [LogsHook] : []))
       .forRoutes('*')
   }
 }

@@ -45,7 +45,6 @@ import { ApiBody } from '@nestjs/swagger'
 @UseGuards(ProjectGuard)
 @Controller({ version: ['1'], path: 'storage/buckets/:bucketId/files' })
 @UseInterceptors(ApiInterceptor, ResponseInterceptor)
-@Auth([AuthType.ADMIN, AuthType.SESSION, AuthType.JWT, AuthType.KEY])
 export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 

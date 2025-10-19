@@ -1,6 +1,7 @@
 import { Processor } from '@nestjs/bullmq'
 import { Queue } from './queue'
 import {
+  configuration,
   fnv1a128,
   MetricFor,
   MetricPeriod,
@@ -18,8 +19,9 @@ import { AppConfigService } from '@nuvix/core/config.service'
   concurrency: 10000,
 })
 export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
-  private static readonly BATCH_SIZE = 1000
-  private static readonly BATCH_INTERVAL_MS = 5000
+  private static readonly BATCH_SIZE = configuration.limits.batchSize || 5000
+  private static readonly BATCH_INTERVAL_MS =
+    configuration.limits.batchIntervalMs || 5000
   private readonly logger = new Logger(StatsQueue.name)
   private buffer = new Map<number, StatsBuffer>()
   private interval!: NodeJS.Timeout

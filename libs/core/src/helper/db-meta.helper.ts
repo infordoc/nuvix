@@ -1,6 +1,5 @@
 import { DataSource } from '@nuvix/pg'
 import { ProjectsDoc } from '@nuvix/utils/types'
-import { Client } from 'pg'
 
 interface SetupDatabaseMeta {
   request?: NuvixRequest
@@ -34,19 +33,8 @@ export const setupDatabaseMeta = async ({
       SET LOCAL "request.path" = ${escapeString(request.url || '')};
       SET LOCAL "request.id" = ${escapeString(request.id || '')};
       SET LOCAL "request.headers" = ${escapeString(JSON.stringify(headers))};
-      SET LOCAL "request.cookies" = ${escapeString(JSON.stringify(request.cookies ?? {}))};
       SET LOCAL "request.ip" = ${escapeString(request.ip || '')};
     `)
-  }
-
-  if (project && !project.empty()) {
-    const projectData = {
-      id: project.getId(),
-      name: project.get('name'),
-    }
-    sqlChunks.push(
-      `SET LOCAL app.project = ${escapeString(JSON.stringify(projectData))};`,
-    )
   }
 
   if (extra) {
