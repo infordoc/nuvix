@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { DataSource } from '@nuvix/pg'
 import { Exception } from '@nuvix/core/extend/exception'
 import { InjectQueue } from '@nestjs/bullmq'
@@ -7,7 +7,7 @@ import {
   SchemaJob,
   SchemaQueueOptions,
 } from '@nuvix/core/resolvers/queues/database.queue'
-import { QueueFor, Schemas, type SchemaType } from '@nuvix/utils'
+import { QueueFor, Schema, Schemas, SchemaType } from '@nuvix/utils'
 
 // DTO's
 import { CreateSchema } from './DTO/create-schema.dto'
@@ -25,21 +25,30 @@ export class DatabaseService {
     project: ProjectsDoc,
     data: CreateSchema,
   ) {
-    const isExists = await db.getSchema(data.name)
+    const isExists = await db
+      .table<Schemas>('schemas')
+      .withSchema(Schemas.System)
+      .where('name', data.name)
+      .first()
 
     if (isExists) {
       throw new Exception(Exception.SCHEMA_ALREADY_EXISTS)
     }
 
-    const schema = await db.createSchema(
-      data.name,
-      'document',
-      data.description,
-    )
+    const schema = await db
+      .table<Schema>('schemas')
+      .withSchema(Schemas.System)
+      .insert({
+        name: data.name,
+        type: SchemaType.Document,
+        description: data.description,
+      })
+      .returning('*')
+      .then(rows => rows[0])
 
     await this.databasesQueue.add(SchemaJob.INIT_DOC, {
       project: project,
-      schema: schema.name,
+      schema: data.name,
     })
 
     return schema
@@ -69,7 +78,11 @@ export class DatabaseService {
    * Get a schema by name
    */
   public async getSchema(pg: DataSource, name: string) {
-    const schema = await pg.getSchema(name)
+    const schema = await pg
+      .table<Schema>('schemas')
+      .withSchema(Schemas.System)
+      .where('name', name)
+      .first()
 
     if (!schema) {
       throw new Exception(Exception.SCHEMA_NOT_FOUND)
@@ -82,7 +95,11 @@ export class DatabaseService {
    * Create a schema
    */
   public async createSchema(pg: DataSource, data: CreateSchema) {
-    const isExists = await pg.getSchema(data.name)
+    const isExists = await pg
+      .table<Schema>('schemas')
+      .withSchema(Schemas.System)
+      .where('name', data.name)
+      .first()
 
     if (isExists) {
       throw new Exception(
@@ -91,7 +108,16 @@ export class DatabaseService {
       )
     }
 
-    const schema = await pg.createSchema(data.name, data.type, data.description)
+    const schema = await pg
+      .table<Schema>('schemas')
+      .withSchema(Schemas.System)
+      .insert({
+        name: data.name,
+        type: data.type,
+        description: data.description,
+      })
+      .returning('*')
+      .then(rows => rows[0])
 
     return schema
   }

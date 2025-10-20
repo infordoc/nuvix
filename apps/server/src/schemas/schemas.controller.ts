@@ -12,10 +12,7 @@ import {
 } from '@nestjs/common'
 import { SchemasService } from './schemas.service'
 import { ProjectGuard, SchemaGuard } from '@nuvix/core/resolvers/guards'
-import {
-  ResponseInterceptor,
-  ApiInterceptor,
-} from '@nuvix/core/resolvers/interceptors'
+import { ApiInterceptor } from '@nuvix/core/resolvers/interceptors'
 import {
   AuthType,
   CurrentSchema,
@@ -33,13 +30,13 @@ import {
   TableParamsDTO,
 } from './DTO/table.dto'
 import type { ProjectsDoc } from '@nuvix/utils/types'
-import { SchemaType } from '@nuvix/utils'
+import { Context, SchemaType } from '@nuvix/utils'
 
 // Note: The `schemaId` parameter is used in hooks and must be included in all relevant routes.
 @Controller({ version: ['1'], path: ['schemas/:schemaId', 'public'] })
 @UseGuards(ProjectGuard, SchemaGuard)
 @Namespace('schemas')
-@UseInterceptors(ResponseInterceptor, ApiInterceptor)
+@UseInterceptors(ApiInterceptor)
 @CurrentSchemaType([SchemaType.Managed, SchemaType.Unmanaged])
 export class SchemasController {
   constructor(private readonly schemasService: SchemasService) {}
@@ -67,6 +64,7 @@ export class SchemasController {
       schema,
       url: request.raw.url || request.url,
       project,
+      context: this.requestToContext(request),
     })
   }
 
@@ -96,6 +94,7 @@ export class SchemasController {
       columns,
       url: request.raw.url || request.url,
       project,
+      context: this.requestToContext(request),
     })
   }
 
@@ -135,26 +134,27 @@ export class SchemasController {
       offset,
       force,
       project,
+      context: this.requestToContext(request),
     })
   }
 
-  @Put(['tables/:tableId'], {
-    summary: 'Upsert table data',
-    description:
-      'Insert or update records in a specific table (upsert operation)',
-    scopes: ['schemas.tables.create', 'schemas.tables.update'],
-    docs: false,
-  })
-  async upsertTable(
-    @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
-    @CurrentSchema() pg: DataSource,
-    @Req() request: NuvixRequest,
-    @Body() input: Record<string, any> | Record<string, any>[],
-    @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
-    columns?: string[],
-    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
-    @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
-  ) {}
+  // @Put(['tables/:tableId'], {
+  //   summary: 'Upsert table data',
+  //   description:
+  //     'Insert or update records in a specific table (upsert operation)',
+  //   scopes: ['schemas.tables.create', 'schemas.tables.update'],
+  //   docs: false,
+  // })
+  // async upsertTable(
+  //   @Param() { schemaId: schema = 'public', tableId: table }: TableParamsDTO,
+  //   @CurrentSchema() pg: DataSource,
+  //   @Req() request: NuvixRequest,
+  //   @Body() input: Record<string, any> | Record<string, any>[],
+  //   @Query('columns', new ParseArrayPipe({ items: String, optional: true }))
+  //   columns?: string[],
+  //   @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  //   @Query('offset', new ParseIntPipe({ optional: true })) offset?: number,
+  // ) {}
 
   @Delete(['tables/:tableId'], {
     summary: 'Delete table data',
@@ -183,6 +183,7 @@ export class SchemasController {
       offset,
       force,
       project,
+      context: this.requestToContext(request),
     })
   }
 
@@ -217,7 +218,15 @@ export class SchemasController {
       offset,
       args,
       project,
+      context: this.requestToContext(request),
     })
+  }
+
+  private requestToContext(request: NuvixRequest): Record<string, any> {
+    return {
+      ...request[Context.AuthMeta],
+      request,
+    }
   }
 
   @Put(['tables/:tableId/permissions'], {

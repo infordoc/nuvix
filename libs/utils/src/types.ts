@@ -26,6 +26,7 @@ export type Schema = {
   type: SchemaType
   enabled: boolean
   metadata: Record<string, any>
+  description?: string
 }
 
 export type KeyArgs = {

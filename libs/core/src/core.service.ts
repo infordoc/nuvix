@@ -1,6 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common'
 import { AppConfigService } from './config.service.js'
-import { Client } from 'pg'
+import { Client, Pool, PoolClient } from 'pg'
 import IORedis from 'ioredis'
 import { Cache, Redis } from '@nuvix/cache'
 import { Adapter, Database, Doc } from '@nuvix/db'
@@ -26,10 +26,29 @@ export class CoreService implements OnModuleDestroy {
   private cache: Cache | null = null
   private platformDb: Database | null = null
   private geoDb: Reader<CountryResponse> | null = null
+  private readonly projectPool: Pool | null = null
+  static isPlatform: boolean | undefined
+
   constructor(private readonly appConfig: AppConfigService) {
     this.geoDb = this.createGeoDb()
     this.cache = this.createCache()
     this.platformDb = this.createPlatformDb()
+
+    // things are getting messy here
+    // we need to make sure to use postgres role for platform app, not admin
+    // as platform app allows sql execution over api, so we need to limit the access
+    const options = this.appConfig.getDatabaseConfig()
+    this.projectPool = this.createProjectDbClient('default', {
+      database: DEFAULT_DATABASE,
+      user: CoreService.isPlatform ? DatabaseRole.POSTGRES : DatabaseRole.ADMIN,
+      password: options.postgres.password,
+      host: options.useExternalPool
+        ? options.postgres.pool.host!
+        : options.postgres.host,
+      port: options.useExternalPool
+        ? options.postgres.pool.port
+        : options.postgres.port,
+    })
   }
 
   async onModuleDestroy() {
@@ -42,6 +61,13 @@ export class CoreService implements OnModuleDestroy {
           'Failed to disconnect platform database client',
           error,
         )
+      }
+    }
+    if (this.projectPool) {
+      try {
+        await this.projectPool.end()
+      } catch (error) {
+        this.logger.error('Failed to disconnect project database pool', error)
       }
     }
   }
@@ -61,9 +87,11 @@ export class CoreService implements OnModuleDestroy {
     return this.geoDb
   }
 
-  createProjectDbClient(name: string | 'root'): Promise<Client>
-  createProjectDbClient(name: string, options: PoolOptions): Promise<Client>
-  async createProjectDbClient(name: string | 'root', options?: PoolOptions) {
+  createProjectDbClient(name: string | 'root'): Pool
+  createProjectDbClient(name: string, options: PoolOptions): Pool
+  createProjectDbClient(name: string | 'root', options?: PoolOptions) {
+    if (name !== 'root' && this.projectPool) return this.projectPool
+
     let databaseOptions: Partial<PoolOptions> & Record<string, any> = {}
     if (name === 'root') {
       databaseOptions = {
@@ -84,20 +112,21 @@ export class CoreService implements OnModuleDestroy {
       }
     }
 
-    const client = new Client({
+    const pool = new Pool({
       ...databaseOptions,
       statement_timeout: 30000,
       query_timeout: 30000,
       application_name: name === 'root' ? 'nuvix' : `nuvix-${name}`,
       keepAliveInitialDelayMillis: 10000,
-    })
-    await client.connect()
-
-    client.on('error', err => {
-      this.logger.error(`Client error for ${name}:`, err)
+      max: this.appConfig.getDatabaseConfig().postgres.maxConnections,
+      idleTimeoutMillis: 5000,
     })
 
-    return client
+    pool.on('error', err => {
+      this.logger.error(`Pool error for ${name}:`, err)
+    })
+
+    return pool
   }
 
   createCacheDb() {
@@ -134,7 +163,10 @@ export class CoreService implements OnModuleDestroy {
     const adapter = new Adapter({
       ...platformDbConfig,
       database: platformDbConfig.name,
-      max: 100,
+      max: Math.floor(
+        this.appConfig.getDatabaseConfig().postgres.maxConnections / 3,
+      ),
+      idleTimeoutMillis: 5000,
     })
     const connection = new Database(adapter, this.getCache()).setMeta({
       schema: 'public',
@@ -163,7 +195,10 @@ export class CoreService implements OnModuleDestroy {
     return new Doc(data)
   }
 
-  getProjectDb(client: Client, { projectId, ...options }: GetProjectDBOptions) {
+  getProjectDb(
+    client: Client | Pool,
+    { projectId, ...options }: GetProjectDBOptions,
+  ) {
     const adapter = new Adapter(client)
     adapter.setMeta({
       metadata: {
@@ -187,13 +222,9 @@ export class CoreService implements OnModuleDestroy {
     return store
   }
 
-  getProjectPg(client: Client, ctx?: Context) {
+  getProjectPg(client: Pool | Client, ctx?: Context) {
     ctx = ctx ?? new Context()
-    const connection = new DataSource(
-      client as any,
-      {},
-      { context: ctx, listenForUpdates: false },
-    )
+    const connection = new DataSource(client, {}, { context: ctx })
     return connection
   }
 
@@ -248,10 +279,10 @@ export class CoreService implements OnModuleDestroy {
     return client
   }
 
-  async releaseDatabaseClient(client?: Client) {
+  async releaseDatabaseClient(client?: Pool | PoolClient) {
     try {
-      if (client) {
-        await client.end()
+      if (client && 'release' in client) {
+        client.release()
       }
     } catch (error) {
       this.logger.error('Failed to release database client', error)

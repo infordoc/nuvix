@@ -23,6 +23,8 @@ const nxconfig = () =>
         json: parseBoolean(process.env['APP_DEBUG_JSON'], false),
       },
       region: process.env['APP_REGION'] || 'local',
+      enableLogs: parseBoolean(process.env['APP_ENABLE_LOGS'], true),
+      enableStats: parseBoolean(process.env['APP_ENABLE_STATS'], true),
     },
 
     assets: {
@@ -166,6 +168,10 @@ const nxconfig = () =>
         sleep: 2,
         maxAttempts: 10,
       },
+      useExternalPool: parseBoolean(
+        process.env['APP_DATABASE_USE_EXTERNAL_POOL'],
+        false,
+      ),
     },
 
     storage: {
@@ -216,6 +222,8 @@ const nxconfig = () =>
       writeRateDefault: 60,
       writeRatePeriodDefault: 60,
       listDefault: 25,
+      batchSize: parseNumber(process.env['APP_BATCH_SIZE'], 2000),
+      batchIntervalMs: parseNumber(process.env['APP_BATCH_INTERVAL_MS'], 5000),
     },
 
     access: {

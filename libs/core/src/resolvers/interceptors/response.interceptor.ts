@@ -11,15 +11,13 @@ import {
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 import { isObject } from '@nestjs/common/utils/shared.utils.js'
-import { loadPackage } from '@nestjs/common/utils/load-package.util.js'
 import { ClassTransformOptions } from '@nestjs/common/interfaces/external/class-transform-options.interface'
 import { TransformerPackage } from '@nestjs/common/interfaces/external/transformer-package.interface'
 import { Doc } from '@nuvix/db'
 import { Reflector } from '@nestjs/core'
+import * as classTransformer from 'class-transformer'
 
 export const CLASS_SERIALIZER_OPTIONS = 'CLASS_SERIALIZER_OPTIONS'
-
-let classTransformer: TransformerPackage = {} as any
 
 export interface PlainLiteralObject {
   [key: string]: any
@@ -49,15 +47,14 @@ export class ResponseInterceptor implements NestInterceptor {
       excludePrefixes: ['$tenant'],
     },
   ) {
-    classTransformer =
-      defaultOptions?.transformerPackage ??
-      loadPackage('class-transformer', 'ClassSerializerInterceptor', () =>
-        require('class-transformer'),
-      )
-
-    if (!defaultOptions?.transformerPackage) {
-      require('class-transformer')
-    }
+    // classTransformer =
+    //   defaultOptions?.transformerPackage ??
+    //   loadPackage('class-transformer', 'ClassSerializerInterceptor', () =>
+    //     require('class-transformer'),
+    //   )
+    // if (!defaultOptions?.transformerPackage) {
+    //   require('class-transformer')
+    // }
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -167,17 +164,17 @@ export class ResponseInterceptor implements NestInterceptor {
       return plainOrClass
     }
     if (!options.type) {
-      return classTransformer.classToPlain(plainOrClass, options)
+      return classTransformer.instanceToPlain(plainOrClass, options)
     }
     if (plainOrClass instanceof options.type) {
-      return classTransformer.classToPlain(plainOrClass, options)
+      return classTransformer.instanceToPlain(plainOrClass, options)
     }
     const instance = (classTransformer as any).plainToInstance(
       options.type,
       plainOrClass,
       options,
     )
-    return classTransformer.classToPlain(instance, options)
+    return classTransformer.instanceToPlain(instance, options)
   }
 
   protected getContextOptions(

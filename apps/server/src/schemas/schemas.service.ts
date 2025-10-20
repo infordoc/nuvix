@@ -20,7 +20,7 @@ import { OrderParser } from '@nuvix/utils/query/order'
 import { ASTToQueryBuilder } from '@nuvix/utils/query/builder'
 import { Exception } from '@nuvix/core/extend/exception'
 import { transformPgError } from '@nuvix/utils/database/pg-error'
-import { Raw } from '@nuvix/pg'
+import { DataSource, Raw } from '@nuvix/pg'
 import {
   Doc,
   Permission,
@@ -28,12 +28,23 @@ import {
   PermissionType,
 } from '@nuvix/db'
 import { Database } from '@nuvix/db'
+import { setupDatabaseMeta } from '@nuvix/core/helper'
+import { ProjectsDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class SchemasService {
   private readonly logger = new Logger(SchemasService.name)
 
-  async select({ pg, table, url, limit, offset, schema, project }: Select) {
+  async select({
+    pg,
+    table,
+    url,
+    limit,
+    offset,
+    schema,
+    project,
+    context,
+  }: Select) {
     const qb = pg.qb(table).withSchema(schema)
     const allowedSchemas = project.get('metadata')?.['allowedSchemas'] || []
     const astToQueryBuilder = new ASTToQueryBuilder(qb, pg, {
@@ -53,12 +64,41 @@ export class SchemasService {
       offset,
     })
 
-    this.logger.debug(qb.toSQL())
-
-    return qb.catch(e => this.processError(e))
+    return this.withMetaTransaction(pg, project, context, async () => {
+      return qb.catch(e => this.processError(e))
+    })
   }
 
-  async insert({ pg, table, input, columns, schema, url }: Insert) {
+  private async withMetaTransaction(
+    pg: DataSource,
+    project: ProjectsDoc,
+    context: Record<string, any>,
+    callback: () => Promise<any>,
+  ) {
+    return pg.transaction(async () => {
+      const { role, request, ...extra } = context as any
+      await pg.execute(`SET LOCAL ROLE ${pg.escapeIdentifier(role)};`)
+      await setupDatabaseMeta({
+        request,
+        extra,
+        project,
+        client: pg,
+        extraPrefix: 'request.auth',
+      })
+      return callback()
+    })
+  }
+
+  async insert({
+    pg,
+    table,
+    input,
+    columns,
+    schema,
+    url,
+    context,
+    project,
+  }: Insert) {
     if (!input) {
       throw new Exception(
         Exception.INVALID_PARAMS,
@@ -100,9 +140,9 @@ export class SchemasService {
     astToQueryBuilder.applyReturning(select)
     qb.insert(data)
 
-    return pg
-      .withTransaction(async () => await qb)
-      .catch(e => this.processError(e))
+    return this.withMetaTransaction(pg, project, context, async () =>
+      qb.catch(e => this.processError(e)),
+    )
   }
 
   async update({
@@ -115,6 +155,7 @@ export class SchemasService {
     url,
     limit,
     offset,
+    context,
     force = false,
   }: Update) {
     if (!input) {
@@ -161,9 +202,9 @@ export class SchemasService {
     })
     qb.update(data)
 
-    return pg
-      .withTransaction(async () => await qb)
-      .catch(e => this.processError(e))
+    return this.withMetaTransaction(pg, project, context, async () =>
+      qb.catch(e => this.processError(e)),
+    )
   }
 
   async delete({
@@ -175,6 +216,7 @@ export class SchemasService {
     limit,
     offset,
     force,
+    context,
   }: Delete) {
     const qb = pg.qb(table).withSchema(schema)
     const { select, filter, order } = this.getParamsFromUrl(url, table)
@@ -200,9 +242,9 @@ export class SchemasService {
     })
     qb.delete()
 
-    return pg
-      .withTransaction(async () => await qb)
-      .catch(e => this.processError(e))
+    return this.withMetaTransaction(pg, project, context, async () => {
+      return qb.catch(e => this.processError(e))
+    })
   }
 
   async callFunction({
@@ -213,6 +255,8 @@ export class SchemasService {
     limit,
     offset,
     args,
+    context,
+    project,
   }: CallFunction) {
     let placeholder: string
     let values: any[]
@@ -245,9 +289,9 @@ export class SchemasService {
       offset,
     })
 
-    this.logger.debug(qb.toSQL())
-
-    return qb.catch(e => this.processError(e))
+    return this.withMetaTransaction(pg, project, context, async () => {
+      return qb.catch(e => this.processError(e))
+    })
   }
 
   private processError(e: unknown) {
