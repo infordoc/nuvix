@@ -101,17 +101,17 @@ export const init: (config: PoolConfig | any) => {
       //   },
       //   async () => {
       try {
-        if (!pool) {
-          const pool = new pg.Pool(config)
-          let res = await poolerQueryHandleError(pool, sql)
-          if (Array.isArray(res)) {
-            res = res.reverse().find(x => x.rows.length !== 0) ?? { rows: [] }
-          }
-          await pool.end()
-          return { data: res.rows, error: null }
-        }
+        // if (!pool) {
+        //   const pool = new pg.Pool(config)
+        //   let res = await poolerQueryHandleError(pool, sql)
+        //   if (Array.isArray(res)) {
+        //     res = res.reverse().find(x => x.rows.length !== 0) ?? { rows: [] }
+        //   }
+        //   await pool.end()
+        //   return { data: res.rows, error: null }
+        // }
 
-        let res = await poolerQueryHandleError(pool, sql)
+        let res = await poolerQueryHandleError(pool!, sql)
         if (Array.isArray(res)) {
           res = res.reverse().find(x => x.rows.length !== 0) ?? { rows: [] }
         }
@@ -192,16 +192,16 @@ export const init: (config: PoolConfig | any) => {
             formattedError: error.message,
           })
         } finally {
-          try {
-            // If the error isn't a "DatabaseError" assume it's a connection related we kill the connection
-            // To attempt a clean reconnect on next try
-            await this.end.bind(this)
-          } catch (error) {
-            console.error('Failed to end the connection on error: ', {
-              this: this,
-              end: this.end,
-            })
-          }
+          // try {
+          //   // If the error isn't a "DatabaseError" assume it's a connection related we kill the connection
+          //   // To attempt a clean reconnect on next try
+          //   await this.end.bind(this)
+          // } catch (error) {
+          //   console.error('Failed to end the connection on error: ', {
+          //     this: this,
+          //     end: this.end,
+          //   })
+          // }
         }
       }
       // }
