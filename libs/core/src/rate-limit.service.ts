@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { CoreService } from './core.service'
-import { Redis } from 'ioredis'
+import { Redis } from 'ioradis'
 
 export interface RateLimitResult {
   allowed: boolean

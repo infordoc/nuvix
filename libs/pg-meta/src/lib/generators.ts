@@ -113,22 +113,22 @@ export async function getGeneratorMetadata(
 
   return {
     data: {
-      schemas: schemas.filter(
+      schemas: schemas!.filter(
         ({ name }) =>
           !excludedSchemas.includes(name) &&
           (includedSchemas.length === 0 || includedSchemas.includes(name)),
       ),
-      tables,
-      foreignTables,
-      views,
-      materializedViews,
-      columns,
-      relationships,
-      functions: functions.filter(
+      tables: tables!,
+      foreignTables: foreignTables!,
+      views: views!,
+      materializedViews: materializedViews!,
+      columns: columns!,
+      relationships: relationships!,
+      functions: functions!.filter(
         ({ return_type }) =>
           !['trigger', 'event_trigger'].includes(return_type),
       ),
-      types,
+      types: types!,
     },
     error: null,
   }

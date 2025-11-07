@@ -1,5 +1,5 @@
 import { Static, Type } from '@sinclair/typebox'
-import { DatabaseError } from 'pg-protocol'
+import { DatabaseError } from 'pg'
 import type { Options as PrettierOptions } from 'prettier'
 import { PoolConfig as PgPoolConfig, Pool } from 'pg'
 
