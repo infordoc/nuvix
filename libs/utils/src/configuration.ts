@@ -157,13 +157,6 @@ const nxconfig = () =>
           // user and password can be same as main or different (we enforce same for now)
         },
       },
-      platform: {
-        host: process.env['APP_DATABASE_HOST'] ?? 'localhost',
-        port: parseNumber(process.env['APP_DATABASE_PORT'], 5432),
-        user: process.env['APP_DATABASE_USER'] ?? 'nuvix_admin',
-        password: process.env['APP_DATABASE_ADMIN_PASSWORD'],
-        name: process.env['APP_DATABASE_NAME'] ?? 'platform',
-      },
       timeout: 15_000,
       reconnect: {
         sleep: 2,

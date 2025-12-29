@@ -11,12 +11,7 @@ import { Reader, CountryResponse } from 'maxmind'
 import { readFileSync } from 'fs'
 import path from 'path'
 import type { ProjectsDoc } from '@nuvix/utils/types'
-import {
-  DatabaseConfig,
-  DatabaseRole,
-  DEFAULT_DATABASE,
-  Schemas,
-} from '@nuvix/utils'
+import { DatabaseRole, DEFAULT_DATABASE, Schemas } from '@nuvix/utils'
 import type { OAuthProviderType } from './config/authProviders.js'
 import { Exception } from './extend/exception.js'
 
@@ -24,45 +19,16 @@ import { Exception } from './extend/exception.js'
 export class CoreService implements OnModuleDestroy {
   private readonly logger = new Logger(CoreService.name)
   private cache: Cache | null = null
-  private platformDb: Database | null = null
   private geoDb: Reader<CountryResponse> | null = null
   private readonly projectPool: Pool | null = null
-  static isPlatform: boolean | undefined
 
   constructor(private readonly appConfig: AppConfigService) {
     this.geoDb = this.createGeoDb()
     this.cache = this.createCache()
-    this.platformDb = this.createPlatformDb()
-
-    // things are getting messy here
-    // we need to make sure to use postgres role for platform app, not admin
-    // as platform app allows sql execution over api, so we need to limit the access
-    const options = this.appConfig.getDatabaseConfig()
-    this.projectPool = this.createProjectDbClient('default', {
-      database: DEFAULT_DATABASE,
-      user: CoreService.isPlatform ? DatabaseRole.POSTGRES : DatabaseRole.ADMIN,
-      password: options.postgres.password,
-      host: options.useExternalPool
-        ? options.postgres.pool.host!
-        : options.postgres.host,
-      port: options.useExternalPool
-        ? options.postgres.pool.port
-        : options.postgres.port,
-    })
+    this.projectPool = this.createMainPool()
   }
 
   async onModuleDestroy() {
-    const client = this.platformDb?.getAdapter().$client
-    if (client) {
-      try {
-        await client.disconnect()
-      } catch (error) {
-        this.logger.error(
-          'Failed to disconnect platform database client',
-          error,
-        )
-      }
-    }
     if (this.projectPool) {
       try {
         await this.projectPool.end()
@@ -78,8 +44,14 @@ export class CoreService implements OnModuleDestroy {
   }
 
   public getPlatformDb(): Database {
-    if (!this.platformDb) throw new Exception('Platform DB not initialized')
-    return this.platformDb
+    if (!this.projectPool) throw new Exception('Project DB not initialized')
+    const adapter = new Adapter(this.projectPool).setMeta({
+      schema: Schemas.Internal,
+      sharedTables: false,
+      namespace: 'platform',
+    })
+
+    return new Database(adapter, this.getCache())
   }
 
   public getGeoDb(): Reader<CountryResponse> {
@@ -87,19 +59,48 @@ export class CoreService implements OnModuleDestroy {
     return this.geoDb
   }
 
-  createProjectDbClient(name: string | 'root'): Pool
-  createProjectDbClient(name: string, options: PoolOptions): Pool
-  createProjectDbClient(name: string | 'root', options?: PoolOptions) {
-    if (name !== 'root' && this.projectPool) return this.projectPool
+  private createMainPool(): Pool {
+    const options = this.appConfig.getDatabaseConfig()
 
+    const pool = new Pool({
+      database: DEFAULT_DATABASE,
+      user: DatabaseRole.ADMIN,
+      password: options.postgres.adminPassword,
+      host: options.useExternalPool
+        ? options.postgres.pool.host!
+        : options.postgres.host,
+      port: options.useExternalPool
+        ? options.postgres.pool.port
+        : options.postgres.port,
+      ssl: this.appConfig.getDatabaseConfig().postgres.ssl
+        ? { rejectUnauthorized: false }
+        : undefined,
+      statement_timeout: 30000,
+      query_timeout: 30000,
+      application_name: 'nuvix-main',
+      keepAliveInitialDelayMillis: 10000,
+      max: options.postgres.maxConnections,
+      idleTimeoutMillis: 5000,
+    })
+
+    pool.on('error', err => {
+      this.logger.error('Main pool error:', err)
+    })
+
+    return pool
+  }
+
+  /**
+   * Useful where we need a custom client for direct sql execution
+   */
+  createProjectDbClient(name: string, options?: PoolOptions) {
     let databaseOptions: Partial<PoolOptions> & Record<string, any> = {}
-    if (name === 'root') {
-      databaseOptions = {
-        ...this.appConfig.getDatabaseConfig().postgres,
-        user: DatabaseRole.ADMIN,
-        password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
-      }
-    } else if (options) {
+    databaseOptions = {
+      ...this.appConfig.getDatabaseConfig().postgres,
+      user: DatabaseRole.ADMIN,
+      password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
+    }
+    if (options) {
       databaseOptions = {
         host: options.host,
         port: options.port,
@@ -116,7 +117,7 @@ export class CoreService implements OnModuleDestroy {
       ...databaseOptions,
       statement_timeout: 30000,
       query_timeout: 30000,
-      application_name: name === 'root' ? 'nuvix' : `nuvix-${name}`,
+      application_name: `nuvix-${name}`,
       keepAliveInitialDelayMillis: 10000,
       max: this.appConfig.getDatabaseConfig().postgres.maxConnections,
       idleTimeoutMillis: 5000,
@@ -140,7 +141,7 @@ export class CoreService implements OnModuleDestroy {
     return connection
   }
 
-  createCache(redis?: IORedis) {
+  createCache() {
     if (this.cache) {
       return this.cache
     }
@@ -153,27 +154,6 @@ export class CoreService implements OnModuleDestroy {
     })
     const cache = new Cache(adapter)
     return cache
-  }
-
-  private createPlatformDb() {
-    if (this.platformDb) {
-      return this.platformDb
-    }
-    const platformDbConfig = this.appConfig.getDatabaseConfig().platform
-    const adapter = new Adapter({
-      ...platformDbConfig,
-      database: platformDbConfig.name,
-      max: Math.floor(
-        this.appConfig.getDatabaseConfig().postgres.maxConnections / 3,
-      ),
-      idleTimeoutMillis: 5000,
-    })
-    const connection = new Database(adapter, this.getCache()).setMeta({
-      schema: 'public',
-      sharedTables: false,
-      namespace: 'platform',
-    })
-    return connection
   }
 
   public getPlatformAudit() {
@@ -245,48 +225,38 @@ export class CoreService implements OnModuleDestroy {
     }
   }
 
-  // we will support pool type later
-  // there is many cases where we can use transaction pool instead of session pool
-  // for example in case of queue processing
   async createProjectDatabase(
     project: ProjectsDoc,
     options?: CreateProjectDatabaseOptions,
   ) {
-    const dbOptions = project.get('database') as unknown as DatabaseConfig
-    const client = await this.createProjectDbClient(project.getId(), {
-      database: DEFAULT_DATABASE,
-      user: DatabaseRole.ADMIN,
-      password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
-      port: dbOptions?.pool?.port,
-      host: dbOptions?.pool?.host,
-    })
-    const dbForProject = this.getProjectDb(client, {
+    if (!this.projectPool) {
+      throw new Error('Project pool is not initialized')
+    }
+    const dbForProject = this.getProjectDb(this.projectPool, {
       projectId: project.getId(),
       schema: options?.schema,
     })
-    return { client, dbForProject }
+    return { client: this.projectPool, dbForProject }
   }
 
   async createProjectPgClient(project: ProjectsDoc) {
-    const dbOptions = project.get('database') as unknown as DatabaseConfig
-    const client = await this.createProjectDbClient(project.getId(), {
-      database: DEFAULT_DATABASE,
-      user: DatabaseRole.ADMIN,
-      password: this.appConfig.getDatabaseConfig().postgres.adminPassword,
-      port: dbOptions?.pool?.port,
-      host: dbOptions?.pool?.host,
-    })
-    return client
+    if (!this.projectPool) {
+      throw new Error('Project pool is not initialized')
+    }
+    return this.projectPool
   }
 
+  /**
+   * @deprecated Use connection pools instead
+   */
   async releaseDatabaseClient(client?: Pool | PoolClient) {
-    try {
-      if (client && 'release' in client) {
-        client.release()
-      }
-    } catch (error) {
-      this.logger.error('Failed to release database client', error)
-    }
+    // try {
+    //   if (client && 'release' in client) {
+    //     client.release()
+    //   }
+    // } catch (error) {
+    //   this.logger.error('Failed to release database client', error)
+    // }
   }
 }
 
