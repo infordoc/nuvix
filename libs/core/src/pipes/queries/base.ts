@@ -18,7 +18,7 @@ export class BaseQueryPipe extends ParseQueryPipe {
 
   private static get collections() {
     return {
-      ...collections.console,
+      ...collections.internal,
       ...collections.project,
       ...collections.bucket,
       ...collections.database,

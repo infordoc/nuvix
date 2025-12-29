@@ -49,9 +49,7 @@ import { CoreService } from '@nuvix/core'
   providers: [AppService, MailsQueue, AuditsQueue],
 })
 export class AppModule implements NestModule, OnModuleInit {
-  constructor(private readonly jwtService: JwtService) {
-    CoreService.isPlatform = true
-  }
+  constructor(private readonly jwtService: JwtService) {}
 
   onModuleInit() {
     Key.setJwtService(this.jwtService)

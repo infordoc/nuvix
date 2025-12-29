@@ -5,20 +5,17 @@ import {
   Permission,
   Role,
   DuplicateException,
-  Adapter,
   Authorization,
   ID,
 } from '@nuvix/db'
 import collections from '@nuvix/utils/collections'
 import { Audit } from '@nuvix/audit'
-import { Client } from 'pg'
 import { AppConfigService, CoreService } from '@nuvix/core'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { DatabaseRole, DEFAULT_DATABASE } from '@nuvix/utils'
+import { Schemas } from '@nuvix/utils'
 import { AccountService } from '../account/account.service'
 import { ProjectService } from '../projects/projects.service'
 import { ProjectsQueue } from '@nuvix/core/resolvers'
-import { TeamsService } from '../teams/teams.service'
 
 export async function initSetup(
   app: NestFastifyApplication,
@@ -27,80 +24,30 @@ export async function initSetup(
   const logger = new Logger('Setup')
   const coreService = app.get(CoreService)
   try {
-    const { host, password, port, user, name } =
-      config.getDatabaseConfig().platform
+    logger.log('Initializing server setup...')
+    const pool = coreService.createProjectDbClient('initial-setup')
+    await pool
+      .query(`create schema if not exists ${Schemas.Internal};`)
+      .catch(e => logger.error('Error creating internal schema', e))
+      .finally(() => pool.end())
 
-    if (config.isSelfHosted) {
-      const rootClient = new Client({
-        host,
-        password,
-        port,
-        user: DatabaseRole.ADMIN,
-        database: DEFAULT_DATABASE,
-      })
-      try {
-        await rootClient.connect()
-        const res = await rootClient.query(
-          `SELECT 1 FROM pg_database WHERE datname = $1`,
-          [name],
-        )
-
-        if (res.rowCount === 0) {
-          logger.log(`Database ${name} does not exist. Creating...`)
-          await rootClient.query(`CREATE DATABASE "${name}"`)
-          logger.log(`Database ${name} created.`)
-        }
-        // set password for postgres user until we implement it in docker image
-        await rootClient.query(
-          `ALTER USER ${DatabaseRole.POSTGRES} WITH PASSWORD '${config.getDatabaseConfig().postgres.password}'`,
-        )
-      } catch (error: any) {
-        logger.error("Can't create database.", error.message)
-        throw error
-      } finally {
-        await rootClient.end()
-      }
-    }
-
-    const client = new Client({
-      host,
-      password,
-      port,
-      user,
-      database: name,
-    })
+    const db = coreService.getPlatformDb()
 
     try {
-      await client.connect()
-    } catch (error: any) {
-      logger.error("Can't connect to database.", error.message)
-      throw error
-    }
-
-    const adapter = new Adapter(client)
-    const cache = coreService.getCache()
-    const dbForPlatform = new Database(adapter, cache)
-    dbForPlatform.setMeta({
-      schema: 'public',
-      sharedTables: false,
-      namespace: 'platform',
-    })
-
-    try {
-      await cache.flush()
-      await dbForPlatform.create()
+      await db.getCache().flush()
+      await db.create()
     } catch (e) {
       if (!(e instanceof DuplicateException)) throw e
     }
 
     logger.log(`Starting...`)
     await Authorization.skip(async () => {
-      const consoleCollections = collections.console
-      for (const [_, collection] of Object.entries(consoleCollections)) {
+      const internalCollections = collections.internal
+      for (const [_, collection] of Object.entries(internalCollections)) {
         if (collection.$collection !== Database.METADATA) {
           continue
         }
-        if (await dbForPlatform.exists(dbForPlatform.schema, collection.$id)) {
+        if (await db.exists(db.schema, collection.$id)) {
           continue
         }
 
@@ -112,7 +59,7 @@ export async function initSetup(
 
         const indexes = (collection.indexes ?? []).map(index => new Doc(index))
 
-        await dbForPlatform.createCollection({
+        await db.createCollection({
           id: collection.$id,
           attributes,
           indexes,
@@ -121,17 +68,11 @@ export async function initSetup(
         })
       }
 
-      const defaultBucket = await dbForPlatform.getDocument(
-        'buckets',
-        'default',
-      )
-      if (
-        defaultBucket.empty() &&
-        !(await dbForPlatform.exists(dbForPlatform.schema, 'bucket_1'))
-      ) {
+      const defaultBucket = await db.getDocument('buckets', 'default')
+      if (defaultBucket.empty() && !(await db.exists(db.schema, 'bucket_1'))) {
         logger.log('Creating default bucket...')
 
-        await dbForPlatform.createDocument(
+        await db.createDocument(
           'buckets',
           new Doc({
             $id: 'default',
@@ -154,7 +95,7 @@ export async function initSetup(
           }),
         )
 
-        const bucket = await dbForPlatform.getDocument('buckets', 'default')
+        const bucket = await db.getDocument('buckets', 'default')
         logger.log('Creating files collection for default bucket...')
 
         const files = collections.bucket['files']
@@ -168,95 +109,19 @@ export async function initSetup(
 
         const fileIndexes = files.indexes?.map(index => new Doc(index))
 
-        await dbForPlatform.createCollection({
+        await db.createCollection({
           id: `bucket_${bucket.getSequence()}`,
           attributes: fileAttributes,
           indexes: fileIndexes,
         })
       }
-      if (
-        !(await dbForPlatform.exists(dbForPlatform.schema, Audit.COLLECTION))
-      ) {
+      if (!(await db.exists(db.schema, Audit.COLLECTION))) {
         logger.log('Creating Audit Collection.')
-        await new Audit(dbForPlatform).setup()
-      }
-
-      // currently we only support single project in self-hosted mode
-      // so we create a default project with admin user
-      if (config.isSelfHosted) {
-        logger.log('Setting up project.')
-        const accountService = app.get(AccountService)
-        const orgService = app.get(TeamsService)
-        const projectService = app.get(ProjectService)
-        const projectsQueue = app.get(ProjectsQueue)
-
-        const hasAnyUser = !(await dbForPlatform.findOne('users')).empty()
-
-        if (hasAnyUser) {
-          logger.log('User already exists. Skipping project setup.')
-          return
-        }
-
-        const adminEmail = process.env['APP_DEFAULT_USER_EMAIL']
-        const adminPassword = process.env['APP_DEFAULT_USER_PASSWORD']
-        const adminName = process.env['APP_DEFAULT_USER_NAME'] || 'Admin'
-
-        if (!adminEmail || !adminPassword) {
-          throw new Error(
-            'APP_DEFAULT_USER_EMAIL or APP_DEFAULT_USER_PASSWORD is not set in environment variables.',
-          )
-        }
-
-        const user = await accountService.createAccount(
-          ID.unique(),
-          adminEmail,
-          adminPassword,
-          adminName,
-          new Doc(),
-          '',
-        )
-
-        const team = await orgService.create(user, {
-          teamId: 'my-team',
-          name: 'My Team',
-        })
-
-        const project = await projectService.create({
-          projectId: 'default',
-          name: 'Project',
-          teamId: team.getId(),
-          region: 'local',
-          password: password || '',
-        })
-
-        await projectsQueue.devInit(project, {
-          host,
-          port,
-        })
-
-        project
-          .set('status', 'active')
-          .set('database', {
-            postgres: {
-              host,
-              port,
-              password,
-            },
-            pool: {
-              host: config.getDatabaseConfig().postgres.pool.host,
-              port: config.getDatabaseConfig().postgres.pool.port,
-              password,
-            },
-          })
-          .set('environment', 'local')
-
-        await dbForPlatform.updateDocument('projects', project.getId(), project)
-
-        logger.log('Project setup complete.')
+        await new Audit(db).setup()
       }
 
       logger.log('Successfully complete the server setup.')
-      await cache.flush()
+      await db.getCache().flush()
     })
   } catch (error: any) {
     logger.error(`Error while setting up server: ${error.message}`, error.stack)

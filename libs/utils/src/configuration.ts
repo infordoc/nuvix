@@ -3,33 +3,182 @@ import { PROJECT_ROOT } from './constants'
 import { Logger } from '@nestjs/common'
 import { parseBoolean, parseNumber } from './helpers'
 
-const nxconfig = () =>
+type CookieSameSite = 'none' | 'lax' | 'strict'
+
+interface Configuration {
+  readonly app: {
+    readonly name: string
+    readonly domain: string
+    readonly hostname: string
+    readonly hostnameInternal: string
+    readonly consoleURL: string
+    readonly version: string
+    readonly isProduction: boolean
+    readonly forceHttps: boolean
+    readonly emailTeam: string
+    readonly emailSecurity: string
+    readonly userAgent: string
+    readonly color: string
+    readonly debug: {
+      readonly colors: boolean
+      readonly json: boolean
+    }
+    readonly region: string
+    readonly enableLogs: boolean
+    readonly enableStats: boolean
+    readonly docsRoot: string
+  }
+  readonly assets: {
+    readonly root: string
+    readonly images: string
+    readonly fonts: string
+    readonly templates: string
+    readonly public: string
+    readonly get: (...relativePath: string[]) => string
+  }
+  readonly security: {
+    readonly jwtSecret: string | undefined
+    readonly encryptionKey: string | undefined
+    readonly dbEncryptionKey: string
+  }
+  readonly server: {
+    readonly host: string
+    readonly methods: readonly string[]
+    readonly allowedOrigins: readonly string[]
+    readonly allowedHeaders: readonly string[]
+    readonly credentials: boolean
+    readonly exposedHeaders: readonly string[]
+    readonly cookieDomain: string
+    readonly cookieSameSite: CookieSameSite
+  }
+  readonly redis: {
+    readonly port: number
+    readonly host: string | undefined
+    readonly user: string | undefined
+    readonly password: string | undefined
+    readonly db: number
+    readonly secure: boolean
+  }
+  readonly smtp: {
+    readonly host: string | undefined
+    readonly port: number
+    readonly secure: boolean
+    readonly user: string | undefined
+    readonly password: string | undefined
+    readonly emailFrom: string | undefined
+    readonly sender: string | undefined
+    readonly replyTo: string | undefined
+    readonly dkim: {
+      readonly domain: string | undefined
+      readonly key: string | undefined
+      readonly privateKey: string | undefined
+    }
+  }
+  readonly sms: {
+    readonly enabled: boolean
+  }
+  readonly database: {
+    readonly postgres: {
+      readonly host: string
+      readonly port: number
+      readonly user: string
+      readonly adminPassword: string | undefined
+      readonly password: string | undefined
+      readonly database: string
+      readonly ssl: boolean
+      readonly maxConnections: number
+      readonly pool: {
+        readonly host: string | undefined
+        readonly port: number
+      }
+    }
+    readonly timeout: number
+    readonly reconnect: {
+      readonly sleep: number
+      readonly maxAttempts: number
+    }
+    readonly useExternalPool: boolean
+  }
+  readonly storage: {
+    readonly uploads: string
+    readonly cache: string
+    readonly certificates: string
+    readonly config: string
+    readonly temp: string
+    readonly readBuffer: number
+    readonly maxSize: number
+    readonly limit: number
+    readonly maxOutputChunkSize: number
+  }
+  readonly limits: {
+    readonly pagingLimit: number
+    readonly maxCount: number
+    readonly limitCount: number
+    readonly users: number
+    readonly userPasswordHistory: number
+    readonly userSessionsMax: number
+    readonly userSessionsDefault: number
+    readonly antivirus: number
+    readonly encryption: number
+    readonly compression: number
+    readonly arrayParamsSize: number
+    readonly arrayLabelsSize: number
+    readonly arrayElementSize: number
+    readonly subquery: number
+    readonly subscribersSubquery: number
+    readonly writeRateDefault: number
+    readonly writeRatePeriodDefault: number
+    readonly listDefault: number
+    readonly batchSize: number
+    readonly batchIntervalMs: number
+  }
+  readonly access: {
+    readonly key: number
+    readonly user: number
+    readonly project: number
+  }
+  readonly cache: {
+    readonly update: number
+    readonly buster: number
+  }
+  readonly system: {
+    readonly emailAddress: string
+    readonly emailName: string
+  }
+  readonly logLevels: readonly string[]
+}
+
+const nxconfig = (): Configuration =>
   ({
     app: {
       name: 'Nuvix',
-      domain: process.env['APP_DOMAIN'] ?? 'localhost',
-      hostname: process.env['APP_HOSTNAME'] ?? 'localhost',
-      hostnameInternal: process.env['APP_HOSTNAME_INTERNAL'] ?? 'localhost',
-      consoleURL: process.env['APP_CONSOLE_URL'] ?? 'http://localhost:3000',
+      domain: process.env['NUVIX_DOMAIN'] ?? 'localhost',
+      hostname: process.env['NUVIX_HOSTNAME'] ?? 'localhost',
+      hostnameInternal: process.env['NUVIX_HOSTNAME_INTERNAL'] ?? 'localhost',
+      consoleURL: process.env['NUVIX_CONSOLE_URL'] ?? 'http://localhost:3000',
       version: '1.0.0',
       isProduction: process.env['NODE_ENV'] === 'production',
-      forceHttps: process.env['APP_FORCE_HTTPS'] === 'disabled',
-      emailTeam: process.env['APP_EMAIL_TEAM'] || 'team@localhost.test',
-      emailSecurity: process.env['APP_EMAIL_SECURITY'] || '',
+      forceHttps: process.env['NUVIX_FORCE_HTTPS'] !== 'disabled',
+      emailTeam: process.env['NUVIX_EMAIL_TEAM'] || 'team@localhost.test',
+      emailSecurity: process.env['NUVIX_EMAIL_SECURITY'] || '',
       userAgent: 'Nuvix-Server v%s. Please report abuse at %s',
-      color: '#18e299',
+      color: '#ff751f',
       debug: {
-        colors: parseBoolean(process.env['APP_DEBUG_COLORS'], true),
-        json: parseBoolean(process.env['APP_DEBUG_JSON'], false),
+        colors: parseBoolean(process.env['NUVIX_DEBUG_COLORS'], true),
+        json: parseBoolean(process.env['NUVIX_DEBUG_JSON'], false),
       },
-      region: process.env['APP_REGION'] || 'local',
-      enableLogs: parseBoolean(process.env['APP_ENABLE_LOGS'], true),
-      enableStats: parseBoolean(process.env['APP_ENABLE_STATS'], true),
-      docsRoot: process.env['APP_DOCS_ROOT'] || path.join(PROJECT_ROOT, 'docs'),
+      region: process.env['NUVIX_REGION'] || 'local',
+      enableLogs: parseBoolean(process.env['NUVIX_ENABLE_LOGS'], true),
+      enableStats: parseBoolean(process.env['NUVIX_ENABLE_STATS'], true),
+      docsRoot:
+        process.env['NUVIX_DOCS_ROOT'] || path.join(PROJECT_ROOT, 'docs'),
     },
 
     assets: {
-      root: path.join(PROJECT_ROOT, process.env['APP_ASSETS_ROOT'] || 'assets'),
+      root: path.join(
+        PROJECT_ROOT,
+        process.env['NUVIX_ASSETS_ROOT'] || 'assets',
+      ),
       get images() {
         return path.join(configuration.assets.root, 'images')
       },
@@ -41,20 +190,20 @@ const nxconfig = () =>
       },
       public: path.join(
         PROJECT_ROOT,
-        process.env['APP_ASSETS_PUBLIC'] || 'public',
+        process.env['NUVIX_ASSETS_PUBLIC'] || 'public',
       ),
       get: (...relativePath: string[]) =>
         path.join(configuration.assets.root, ...relativePath),
     },
 
     security: {
-      jwtSecret: process.env['APP_JWT_SECRET'],
-      encryptionKey: process.env['APP_ENCRYPTION_KEY'],
+      jwtSecret: process.env['NUVIX_JWT_SECRET'],
+      encryptionKey: process.env['NUVIX_ENCRYPTION_KEY'],
       get dbEncryptionKey() {
-        const key = process.env['APP_DATABASE_ENCRYPTION_KEY']
+        const key = process.env['NUVIX_DATABASE_ENCRYPTION_KEY']
         if (!key) {
           Logger.warn(
-            'The environment variable APP_DATABASE_ENCRYPTION_KEY is not set. Using the default encryption key, which is insecure. Please set a custom key in production environments.',
+            'The environment variable NUVIX_DATABASE_ENCRYPTION_KEY is not set. Using the default encryption key, which is insecure. Please set a custom key in production environments.',
           )
         }
         return key || 'acd3462d9128abcd' // 16-byte key for AES-128-GCM
@@ -62,9 +211,9 @@ const nxconfig = () =>
     },
 
     server: {
-      host: process.env['APP_HOST'] ?? 'localhost',
+      host: process.env['NUVIX_HOST'] ?? 'localhost',
       methods: ['GET', 'PUT', 'PATCH', 'POST', 'DELETE'],
-      allowedOrigins: (process.env['APP_CORS_ORIGIN'] ?? '')
+      allowedOrigins: (process.env['NUVIX_CORS_ORIGIN'] ?? '')
         .split(',')
         .map(origin => origin.trim()),
       allowedHeaders: [
@@ -89,45 +238,42 @@ const nxconfig = () =>
         'x-sdk-version',
         'content-range',
         'x-fallback-cookies',
-        'x-nuvix-session',
-        ...(process.env['APP_CORS_HEADERS'] ?? '')
+        'x-Nuvix-session',
+        ...(process.env['NUVIX_CORS_HEADERS'] ?? '')
           .split(',')
           .map(header => header.trim()),
       ],
       credentials: true,
       exposedHeaders: ['X-Nuvix-Session', 'X-Fallback-Cookies'],
-      cookieDomain: process.env['APP_COOKIE_DOMAIN'] ?? '',
+      cookieDomain: process.env['NUVIX_COOKIE_DOMAIN'] ?? '',
       cookieSameSite:
-        (process.env['APP_COOKIE_SAMESITE'] as
-          | 'none'
-          | 'lax'
-          | 'strict'
-          | undefined) || 'none',
+        (process.env['NUVIX_COOKIE_SAMESITE'] as CookieSameSite | undefined) ||
+        'none',
     },
 
     redis: {
-      port: parseNumber(process.env['APP_REDIS_PORT'], 6379),
-      host: process.env['APP_REDIS_HOST'],
-      user: process.env['APP_REDIS_USER'],
-      password: process.env['APP_REDIS_PASSWORD'],
-      db: parseNumber(process.env['APP_REDIS_DB'], 0),
-      secure: process.env['APP_REDIS_SECURE'] === 'true',
+      port: parseNumber(process.env['NUVIX_REDIS_PORT'], 6379),
+      host: process.env['NUVIX_REDIS_HOST'],
+      user: process.env['NUVIX_REDIS_USER'],
+      password: process.env['NUVIX_REDIS_PASSWORD'],
+      db: parseNumber(process.env['NUVIX_REDIS_DB'], 0),
+      secure: process.env['NUVIX_REDIS_SECURE'] === 'true',
       // -- we will consider to add tls options later
     },
 
     smtp: {
-      host: process.env['APP_SMTP_HOST'],
-      port: parseNumber(process.env['APP_SMTP_PORT'], 587),
-      secure: process.env['APP_SMTP_SECURE'] === 'true',
-      user: process.env['APP_SMTP_USER'],
-      password: process.env['APP_SMTP_PASSWORD'],
-      emailFrom: process.env['APP_SMTP_EMAIL_FROM'],
-      sender: process.env['APP_SMTP_SENDER'],
-      replyTo: process.env['APP_SMTP_REPLY_TO'],
+      host: process.env['NUVIX_SMTP_HOST'],
+      port: parseNumber(process.env['NUVIX_SMTP_PORT'], 587),
+      secure: process.env['NUVIX_SMTP_SECURE'] === 'true',
+      user: process.env['NUVIX_SMTP_USER'],
+      password: process.env['NUVIX_SMTP_PASSWORD'],
+      emailFrom: process.env['NUVIX_SMTP_EMAIL_FROM'],
+      sender: process.env['NUVIX_SMTP_SENDER'],
+      replyTo: process.env['NUVIX_SMTP_REPLY_TO'],
       dkim: {
-        domain: process.env['APP_SMTP_DKIM_DOMAIN'],
-        key: process.env['APP_SMTP_DKIM_KEY'],
-        privateKey: process.env['APP_SMTP_DKIM_PRIVATE_KEY'],
+        domain: process.env['NUVIX_SMTP_DKIM_DOMAIN'],
+        key: process.env['NUVIX_SMTP_DKIM_KEY'],
+        privateKey: process.env['NUVIX_SMTP_DKIM_PRIVATE_KEY'],
       },
     },
 
@@ -139,21 +285,21 @@ const nxconfig = () =>
     database: {
       // May be we will support multi tenant later, for now single db (provide same details for all)
       postgres: {
-        host: process.env['APP_DATABASE_HOST'] ?? 'localhost',
-        port: parseNumber(process.env['APP_DATABASE_PORT'], 5432),
-        user: process.env['APP_DATABASE_USER'] ?? 'postgres',
-        adminPassword: process.env['APP_DATABASE_ADMIN_PASSWORD'],
-        password: process.env['APP_DATABASE_PASSWORD'],
+        host: process.env['NUVIX_DATABASE_HOST'] ?? 'localhost',
+        port: parseNumber(process.env['NUVIX_DATABASE_PORT'], 5432),
+        user: process.env['NUVIX_DATABASE_USER'] ?? 'postgres',
+        adminPassword: process.env['NUVIX_DATABASE_ADMIN_PASSWORD'],
+        password: process.env['NUVIX_DATABASE_PASSWORD'],
         database: 'postgres', // initial db
-        ssl: process.env['APP_DATABASE_SSL'] === 'true',
+        ssl: process.env['NUVIX_DATABASE_SSL'] === 'true',
         maxConnections: parseInt(
-          process.env['APP_DATABASE_MAX_CONNECTIONS'] ?? '100',
+          process.env['NUVIX_DATABASE_MAX_CONNECTIONS'] ?? '100',
           10,
         ), // not used currently
         // extrnal pool options (pgcat)
         pool: {
-          host: process.env['APP_DATABASE_POOL_HOST'] ?? undefined,
-          port: parseNumber(process.env['APP_DATABASE_POOL_PORT'], 6432),
+          host: process.env['NUVIX_DATABASE_POOL_HOST'] ?? undefined,
+          port: parseNumber(process.env['NUVIX_DATABASE_POOL_PORT'], 6432),
           // user and password can be same as main or different (we enforce same for now)
         },
       },
@@ -163,7 +309,7 @@ const nxconfig = () =>
         maxAttempts: 10,
       },
       useExternalPool: parseBoolean(
-        process.env['APP_DATABASE_USE_EXTERNAL_POOL'],
+        process.env['NUVIX_DATABASE_USE_EXTERNAL_POOL'],
         false,
       ),
     },
@@ -177,32 +323,32 @@ const nxconfig = () =>
       readBuffer: 20 * (1000 * 1000), // 20MB
       // max file size for upload
       maxSize: parseNumber(
-        process.env['APP_STORAGE_MAX_SIZE'],
+        process.env['NUVIX_STORAGE_MAX_SIZE'],
         5 * (1000 * 1000 * 1000),
       ), // 5GB
       // max bucket size
       limit: parseNumber(
-        process.env['APP_STORAGE_LIMIT'],
+        process.env['NUVIX_STORAGE_LIMIT'],
         10 * (1000 * 1000 * 1000),
       ), // 10GB
       maxOutputChunkSize: 5 * (1000 * 1000), // 5MB
     },
 
     limits: {
-      pagingLimit: parseNumber(process.env['APP_LIMIT_PAGING'], 12),
+      pagingLimit: parseNumber(process.env['NUVIX_LIMIT_PAGING'], 12),
       maxCount: 10_000,
       limitCount: 5000,
-      users: parseNumber(process.env['APP_LIMIT_USERS'], 10_000),
+      users: parseNumber(process.env['NUVIX_LIMIT_USERS'], 10_000),
       userPasswordHistory: parseNumber(
-        process.env['APP_LIMIT_USER_PASSWORD_HISTORY'],
+        process.env['NUVIX_LIMIT_USER_PASSWORD_HISTORY'],
         10,
       ),
       userSessionsMax: parseNumber(
-        process.env['APP_LIMIT_USER_SESSIONS_MAX'],
+        process.env['NUVIX_LIMIT_USER_SESSIONS_MAX'],
         100,
       ),
       userSessionsDefault: parseNumber(
-        process.env['APP_LIMIT_USER_SESSIONS_DEFAULT'],
+        process.env['NUVIX_LIMIT_USER_SESSIONS_DEFAULT'],
         10,
       ),
       antivirus: 20_000_000, // 20MB
@@ -216,8 +362,11 @@ const nxconfig = () =>
       writeRateDefault: 60,
       writeRatePeriodDefault: 60,
       listDefault: 25,
-      batchSize: parseNumber(process.env['APP_BATCH_SIZE'], 2000),
-      batchIntervalMs: parseNumber(process.env['APP_BATCH_INTERVAL_MS'], 5000),
+      batchSize: parseNumber(process.env['NUVIX_BATCH_SIZE'], 2000),
+      batchIntervalMs: parseNumber(
+        process.env['NUVIX_BATCH_INTERVAL_MS'],
+        5000,
+      ),
     },
 
     access: {
@@ -227,16 +376,16 @@ const nxconfig = () =>
     },
 
     cache: {
-      update: parseNumber(process.env['APP_CACHE_UPDATE'], 24 * 60 * 60), // 24 hours
+      update: parseNumber(process.env['NUVIX_CACHE_UPDATE'], 24 * 60 * 60), // 24 hours
       buster: 4318,
     },
 
     system: {
       emailAddress: process.env['SYSTEM_EMAIL_ADDRESS'] ?? 'support@nuvix.in',
-      emailName: process.env['APP_NAME'] ?? 'Nuvix Support',
+      emailName: process.env['NUVIX_NAME'] ?? 'Nuvix Support',
     },
 
-    logLevels: (process.env['APP_LOG_LEVELS'] ?? 'log,error,warn')
+    logLevels: (process.env['NUVIX_LOG_LEVELS'] ?? 'log,error,warn')
       .split(',')
       .map(level => level.trim())
       .filter(level => level),
@@ -245,25 +394,19 @@ const nxconfig = () =>
 export const configuration = nxconfig()
 
 export function validateRequiredConfig() {
-  const requiredVars = [
-    'APP_JWT_SECRET',
-    'APP_ENCRYPTION_KEY',
-    'APP_REDIS_HOST',
-    'APP_DATABASE_ADMIN_PASSWORD',
-    'APP_DATABASE_PASSWORD',
-  ]
+  const requiredVars: readonly string[] = [
+    'NUVIX_JWT_SECRET',
+    'NUVIX_ENCRYPTION_KEY',
+    'NUVIX_REDIS_HOST',
+    'NUVIX_DATABASE_ADMIN_PASSWORD',
+    'NUVIX_DATABASE_PASSWORD',
+  ] as const
 
-  const missing: string[] = []
+  const missing: string[] = requiredVars.filter(envVar => !process.env[envVar])
 
-  for (const envVar of requiredVars) {
-    if (!process.env[envVar]) {
-      missing.push(envVar)
-    }
-  }
-
-  const inProd = process.env['NODE_ENV'] === 'production'
-  if (inProd && !process.env['APP_DATABASE_ENCRYPTION_KEY']) {
-    missing.push('APP_DATABASE_ENCRYPTION_KEY')
+  const isProduction = process.env['NODE_ENV'] === 'production'
+  if (isProduction && !process.env['NUVIX_DATABASE_ENCRYPTION_KEY']) {
+    missing.push('NUVIX_DATABASE_ENCRYPTION_KEY')
   }
 
   if (missing.length > 0) {
@@ -273,13 +416,15 @@ export function validateRequiredConfig() {
   }
 
   const dbKey =
-    process.env['APP_DATABASE_ENCRYPTION_KEY'] ??
+    process.env['NUVIX_DATABASE_ENCRYPTION_KEY'] ??
     configuration.security.dbEncryptionKey
 
   const keyBytes = Buffer.byteLength(dbKey, 'utf8')
-  if (![16, 24, 32].includes(keyBytes)) {
+  const validKeySizes = [16, 24, 32] as const
+
+  if (!validKeySizes.includes(keyBytes as 16 | 24 | 32)) {
     throw new Error(
-      `DB Encryption key must be 16, 24, or 32 bytes (AES-128/192/256)`,
+      `DB Encryption key must be 16, 24, or 32 bytes (AES-128/192/256). Current size: ${keyBytes} bytes`,
     )
   }
 }

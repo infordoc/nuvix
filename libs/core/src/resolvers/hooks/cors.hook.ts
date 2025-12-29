@@ -78,7 +78,9 @@ export class CorsHook implements Hook {
       host === cfg.host
 
     if (isConsoleRequest) {
-      return this.matchOrigin(origin, cfg.allowedOrigins, host) ? origin : false
+      return this.matchOrigin(origin, [...cfg.allowedOrigins], host)
+        ? origin
+        : false
     }
 
     const validator = new Origin(project!.get('platforms', []))
