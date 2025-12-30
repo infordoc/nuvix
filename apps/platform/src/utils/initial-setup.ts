@@ -15,7 +15,6 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Schemas } from '@nuvix/utils'
 import { AccountService } from '../account/account.service'
 import { ProjectService } from '../projects/projects.service'
-import { ProjectsQueue } from '@nuvix/core/resolvers'
 
 export async function initSetup(
   app: NestFastifyApplication,
@@ -118,6 +117,82 @@ export async function initSetup(
       if (!(await db.exists(db.schema, Audit.COLLECTION))) {
         logger.log('Creating Audit Collection.')
         await new Audit(db).setup()
+      }
+
+      const accountService = app.get(AccountService)
+      const projectService = app.get(ProjectService)
+      const authDb = coreService.getProjectDb(coreService.createMainPool(), {
+        projectId: config.get('app').projectId,
+        schema: Schemas.Auth,
+      })
+
+      const hasSuperUser = await authDb.findOne('users')
+      if (!hasSuperUser.empty()) {
+        logger.log('Super user already exists. Skipping creation.')
+      } else {
+        const adminEmail = process.env['NUVIX_ADMIN_EMAIL']
+        const adminPassword = process.env['NUVIX_ADMIN_PASSWORD']
+
+        if (!adminEmail || !adminPassword) {
+          throw new Error(
+            'Admin credentials are not set in environment variables.',
+          )
+        }
+
+        logger.log('Creating super user...')
+        const adminUser = await accountService.createAccount(
+          ID.unique(),
+          adminEmail,
+          adminPassword,
+          'Super Admin',
+          new Doc(),
+          '',
+        )
+        const teamId = ID.custom('my-team')
+        const team = await authDb.createDocument(
+          'teams',
+          new Doc({
+            $id: teamId,
+            name: 'My Team',
+            total: 1,
+            $permissions: [
+              Permission.read(Role.user(adminUser.getId())),
+              Permission.update(Role.user(adminUser.getId())),
+              Permission.delete(Role.user(adminUser.getId())),
+              Permission.read(Role.team(teamId)),
+              Permission.update(Role.team(teamId)),
+            ],
+          }),
+        )
+        await authDb.createDocument(
+          'memberships',
+          new Doc({
+            $id: ID.unique(),
+            teamInternalId: team.getSequence(),
+            teamId: teamId,
+            userInternalId: adminUser.getSequence(),
+            userId: adminUser.getId(),
+            joined: new Date(),
+            confirm: true,
+            roles: ['owner'],
+            $permissions: [
+              Permission.read(Role.user(adminUser.getId())),
+              Permission.update(Role.user(adminUser.getId())),
+              Permission.read(Role.team(teamId)),
+              Permission.update(Role.team(teamId)),
+              Permission.delete(Role.team(teamId)),
+            ],
+          }),
+        )
+
+        const projectId = config.get('app').projectId
+        await projectService.create({
+          projectId,
+          teamId,
+          name: 'My Project',
+          password: config.getDatabaseConfig().postgres.adminPassword || '',
+          region: 'local',
+        })
       }
 
       logger.log('Successfully complete the server setup.')

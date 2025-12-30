@@ -27,6 +27,7 @@ interface Configuration {
     readonly enableLogs: boolean
     readonly enableStats: boolean
     readonly docsRoot: string
+    readonly projectId: string
   }
   readonly assets: {
     readonly root: string
@@ -172,6 +173,7 @@ const nxconfig = (): Configuration =>
       enableStats: parseBoolean(process.env['NUVIX_ENABLE_STATS'], true),
       docsRoot:
         process.env['NUVIX_DOCS_ROOT'] || path.join(PROJECT_ROOT, 'docs'),
+      projectId: process.env['NUVIX_PROJECT_ID'] || 'default',
     },
 
     assets: {
@@ -400,6 +402,7 @@ export function validateRequiredConfig() {
     'NUVIX_REDIS_HOST',
     'NUVIX_DATABASE_ADMIN_PASSWORD',
     'NUVIX_DATABASE_PASSWORD',
+    'NUVIX_PROJECT_ID',
   ] as const
 
   const missing: string[] = requiredVars.filter(envVar => !process.env[envVar])

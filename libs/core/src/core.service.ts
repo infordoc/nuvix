@@ -59,7 +59,10 @@ export class CoreService implements OnModuleDestroy {
     return this.geoDb
   }
 
-  private createMainPool(): Pool {
+  public createMainPool(): Pool {
+    if (this.projectPool) {
+      return this.projectPool
+    }
     const options = this.appConfig.getDatabaseConfig()
 
     const pool = new Pool({
