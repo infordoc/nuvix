@@ -23,11 +23,13 @@ export async function initSetup(
   const logger = new Logger('Setup')
   const coreService = app.get(CoreService)
   try {
-    logger.log('Initializing server setup...')
+    logger.log('🚀 Initializing Nuvix server setup...')
     const pool = coreService.createProjectDbClient('initial-setup')
     await pool
       .query(`create schema if not exists ${Schemas.Internal};`)
-      .catch(e => logger.error('Error creating internal schema', e))
+      .catch(e =>
+        logger.error('❌ Failed to create internal database schema', e),
+      )
       .finally(() => pool.end())
 
     const db = coreService.getPlatformDb()
@@ -35,11 +37,13 @@ export async function initSetup(
     try {
       await db.getCache().flush()
       await db.create()
+      logger.log('✓ Platform database initialized successfully')
     } catch (e) {
       if (!(e instanceof DuplicateException)) throw e
+      logger.log('✓ Platform database already exists')
     }
 
-    logger.log(`Starting...`)
+    logger.log('📦 Setting up collections and resources...')
     await Authorization.skip(async () => {
       const internalCollections = collections.internal
       for (const [_, collection] of Object.entries(internalCollections)) {
@@ -50,7 +54,7 @@ export async function initSetup(
           continue
         }
 
-        logger.log(`Creating collection: ${collection.$id}...`)
+        logger.log(`  ➜ Creating collection: ${collection.$id}`)
 
         const attributes = collection.attributes.map(
           attribute => new Doc(attribute),
@@ -69,7 +73,7 @@ export async function initSetup(
 
       const defaultBucket = await db.getDocument('buckets', 'default')
       if (defaultBucket.empty() && !(await db.exists(db.schema, 'bucket_1'))) {
-        logger.log('Creating default bucket...')
+        logger.log('📁 Creating default storage bucket...')
 
         await db.createDocument(
           'buckets',
@@ -95,7 +99,7 @@ export async function initSetup(
         )
 
         const bucket = await db.getDocument('buckets', 'default')
-        logger.log('Creating files collection for default bucket...')
+        logger.log('  ➜ Creating files collection for default bucket')
 
         const files = collections.bucket['files']
         if (!files) {
@@ -115,31 +119,26 @@ export async function initSetup(
         })
       }
       if (!(await db.exists(db.schema, Audit.COLLECTION))) {
-        logger.log('Creating Audit Collection.')
+        logger.log('📋 Setting up audit logging system')
         await new Audit(db).setup()
       }
 
       const accountService = app.get(AccountService)
       const projectService = app.get(ProjectService)
-      const authDb = coreService.getProjectDb(coreService.createMainPool(), {
-        projectId: config.get('app').projectId,
-        schema: Schemas.Auth,
-      })
-
-      const hasSuperUser = await authDb.findOne('users')
+      const hasSuperUser = await db.findOne('users')
       if (!hasSuperUser.empty()) {
-        logger.log('Super user already exists. Skipping creation.')
+        logger.log('✓ Admin user already exists, skipping creation')
       } else {
         const adminEmail = process.env['NUVIX_ADMIN_EMAIL']
         const adminPassword = process.env['NUVIX_ADMIN_PASSWORD']
 
         if (!adminEmail || !adminPassword) {
           throw new Error(
-            'Admin credentials are not set in environment variables.',
+            '❌ NUVIX_ADMIN_EMAIL and NUVIX_ADMIN_PASSWORD environment variables are required for initial setup',
           )
         }
 
-        logger.log('Creating super user...')
+        logger.log(`👤 Creating admin user with email: ${adminEmail}`)
         const adminUser = await accountService.createAccount(
           ID.unique(),
           adminEmail,
@@ -149,7 +148,7 @@ export async function initSetup(
           '',
         )
         const teamId = ID.custom('my-team')
-        const team = await authDb.createDocument(
+        const team = await db.createDocument(
           'teams',
           new Doc({
             $id: teamId,
@@ -164,7 +163,7 @@ export async function initSetup(
             ],
           }),
         )
-        await authDb.createDocument(
+        await db.createDocument(
           'memberships',
           new Doc({
             $id: ID.unique(),
@@ -193,13 +192,15 @@ export async function initSetup(
           password: config.getDatabaseConfig().postgres.adminPassword || '',
           region: 'local',
         })
+        logger.log(`✓ Default project created with ID: ${projectId}`)
       }
 
-      logger.log('Successfully complete the server setup.')
+      logger.log('✅ Nuvix server setup completed successfully!')
+      logger.log('🎉 Your self-hosted Nuvix instance is ready to use')
       await db.getCache().flush()
     })
   } catch (error: any) {
-    logger.error(`Error while setting up server: ${error.message}`, error.stack)
+    logger.error(`❌ Setup failed: ${error.message}`, error.stack)
     throw error
   }
 }
