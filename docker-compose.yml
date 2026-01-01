@@ -4,14 +4,16 @@
 
 services:
   postgres:
-    image: ravikan6/postgres
+    image: nuvix/postgres
     container_name: nuvix-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${APP_DATABASE_ADMIN_PASSWORD}
+      POSTGRES_PASSWORD: ${NUVIX_DATABASE_ADMIN_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
     env_file:
       - .env
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -20,7 +22,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'PGPASSWORD=${APP_DATABASE_ADMIN_PASSWORD} pg_isready -U nuvix_admin -d postgres -h localhost',
+          'PGPASSWORD=${NUVIX_DATABASE_ADMIN_PASSWORD} pg_isready -U nuvix_admin -d postgres -h localhost',
         ]
       interval: 10s
       timeout: 5s
@@ -37,6 +39,8 @@ services:
     restart: unless-stopped
     networks:
       - nuvix
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
@@ -51,14 +55,14 @@ services:
       - "9930:9930"  # Metrics port
       - "6432:6432"  
     environment:
-      APP_PGCAT_ADMIN_USER: ${APP_PGCAT_ADMIN_USER:-admin}
-      APP_PGCAT_ADMIN_PASSWORD: ${APP_PGCAT_ADMIN_PASSWORD:-password}
-      APP_DATABASE_PASSWORD: ${APP_DATABASE_PASSWORD}
-      APP_DATABASE_ADMIN_PASSWORD: ${APP_DATABASE_ADMIN_PASSWORD}
-      APP_DATABASE_POOL_HOST: localhost
-      APP_DATABASE_POOL_PORT: 6432
-      APP_DATABASE_HOST: postgres
-      APP_DATABASE_PORT: 5432
+      NUVIX_PGCAT_ADMIN_USER: ${NUVIX_PGCAT_ADMIN_USER:-admin}
+      NUVIX_PGCAT_ADMIN_PASSWORD: ${NUVIX_PGCAT_ADMIN_PASSWORD:-password}
+      NUVIX_DATABASE_PASSWORD: ${NUVIX_DATABASE_PASSWORD}
+      NUVIX_DATABASE_ADMIN_PASSWORD: ${NUVIX_DATABASE_ADMIN_PASSWORD}
+      NUVIX_DATABASE_POOL_HOST: localhost
+      NUVIX_DATABASE_POOL_PORT: 6432
+      NUVIX_DATABASE_HOST: postgres
+      NUVIX_DATABASE_PORT: 5432
     env_file:
       - .env
     volumes:
@@ -85,11 +89,10 @@ services:
       - '4000:4000'
     env_file:
       - .env
-      - .env.server
     environment:
-      APP_DATABASE_HOST: postgres
-      APP_DATABASE_POOL_HOST: pgcat
-      APP_REDIS_HOST: redis
+      NUVIX_DATABASE_HOST: postgres
+      NUVIX_DATABASE_POOL_HOST: pgcat
+      NUVIX_REDIS_HOST: redis
       NODE_ENV: production
     depends_on:
       postgres:
@@ -121,11 +124,10 @@ services:
       - '4100:4100'
     env_file:
       - .env
-      - .env.platform
     environment:
-      APP_DATABASE_HOST: postgres
-      APP_DATABASE_POOL_HOST: pgcat
-      APP_REDIS_HOST: redis
+      NUVIX_DATABASE_HOST: postgres
+      NUVIX_DATABASE_POOL_HOST: pgcat
+      NUVIX_REDIS_HOST: redis
       NODE_ENV: production
     depends_on:
       postgres:
@@ -141,27 +143,11 @@ services:
       options:
         max-size: '10m'
         max-file: '5'
-  # caddy:
-  #   image: caddy:2
-  #   container_name: nuvix-caddy
-  #   restart: unless-stopped
-  #   ports:
-  #     - '443:443'
-  #     - '443:443/udp'
-  #   volumes:
-  #     - ./configs/Caddyfile:/etc/caddy/Caddyfile
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #   networks:
-  #     - caddy
-  #     - nuvix
 
 volumes:
   postgres_data:
   nuvix_storage:
   redis_data:
-  # caddy_data:
-  # caddy_config:
 
 networks:
   nuvix:

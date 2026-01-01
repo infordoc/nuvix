@@ -33,9 +33,11 @@ export async function bootstrap() {
   const adapter = new NuvixAdapter({
     trustProxy: true,
     skipMiddie: true,
-    maxParamLength: 350,
-    querystringParser(str) {
-      return QueryString.parse(str)
+    routerOptions: {
+      maxParamLength: 350,
+      querystringParser(str) {
+        return QueryString.parse(str)
+      },
     },
     logger: {
       enabled: true,

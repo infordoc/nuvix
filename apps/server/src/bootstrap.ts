@@ -29,8 +29,10 @@ export async function bootstrap() {
     new NuvixAdapter({
       trustProxy: true,
       skipMiddie: true,
-      querystringParser(str) {
-        return QueryString.parse(str)
+      routerOptions: {
+        querystringParser(str) {
+          return QueryString.parse(str)
+        },
       },
       exposeHeadRoutes: false,
       logger: {

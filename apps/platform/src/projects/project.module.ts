@@ -5,7 +5,6 @@ import { JwtModule } from '@nestjs/jwt'
 import { configuration, QueueFor } from '@nuvix/utils'
 import { ProjectController } from './project.controller'
 import { BullModule } from '@nestjs/bullmq'
-import { ProjectsQueue } from '@nuvix/core/resolvers/queues/projects.queue'
 import { AuthSettingsController } from './auth-settings/auth-settings.controller'
 import { KeysController } from './keys/keys.controller'
 import { PlatformsController } from './platforms/platforms.controller'
@@ -46,7 +45,6 @@ import { MetadataController } from './metadata/metadata.controller'
   ],
   providers: [
     ProjectService,
-    ProjectsQueue,
     AuthSettingsService,
     KeysService,
     PlatformsService,

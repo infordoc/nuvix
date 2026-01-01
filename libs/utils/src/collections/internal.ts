@@ -8,8 +8,8 @@ import {
 } from '@nuvix/db'
 import { authCollections, commonCollections } from './common'
 
-export const consoleCollections: Record<string, Collection> = {
-  ...authCollections('platform'),
+export const internalCollections: Record<string, Collection> = {
+  ...authCollections,
 
   projects: {
     $collection: ID.custom(Database.METADATA),

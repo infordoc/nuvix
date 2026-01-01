@@ -57,15 +57,6 @@ export class CreateProjectDTO {
   @IsOptional()
   @IsString()
   url?: string
-
-  /**
-   * Project enviroment
-   * @deprecated
-   */
-  @IsOptional()
-  @IsString()
-  @IsIn(['dev', 'prod'])
-  env?: 'dev' | 'prod' = 'dev'
 }
 
 // Params

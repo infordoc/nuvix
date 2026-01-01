@@ -42,6 +42,7 @@ export enum Schemas {
   Auth = 'auth',
   Core = 'core',
   System = 'system',
+  Internal = 'internal', // used for platform internal stuff
 }
 
 export enum SchemaType {

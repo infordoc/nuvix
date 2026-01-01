@@ -5,7 +5,7 @@ import {
   UpdateProjectTeamDTO,
 } from './DTO/update-project.dto'
 import { Exception } from '@nuvix/core/extend/exception'
-import { ApiKey, configuration, QueueFor } from '@nuvix/utils'
+import { ApiKey, configuration } from '@nuvix/utils'
 import authMethods, {
   AuthMethod,
   defaultAuthConfig,
@@ -32,14 +32,9 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import {
-  ProjectJob,
-  ProjectQueueOptions,
-} from '@nuvix/core/resolvers/queues/projects.queue'
-import { AppConfigService, CoreService } from '@nuvix/core'
+import { CoreService } from '@nuvix/core'
 import type { Projects } from '@nuvix/utils/types'
+import { setupDatabase } from '@nuvix/utils/database/setup'
 
 @Injectable()
 export class ProjectService {
@@ -47,13 +42,6 @@ export class ProjectService {
 
   constructor(
     private coreService: CoreService,
-    private readonly appConfig: AppConfigService,
-    @InjectQueue(QueueFor.PROJECTS)
-    private readonly projectQueue: Queue<
-      ProjectQueueOptions,
-      unknown,
-      ProjectJob
-    >,
     private readonly jwtService: JwtService,
   ) {
     this.db = this.coreService.getPlatformDb()
@@ -67,7 +55,6 @@ export class ProjectService {
     teamId,
     password,
     name,
-    env,
     ...rest
   }: CreateProjectDTO): Promise<Doc<Projects>> {
     const projectId = _projectId === 'unique()' ? ID.unique() : _projectId
@@ -125,7 +112,7 @@ export class ProjectService {
         auths: auths,
         services: defaultServices,
         accessedAt: new Date(),
-        environment: env || 'dev',
+        environment: '',
         database: {
           postgres: {
             password,
@@ -133,7 +120,6 @@ export class ProjectService {
           pool: {
             password,
           },
-          // other details will be set in queue worker
         } as any,
         enabled: true,
         status: 'pending',
@@ -143,17 +129,10 @@ export class ProjectService {
       })
 
       project = await this.db.createDocument('projects', project)
-
-      // In case if project env is not dev then we need to init the project
-      // dev projects will be initialized while envtoken creation
-      if (
-        project.get('environment') !== 'dev' &&
-        !this.appConfig.isSelfHosted
-      ) {
-        await this.projectQueue.add(ProjectJob.INIT, {
-          project,
-        })
-      }
+      await setupDatabase({
+        coreService: this.coreService,
+        projectId: project.getId(),
+      })
 
       return project
     } catch (error) {
