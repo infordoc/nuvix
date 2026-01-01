@@ -82,7 +82,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
       args:
-        - NUVIX_NAME=server
+        - APP_NAME=server
     container_name: server
     command: ['bun', 'main.js']
     ports:
@@ -117,7 +117,7 @@ services:
       dockerfile: Dockerfile
       target: runtime
       args:
-        - NUVIX_NAME=platform
+        - APP_NAME=platform
     container_name: platform
     command: ['bun', 'main.js']
     ports:
@@ -143,27 +143,11 @@ services:
       options:
         max-size: '10m'
         max-file: '5'
-  # caddy:
-  #   image: caddy:2
-  #   container_name: nuvix-caddy
-  #   restart: unless-stopped
-  #   ports:
-  #     - '443:443'
-  #     - '443:443/udp'
-  #   volumes:
-  #     - ./configs/Caddyfile:/etc/caddy/Caddyfile
-  #     - caddy_data:/data
-  #     - caddy_config:/config
-  #   networks:
-  #     - caddy
-  #     - nuvix
 
 volumes:
   postgres_data:
   nuvix_storage:
   redis_data:
-  # caddy_data:
-  # caddy_config:
 
 networks:
   nuvix:

@@ -30,6 +30,7 @@
     
     # Copy the final build artifacts and necessary runtime files from the 'builder' stage.
     COPY --from=builder /app/apps/${APP_NAME}/output/ ./output
+    COPY --from=builder /app/apps/${APP_NAME}/output/package.json ./
     COPY --from=builder /app/assets ./assets
     COPY --from=builder /app/public ./public
     COPY --from=builder /app/docs/references ./docs/references
