@@ -19,7 +19,7 @@
     "start": "turbo start",
     "lint": "biome check",
     "test": "turbo test",
-    "gen:types": "nuvix-db",
+    "gen:types": "turbo gen:types",
     "typecheck": "turbo typecheck",
     "format": "biome format --write ."
   },
@@ -51,9 +51,13 @@
     "class-validator": "^0.14.2",
     "dotenv": "^16.6.1",
     "handlebars": "^4.7.8",
+    "ioredis": "^5.9.1",
     "maxmind": "^4.3.29",
     "nodemailer": "^7.0.6",
+    "path-to-regexp": "^8.3.0",
     "pg": "^8.16.3",
+    "postgres-array": "^3.0.4",
+    "prettier": "^3.7.4",
     "qs": "^6.14.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
@@ -64,9 +68,6 @@
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.7",
     "@nestjs/testing": "^11.1.6",
-    "@swc/cli": "^0.7.8",
-    "@swc/core": "^1.13.19",
-    "@swc/helpers": "^0.5.17",
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/long": "^5.0.0",
@@ -82,19 +83,15 @@
     "fastify": "^5.6.1",
     "source-map-support": "^0.5.21",
     "supertest": "^7.1.4",
-    "swc-loader": "^0.2.6",
-    "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "tsup": "^8.5.0",
-    "tsx": "^4.20.5",
     "turbo": "^2.5.8",
     "typescript": "^5.9.2",
-    "unplugin-swc": "^1.5.7",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   },
-  "packageManager": "bun@1.2.0",
+  "packageManager": "bun@1.3.5",
   "workspaces": [
     "apps/*",
     "libs/*"
@@ -102,7 +99,6 @@
   "trustedDependencies": [
     "@nestjs/core",
     "@scarf/scarf",
-    "@swc/core",
     "esbuild",
     "msgpackr-extract"
   ]

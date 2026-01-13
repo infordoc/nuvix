@@ -2,7 +2,7 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig(options => {
   return {
-    entry: ['src/main.ts'],
+    entry: ['src'],
     format: ['cjs', 'esm'],
     dts: false,
     sourcemap: true,
@@ -14,6 +14,7 @@ export default defineConfig(options => {
     target: 'es2024',
     skipNodeModulesBundle: true,
     shims: true,
+    bundle: false,
     tsconfig: './tsconfig.app.json',
     plugins: [],
   }

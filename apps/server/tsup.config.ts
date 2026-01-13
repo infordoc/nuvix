@@ -50,7 +50,7 @@ export default defineConfig(options => {
   printStylizedNuvix()
 
   return {
-    entry: ['src/main.ts'],
+    entry: ['src'],
     format: ['cjs', 'esm'],
     dts: false,
     sourcemap: true,
@@ -61,6 +61,7 @@ export default defineConfig(options => {
     minify: true,
     target: 'es2024',
     skipNodeModulesBundle: true,
+    bundle: false,
     shims: true,
     tsconfig: './tsconfig.app.json',
   }

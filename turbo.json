@@ -55,6 +55,10 @@
       "dependsOn": ["build"],
       "cache": false
     },
-    "gen:metadata": { "cache": false, "inputs": ["src/**/*.ts"] }
+    "gen:metadata": {
+      "cache": false,
+      "inputs": ["src/**/*.ts"]
+    },
+    "gen:types": {}
   }
 }

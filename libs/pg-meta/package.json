@@ -7,7 +7,12 @@
     "test": "jest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "pg-format": "^1.0.4",
+    "pgsql-parser": "^17.8.2",
+    "prettier-plugin-sql": "^0.19.1",
+    "@sinclair/typebox": "^0.31.25"
+  },
   "devDependencies": {
     "@types/node": "^22.15.30",
     "typescript": "^5.8.3",
