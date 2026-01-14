@@ -34,7 +34,7 @@ import {
   ApiExtension,
 } from '@nestjs/swagger'
 import * as fs from 'fs'
-import { Models } from '../helper'
+import { Models } from '../helpers'
 import path from 'path'
 
 type RouteMethod =

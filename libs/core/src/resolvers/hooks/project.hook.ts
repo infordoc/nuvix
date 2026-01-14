@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Authorization, Database, Doc } from '@nuvix/db'
-import ParamsHelper from '../../helper/params.helper'
+import ParamsHelper from '../../helpers/params.helper'
 
 import {
   Schemas,

@@ -28,6 +28,11 @@
     "incremental": false,
     "skipLibCheck": true,
     /* === Paths === */
-    "baseUrl": "./"
+    "baseUrl": "./",
+    "paths": {
+      "@nuvix/utils": ["./libs/utils/src"],
+      "@nuvix/utils/*": ["./libs/utils/src/*"],
+      "@nuvix/utils/types": ["./libs/utils/types"]
+    }
   }
 }

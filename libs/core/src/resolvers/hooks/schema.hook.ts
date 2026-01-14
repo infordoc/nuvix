@@ -17,7 +17,7 @@ import {
 import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import { CoreService } from '../../core.service.js'
 import type { Client } from 'pg'
-import { Auth } from '../../helper'
+import { Auth } from '../../helpers'
 
 @Injectable()
 export class SchemaHook implements Hook {

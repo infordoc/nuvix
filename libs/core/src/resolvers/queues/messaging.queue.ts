@@ -25,7 +25,7 @@ import { Device } from '@nuvix/storage'
 import { Database, Doc, Query } from '@nuvix/db'
 import { Injectable, Logger } from '@nestjs/common'
 import { Schemas, QueueFor, MessageType, MessageProvider } from '@nuvix/utils'
-import { MessageStatus } from '../../messaging/status'
+import { MessageStatus } from '@nuvix/utils'
 import type {
   Files,
   Messages,

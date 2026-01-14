@@ -22,8 +22,8 @@ import {
   deleteIdentities,
   deleteSubscribers,
   deleteTargets,
-} from '../../helper/misc.helper'
-import { Auth } from '../../helper'
+} from '../../helpers/misc.helper'
+import { Auth } from '../../helpers'
 import { Audit } from '@nuvix/audit'
 import { Logger } from '@nestjs/common'
 

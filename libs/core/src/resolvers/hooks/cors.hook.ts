@@ -4,7 +4,7 @@ import { Hook } from '../../server/hooks/interface'
 import {
   addOriginToVaryHeader,
   addAccessControlRequestHeadersToVaryHeader,
-} from '../../helper/vary.helper'
+} from '../../helpers/vary.helper'
 import { ProjectsDoc } from '@nuvix/utils/types'
 import { AppConfigService } from '../../config.service'
 import { Origin } from '../../validators/network/origin'

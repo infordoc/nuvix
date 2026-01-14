@@ -17,7 +17,7 @@ import { SwaggerModule } from '@nestjs/swagger'
 import { ErrorFilter } from '@nuvix/core/filters'
 import { AppConfigService } from '@nuvix/core'
 import { openApiSetup } from './core'
-import { Auth } from '@nuvix/core/helper/auth.helper.js'
+import { Auth } from '@nuvix/core/helpers'
 import * as crypto from 'crypto'
 
 validateRequiredConfig()

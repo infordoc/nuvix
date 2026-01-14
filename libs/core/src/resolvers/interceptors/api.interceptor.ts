@@ -8,7 +8,7 @@ import { Observable } from 'rxjs'
 import { Context, CORE_SCHEMA_DB, MetricFor, QueueFor } from '@nuvix/utils'
 import { Database, Events, Doc } from '@nuvix/db'
 import { Reflector } from '@nestjs/core'
-import { Auth } from '../../helper/auth.helper'
+import { Auth } from '../../helpers/auth.helper'
 import { Exception } from '../../extend/exception'
 import { TOTP } from '../../validators/MFA.validator'
 import {

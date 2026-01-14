@@ -2,12 +2,12 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Authorization, Database, Doc, Role } from '@nuvix/db'
 import { ApiKey, AppMode, AuthActivity, Context } from '@nuvix/utils'
 import { Exception } from '../../extend/exception'
-import { Auth } from '../../helper/auth.helper'
+import { Auth } from '../../helpers/auth.helper'
 import { roles } from '../../config/roles'
-import ParamsHelper from '../../helper/params.helper'
+import ParamsHelper from '../../helpers/params.helper'
 import { APP_PLATFORM_SERVER, platforms } from '../../config/platforms'
 import { Hook } from '../../server/hooks/interface'
-import { Key } from '../../helper/key.helper'
+import { Key } from '../../helpers/key.helper'
 import {
   KeysDoc,
   MembershipsDoc,

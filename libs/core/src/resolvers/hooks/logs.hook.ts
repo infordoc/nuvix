@@ -6,7 +6,7 @@ import { Context, QueueFor } from '@nuvix/utils'
 import type { Queue } from 'bullmq'
 import type { ProjectsDoc } from '@nuvix/utils/types'
 import type { ApiLogsQueueJobData } from '../queues/logs.queue'
-import { Auth, type Key } from '../../helper'
+import { Auth, type Key } from '../../helpers'
 import { AppConfigService } from '../../config.service'
 import { AuthType } from '../../decorators'
 

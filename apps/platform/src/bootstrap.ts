@@ -22,7 +22,7 @@ import QueryString from 'qs'
 import { initSetup } from './utils/initial-setup'
 import { ErrorFilter } from '@nuvix/core/filters'
 import { AppConfigService } from '@nuvix/core'
-import { Auth } from '@nuvix/core/helper/auth.helper.js'
+import { Auth } from '@nuvix/core/helpers'
 import { SwaggerModule } from '@nestjs/swagger'
 import { openApiSetup } from './utils/open-api'
 
