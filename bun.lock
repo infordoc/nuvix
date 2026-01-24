@@ -28,7 +28,7 @@
         "@nuvix/storage": "^1.0.1",
         "@nuvix/telemetry": "^1.0.2",
         "argon2": "^0.44.0",
-        "canvas": "^3.2.1",
+        "canvas": "3.1.0",
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.3",
         "dotenv": "^16.6.1",
@@ -104,7 +104,6 @@
         "@nestjs/apollo": "^13.1.0",
         "@nestjs/graphql": "^13.1.0",
         "@scalar/nestjs-api-reference": "^0.5.8",
-        "canvas": "^3.1.0",
         "graphql": "^16.11.0",
         "sharp": "^0.34.2",
       },
@@ -1056,7 +1055,7 @@
 
     "caniuse-lite": ["caniuse-lite@1.0.30001764", "", {}, "sha512-9JGuzl2M+vPL+pz70gtMF9sHdMFbY9FJaQBi186cHKH3pSzDvzoUJUPV6fqiKIMyXbud9ZLg4F3Yza1vJ1+93g=="],
 
-    "canvas": ["canvas@3.2.1", "", { "dependencies": { "node-addon-api": "^7.0.0", "prebuild-install": "^7.1.3" } }, "sha512-ej1sPFR5+0YWtaVp6S1N1FVz69TQCqmrkGeRvQxZeAB1nAIcjNTHVwrZtYtWFFBmQsF40/uDLehsW5KuYC99mg=="],
+    "canvas": ["canvas@3.1.0", "", { "dependencies": { "node-addon-api": "^7.0.0", "prebuild-install": "^7.1.1" } }, "sha512-tTj3CqqukVJ9NgSahykNwtGda7V33VLObwrHfzT0vqJXu7J4d4C/7kQQW3fOEGDfZZoILPut5H00gOjyttPGyg=="],
 
     "chai": ["chai@5.3.3", "", { "dependencies": { "assertion-error": "^2.0.1", "check-error": "^2.1.1", "deep-eql": "^5.0.1", "loupe": "^3.1.0", "pathval": "^2.0.0" } }, "sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw=="],
 
