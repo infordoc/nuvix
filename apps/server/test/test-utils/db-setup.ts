@@ -41,7 +41,9 @@ export async function dbSetup(
 
     try {
       await db.getCache().flush()
-      await db.create()
+      await db
+        .exists(undefined, Database.METADATA)
+        .then(is => (is ? undefined : db.create()))
       logger.log('✓ Platform database initialized successfully')
     } catch (e) {
       if (!(e instanceof DuplicateException)) throw e

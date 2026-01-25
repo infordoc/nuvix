@@ -12,7 +12,7 @@ import { AppModule } from './app.module'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import {
   ConsoleLogger,
-  Logger,
+  LOG_LEVELS,
   LogLevel,
   ValidationPipe,
   VERSION_NEUTRAL,
@@ -41,6 +41,16 @@ validateRequiredConfig()
 Authorization.enableAsyncLocalStorage()
 
 export async function bootstrap() {
+  const logLevels = configuration.app.isProduction
+    ? (configuration.logLevels as LogLevel[])
+    : undefined
+  const logger = new ConsoleLogger({
+    json: configuration.app.debug.json,
+    colors: configuration.app.debug.colors,
+    prefix: 'Nuvix-Platform',
+    logLevels,
+  })
+
   const adapter = new NuvixAdapter({
     trustProxy: true,
     skipMiddie: true,
@@ -64,14 +74,7 @@ export async function bootstrap() {
     adapter,
     {
       abortOnError: false,
-      logger: new ConsoleLogger({
-        json: configuration.app.debug.json,
-        colors: configuration.app.debug.colors,
-        prefix: 'Nuvix-Console',
-        logLevels: configuration.app.isProduction
-          ? (configuration.logLevels as LogLevel[])
-          : undefined,
-      }),
+      logger,
       autoFlushLogs: true,
     },
   )
@@ -137,10 +140,10 @@ export async function bootstrap() {
   })
 
   process.on('SIGINT', () => {
-    Logger.warn('SIGINT received, shutting down gracefully...')
+    logger.warn('SIGINT received, shutting down gracefully...')
   })
   process.on('SIGTERM', () => {
-    Logger.warn('SIGTERM received, shutting down gracefully...')
+    logger.warn('SIGTERM received, shutting down gracefully...')
   })
 
   app.useGlobalFilters(new ErrorFilter(config))
@@ -150,8 +153,8 @@ export async function bootstrap() {
       // @ts-ignore
       return await (await import('./metadata')).default()
     } catch (err) {
-      Logger.warn('No swagger metadata found, skipping...')
-      Logger.debug((err as Error).stack || err)
+      logger.warn('No swagger metadata found, skipping...')
+      logger.debug((err as Error).stack || err)
       return {}
     }
   })
@@ -159,11 +162,20 @@ export async function bootstrap() {
 
   const port = parseNumber(config.root.get('APP_PLATFORM_PORT'), 4100)
   const host = '0.0.0.0'
+
+  logger.setLogLevels(
+    logLevels
+      ? logLevels.filter(l => l !== 'log')
+      : ['verbose', 'warn', 'error', 'fatal'],
+  )
+  await app.init()
+  logger.setLogLevels(logLevels ?? LOG_LEVELS)
+
   await app.listen(port, host)
 
-  Logger.log(
+  logger.log(
     `🚀 Platform API application is running on: http://${host}:${port}`,
-    'Nuvix-Platform',
+    'Main',
   )
 }
 

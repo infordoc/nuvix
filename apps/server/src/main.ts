@@ -13,7 +13,7 @@ import {
 import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server'
 import { AppModule } from './app.module'
 import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { ConsoleLogger, Logger, LogLevel } from '@nestjs/common'
+import { ConsoleLogger, LOG_LEVELS, LogLevel } from '@nestjs/common'
 import {
   configuration,
   PROJECT_ROOT,
@@ -31,6 +31,16 @@ validateRequiredConfig()
 Authorization.enableAsyncLocalStorage()
 
 async function bootstrap() {
+  const logLevels = configuration.app.isProduction
+    ? (configuration.logLevels as LogLevel[])
+    : undefined
+  const logger = new ConsoleLogger({
+    json: configuration.app.debug.json,
+    colors: configuration.app.debug.colors,
+    prefix: 'Nuvix',
+    logLevels,
+  })
+
   const app = await NuvixFactory.create<NestFastifyApplication>(
     AppModule,
     new NuvixAdapter({
@@ -51,14 +61,7 @@ async function bootstrap() {
     }),
     {
       abortOnError: false,
-      logger: new ConsoleLogger({
-        json: configuration.app.debug.json,
-        colors: configuration.app.debug.colors,
-        prefix: 'Nuvix',
-        logLevels: configuration.app.isProduction
-          ? (configuration.logLevels as LogLevel[])
-          : undefined,
-      }),
+      logger,
     },
   )
 
@@ -71,10 +74,10 @@ async function bootstrap() {
   applyAppConfig(app, config)
 
   process.on('SIGINT', async () => {
-    Logger.warn('SIGINT received, shutting down gracefully...')
+    logger.warn('SIGINT received, shutting down gracefully...')
   })
   process.on('SIGTERM', async () => {
-    Logger.warn('SIGTERM received, shutting down gracefully...')
+    logger.warn('SIGTERM received, shutting down gracefully...')
   })
 
   await SwaggerModule.loadPluginMetadata(async () => {
@@ -82,8 +85,8 @@ async function bootstrap() {
       // @ts-ignore
       return await (await import('./metadata')).default()
     } catch (err) {
-      Logger.warn('No swagger metadata found, skipping...')
-      Logger.debug((err as Error).stack || err)
+      logger.warn('No swagger metadata found, skipping...')
+      logger.debug((err as Error).stack || err)
       return {}
     }
   })
@@ -92,7 +95,7 @@ async function bootstrap() {
   // TODO: create a separate function to handle setup
   await fs.mkdir(configuration.storage.temp, { recursive: true }).catch(err => {
     if (err.code !== 'EEXIST') {
-      Logger.error(
+      logger.error(
         `Failed to create temp storage directory: ${err.message}`,
         'Bootstrap',
       )
@@ -102,11 +105,20 @@ async function bootstrap() {
 
   const port = parseInt(config.root.get('APP_SERVER_PORT', '4000'), 10)
   const host = '0.0.0.0'
+
+  logger.setLogLevels(
+    logLevels
+      ? logLevels.filter(l => l !== 'log')
+      : ['verbose', 'warn', 'error', 'fatal'],
+  )
+  await app.init()
+  logger.setLogLevels(logLevels ?? LOG_LEVELS)
+
   await app.listen(port, host)
 
-  Logger.log(
+  logger.log(
     `🚀 Nuvix application is running on:  http://${host}:${port}`,
-    'Bootstrap',
+    'Main',
   )
 }
 

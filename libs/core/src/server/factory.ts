@@ -47,7 +47,7 @@ type IEntryNestModule =
  * @publicApi
  */
 export class NuvixFactoryStatic {
-  private readonly logger = new Logger('NestFactory', {
+  private readonly logger = new Logger('NuvixFactory', {
     timestamp: true,
   })
   private abortOnError = true
