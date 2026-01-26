@@ -216,7 +216,7 @@ export async function dbSetup(
           }),
         )
 
-        const projectId = config.get('app').projectId
+        const projectId = 'test'
         await createProject({
           db,
           coreService,
@@ -308,7 +308,7 @@ async function createProject({
         },
       } as any,
       enabled: true,
-      status: 'pending',
+      status: 'active',
       metadata: {
         allowedSchemas: ['public'],
       },

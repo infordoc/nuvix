@@ -29,8 +29,9 @@ services:
   redis:
     image: redis:7.2
     container_name: nuvix-test-redis
-    depends_on:
-      - postgres
+    command: ['redis-server', '/usr/local/etc/redis/redis.conf']
+    volumes:
+      - ./configs/redis.conf:/usr/local/etc/redis/redis.conf
     env_file:
       - .env.test
     networks:

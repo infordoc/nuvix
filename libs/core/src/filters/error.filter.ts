@@ -119,6 +119,8 @@ export class ErrorFilter implements ExceptionFilter {
 
     if (status >= 500) {
       this.logger.error(exception)
+    } else {
+      this.logger.debug(exception)
     }
 
     request['error'] = { message, type, ...extra }
