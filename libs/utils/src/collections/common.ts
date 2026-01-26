@@ -564,7 +564,7 @@ export const authCollections = {
         key: ID.custom('countryCode'),
         type: AttributeType.String,
         size: 2,
-        default: null,
+        required: false,
       },
       {
         $id: ID.custom('osCode'),

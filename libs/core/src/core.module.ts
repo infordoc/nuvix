@@ -1,10 +1,4 @@
-import {
-  Global,
-  Logger,
-  Module,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common'
+import { Global, Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 
 import { configuration } from '@nuvix/utils'
 import { Database, StructureValidator } from '@nuvix/db'
@@ -40,7 +34,6 @@ import { EventEmitterModule } from '@nestjs/event-emitter'
             enableReadyCheck: true,
           },
           defaultJobOptions: {
-            priority: 1,
             attempts: 2,
             backoff: { type: 'exponential', delay: 5000 },
             removeOnComplete: true,
@@ -66,7 +59,6 @@ import { EventEmitterModule } from '@nestjs/event-emitter'
   exports: [AppConfigService, CoreService, RatelimitService],
 })
 export class CoreModule implements OnModuleDestroy, OnModuleInit {
-  private readonly logger = new Logger(CoreModule.name)
   constructor(private readonly coreService: CoreService) {}
 
   async onModuleInit() {
@@ -74,9 +66,7 @@ export class CoreModule implements OnModuleDestroy, OnModuleInit {
   }
 
   async onModuleDestroy() {
-    this.logger.log('Initiating cache flush during module shutdown...')
     await this.coreService.getCache().flush()
-    this.logger.log('Cache successfully flushed on module shutdown.')
   }
 }
 

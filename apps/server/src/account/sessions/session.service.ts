@@ -452,7 +452,7 @@ export class SessionService {
       .status(201)
 
     const countryName = locale.getText(
-      'countries' + session.get('countryCode', '').toLowerCase(),
+      'countries' + createdSession.get('countryCode', '')?.toLowerCase(),
       locale.getText('locale.country.unknown'),
     )
 

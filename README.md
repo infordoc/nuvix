@@ -5,8 +5,8 @@
 **Modern backend infrastructure for ambitious developers.**
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/2fWv2T6RzK)
-[![X (Twitter)](https://img.shields.io/badge/Follow%20on%20X-000000?logo=x)](https://twitter.com/nuvix_tech)
-[![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](LICENSE)
+[![X (Twitter)](https://img.shields.io/badge/Follow%20on%20X-000000?logo=x)](https://x.com/nuvixtech)
+[![License](https://img.shields.io/badge/License-FSL%201.1%20Apache%202.0-blue.svg)](LICENSE)
 
 </div>
 
@@ -132,7 +132,7 @@ For detailed setup instructions, see our [documentation](https://docs.nuvix.in).
 - **[Console](https://github.com/Nuvix-Tech/console)** - Admin dashboard and management interface
 - **[Documentation](https://docs.nuvix.in)** - Comprehensive guides and API reference *(coming soon)*
 - **[Discord Community](https://discord.gg/2fWv2T6RzK)** - Get help and share ideas
-- **[X (Twitter)](https://twitter.com/nuvix_tech)** - Follow for updates
+- **[X (Twitter)](https://x.com/nuvixtech)** - Follow for updates
 
 ---
 
