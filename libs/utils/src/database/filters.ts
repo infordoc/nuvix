@@ -10,6 +10,14 @@ import { SchemaMeta, Schemas } from '../constants'
 import crypto from 'crypto'
 import { configuration } from '../configuration'
 
+const ALGO = 'aes-256-gcm'
+const IV_LENGTH = 12
+const VERSION = 'v1'
+const DERIVED_KEY = crypto
+  .createHash('sha256')
+  .update(configuration.security.dbEncryptionKey)
+  .digest()
+
 export const filters: Record<
   string,
   Filter<FilterValue, FilterValue, Doc<Record<string, any>>>
@@ -224,42 +232,41 @@ export const filters: Record<
 
   encrypt: {
     encode: value => {
-      const key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8')
-      const iv = crypto.randomBytes(16)
-      const cipher = crypto.createCipheriv('aes-128-gcm', key, iv)
-      let encrypted = cipher.update(value as string, 'utf8', 'hex')
-      encrypted += cipher.final('hex')
+      const iv = crypto.randomBytes(IV_LENGTH)
+      const cipher = crypto.createCipheriv(ALGO, DERIVED_KEY, iv)
+
+      const ciphertext = Buffer.concat([
+        cipher.update(value as string, 'utf8'),
+        cipher.final(),
+      ])
+
       const tag = cipher.getAuthTag()
 
-      return JSON.stringify({
-        data: encrypted,
-        method: 'aes-128-gcm',
-        iv: iv.toString('hex'),
-        tag: tag.toString('hex'),
-        version: '1',
-      })
+      return `${VERSION}:${Buffer.concat([iv, tag, ciphertext]).toString('base64')}`
     },
     decode: (value: any) => {
-      if (value === null) {
-        return null
-      }
-      value = typeof value === 'string' ? JSON.parse(value) : value
-      let key: Buffer
-      switch (value.version) {
-        case '1':
-          key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8')
-          break
-        default:
-          key = Buffer.from(configuration.security.dbEncryptionKey, 'utf8')
-      }
-      const iv = Buffer.from(value.iv, 'hex')
-      const tag = Buffer.from(value.tag, 'hex')
-      const decipher = crypto.createDecipheriv(value.method, key, iv)
-      decipher.setAuthTag(tag)
-      let decrypted = decipher.update(value.data, 'hex', 'utf8')
-      decrypted += decipher.final('utf8')
+      if (!value) return value
 
-      return decrypted
+      const [version, payload] = value.split(':')
+      if (version !== VERSION) {
+        throw new Error('Unsupported encryption version')
+      }
+
+      const raw = Buffer.from(payload, 'base64')
+      if (raw.length < IV_LENGTH + 16) {
+        throw new Error('Invalid encrypted payload')
+      }
+
+      const iv = raw.subarray(0, IV_LENGTH)
+      const tag = raw.subarray(IV_LENGTH, IV_LENGTH + 16)
+      const ciphertext = raw.subarray(IV_LENGTH + 16)
+
+      const decipher = crypto.createDecipheriv(ALGO, DERIVED_KEY, iv)
+      decipher.setAuthTag(tag)
+
+      return (
+        decipher.update(ciphertext, undefined, 'utf8') + decipher.final('utf8')
+      )
     },
   },
 

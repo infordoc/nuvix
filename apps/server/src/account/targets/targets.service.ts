@@ -11,7 +11,7 @@ import {
 import { Exception } from '@nuvix/core/extend/exception'
 import { Auth } from '@nuvix/core/helpers'
 import { Detector } from '@nuvix/core/helpers'
-import { DeleteType, MessageType, QueueFor } from '@nuvix/utils'
+import { DeleteType, MessageType, QueueFor, Schemas } from '@nuvix/utils'
 import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto'
 import type { ProjectsDoc, Targets, UsersDoc } from '@nuvix/utils/types'
 import { InjectQueue } from '@nestjs/bullmq'
@@ -39,7 +39,9 @@ export class TargetsService {
     const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId
 
     const provider = await Authorization.skip(() =>
-      db.getDocument('providers', providerId!),
+      db.withSchema(Schemas.Core, () =>
+        db.getDocument('providers', providerId!),
+      ),
     )
 
     const target = await Authorization.skip(() =>

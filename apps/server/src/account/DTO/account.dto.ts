@@ -83,6 +83,9 @@ export class UpdateNameDTO {
    */
   @IsNotEmpty()
   @IsString()
+  @Length(0, 128, {
+    message: 'User name can have a maximum length of 128 characters.',
+  })
   declare name: string
 }
 

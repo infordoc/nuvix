@@ -379,7 +379,7 @@ export class Auth {
   static encrypt(text: string): string {
     if (!key)
       throw Error(
-        'ENCRYPTION_KEY is required, make sure you have added in current environment.',
+        'NUVIX_ENCRYPTION_KEY is required, make sure you have added in current environment.',
       )
     const iv = crypto.randomBytes(16)
     const cipher = crypto.createCipheriv(algorithm, key, iv)
@@ -391,7 +391,7 @@ export class Auth {
   static decrypt(text: string): string {
     if (!key)
       throw Error(
-        'ENCRYPTION_KEY is required, make sure you have added in current environment.',
+        'NUVIX_ENCRYPTION_KEY is required, make sure you have added in current environment.',
       )
     const textParts = text.split(':')
     const iv = Buffer.from(textParts.shift() as string, 'hex')

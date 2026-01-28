@@ -1,4 +1,4 @@
-import { totp } from 'otplib'
+import { TOTP as BaseTOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
 import { Auth } from '../helpers/auth.helper'
 import { Doc } from '@nuvix/db'
 import { UsersDoc, type AuthenticatorsDoc } from '@nuvix/utils/types'
@@ -11,41 +11,56 @@ enum MfaType {
 }
 
 abstract class Mfa {
-  protected instance: typeof totp
+  protected options: {
+    issuer?: string
+    label?: string
+    secret?: string
+  } = {}
 
   public static readonly TOTP = 'totp'
   public static readonly EMAIL = 'email'
   public static readonly PHONE = 'phone'
   public static readonly RECOVERY_CODE = 'recoveryCode'
 
-  constructor(instance: typeof totp) {
-    this.instance = instance
-  }
+  constructor() {}
 
   public setLabel(label: string): this {
-    this.instance.options. = label
+    this.options.label = label
     return this
   }
 
   public getLabel(): string | null {
-    return this.instance.options.algorithm || null
+    return this.options.label || null
   }
 
   public setIssuer(issuer: string): this {
-    this.instance.options.issuer = issuer
+    this.options.issuer = issuer
     return this
   }
 
   public getIssuer(): string | null {
-    return (this.instance.options['issuer'] as string) || null
+    return this.options['issuer'] || null
   }
 
   public getSecret(): string {
-    return this.instance.options. as string
+    if (!this.options.secret) {
+      this.options.secret = new BaseTOTP({
+        crypto: new NobleCryptoPlugin(),
+        base32: new ScureBase32Plugin(),
+      }).generateSecret()
+    }
+    return this.options.secret
   }
 
   public getProvisioningUri(): string {
-    return this.instance.toString()
+    return new BaseTOTP({
+      crypto: new NobleCryptoPlugin(),
+      base32: new ScureBase32Plugin(),
+    }).toURI({
+      secret: this.getSecret(),
+      label: this.getLabel() || undefined,
+      issuer: this.getIssuer() || undefined,
+    })
   }
 
   public static generateBackupCodes(
@@ -64,7 +79,7 @@ abstract class Mfa {
 
 class TOTP extends Mfa {
   constructor() {
-    super(totp)
+    super()
   }
 
   public static getAuthenticatorFromUser(

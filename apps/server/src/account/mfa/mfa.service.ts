@@ -199,7 +199,7 @@ export class MfaService {
     let success = false
     switch (type) {
       case MfaType.TOTP:
-        success = TOTPChallenge.verify(user, otp)
+        success = await TOTPChallenge.verify(user, otp)
         break
       default:
         success = false
@@ -524,17 +524,17 @@ export class MfaService {
     let success = false
     switch (type) {
       case MfaType.TOTP:
-        success = TOTPChallenge.challenge(challenge, user, otp)
+        success = await TOTPChallenge.challenge(challenge, user, otp)
         break
       case MfaType.PHONE:
         success =
-          PhoneChallenge.challenge(challenge, user, otp) &&
+          (await PhoneChallenge.challenge(challenge, user, otp)) &&
           challenge.get('code') === otp &&
           new Date() < new Date(challenge.get('expire') as string)
         break
       case MfaType.EMAIL:
         success =
-          EmailChallenge.challenge(challenge, user, otp) &&
+          (await EmailChallenge.challenge(challenge, user, otp)) &&
           challenge.get('code') === otp &&
           new Date() < new Date(challenge.get('expire') as string)
         break
