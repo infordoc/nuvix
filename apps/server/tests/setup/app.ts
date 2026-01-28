@@ -28,6 +28,7 @@ export async function getApp(): Promise<NestFastifyApplication> {
     const logger = new ConsoleLogger({
       prefix: 'nx-test',
       colors: false,
+      forceConsole: true,
     })
     app = moduleFixture.createNestApplication(
       new NuvixAdapter({

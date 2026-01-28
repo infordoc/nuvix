@@ -27,6 +27,10 @@ const nxconfig = () =>
       region: process.env['NUVIX_REGION'] || 'local',
       enableLogs: parseBoolean(process.env['NUVIX_ENABLE_LOGS'], true),
       enableStats: parseBoolean(process.env['NUVIX_ENABLE_STATS'], true),
+      enableThrottling: parseBoolean(
+        process.env['NUVIX_ENABLE_THROTTLING'],
+        true,
+      ),
       docsRoot: process.env['NUVIX_DOCS_ROOT'] || PROJECT_ROOT,
       projectId: process.env['NUVIX_PROJECT_ID'] || 'default',
     },

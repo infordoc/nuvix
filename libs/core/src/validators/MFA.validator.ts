@@ -23,7 +23,7 @@ abstract class Mfa {
   }
 
   public setLabel(label: string): this {
-    this.instance.options['label'] = label
+    this.instance.options. = label
     return this
   }
 
@@ -32,7 +32,7 @@ abstract class Mfa {
   }
 
   public setIssuer(issuer: string): this {
-    this.instance.options['issuer'] = issuer
+    this.instance.options.issuer = issuer
     return this
   }
 
@@ -41,7 +41,7 @@ abstract class Mfa {
   }
 
   public getSecret(): string {
-    return this.instance.options['secret'] as string
+    return this.instance.options. as string
   }
 
   public getProvisioningUri(): string {
