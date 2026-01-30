@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Exception } from '@nuvix/core/extend/exception'
 import { ID } from '@nuvix/core/helpers'
-import { configuration, MessageType } from '@nuvix/utils'
+import { configuration, MessageType, Schemas } from '@nuvix/utils'
 import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
 import { EmailValidator } from '@nuvix/core/validators'
 import { PhoneValidator } from '@nuvix/core/validators'
@@ -32,7 +32,9 @@ export class TargetsService {
 
     let provider!: ProvidersDoc
     if (providerId) {
-      provider = await db.getDocument('providers', providerId)
+      provider = await db.withSchema(Schemas.Core, () =>
+        db.getDocument('providers', providerId),
+      )
     }
 
     switch (input.providerType as MessageType) {
