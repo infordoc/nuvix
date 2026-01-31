@@ -20,10 +20,7 @@ import { Models } from '@nuvix/core/helpers'
 
 import { Database, Query as Queries } from '@nuvix/db'
 import { SubscribersQueryPipe } from '@nuvix/core/pipes/queries'
-import type {
-  CreateSubscriberDTO,
-  SubscriberParamsDTO,
-} from './DTO/subscriber.dto'
+import { CreateSubscriberDTO, SubscriberParamsDTO } from './DTO/subscriber.dto'
 import { Delete, Get, Post } from '@nuvix/core'
 import { TopicParamsDTO } from '../DTO/topics.dto'
 import { IListResponse, IResponse } from '@nuvix/utils'

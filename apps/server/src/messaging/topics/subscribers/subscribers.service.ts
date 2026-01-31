@@ -231,7 +231,7 @@ export class SubscribersService {
     })()
 
     await Authorization.skip(() =>
-      db.decreaseDocumentAttribute('topics', topicId, totalAttribute, 0),
+      db.decreaseDocumentAttribute('topics', topicId, totalAttribute, 1),
     )
   }
 }
