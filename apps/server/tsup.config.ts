@@ -66,7 +66,7 @@ export default defineConfig(options => {
     bundle: true,
     shims: false,
     tsconfig: './tsconfig.app.json',
-    onSuccess: !isDev ? undefined : 'bun --watch dist/main.js',
+    onSuccess: !isDev ? undefined : 'sleep 1 && bun --watch dist/main.js',
     banner({ format }) {
       const envPaths: string[] = isDev
         ? ['../../.env', '../../.env.local']

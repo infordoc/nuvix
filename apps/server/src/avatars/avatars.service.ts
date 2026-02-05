@@ -1,11 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, StreamableFile } from '@nestjs/common'
 import { createCanvas, registerFont } from 'canvas'
 import sharp from 'sharp'
 import crypto from 'crypto'
 import { default as path } from 'path'
 
 import { PROJECT_ROOT } from '@nuvix/utils'
-import fs from 'fs'
+import fs from 'fs/promises'
+import { default as fsSync } from 'fs'
+import { browserCodes, creditCards, flags } from 'libs/core/src/config'
+import { Exception } from 'libs/core/src/extend/exception'
 
 @Injectable()
 export class AvatarsService {
@@ -20,7 +23,7 @@ export class AvatarsService {
       )
 
       // Check if font file exists before registering
-      if (fs.existsSync(fontPath)) {
+      if (fsSync.existsSync(fontPath)) {
         registerFont(fontPath, { family: 'Varela' })
         this.logger.log(`Font registered from: ${fontPath}`)
       } else {
@@ -31,6 +34,9 @@ export class AvatarsService {
     }
   }
 
+  /**
+   * Generates an avatar image based on the provided parameters.
+   */
   async generateAvatar({
     name,
     width = 100,
@@ -116,16 +122,51 @@ export class AvatarsService {
         .png()
         .toBuffer()
 
-      // Store in cache
+      // Cache the generated image
       this.cacheImage(cacheKey, processedImage)
 
       // Send Image Response
       res.header('Content-Type', 'image/png')
-      res.send(processedImage)
+      return new StreamableFile(processedImage)
     } catch (error) {
-      console.error('Error generating avatar:', error)
-      res.status(500).send('Error generating avatar')
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        'Avatar generation failed',
+      )
     }
+  }
+
+  async getCreditCard({ code, res }: { code: string; res: NuvixRes }) {
+    return this.avatarCallback({
+      type: 'credit-cards',
+      code,
+      width: 400,
+      height: 250,
+      quality: 90,
+      res,
+    })
+  }
+
+  async getBrowser({ code, res }: { code: string; res: NuvixRes }) {
+    return this.avatarCallback({
+      type: 'browsers',
+      code,
+      width: 128,
+      height: 128,
+      quality: 90,
+      res,
+    })
+  }
+
+  async getFlag({ code, res }: { code: string; res: NuvixRes }) {
+    return this.avatarCallback({
+      type: 'flags',
+      code,
+      width: 640,
+      height: 480,
+      quality: 100,
+      res,
+    })
   }
 
   private getInitials(name: string): string {
@@ -178,5 +219,55 @@ export class AvatarsService {
     const saturation = 65
     const lightness = 55
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+  }
+
+  async avatarCallback({
+    type,
+    code,
+    width,
+    height,
+    quality,
+    res,
+  }: {
+    type: 'flags' | 'browsers' | 'credit-cards'
+    code: string
+    width: number
+    height: number
+    quality: number
+    res: NuvixRes
+  }) {
+    code = code.toLowerCase()
+    let set: Record<string, { name: string; path: string }> = {}
+    switch (type) {
+      case 'browsers':
+        set = browserCodes
+        break
+      case 'flags':
+        set = flags
+        break
+      case 'credit-cards':
+        set = creditCards
+        break
+      default:
+        throw new Exception(Exception.AVATAR_SET_NOT_FOUND)
+    }
+
+    if (!(code in set)) {
+      throw new Exception(Exception.AVATAR_NOT_FOUND)
+    }
+
+    const filePath = set[code]!.path
+
+    const fileBuffer = await fs.readFile(filePath).catch(() => {
+      throw new Exception(Exception.AVATAR_NOT_FOUND)
+    })
+    const processedImage = await sharp(fileBuffer)
+      .resize(width, height)
+      .png({ quality })
+      .toBuffer()
+
+    res.header('Cache-Control', 'private, max-age=2592000') // 30 days
+    res.header('Content-Type', 'image/png')
+    return new StreamableFile(processedImage)
   }
 }
