@@ -1,3 +1,6 @@
+import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
+import { Logger } from '@nestjs/common'
+import { Audit } from '@nuvix/audit'
 import {
   AttributeType,
   Authorization,
@@ -6,12 +9,7 @@ import {
   Doc,
   Query,
 } from '@nuvix/db'
-import { Queue } from './queue'
-import { Exception } from '../../extend/exception'
-import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
-import { Job } from 'bullmq'
 import { QueueFor, SchemaMeta } from '@nuvix/utils'
-import { Logger } from '@nestjs/common'
 import type {
   Attributes,
   AttributesDoc,
@@ -22,8 +20,10 @@ import type {
   Projects,
   ProjectsDoc,
 } from '@nuvix/utils/types'
+import { Job } from 'bullmq'
 import { CoreService } from '../../core.service.js'
-import { Audit } from '@nuvix/audit'
+import { Exception } from '../../extend/exception'
+import { Queue } from './queue'
 
 @Processor(QueueFor.COLLECTIONS, { concurrency: 10000 })
 export class CollectionsQueue extends Queue {

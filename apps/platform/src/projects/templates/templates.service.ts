@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
-import { Database } from '@nuvix/db'
 import { CoreService } from '@nuvix/core'
+import { Database } from '@nuvix/db'
 
 @Injectable()
 export class TemplatesService {

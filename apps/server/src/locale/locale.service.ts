@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { CoreService } from '@nuvix/core'
+import { currencies, euList } from '@nuvix/core/config'
 import type { CountryResponse, Reader } from 'maxmind'
 import type { ILocaleResponse, TLocalService } from './locale.types'
-import { currencies, euList } from '@nuvix/core/config'
 
 @Injectable()
 export class LocaleService {

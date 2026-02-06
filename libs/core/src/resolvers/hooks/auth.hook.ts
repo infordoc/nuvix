@@ -1,15 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Authorization, Database, Doc, Query } from '@nuvix/db'
-import { Exception } from '../../extend/exception'
-import { Auth } from '../../helpers/auth.helper'
-import ParamsHelper from '../../helpers/params.helper'
 import { AppMode, AUTH_SCHEMA_DB, Context } from '@nuvix/utils'
-import { Hook } from '../../server/hooks/interface'
-import { Key } from '../../helpers/key.helper'
 import { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 import { CoreService } from '../../core.service.js'
 import { AuthType } from '../../decorators'
+import { Exception } from '../../extend/exception'
+import { Auth } from '../../helpers/auth.helper'
+import { Key } from '../../helpers/key.helper'
+import ParamsHelper from '../../helpers/params.helper'
+import { Hook } from '../../server/hooks/interface'
 
 @Injectable()
 export class AuthHook implements Hook {
@@ -35,7 +35,7 @@ export class AuthHook implements Hook {
     )
 
     if (mode === AppMode.ADMIN) {
-      Auth.setCookieName(`session`)
+      Auth.setCookieName('session')
     }
 
     let session: { id: string | null; secret: string } = {
@@ -83,12 +83,10 @@ export class AuthHook implements Hook {
     if (mode !== AppMode.ADMIN) {
       if (project.empty()) {
         user = new Doc()
+      } else if (project.getId() === 'console') {
+        user = await this.dbForPlatform.getDocument('users', Auth.unique)
       } else {
-        if (project.getId() === 'console') {
-          user = await this.dbForPlatform.getDocument('users', Auth.unique)
-        } else {
-          user = await dbForProject.getDocument('users', Auth.unique)
-        }
+        user = await dbForProject.getDocument('users', Auth.unique)
       }
     } else {
       user = await this.dbForPlatform.getDocument('users', Auth.unique)

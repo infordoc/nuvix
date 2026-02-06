@@ -1,6 +1,6 @@
+import { Logger } from '@nestjs/common'
 import * as path from 'path'
 import { PROJECT_ROOT } from './constants'
-import { Logger } from '@nestjs/common'
 import { parseBoolean, parseNumber } from './helpers'
 
 type CookieSameSite = 'none' | 'lax' | 'strict'
@@ -155,7 +155,7 @@ const nxconfig = () =>
         password: process.env['NUVIX_DATABASE_PASSWORD'],
         database: 'postgres', // initial db
         ssl: process.env['NUVIX_DATABASE_SSL'] === 'true',
-        maxConnections: parseInt(
+        maxConnections: Number.parseInt(
           process.env['NUVIX_DATABASE_MAX_CONNECTIONS'] ?? '100',
           10,
         ), // not used currently
@@ -255,7 +255,8 @@ const nxconfig = () =>
       .filter(level => level),
   }) as const
 
-export const configuration = nxconfig()
+const configuration = nxconfig()
+export { nxconfig, configuration }
 
 export function validateRequiredConfig() {
   const requiredVars: readonly string[] = [

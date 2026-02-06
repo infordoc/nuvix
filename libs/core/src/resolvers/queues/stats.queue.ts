@@ -1,5 +1,6 @@
 import { Processor } from '@nestjs/bullmq'
-import { Queue } from './queue'
+import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { type Database, Doc } from '@nuvix/db'
 import {
   configuration,
   fnv1a128,
@@ -8,12 +9,11 @@ import {
   QueueFor,
   Schemas,
 } from '@nuvix/utils'
-import { Job } from 'bullmq'
-import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
-import { Doc, type Database } from '@nuvix/db'
-import { CoreService } from '../../core.service.js'
 import type { ProjectsDoc, Stats } from '@nuvix/utils/types'
+import { Job } from 'bullmq'
 import { AppConfigService } from '../../config.service'
+import { CoreService } from '../../core.service.js'
+import { Queue } from './queue'
 
 @Processor(QueueFor.STATS, {
   concurrency: 10000,
@@ -146,7 +146,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
     const projectId = project.getSequence()
 
     switch (job.name) {
-      case StatsQueueJob.ADD_METRIC:
+      case StatsQueueJob.ADD_METRIC: {
         if (!this.buffer.has(projectId)) {
           this.buffer.set(projectId, {
             project: new Doc({
@@ -203,6 +203,7 @@ export class StatsQueue extends Queue implements OnModuleInit, OnModuleDestroy {
           this.startTimer()
         }
         break
+      }
 
       default:
         this.logger.warn(`Unknown job name: ${job.name}`)

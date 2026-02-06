@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common'
+import { CoreService } from '@nuvix/core'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Database, Doc, ID, Permission, Query, Role } from '@nuvix/db'
 import { ApiKey } from '@nuvix/utils'
+import { Keys } from '@nuvix/utils/types'
 import { randomBytes } from 'crypto'
 import { CreateKeyDTO, UpdateKeyDTO } from './DTO/keys.dto'
-import { Database, Doc, ID, Permission, Query, Role } from '@nuvix/db'
-import { CoreService } from '@nuvix/core'
-import { Keys } from '@nuvix/utils/types'
 
 @Injectable()
 export class KeysService {

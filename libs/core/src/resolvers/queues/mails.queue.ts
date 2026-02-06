@@ -1,14 +1,14 @@
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
-import { Queue } from './queue'
-import { Job } from 'bullmq'
-import { createTransport, Transporter } from 'nodemailer'
-import { QueueFor } from '@nuvix/utils'
-import { Exception } from '../../extend/exception'
-import * as fs from 'fs'
 import { Logger } from '@nestjs/common'
+import { QueueFor } from '@nuvix/utils'
+import { Job } from 'bullmq'
+import * as fs from 'fs'
 import * as Template from 'handlebars'
-import { AppConfigService } from '../../config.service'
+import { createTransport, Transporter } from 'nodemailer'
 import type { SmtpConfig } from '../../config/smtp'
+import { AppConfigService } from '../../config.service'
+import { Exception } from '../../extend/exception'
+import { Queue } from './queue'
 
 @Processor(QueueFor.MAILS, { concurrency: 10000 })
 export class MailsQueue extends Queue {
@@ -61,7 +61,7 @@ export class MailsQueue extends Queue {
     job: Job<MailQueueOptions | MailsQueueOptions, any, MailJob>,
   ): Promise<any> {
     switch (job.name) {
-      case MailJob.SEND_EMAIL:
+      case MailJob.SEND_EMAIL: {
         const { body, subject, server, variables } = job.data
         const config = this.appConfig.getSmtpConfig()
 
@@ -102,7 +102,7 @@ export class MailsQueue extends Queue {
           )
         }
 
-        const templateSource = fs.readFileSync(job.data.bodyTemplate, 'utf8')
+        const templateSource = fs.readFileSync(job.data.bodyTemplate!, 'utf8')
         const bodyTemplate = Template.compile(templateSource)
         const renderedBody = bodyTemplate({ body, ...templateVariables })
 
@@ -121,6 +121,7 @@ export class MailsQueue extends Queue {
           status: 'success',
           message: `Email sent to ${emails.length} recipients with subject "${renderedSubject}"`,
         }
+      }
       default:
         return null
     }

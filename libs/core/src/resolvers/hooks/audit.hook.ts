@@ -1,19 +1,19 @@
 import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
+import { Doc } from '@nuvix/db'
+import {
+  AppMode,
+  AuthActivity,
+  Context,
+  QueueFor,
+  RouteContext,
+} from '@nuvix/utils'
+import { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import { Queue } from 'bullmq'
 import { AuditEventType } from '../../decorators'
 import { Exception } from '../../extend/exception'
 import { Hook } from '../../server'
-import { Doc } from '@nuvix/db'
-import {
-  QueueFor,
-  AppMode,
-  Context,
-  AuthActivity,
-  RouteContext,
-} from '@nuvix/utils'
-import { Queue } from 'bullmq'
 import { AuditsQueueJobData } from '../queues/audits.queue'
-import { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class AuditHook implements Hook {

@@ -224,7 +224,7 @@ const CLASS_ERROR_MAP: Map<
  */
 export function transformPgError(
   error: unknown,
-  authed: boolean = true,
+  authed = true,
 ): PgTransformedError | null {
   if (!(error instanceof DatabaseError)) {
     return null

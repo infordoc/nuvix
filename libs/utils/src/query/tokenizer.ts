@@ -52,9 +52,9 @@ export interface Token {
 
 export class Tokenizer {
   protected input: string
-  protected position: number = 0
-  protected line: number = 1
-  protected column: number = 1
+  protected position = 0
+  protected line = 1
+  protected column = 1
 
   constructor(input: string) {
     this.input = input
@@ -336,14 +336,14 @@ export class Tokenizer {
     return this.position < this.input.length ? this.input[this.position]! : ''
   }
 
-  protected peek(offset: number = 1): string {
+  protected peek(offset = 1): string {
     const pos = this.position + offset - 1
     return pos < this.input.length
       ? this.input.slice(this.position, this.position + offset)
       : ''
   }
 
-  protected advance(count: number = 1): void {
+  protected advance(count = 1): void {
     for (let i = 0; i < count && this.position < this.input.length; i++) {
       if (this.current() === '\n') {
         this.line++

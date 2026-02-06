@@ -1,22 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Audit } from '@nuvix/audit'
 import { Authorization, Database, Doc } from '@nuvix/db'
-import ParamsHelper from '../../helpers/params.helper'
 
 import {
-  Schemas,
+  AppMode,
+  AUDITS_FOR_PROJECT,
   AUTH_SCHEMA_DB,
   CORE_SCHEMA_DB,
-  AUDITS_FOR_PROJECT,
-  AppMode,
   Context,
+  DatabaseRole,
   PROJECT_DB_CLIENT,
   PROJECT_PG,
-  DatabaseRole,
+  Schemas,
 } from '@nuvix/utils'
-import { Hook } from '../../server/hooks/interface'
-import { Exception } from '../../extend/exception'
-import { Audit } from '@nuvix/audit'
 import { CoreService } from '../../core.service.js'
+import { Exception } from '../../extend/exception'
+import ParamsHelper from '../../helpers/params.helper'
+import { Hook } from '../../server/hooks/interface'
 
 @Injectable()
 export class ProjectHook implements Hook {

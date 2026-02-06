@@ -12,23 +12,23 @@
  * This flow represents how applications interact with the database service.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest'
-import { getApp } from '../setup/app'
-import { getApiKeyJsonHeaders, getApiKeyHeaders } from '../helpers/auth'
+import { faker } from '@faker-js/faker'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { Query } from '@nuvix/db'
+import QueryString from 'qs'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
-  buildCreateSchemaDTO,
   buildCreateDocumentSchemaDTO,
+  buildCreateSchemaDTO,
 } from '../factories/dto/schema.factory'
+import { getApiKeyHeaders, getApiKeyJsonHeaders } from '../helpers/auth'
+import { getApp } from '../setup/app'
 import {
-  parseJson,
-  assertStatusCode,
   assertDocumentShape,
   assertListResponse,
+  assertStatusCode,
+  parseJson,
 } from '../setup/test-utils'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { faker } from '@faker-js/faker'
-import QueryString from 'qs'
-import { Query } from '@nuvix/db'
 
 describe('E2E: Data Management Flow', () => {
   let app: NestFastifyApplication

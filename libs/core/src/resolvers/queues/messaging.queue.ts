@@ -1,31 +1,34 @@
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
-import { Queue } from './queue'
-import { Job } from 'bullmq'
+import { Injectable, Logger } from '@nestjs/common'
+import { Database, Doc, Query } from '@nuvix/db'
 import {
-  SMS,
-  Push,
-  Email,
-  FCM,
   APNS,
+  Attachment,
+  Email,
+  EmailAdapter,
+  FCM,
+  Mailgun,
+  Msg91,
+  Priority,
+  Push,
+  PushAdapter,
+  Sendgrid,
+  SMS,
+  SMSAdapter,
+  SMTP,
   Telesign,
   TextMagic,
   Twilio,
   Vonage,
-  Msg91,
-  Mailgun,
-  Sendgrid,
-  SMTP,
-  SMSAdapter,
-  PushAdapter,
-  EmailAdapter,
-  Attachment,
-  Priority,
 } from '@nuvix/messaging'
 import { Device } from '@nuvix/storage'
-import { Database, Doc, Query } from '@nuvix/db'
-import { Injectable, Logger } from '@nestjs/common'
-import { Schemas, QueueFor, MessageType, MessageProvider } from '@nuvix/utils'
-import { MessageStatus } from '@nuvix/utils'
+import {
+  MessageProvider,
+  MessageStatus,
+  MessageType,
+  QueueFor,
+  Schemas,
+} from '@nuvix/utils'
 import type {
   Files,
   Messages,
@@ -35,7 +38,9 @@ import type {
   ProvidersDoc,
   TargetsDoc,
 } from '@nuvix/utils/types'
+import { Job } from 'bullmq'
 import { CoreService } from '../../core.service.js'
+import { Queue } from './queue'
 
 @Injectable()
 @Processor(QueueFor.MESSAGING, { concurrency: 10000 })
@@ -48,7 +53,7 @@ export class MessagingQueue extends Queue {
 
   async process(job: Job<MessagingJobData, any, MessagingJob>): Promise<any> {
     switch (job.name) {
-      case MessagingJob.EXTERNAL:
+      case MessagingJob.EXTERNAL: {
         const data = job.data
         const project = new Doc(data.project as unknown as Projects)
         const message = new Doc(data.message as unknown as Messages)
@@ -76,6 +81,7 @@ export class MessagingQueue extends Queue {
           messageId: message.getId(),
           projectId: project.getId(),
         }
+      }
       default:
         throw Error('Invalid Job!')
     }

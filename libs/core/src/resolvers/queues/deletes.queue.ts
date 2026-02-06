@@ -1,5 +1,7 @@
 import { Processor } from '@nestjs/bullmq'
-import { Queue } from './queue'
+import { Logger } from '@nestjs/common'
+import { Audit } from '@nuvix/audit'
+import { Database, Doc, IEntity, Query } from '@nuvix/db'
 import {
   configuration,
   DeleteDocumentType,
@@ -7,8 +9,6 @@ import {
   QueueFor,
   Schemas,
 } from '@nuvix/utils'
-import { Job } from 'bullmq'
-import { Database, Doc, IEntity, Query } from '@nuvix/db'
 import type {
   Memberships,
   ProjectsDoc,
@@ -17,15 +17,15 @@ import type {
   TopicsDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
+import { Job } from 'bullmq'
 import { CoreService } from '../../core.service'
+import { Auth } from '../../helpers'
 import {
   deleteIdentities,
   deleteSubscribers,
   deleteTargets,
 } from '../../helpers/misc.helper'
-import { Auth } from '../../helpers'
-import { Audit } from '@nuvix/audit'
-import { Logger } from '@nestjs/common'
+import { Queue } from './queue'
 
 @Processor(QueueFor.DELETES, { concurrency: 1000 })
 export class DeletesQueue extends Queue {
@@ -43,7 +43,7 @@ export class DeletesQueue extends Queue {
     const document = new Doc(job.data.document) as Doc<any>
     const { datetime, hourlyUsageRetentionDatetime, resource, resourceType } =
       job.data
-    let project: ProjectsDoc = new Doc(
+    const project: ProjectsDoc = new Doc(
       job.data.project,
     ) as unknown as ProjectsDoc
 

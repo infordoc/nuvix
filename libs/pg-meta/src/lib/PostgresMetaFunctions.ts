@@ -1,10 +1,10 @@
 import { ident, literal } from 'pg-format'
+import { FunctionCreateDTO } from '../DTO/function-create.dto'
+import { PgMetaException } from '../extra/execption'
 import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
 import { filterByList } from './helpers'
 import { functionsSql } from './sql/index'
-import { PostgresMetaResult, PostgresFunction } from './types'
-import { FunctionCreateDTO } from '../DTO/function-create.dto'
-import { PgMetaException } from '../extra/execption'
+import { PostgresFunction, PostgresMetaResult } from './types'
 
 export default class PostgresMetaFunctions {
   query: (sql: string) => Promise<PostgresMetaResult<any>>
@@ -74,26 +74,26 @@ export default class PostgresMetaFunctions {
       const { data, error } = await this.query(sql)
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a function with ID ${id}`)
-      } else {
-        return { data: data[0], error }
       }
-    } else if (name && schema && args) {
+      if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a function with ID ${id}`)
+      }
+      return { data: data[0], error }
+    }
+    if (name && schema && args) {
       const sql = this.generateRetrieveFunctionSql({ name, schema, args })
       const { data, error } = await this.query(sql)
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
+      }
+      if (data.length === 0) {
         throw new PgMetaException(
           `Cannot find function "${schema}"."${name}"(${args.join(', ')})`,
         )
-      } else {
-        return { data: data[0], error }
       }
-    } else {
-      throw new PgMetaException('Invalid parameters on function retrieve')
+      return { data: data[0], error }
     }
+    throw new PgMetaException('Invalid parameters on function retrieve')
   }
 
   async create({

@@ -1,5 +1,5 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { PersonalDataValidator } from '../../src/validators'
-import { describe, it, expect, beforeEach } from 'vitest'
 
 describe('PersonalData', () => {
   let validator: PersonalDataValidator | null = null

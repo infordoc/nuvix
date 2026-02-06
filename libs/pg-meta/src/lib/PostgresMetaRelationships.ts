@@ -17,7 +17,7 @@ export default class PostgresMetaRelationships {
   async list(): Promise<PostgresMetaResult<PostgresRelationship[]>> {
     let allTableM2oAndO2oRelationships: PostgresRelationship[]
     {
-      let sql = tableRelationshipsSql
+      const sql = tableRelationshipsSql
       const { data, error } = (await this.query(sql)) as PostgresMetaResult<
         PostgresRelationship[]
       >

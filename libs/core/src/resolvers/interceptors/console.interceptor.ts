@@ -4,15 +4,15 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common'
-import { Observable } from 'rxjs'
-import { Context } from '@nuvix/utils'
-import { Authorization } from '@nuvix/db'
 import { Reflector } from '@nestjs/core'
+import { Authorization } from '@nuvix/db'
+import { Context } from '@nuvix/utils'
+import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
+import { Observable } from 'rxjs'
+import { Scopes } from '../../config/roles'
+import { Scope } from '../../decorators'
 import { Exception } from '../../extend/exception'
 import { TOTP } from '../../validators/MFA.validator'
-import { Scope } from '../../decorators'
-import { Scopes } from '../../config/roles'
-import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class ConsoleInterceptor implements NestInterceptor {
@@ -25,7 +25,7 @@ export class ConsoleInterceptor implements NestInterceptor {
     Authorization.setDefaultStatus(true)
     const request = context.switchToHttp().getRequest<NuvixRequest>()
     const project = request[Context.Project] as ProjectsDoc
-    let user = request[Context.User] as UsersDoc
+    const user = request[Context.User] as UsersDoc
     const scopes: Scopes[] = request[Context.Scopes] || []
 
     const scope = this.reflector.getAllAndOverride(Scope, [

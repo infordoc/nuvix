@@ -1,11 +1,11 @@
 import { ArgumentMetadata, PipeTransform } from '@nestjs/common'
-import { Exception } from '../extend/exception'
 import {
+  type BaseValidator,
   QueriesValidator,
   Query,
   QueryException,
-  type BaseValidator,
 } from '@nuvix/db'
+import { Exception } from '../extend/exception'
 
 interface Options {
   validators?: BaseValidator[]

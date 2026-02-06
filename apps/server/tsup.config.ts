@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsup'
 import { copy } from 'esbuild-plugin-copy'
+import { defineConfig } from 'tsup'
 
 function printStylizedNuvix() {
   const logo = `

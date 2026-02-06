@@ -1,22 +1,17 @@
 import { Injectable } from '@nestjs/common'
-import { CreateProjectDTO } from './DTO/create-project.dto'
-import {
-  UpdateProjectDTO,
-  UpdateProjectTeamDTO,
-} from './DTO/update-project.dto'
-import { Exception } from '@nuvix/core/extend/exception'
-import { ApiKey, configuration } from '@nuvix/utils'
-import { authMethods, AuthMethod, defaultAuthConfig } from '@nuvix/core/config'
-import { oAuthProviders, type OAuthProviderType } from '@nuvix/core/config'
-import { defaultSmtpConfig } from '@nuvix/core/config'
-import { services } from '@nuvix/core/config'
-import { UpdateProjectServiceDTO } from './DTO/project-service.dto'
-import { ProjectApiStatusDTO } from './DTO/project-api.dto'
-import { apis } from '@nuvix/core/config'
-import { oAuth2DTO } from './DTO/oauth2.dto'
 import { JwtService } from '@nestjs/jwt'
-import { CreateJwtDTO } from './DTO/create-jwt.dto'
-import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto'
+import { CoreService } from '@nuvix/core'
+import {
+  AuthMethod,
+  apis,
+  authMethods,
+  defaultAuthConfig,
+  defaultSmtpConfig,
+  type OAuthProviderType,
+  oAuthProviders,
+  services,
+} from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
 import {
   Database,
   Doc,
@@ -26,9 +21,19 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { CoreService } from '@nuvix/core'
-import type { Projects } from '@nuvix/utils/types'
+import { ApiKey, configuration } from '@nuvix/utils'
 import { setupDatabase } from '@nuvix/utils/database'
+import type { Projects } from '@nuvix/utils/types'
+import { CreateJwtDTO } from './DTO/create-jwt.dto'
+import { CreateProjectDTO } from './DTO/create-project.dto'
+import { oAuth2DTO } from './DTO/oauth2.dto'
+import { ProjectApiStatusDTO } from './DTO/project-api.dto'
+import { UpdateProjectServiceDTO } from './DTO/project-service.dto'
+import { SmtpTestsDTO, UpdateSmtpDTO } from './DTO/smtp.dto'
+import {
+  UpdateProjectDTO,
+  UpdateProjectTeamDTO,
+} from './DTO/update-project.dto'
 
 @Injectable()
 export class ProjectService {
@@ -132,7 +137,8 @@ export class ProjectService {
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.PROJECT_ALREADY_EXISTS)
-      } else throw error
+      }
+      throw error
     }
   }
 

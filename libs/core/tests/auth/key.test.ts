@@ -1,10 +1,10 @@
 import { JwtService } from '@nestjs/jwt'
-import { roles } from '../../src/config'
-import { Key, UserRole } from '../../src/helpers'
 import { Doc } from '@nuvix/db'
 import { ApiKey } from '@nuvix/utils'
 import { Projects } from '@nuvix/utils/types'
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { roles } from '../../src/config'
+import { Key, UserRole } from '../../src/helpers'
 
 describe('Key', () => {
   beforeAll(() => {

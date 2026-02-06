@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { getApp } from '../../setup/app'
+import { faker } from '@faker-js/faker'
+import type { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { buildCreateAccountDTO } from '../../factories/dto/account.factory'
 import { createUserAndSession } from '../../helpers/auth'
+import { getApp } from '../../setup/app'
 import {
-  parseJson,
-  assertStatusCode,
   assertDocumentShape,
+  assertStatusCode,
+  parseJson,
 } from '../../setup/test-utils'
-import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { faker } from '@faker-js/faker'
 
 describe('account (integration)', () => {
   let app: NestFastifyApplication

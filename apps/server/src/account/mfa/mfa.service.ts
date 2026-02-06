@@ -1,22 +1,18 @@
-import { Injectable } from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
-import * as fs from 'fs/promises'
-import path from 'path'
-
-import { Doc, Database, ID, Permission, Role } from '@nuvix/db'
+import { Injectable } from '@nestjs/common'
+import { AppConfigService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { Detector } from '@nuvix/core/helpers'
-import { MfaType, TOTP } from '@nuvix/core/validators'
+import { Auth, Detector, LocaleTranslator } from '@nuvix/core/helpers'
 import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
+import { MfaType, TOTP } from '@nuvix/core/validators'
+import { Database, Doc, ID, Permission, Role } from '@nuvix/db'
 import { QueueFor } from '@nuvix/utils'
-import { TOTPChallenge } from '@nuvix/utils/auth'
-import { EmailChallenge } from '@nuvix/utils/auth'
-import { PhoneChallenge } from '@nuvix/utils/auth'
-import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto'
+import {
+  EmailChallenge,
+  PhoneChallenge,
+  TOTPChallenge,
+} from '@nuvix/utils/auth'
 import type {
   AuthenticatorsDoc,
   ChallengesDoc,
@@ -24,8 +20,11 @@ import type {
   SessionsDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { AppConfigService } from '@nuvix/core'
-import type { SmtpConfig } from '@nuvix/core/config'
+import { Queue } from 'bullmq'
+import * as fs from 'fs/promises'
+import * as Template from 'handlebars'
+import path from 'path'
+import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto'
 
 @Injectable()
 export class MfaService {
@@ -337,7 +336,7 @@ export class MfaService {
     const createdChallenge = await db.createDocument('challenges', challenge)
 
     switch (factor) {
-      case TOTP.PHONE:
+      case TOTP.PHONE: {
         if (!this.appConfig.get('sms').enabled) {
           throw new Exception(
             Exception.GENERAL_PHONE_DISABLED,
@@ -371,8 +370,9 @@ export class MfaService {
 
         // TODO: Implement usage metrics and abuse tracking
         break
+      }
 
-      case TOTP.EMAIL:
+      case TOTP.EMAIL: {
         if (!this.appConfig.getSmtpConfig().host) {
           throw new Exception(Exception.GENERAL_SMTP_DISABLED, 'SMTP disabled')
         }
@@ -469,6 +469,7 @@ export class MfaService {
           variables: emailVariables,
         })
         break
+      }
     }
 
     // TODO: Handle Events

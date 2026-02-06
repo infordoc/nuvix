@@ -1,34 +1,33 @@
-import { Injectable } from '@nestjs/common'
 import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
-import * as fs from 'fs/promises'
-import path from 'path'
+import { Injectable } from '@nestjs/common'
+import { AppConfigService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Hooks } from '@nuvix/core/extend/hooks'
+import { Auth, LocaleTranslator } from '@nuvix/core/helpers'
+import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
+import { PasswordHistoryValidator } from '@nuvix/core/validators'
 import {
-  Doc,
+  Authorization,
   Database,
-  Query,
+  Doc,
   ID,
   Permission,
+  Query,
   Role,
-  Authorization,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { PasswordHistoryValidator } from '@nuvix/core/validators'
-import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
-import { QueueFor, TokenType, type HashAlgorithm } from '@nuvix/utils'
-import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
+import { type HashAlgorithm, QueueFor, TokenType } from '@nuvix/utils'
 import type {
   ProjectsDoc,
   Tokens,
   TokensDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { AppConfigService } from '@nuvix/core'
-import type { SmtpConfig } from '@nuvix/core/config'
-import { Hooks } from '@nuvix/core/extend/hooks'
+import { Queue } from 'bullmq'
+import * as fs from 'fs/promises'
+import * as Template from 'handlebars'
+import path from 'path'
+import { CreateRecoveryDTO, UpdateRecoveryDTO } from './DTO/recovery.dto'
 
 @Injectable()
 export class RecoveryService {

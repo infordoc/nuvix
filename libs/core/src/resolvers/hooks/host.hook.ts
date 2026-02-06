@@ -1,11 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Authorization, Database, Query } from '@nuvix/db'
-import { Exception } from '../../extend/exception'
 import { Context } from '@nuvix/utils'
-import { Hook } from '../../server/hooks/interface'
 import { ProjectsDoc } from '@nuvix/utils/types'
-import { CoreService } from '../../core.service.js'
 import { AppConfigService } from '../../config.service'
+import { CoreService } from '../../core.service.js'
+import { Exception } from '../../extend/exception'
+import { Hook } from '../../server/hooks/interface'
 
 @Injectable()
 export class HostHook implements Hook {

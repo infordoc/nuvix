@@ -1,4 +1,21 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, UseInterceptors } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { JwtService } from '@nestjs/jwt'
+import { AppConfigService, CoreService, Platform } from '@nuvix/core'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Hooks } from '@nuvix/core/extend/hooks'
+import { Auth, Detector, LocaleTranslator } from '@nuvix/core/helpers'
+import type { DeletesJobData } from '@nuvix/core/resolvers'
+import {
+  MailJob,
+  MailQueueOptions,
+  ResponseInterceptor,
+} from '@nuvix/core/resolvers'
+import {
+  PasswordHistoryValidator,
+  PersonalDataValidator,
+} from '@nuvix/core/validators'
 import {
   Authorization,
   Database,
@@ -9,32 +26,13 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-
-import { CountryResponse, Reader } from 'maxmind'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { Detector } from '@nuvix/core/helpers'
-import { PersonalDataValidator } from '@nuvix/core/validators'
 import {
-  QueueFor,
   AppEvents,
-  type HashAlgorithm,
-  SessionProvider,
   DeleteType,
+  type HashAlgorithm,
+  QueueFor,
+  SessionProvider,
 } from '@nuvix/utils'
-import { ResponseInterceptor } from '@nuvix/core/resolvers'
-import { UpdateEmailDTO, UpdatePasswordDTO } from './DTO/account.dto'
-import { PasswordHistoryValidator } from '@nuvix/core/validators'
-import { CreateEmailSessionDTO } from './DTO/session.dto'
-import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
-import * as fs from 'fs/promises'
-import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
-import path from 'path'
-import { EventEmitter2 } from '@nestjs/event-emitter'
-import { JwtService } from '@nestjs/jwt'
-import { LocaleTranslator } from '@nuvix/core/helpers'
 import type {
   MembershipsDoc,
   Sessions,
@@ -42,9 +40,13 @@ import type {
   TargetsDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { AppConfigService, CoreService, Platform } from '@nuvix/core'
-import { Hooks } from '@nuvix/core/extend/hooks'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { Queue } from 'bullmq'
+import * as fs from 'fs/promises'
+import * as Template from 'handlebars'
+import { CountryResponse, Reader } from 'maxmind'
+import path from 'path'
+import { UpdateEmailDTO, UpdatePasswordDTO } from './DTO/account.dto'
+import { CreateEmailSessionDTO } from './DTO/session.dto'
 
 @Injectable()
 @UseInterceptors(ResponseInterceptor)
@@ -206,12 +208,11 @@ export class AccountService {
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.USER_ALREADY_EXISTS)
-      } else {
-        throw new Exception(
-          Exception.GENERAL_SERVER_ERROR,
-          'Failed saving user to DB',
-        )
       }
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        'Failed saving user to DB',
+      )
     }
 
     Authorization.unsetRole(Role.guests().toString())
@@ -334,9 +335,8 @@ export class AccountService {
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.GENERAL_BAD_REQUEST)
-      } else {
-        throw error
       }
+      throw error
     }
   }
 

@@ -1,4 +1,4 @@
-import { UsersDoc, type ChallengesDoc } from 'libs/utils/types'
+import { type ChallengesDoc, UsersDoc } from 'libs/utils/types'
 
 export abstract class Challenge {
   public static async verify(user: UsersDoc, otp: string): Promise<boolean> {

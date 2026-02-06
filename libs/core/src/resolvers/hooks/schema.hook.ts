@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common'
 import { DataSource, Context as DataSourceContext } from '@nuvix/pg'
-import { Exception } from '../../extend/exception'
-import { Hook } from '../../server'
 import {
   AppMode,
   Context,
@@ -10,14 +8,16 @@ import {
   DatabaseRole,
   PROJECT_DB_CLIENT,
   PROJECT_PG,
+  type Schema,
   Schemas,
   SchemaType,
-  type Schema,
 } from '@nuvix/utils'
 import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
-import { CoreService } from '../../core.service.js'
 import type { Client } from 'pg'
+import { CoreService } from '../../core.service.js'
+import { Exception } from '../../extend/exception'
 import { Auth } from '../../helpers'
+import { Hook } from '../../server'
 
 @Injectable()
 export class SchemaHook implements Hook {
@@ -83,12 +83,10 @@ export class SchemaHook implements Hook {
           schema: schema.name,
         })
         request[CURRENT_SCHEMA_DB] = db
-      } else {
-        if (mode !== AppMode.ADMIN || !Auth.isPlatformActor) {
-          request[Context.AuthMeta] = {
-            ...(request[Context.AuthMeta] || {}),
-            role,
-          }
+      } else if (mode !== AppMode.ADMIN || !Auth.isPlatformActor) {
+        request[Context.AuthMeta] = {
+          ...(request[Context.AuthMeta] || {}),
+          role,
         }
       }
     } else {

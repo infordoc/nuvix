@@ -1,19 +1,23 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { Exception } from '@nuvix/core/extend/exception'
+import { CollectionsJob, CollectionsJobData } from '@nuvix/core/resolvers'
 import {
+  AttributeType,
   Database,
   Doc,
   DuplicateException,
   ID,
   LimitException,
+  NumericType,
   Query,
   RangeValidator,
+  RelationSide,
+  RelationType,
   StructureValidator,
   TextValidator,
   TruncateException,
-  AttributeType,
-  NumericType,
-  RelationType,
-  RelationSide,
 } from '@nuvix/db'
 import {
   AttributeFormat,
@@ -22,10 +26,13 @@ import {
   SchemaMeta,
   Status,
 } from '@nuvix/utils'
-import { InjectQueue } from '@nestjs/bullmq'
+import type {
+  Attributes,
+  AttributesDoc,
+  CollectionsDoc,
+  ProjectsDoc,
+} from '@nuvix/utils/types'
 import type { Queue } from 'bullmq'
-import { Exception } from '@nuvix/core/extend/exception'
-
 // DTOs
 import type {
   CreateBooleanAttributeDTO,
@@ -37,6 +44,7 @@ import type {
   CreateIpAttributeDTO,
   CreateRelationAttributeDTO,
   CreateStringAttributeDTO,
+  CreateURLAttributeDTO,
   UpdateBooleanAttributeDTO,
   UpdateDatetimeAttributeDTO,
   UpdateEmailAttributeDTO,
@@ -47,16 +55,7 @@ import type {
   UpdateRelationAttributeDTO,
   UpdateStringAttributeDTO,
   UpdateURLAttributeDTO,
-  CreateURLAttributeDTO,
 } from './DTO/attributes.dto'
-import { EventEmitter2 } from '@nestjs/event-emitter'
-import { CollectionsJob, CollectionsJobData } from '@nuvix/core/resolvers'
-import type {
-  Attributes,
-  AttributesDoc,
-  CollectionsDoc,
-  ProjectsDoc,
-} from '@nuvix/utils/types'
 
 @Injectable()
 export class AttributesService {
@@ -310,8 +309,8 @@ export class AttributesService {
     const formatOptions = attribute.get('formatOptions', {})
 
     if (formatOptions) {
-      attribute.set('min', parseInt(formatOptions['min']))
-      attribute.set('max', parseInt(formatOptions['max']))
+      attribute.set('min', Number.parseInt(formatOptions['min']))
+      attribute.set('max', Number.parseInt(formatOptions['max']))
     }
 
     return attribute
@@ -371,8 +370,8 @@ export class AttributesService {
     const formatOptions = createdAttribute.get('formatOptions', {})
 
     if (formatOptions) {
-      createdAttribute.set('min', parseFloat(formatOptions['min']))
-      createdAttribute.set('max', parseFloat(formatOptions['max']))
+      createdAttribute.set('min', Number.parseFloat(formatOptions['min']))
+      createdAttribute.set('max', Number.parseFloat(formatOptions['max']))
     }
 
     return createdAttribute
@@ -702,8 +701,8 @@ export class AttributesService {
     const formatOptions = attribute.get('formatOptions', [])
 
     if (formatOptions) {
-      attribute.set('min', parseInt(formatOptions['min']))
-      attribute.set('max', parseInt(formatOptions['max']))
+      attribute.set('min', Number.parseInt(formatOptions['min']))
+      attribute.set('max', Number.parseInt(formatOptions['max']))
     }
 
     return attribute
@@ -734,8 +733,8 @@ export class AttributesService {
     const formatOptions = attribute.get('formatOptions', [])
 
     if (formatOptions) {
-      attribute.set('min', parseFloat(formatOptions['min']))
-      attribute.set('max', parseFloat(formatOptions['max']))
+      attribute.set('min', Number.parseFloat(formatOptions['min']))
+      attribute.set('max', Number.parseFloat(formatOptions['max']))
     }
 
     return attribute

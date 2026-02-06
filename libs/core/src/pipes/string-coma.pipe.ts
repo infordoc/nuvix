@@ -1,7 +1,7 @@
 import { ArgumentMetadata, PipeTransform } from '@nestjs/common'
 import { Exception } from '../extend/exception'
 
-interface Options {}
+type Options = {}
 
 export class ParseComaStringPipe
   implements PipeTransform<string, string[] | undefined>

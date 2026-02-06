@@ -1,4 +1,19 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { AppConfigService, CoreService } from '@nuvix/core'
+import { Exception } from '@nuvix/core/extend/exception'
+import { MessagingJob, MessagingJobData } from '@nuvix/core/resolvers'
+import { Database, Doc, ID, Query } from '@nuvix/db'
+import {
+  MessageStatus,
+  MessageType,
+  QueueFor,
+  ScheduleResourceType,
+  Schemas,
+} from '@nuvix/utils'
+import type { Messages, Schedules } from '@nuvix/utils/types'
+import { Queue } from 'bullmq'
 import type {
   CreateEmailMessage,
   CreatePushMessage,
@@ -9,21 +24,6 @@ import type {
   UpdatePushMessage,
   UpdateSmsMessage,
 } from './messaging.types'
-import { Database, Doc, ID, Query } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import {
-  MessageType,
-  QueueFor,
-  ScheduleResourceType,
-  Schemas,
-} from '@nuvix/utils'
-import { MessageStatus } from '@nuvix/utils'
-import { JwtService } from '@nestjs/jwt'
-import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import { MessagingJob, MessagingJobData } from '@nuvix/core/resolvers'
-import { CoreService, AppConfigService } from '@nuvix/core'
-import type { Messages, Schedules } from '@nuvix/utils/types'
 
 @Injectable()
 export class MessagingService {
@@ -155,7 +155,7 @@ export class MessagingService {
           message: createdMessage,
         })
         break
-      case MessageStatus.SCHEDULED:
+      case MessageStatus.SCHEDULED: {
         const schedule = new Doc<Schedules>({
           region: project.get('region'),
           resourceType: ScheduleResourceType.MESSAGE,
@@ -178,6 +178,7 @@ export class MessagingService {
           createdMessage,
         )
         break
+      }
     }
 
     return createdMessage
@@ -262,7 +263,7 @@ export class MessagingService {
           message: createdMessage,
         })
         break
-      case MessageStatus.SCHEDULED:
+      case MessageStatus.SCHEDULED: {
         const schedule = new Doc<Schedules>({
           region: project.get('region'),
           resourceType: ScheduleResourceType.MESSAGE,
@@ -285,6 +286,7 @@ export class MessagingService {
           createdMessage,
         )
         break
+      }
     }
 
     return createdMessage
@@ -452,7 +454,7 @@ export class MessagingService {
           message: createdMessage,
         })
         break
-      case MessageStatus.SCHEDULED:
+      case MessageStatus.SCHEDULED: {
         const schedule = new Doc({
           region: project.get('region'),
           resourceType: ScheduleResourceType.MESSAGE,
@@ -475,6 +477,7 @@ export class MessagingService {
           createdMessage,
         )
         break
+      }
     }
 
     return createdMessage
@@ -1149,7 +1152,7 @@ export class MessagingService {
     switch (message.get('status')) {
       case MessageStatus.PROCESSING:
         throw new Exception(Exception.MESSAGE_ALREADY_PROCESSING)
-      case MessageStatus.SCHEDULED:
+      case MessageStatus.SCHEDULED: {
         const scheduleId = message.get('scheduleId')
         const scheduledAt = message.get('scheduledAt')
         const now = new Date()
@@ -1166,6 +1169,7 @@ export class MessagingService {
           }
         }
         break
+      }
       default:
         break
     }

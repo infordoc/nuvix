@@ -1,18 +1,18 @@
 import { Logger } from '@nestjs/common'
-import {
-  Database,
-  Doc,
-  Permission,
-  Role,
-  DuplicateException,
-  Authorization,
-  ID,
-} from '@nuvix/db'
-import collections from '@nuvix/utils/collections'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Audit } from '@nuvix/audit'
 import { AppConfigService, CoreService } from '@nuvix/core'
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
+import {
+  Authorization,
+  Database,
+  Doc,
+  DuplicateException,
+  ID,
+  Permission,
+  Role,
+} from '@nuvix/db'
 import { Schemas } from '@nuvix/utils'
+import collections from '@nuvix/utils/collections'
 import { AccountService } from '../account/account.service'
 import { ProjectService } from '../projects/projects.service'
 

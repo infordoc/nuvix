@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import {
-  CreateTeamDTO,
-  UpdateTeamDTO,
-  UpdateTeamPrefsDTO,
-} from './DTO/team.dto'
-import { ID } from '@nuvix/core/helpers'
+import { CoreService } from '@nuvix/core'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Auth, ID } from '@nuvix/core/helpers'
+import { DeletesQueue } from '@nuvix/core/resolvers'
 import {
   Database,
   Doc,
@@ -14,10 +11,12 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { Auth } from '@nuvix/core/helpers'
 import type { UsersDoc } from '@nuvix/utils/types'
-import { DeletesQueue } from '@nuvix/core/resolvers'
-import { CoreService } from '@nuvix/core'
+import {
+  CreateTeamDTO,
+  UpdateTeamDTO,
+  UpdateTeamPrefsDTO,
+} from './DTO/team.dto'
 
 @Injectable()
 export class TeamsService {

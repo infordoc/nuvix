@@ -5,13 +5,13 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common'
-import { Queue } from './queue'
-import { AppMode, configuration, QueueFor, Schemas } from '@nuvix/utils'
-import { Doc } from '@nuvix/db'
 import { Audit } from '@nuvix/audit'
+import { Doc } from '@nuvix/db'
+import { AppMode, configuration, QueueFor, Schemas } from '@nuvix/utils'
+import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import { Job } from 'bullmq'
 import { CoreService } from '../../core.service.js'
-import type { ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
+import { Queue } from './queue'
 
 interface AuditLogsBuffer {
   project: ProjectsDoc

@@ -1,11 +1,11 @@
 import { Permission } from '@nuvix/db'
+import { Exclude, Expose, Transform } from 'class-transformer'
 import { AuthProviderModel } from './AuthProvider.model'
 import { BaseModel } from './base.model'
+import { KeyModel } from './Key.model'
 import { MockNumberModel } from './MockNumber.model'
 import { PlatformModel } from './Platform.model'
 import { WebhookModel } from './Webhook.model'
-import { Exclude, Expose, Transform } from 'class-transformer'
-import { KeyModel } from './Key.model'
 
 @Exclude()
 export class ProjectModel extends BaseModel {

@@ -10,19 +10,25 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import {
+  Auth,
+  AuthDatabase,
+  AuthType,
+  Locale,
+  Namespace,
+  Project,
+  User,
+} from '@nuvix/core/decorators'
+import { LocaleTranslator, Models } from '@nuvix/core/helpers'
+import {
+  ApiInterceptor,
+  ProjectGuard,
+  ResponseInterceptor,
+} from '@nuvix/core/resolvers'
 import { Database, type Doc } from '@nuvix/db'
-import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
-import { Locale } from '@nuvix/core/decorators'
-import { AuthDatabase, Project } from '@nuvix/core/decorators'
-import { User } from '@nuvix/core/decorators'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { Models } from '@nuvix/core/helpers'
-import { ProjectGuard } from '@nuvix/core/resolvers'
-import { ApiInterceptor } from '@nuvix/core/resolvers'
-import { ResponseInterceptor } from '@nuvix/core/resolvers'
-
-import { SessionService } from './session.service'
+import type { IListResponse, IResponse } from '@nuvix/utils'
+import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
@@ -38,9 +44,7 @@ import {
   CreateOAuth2TokenDTO,
   CreatePhoneTokenDTO,
 } from './DTO/token.dto'
-import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
-import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
-import type { IListResponse, IResponse } from '@nuvix/utils'
+import { SessionService } from './session.service'
 
 @Namespace('account')
 @UseGuards(ProjectGuard)

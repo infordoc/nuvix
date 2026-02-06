@@ -1,9 +1,9 @@
 import { ident, literal } from 'pg-format'
+import { PgMetaException } from '../extra/execption'
 import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
 import { filterByList } from './helpers'
 import { triggersSql } from './sql/index'
 import { PostgresMetaResult, PostgresTrigger } from './types'
-import { PgMetaException } from '../extra/execption'
 
 export default class PostgresMetaTriggers {
   query: (sql: string) => Promise<PostgresMetaResult<any>>

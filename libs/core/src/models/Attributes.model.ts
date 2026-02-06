@@ -1,8 +1,8 @@
-import { Exclude, Expose, Transform } from 'class-transformer'
-import { AttributeModel } from './Attribute.model'
 import { AttributeType, OnDelete, RelationSide, RelationType } from '@nuvix/db'
 import { AttributeFormat } from '@nuvix/utils'
 import { Attributes } from '@nuvix/utils/types'
+import { Exclude, Expose, Transform } from 'class-transformer'
+import { AttributeModel } from './Attribute.model'
 
 @Exclude()
 export class AttributeBooleanModel extends AttributeModel {
@@ -102,7 +102,7 @@ export class AttributeIntegerModel extends AttributeModel {
 
 @Exclude()
 export class AttributeListModel extends AttributeModel {
-  @Expose() total: number = 0
+  @Expose() total = 0
   @Expose() attributes: any[] = []
 
   constructor(partial: Partial<AttributeListModel>) {
@@ -156,7 +156,7 @@ export class AttributeRelationshipModel extends AttributeModel {
 @Exclude()
 export class AttributeStringModel extends AttributeModel {
   @Expose() override type: AttributeType = AttributeType.String
-  @Expose() override size: number = 0
+  @Expose() override size = 0
   @Expose() override default: string | null = null
 
   constructor(partial: Partial<AttributeStringModel>) {

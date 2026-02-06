@@ -2,13 +2,13 @@ import {
   AttributeType,
   Authorization,
   Doc,
-  Query,
   Filter,
   FilterValue,
+  Query,
 } from '@nuvix/db'
-import { SchemaMeta } from '../constants'
 import crypto from 'crypto'
 import { configuration } from '../configuration'
+import { SchemaMeta } from '../constants'
 
 const ALGO = 'aes-256-gcm'
 const IV_LENGTH = 12
@@ -32,9 +32,8 @@ export const filters: Record<
     decode(value) {
       if (typeof value === 'string') {
         return JSON.parse(value)
-      } else {
-        return value
       }
+      return value
     },
   },
   casting: {

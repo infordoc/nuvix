@@ -1,5 +1,5 @@
 import { IsCustomID, IsUID } from '@nuvix/core/validators'
-import { IsString, IsNotEmpty, IsOptional, Length, IsIn } from 'class-validator'
+import { IsIn, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator'
 
 export class CreateProjectDTO {
   /**

@@ -1,4 +1,26 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { Exception } from '@nuvix/core/extend/exception'
+import { setupDatabaseMeta } from '@nuvix/core/helpers'
+import {
+  Database,
+  Doc,
+  Permission,
+  PermissionsValidator,
+  PermissionType,
+} from '@nuvix/db'
+import { DataSource, Raw } from '@nuvix/pg'
+import { transformPgError } from '@nuvix/utils/database'
+import {
+  ASTToQueryBuilder,
+  Expression,
+  OrderParser,
+  ParsedOrdering,
+  Parser,
+  ParserResult,
+  SelectNode,
+  SelectParser,
+} from '@nuvix/utils/query'
+import { ProjectsDoc } from '@nuvix/utils/types'
 import {
   CallFunction,
   Delete,
@@ -8,28 +30,6 @@ import {
   Update,
   UpdatePermissions,
 } from './schemas.types'
-import {
-  Expression,
-  ParsedOrdering,
-  ParserResult,
-  SelectNode,
-} from '@nuvix/utils/query'
-import { Parser } from '@nuvix/utils/query'
-import { SelectParser } from '@nuvix/utils/query'
-import { OrderParser } from '@nuvix/utils/query'
-import { ASTToQueryBuilder } from '@nuvix/utils/query'
-import { Exception } from '@nuvix/core/extend/exception'
-import { transformPgError } from '@nuvix/utils/database'
-import { DataSource, Raw } from '@nuvix/pg'
-import {
-  Doc,
-  Permission,
-  PermissionsValidator,
-  PermissionType,
-} from '@nuvix/db'
-import { Database } from '@nuvix/db'
-import { setupDatabaseMeta } from '@nuvix/core/helpers'
-import { ProjectsDoc } from '@nuvix/utils/types'
 
 @Injectable()
 export class SchemasService {
@@ -428,34 +428,32 @@ export class SchemasService {
 
           await delQuery.delete()
         }
-      } else {
-        if (currentPermissions.length > 0) {
-          // Update existing row
-          const updQuery = pg
-            .table(`${tableId}_perms`)
-            .withSchema(schema)
-            .andWhere('permission', type)
+      } else if (currentPermissions.length > 0) {
+        // Update existing row
+        const updQuery = pg
+          .table(`${tableId}_perms`)
+          .withSchema(schema)
+          .andWhere('permission', type)
 
-          if (rowId !== undefined && rowId !== null) {
-            updQuery.andWhere('row_id', rowId)
-          } else {
-            updQuery.whereNull('row_id')
-          }
-
-          await updQuery.update({
-            roles: newPermissions,
-          })
+        if (rowId !== undefined && rowId !== null) {
+          updQuery.andWhere('row_id', rowId)
         } else {
-          // Insert new row
-          await pg
-            .table(`${tableId}_perms`)
-            .withSchema(schema)
-            .insert({
-              permission: type,
-              roles: newPermissions,
-              row_id: rowId ?? null,
-            })
+          updQuery.whereNull('row_id')
         }
+
+        await updQuery.update({
+          roles: newPermissions,
+        })
+      } else {
+        // Insert new row
+        await pg
+          .table(`${tableId}_perms`)
+          .withSchema(schema)
+          .insert({
+            permission: type,
+            roles: newPermissions,
+            row_id: rowId ?? null,
+          })
       }
     }
 

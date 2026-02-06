@@ -1,8 +1,8 @@
-import { Auth } from '../../src/helpers'
 import { Authorization, Doc, ID, Role, UserDimension } from '@nuvix/db'
 import { HashAlgorithm, SessionProvider, TokenType } from '@nuvix/utils'
 import { Sessions, Tokens, Users } from '@nuvix/utils/types'
-import { describe, test, expect, afterEach } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
+import { Auth } from '../../src/helpers'
 
 describe('Auth', () => {
   /**

@@ -1,13 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Authorization, Database, Doc, Role } from '@nuvix/db'
 import { ApiKey, AppMode, AuthActivity, Context } from '@nuvix/utils'
-import { Exception } from '../../extend/exception'
-import { Auth } from '../../helpers/auth.helper'
-import { roles } from '../../config/roles'
-import ParamsHelper from '../../helpers/params.helper'
-import { APP_PLATFORM_SERVER, platforms } from '../../config/platforms'
-import { Hook } from '../../server/hooks/interface'
-import { Key } from '../../helpers/key.helper'
 import {
   KeysDoc,
   MembershipsDoc,
@@ -16,9 +9,16 @@ import {
   TeamsDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { CoreService } from '../../core.service.js'
+import { APP_PLATFORM_SERVER, platforms } from '../../config/platforms'
+import { roles } from '../../config/roles'
 import { AppConfigService } from '../../config.service.js'
+import { CoreService } from '../../core.service.js'
 import { AuthType } from '../../decorators'
+import { Exception } from '../../extend/exception'
+import { Auth } from '../../helpers/auth.helper'
+import { Key } from '../../helpers/key.helper'
+import ParamsHelper from '../../helpers/params.helper'
+import { Hook } from '../../server/hooks/interface'
 
 @Injectable()
 export class ApiHook implements Hook {

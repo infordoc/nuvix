@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { Database } from '@nuvix/db'
 import { CoreService } from '@nuvix/core'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Database } from '@nuvix/db'
 
 @Injectable()
 export class MetadataService {

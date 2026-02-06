@@ -1,7 +1,6 @@
-import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common'
-
-import { PgMetaException } from './execption'
+import { ArgumentsHost, Catch, ExceptionFilter, Logger } from '@nestjs/common'
 import { Exception } from '@nuvix/core/extend/exception'
+import { PgMetaException } from './execption'
 
 @Catch(PgMetaException)
 export class PgMetaExceptionFilter implements ExceptionFilter {
@@ -12,7 +11,7 @@ export class PgMetaExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<NuvixRes>()
     const request = ctx.getRequest<NuvixRequest>()
 
-    let status = getStatusCodeFromError(exception)
+    const status = getStatusCodeFromError(exception)
 
     this.logger.error(
       `${request.method} ${request.url}`,
@@ -51,9 +50,11 @@ const getStatusCodeFromError = (
 ): number => {
   if (error.message === 'Connection terminated due to connection timeout') {
     return 504
-  } else if (error.message === 'sorry, too many clients already') {
+  }
+  if (error.message === 'sorry, too many clients already') {
     return 503
-  } else if (error.message === 'Query read timeout') {
+  }
+  if (error.message === 'Query read timeout') {
     return 408
   }
   return defaultResponseCode

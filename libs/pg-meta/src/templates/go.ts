@@ -1,3 +1,4 @@
+import type { GeneratorMetadata } from '../lib/generators'
 import type {
   PostgresColumn,
   PostgresMaterializedView,
@@ -6,7 +7,6 @@ import type {
   PostgresType,
   PostgresView,
 } from '../lib/index'
-import type { GeneratorMetadata } from '../lib/generators'
 
 type Operation = 'Select' | 'Insert' | 'Update'
 
@@ -31,7 +31,7 @@ export const apply = ({
 
   const compositeTypes = types.filter(type => type.attributes.length > 0)
 
-  let output = `
+  const output = `
 package database
 
 ${tables
@@ -306,7 +306,7 @@ function pgTypeToGoType(
   nullable: boolean,
   types: PostgresType[] = [],
 ): string {
-  let goType: GoType | undefined = undefined
+  let goType: GoType | undefined
   if (pgType in GO_TYPE_MAP) {
     goType = GO_TYPE_MAP[pgType as keyof typeof GO_TYPE_MAP]
   }

@@ -1,4 +1,9 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
+import { usageConfig } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { StatsQueue } from '@nuvix/core/resolvers'
 import {
   Authorization,
   Database,
@@ -8,7 +13,6 @@ import {
   Permission,
   Query,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
 import {
   configuration,
   DeleteType,
@@ -16,15 +20,10 @@ import {
   MetricPeriod,
   QueueFor,
 } from '@nuvix/utils'
-import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto'
-
-import { usageConfig } from '@nuvix/core/config'
 import collections from '@nuvix/utils/collections'
-import { StatsQueue } from '@nuvix/core/resolvers'
-import { InjectQueue } from '@nestjs/bullmq'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
-import { Queue } from 'bullmq'
 import { ProjectsDoc } from '@nuvix/utils/types'
+import { Queue } from 'bullmq'
+import { CreateBucketDTO, UpdateBucketDTO } from './DTO/bucket.dto'
 
 @Injectable()
 export class StorageService {
@@ -206,7 +205,7 @@ export class StorageService {
   /**
    * Get Storage Usage.
    */
-  async getStorageUsage(db: Database, range: string = '7d') {
+  async getStorageUsage(db: Database, range = '7d') {
     const periods = usageConfig
 
     const stats: Record<string, any> = {}
@@ -277,11 +276,7 @@ export class StorageService {
   /**
    * Get Storage Usage of bucket.
    */
-  async getBucketStorageUsage(
-    db: Database,
-    bucketId: string,
-    range: string = '7d',
-  ) {
+  async getBucketStorageUsage(db: Database, bucketId: string, range = '7d') {
     const bucket = await db.getDocument('buckets', bucketId)
 
     if (bucket.empty()) {

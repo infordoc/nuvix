@@ -1,13 +1,13 @@
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import cookieParser from '@fastify/cookie'
 import fastifyMultipart from '@fastify/multipart'
-import * as crypto from 'crypto'
-import { AppConfigService } from '@nuvix/core'
 import { ValidationPipe } from '@nestjs/common'
-import { Authorization, Doc, Role, storage } from '@nuvix/db'
-import { Auth } from '@nuvix/core/helpers'
-import { Context } from '@nuvix/utils'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { AppConfigService } from '@nuvix/core'
 import { ErrorFilter } from '@nuvix/core/filters'
+import { Auth } from '@nuvix/core/helpers'
+import { Authorization, Doc, Role, storage } from '@nuvix/db'
+import { Context } from '@nuvix/utils'
+import * as crypto from 'crypto'
 
 /**
  * Applies common app configuration to the given NestFastifyApplication instance.
@@ -18,9 +18,9 @@ export const applyAppConfig = (
 ): void => {
   app.enableShutdownHooks()
   app.enableVersioning()
-  // @ts-ignore
+  // @ts-expect-error
   app.register(cookieParser)
-  // @ts-ignore
+  // @ts-expect-error
   app.register(fastifyMultipart, {
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB

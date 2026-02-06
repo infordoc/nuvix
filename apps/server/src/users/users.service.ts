@@ -1,7 +1,51 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { JwtService } from '@nestjs/jwt'
+import { Audit, AuditDoc } from '@nuvix/audit'
+import { CoreService } from '@nuvix/core'
+import { usageConfig } from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
-import { ID } from '@nuvix/core/helpers'
-import { PersonalDataValidator } from '@nuvix/core/validators'
+import { Hooks } from '@nuvix/core/extend/hooks'
+import type { LocaleTranslator } from '@nuvix/core/helpers'
+import { Auth, Detector, ID } from '@nuvix/core/helpers'
+import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { StatsQueue } from '@nuvix/core/resolvers'
+import {
+  PasswordHistoryValidator,
+  PersonalDataValidator,
+} from '@nuvix/core/validators'
+import {
+  Authorization,
+  Database,
+  Doc,
+  DuplicateException,
+  Permission,
+  Query,
+  Role,
+} from '@nuvix/db'
+import {
+  configuration,
+  DeleteType,
+  HashAlgorithm,
+  MetricFor,
+  MetricPeriod,
+  QueueFor,
+  TokenType,
+} from '@nuvix/utils'
+import type {
+  MembershipsDoc,
+  ProjectsDoc,
+  SessionsDoc,
+  TargetsDoc,
+  Tokens,
+  Users,
+  UsersDoc,
+} from '@nuvix/utils/types'
+import { Queue } from 'bullmq'
+import { CountryResponse, Reader } from 'maxmind'
+import { CreateJwtDTO } from './DTO/jwt.dto'
+import { CreateTokenDTO } from './DTO/token.dto'
 import {
   CreateUserDTO,
   CreateUserWithScryptDTO,
@@ -14,51 +58,6 @@ import {
   UpdateUserPoneVerificationDTO,
   UpdateUserStatusDTO,
 } from './DTO/user.dto'
-import {
-  configuration,
-  DeleteType,
-  HashAlgorithm,
-  MetricFor,
-  MetricPeriod,
-  QueueFor,
-  TokenType,
-} from '@nuvix/utils'
-import { Auth } from '@nuvix/core/helpers'
-import { PasswordHistoryValidator } from '@nuvix/core/validators'
-import { Detector } from '@nuvix/core/helpers'
-
-import { CreateTokenDTO } from './DTO/token.dto'
-import { CreateJwtDTO } from './DTO/jwt.dto'
-import { JwtService } from '@nestjs/jwt'
-import {
-  Authorization,
-  Database,
-  Doc,
-  DuplicateException,
-  Permission,
-  Query,
-  Role,
-} from '@nuvix/db'
-import { CountryResponse, Reader } from 'maxmind'
-import { EventEmitter2 } from '@nestjs/event-emitter'
-import { CoreService } from '@nuvix/core'
-import type {
-  MembershipsDoc,
-  ProjectsDoc,
-  SessionsDoc,
-  TargetsDoc,
-  Tokens,
-  Users,
-  UsersDoc,
-} from '@nuvix/utils/types'
-import { Audit, AuditDoc } from '@nuvix/audit'
-import type { LocaleTranslator } from '@nuvix/core/helpers'
-import { usageConfig } from '@nuvix/core/config'
-import { StatsQueue } from '@nuvix/core/resolvers'
-import { Hooks } from '@nuvix/core/extend/hooks'
-import { InjectQueue } from '@nestjs/bullmq'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
-import { Queue } from 'bullmq'
 
 @Injectable()
 export class UsersService {
@@ -317,27 +316,22 @@ export class UsersService {
         } else {
           await db.deleteDocument('targets', oldTarget.getId())
         }
-      } else {
-        if (email.length !== 0) {
-          const target = await db.createDocument(
-            'targets',
-            new Doc({
-              $permissions: [
-                Permission.read(Role.user(user.getId())),
-                Permission.update(Role.user(user.getId())),
-                Permission.delete(Role.user(user.getId())),
-              ],
-              userId: user.getId(),
-              userInternalId: user.getSequence(),
-              providerType: 'email',
-              identifier: email,
-            }),
-          )
-          updatedUser.set('targets', [
-            ...updatedUser.get('targets', []),
-            target,
-          ])
-        }
+      } else if (email.length !== 0) {
+        const target = await db.createDocument(
+          'targets',
+          new Doc({
+            $permissions: [
+              Permission.read(Role.user(user.getId())),
+              Permission.update(Role.user(user.getId())),
+              Permission.delete(Role.user(user.getId())),
+            ],
+            userId: user.getId(),
+            userInternalId: user.getSequence(),
+            providerType: 'email',
+            identifier: email,
+          }),
+        )
+        updatedUser.set('targets', [...updatedUser.get('targets', []), target])
       }
 
       await db.purgeCachedDocument('users', user.getId())
@@ -390,27 +384,22 @@ export class UsersService {
         } else {
           await db.deleteDocument('targets', oldTarget.getId())
         }
-      } else {
-        if (phone.length !== 0) {
-          const target = await db.createDocument(
-            'targets',
-            new Doc({
-              $permissions: [
-                Permission.read(Role.user(user.getId())),
-                Permission.update(Role.user(user.getId())),
-                Permission.delete(Role.user(user.getId())),
-              ],
-              userId: user.getId(),
-              userInternalId: user.getSequence(),
-              providerType: 'sms',
-              identifier: phone,
-            }),
-          )
-          updatedUser.set('targets', [
-            ...updatedUser.get('targets', []),
-            target,
-          ])
-        }
+      } else if (phone.length !== 0) {
+        const target = await db.createDocument(
+          'targets',
+          new Doc({
+            $permissions: [
+              Permission.read(Role.user(user.getId())),
+              Permission.update(Role.user(user.getId())),
+              Permission.delete(Role.user(user.getId())),
+            ],
+            userId: user.getId(),
+            userInternalId: user.getSequence(),
+            providerType: 'sms',
+            identifier: phone,
+          }),
+        )
+        updatedUser.set('targets', [...updatedUser.get('targets', []), target])
       }
       await db.purgeCachedDocument('users', user.getId())
       return updatedUser
@@ -1061,7 +1050,7 @@ export class UsersService {
   /**
    * Get usage statistics
    */
-  async getUsage(db: Database, range: string = '1d') {
+  async getUsage(db: Database, range = '1d') {
     const periods = usageConfig
     const stats: Record<string, any> = {}
     const usage: Record<string, any> = {}

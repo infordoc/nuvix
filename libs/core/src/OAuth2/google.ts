@@ -1,7 +1,7 @@
 import { OAuth2 } from '../OAuth2'
 
 export class GoogleOAuth2 extends OAuth2 {
-  protected version: string = 'v4'
+  protected version = 'v4'
   protected user: Record<string, any> = {}
   protected tokens: Record<string, any> = {}
   protected override scopes: string[] = [

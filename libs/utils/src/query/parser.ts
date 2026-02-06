@@ -1,5 +1,13 @@
 import { Logger } from '@nestjs/common'
 import { Exception } from '@nuvix/core/extend/exception'
+import {
+  AllowedOperators,
+  BaseParser,
+  GroupParser,
+  specialOperators,
+} from './base'
+import { OrderParser } from './order'
+import { Tokenizer, TokenType } from './tokenizer'
 import type {
   AndExpression,
   Condition,
@@ -8,14 +16,6 @@ import type {
   ParserConfig,
   ParserResult,
 } from './types'
-import { OrderParser } from './order'
-import { Tokenizer, TokenType } from './tokenizer'
-import {
-  AllowedOperators,
-  BaseParser,
-  GroupParser,
-  specialOperators,
-} from './base'
 
 export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
   private readonly logger = new Logger(Parser.name)
@@ -288,10 +288,11 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
         this.advance()
         return token.value
 
-      case TokenType.NUMBER:
+      case TokenType.NUMBER: {
         this.advance()
         const num = Number(token.value)
         return isNaN(num) ? token.value : num
+      }
 
       case TokenType.BOOLEAN:
         this.advance()
@@ -305,7 +306,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
         this.advance()
         return undefined
 
-      case TokenType.COLUMN_REF:
+      case TokenType.COLUMN_REF: {
         this.advance()
         const columnName = token.value
         return {
@@ -314,6 +315,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
             ? columnName
             : `${this.mainTable}.${columnName}`,
         }
+      }
 
       case TokenType.RAW_VALUE:
         this.advance()
@@ -364,7 +366,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
       case 'offset':
         this.extraData['offset'] = this.integerOrThrow(args[0], operator)
         break
-      case 'join':
+      case 'join': {
         const joinType = String(args[0]).toLowerCase()
         if (['inner', 'left', 'right'].includes(joinType)) {
           // 'full'
@@ -373,7 +375,8 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
           this.throwError(`Unsupported join type: ${args[0]}`, this.peek())
         }
         break
-      case 'shape':
+      }
+      case 'shape': {
         const shape = String(args[0]).toLowerCase()
         if (['object', 'array', '{}', '[]', 'true'].includes(shape)) {
           this.extraData['shape'] =
@@ -384,6 +387,7 @@ export class Parser<T extends ParserResult = ParserResult> extends BaseParser {
           this.throwError(`Unsupported shape value: ${args[0]}`, this.peek())
         }
         break
+      }
       case 'group':
         if (args.length > 0) {
           const parser = new GroupParser(args)

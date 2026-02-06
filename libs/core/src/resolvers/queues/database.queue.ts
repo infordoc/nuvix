@@ -1,12 +1,12 @@
 import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
-import { Queue } from './queue'
-import { Job } from 'bullmq'
 import { Logger } from '@nestjs/common'
 import { Database, Doc, DuplicateException } from '@nuvix/db'
 import { QueueFor } from '@nuvix/utils'
-import { CoreService } from '../../core.service.js'
-import type { Projects, ProjectsDoc } from '@nuvix/utils/types'
 import collections from '@nuvix/utils/collections'
+import type { Projects, ProjectsDoc } from '@nuvix/utils/types'
+import { Job } from 'bullmq'
+import { CoreService } from '../../core.service.js'
+import { Queue } from './queue'
 
 @Processor(QueueFor.DATABASE, { concurrency: 10000 })
 export class DatabaseQueue extends Queue {
@@ -21,12 +21,13 @@ export class DatabaseQueue extends Queue {
     token?: string,
   ): Promise<void> {
     switch (name) {
-      case SchemaJob.INIT_DOC:
+      case SchemaJob.INIT_DOC: {
         const project = new Doc(
           data.project as unknown as Projects,
         ) as ProjectsDoc
         await this.initDocumentSchema(project, data.schema)
         return
+      }
       default:
         throw Error(`Unknown job type: ${name}`)
     }

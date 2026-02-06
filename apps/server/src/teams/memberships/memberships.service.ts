@@ -1,13 +1,11 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
-import { ID } from '@nuvix/core/helpers'
+import { AppConfigService, CoreService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Auth, Detector, ID, LocaleTranslator } from '@nuvix/core/helpers'
+import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
 import { TOTP } from '@nuvix/core/validators'
-import {
-  CreateMembershipDTO,
-  UpdateMembershipDTO,
-  UpdateMembershipStatusDTO,
-} from './DTO/membership.dto'
-import { configuration, QueueFor, SessionProvider } from '@nuvix/utils'
 import {
   Authorization,
   AuthorizationException,
@@ -18,18 +16,17 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { Auth } from '@nuvix/core/helpers'
-import { InjectQueue } from '@nestjs/bullmq'
+import { configuration, QueueFor, SessionProvider } from '@nuvix/utils'
+import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import type { Queue } from 'bullmq'
-import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { sprintf } from 'sprintf-js'
 import * as fs from 'fs'
 import * as Template from 'handlebars'
-import { AppConfigService, CoreService } from '@nuvix/core'
-import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
-import type { SmtpConfig } from '@nuvix/core/config'
-import { Detector } from '@nuvix/core/helpers'
+import { sprintf } from 'sprintf-js'
+import {
+  CreateMembershipDTO,
+  UpdateMembershipDTO,
+  UpdateMembershipStatusDTO,
+} from './DTO/membership.dto'
 
 @Injectable()
 export class MembershipsService {
@@ -179,7 +176,8 @@ export class MembershipsService {
       } catch (error) {
         if (error instanceof DuplicateException) {
           throw new Exception(Exception.USER_ALREADY_EXISTS)
-        } else throw error
+        }
+        throw error
       }
     }
 

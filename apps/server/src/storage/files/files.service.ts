@@ -1,4 +1,10 @@
+import { type SavedMultipartFile } from '@fastify/multipart'
 import { Injectable, Logger, StreamableFile } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { CoreService } from '@nuvix/core'
+import { logos } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Auth } from '@nuvix/core/helpers'
 import {
   Authorization,
   Database,
@@ -9,24 +15,17 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
+import { FileExt, FileSize } from '@nuvix/storage'
+import { configuration } from '@nuvix/utils'
+import type { Files, FilesDoc } from '@nuvix/utils/types'
+import * as fs from 'fs/promises'
+import path from 'path'
+import sharp from 'sharp'
 import {
   CreateFileDTO,
   PreviewFileQueryDTO,
   UpdateFileDTO,
 } from './DTO/file.dto'
-
-import { JwtService } from '@nestjs/jwt'
-import sharp from 'sharp'
-import { type SavedMultipartFile } from '@fastify/multipart'
-import { logos } from '@nuvix/core/config'
-import path from 'path'
-import * as fs from 'fs/promises'
-import { CoreService } from '@nuvix/core'
-import { FileExt, FileSize } from '@nuvix/storage'
-import type { Files, FilesDoc } from '@nuvix/utils/types'
-import { configuration } from '@nuvix/utils'
 
 @Injectable()
 export class FilesService {
@@ -335,36 +334,34 @@ export class FilesService {
             fileDocument,
           )
         }
+      } else if (fileDocument.empty()) {
+        fileDocument = await db.createDocument<Files>(
+          this.getCollectionName(bucket.getSequence()),
+          new Doc({
+            $id: fileId,
+            $permissions: permissions,
+            bucketId: bucket.getId(),
+            bucketInternalId: bucket.getSequence(),
+            name: fileName,
+            path: _path,
+            signature: '',
+            mimeType: '',
+            sizeOriginal: finalFileSize,
+            sizeActual: 0,
+            chunksTotal: chunks,
+            chunksUploaded,
+            search: [fileId, fileName].join(' '),
+            metadata,
+          }),
+        )
       } else {
-        if (fileDocument.empty()) {
-          fileDocument = await db.createDocument<Files>(
-            this.getCollectionName(bucket.getSequence()),
-            new Doc({
-              $id: fileId,
-              $permissions: permissions,
-              bucketId: bucket.getId(),
-              bucketInternalId: bucket.getSequence(),
-              name: fileName,
-              path: _path,
-              signature: '',
-              mimeType: '',
-              sizeOriginal: finalFileSize,
-              sizeActual: 0,
-              chunksTotal: chunks,
-              chunksUploaded,
-              search: [fileId, fileName].join(' '),
-              metadata,
-            }),
-          )
-        } else {
-          fileDocument = await db.updateDocument(
-            this.getCollectionName(bucket.getSequence()),
-            fileId,
-            fileDocument
-              .set('chunksUploaded', chunksUploaded)
-              .set('metadata', metadata),
-          )
-        }
+        fileDocument = await db.updateDocument(
+          this.getCollectionName(bucket.getSequence()),
+          fileId,
+          fileDocument
+            .set('chunksUploaded', chunksUploaded)
+            .set('metadata', metadata),
+        )
       }
 
       return fileDocument
@@ -493,7 +490,7 @@ export class FilesService {
       const path = logos[mimeType as keyof typeof logos] ?? logos.default
       const buffer = await deviceForFiles.read(path)
       return new StreamableFile(buffer, {
-        type: `image/png`,
+        type: 'image/png',
         disposition: `inline; filename="${fileName}"`,
         length: buffer.length,
       })
@@ -694,14 +691,13 @@ export class FilesService {
         disposition: `attachment; filename="${fileName}"`,
         length: buffer.length,
       })
-    } else {
-      const buffer = await deviceForFiles.read(path)
-      return new StreamableFile(buffer, {
-        type: mimeType,
-        disposition: `attachment; filename="${fileName}"`,
-        length: buffer.length,
-      })
     }
+    const buffer = await deviceForFiles.read(path)
+    return new StreamableFile(buffer, {
+      type: mimeType,
+      disposition: `attachment; filename="${fileName}"`,
+      length: buffer.length,
+    })
   }
 
   /**
@@ -831,14 +827,13 @@ export class FilesService {
         disposition: `attachment; filename="${fileName}"`,
         length: buffer.length,
       })
-    } else {
-      const buffer = await deviceForFiles.read(path)
-      return new StreamableFile(buffer, {
-        type: mimeType,
-        disposition: `attachment; filename="${fileName}"`,
-        length: buffer.length,
-      })
     }
+    const buffer = await deviceForFiles.read(path)
+    return new StreamableFile(buffer, {
+      type: mimeType,
+      disposition: `attachment; filename="${fileName}"`,
+      length: buffer.length,
+    })
   }
 
   /**
@@ -1012,15 +1007,14 @@ export class FilesService {
         fileId,
         file,
       )
-    } else {
-      return Authorization.skip(() =>
-        db.updateDocument(
-          this.getCollectionName(bucket.getSequence()),
-          fileId,
-          file,
-        ),
-      )
     }
+    return Authorization.skip(() =>
+      db.updateDocument(
+        this.getCollectionName(bucket.getSequence()),
+        fileId,
+        file,
+      ),
+    )
   }
 
   /**

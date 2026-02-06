@@ -1,17 +1,17 @@
 import { Logger } from '@nestjs/common'
+import { Audit } from '@nuvix/audit'
+import { CoreService } from '@nuvix/core'
+import { Exception } from '@nuvix/core/extend/exception'
 import {
+  type Collection,
   Database,
   Doc,
   DuplicateException,
   Permission,
   Role,
-  type Collection,
 } from '@nuvix/db'
 import { Schemas } from '@nuvix/utils'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Audit } from '@nuvix/audit'
 import collections from '@nuvix/utils/collections'
-import { CoreService } from '@nuvix/core'
 
 const logger = new Logger('Database Setup')
 
@@ -171,7 +171,7 @@ async function setupCollections(
 
         // Retry with exponential backoff
         if (attempt < MAX_RETRIES) {
-          const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1)
+          const delay = BASE_DELAY_MS * 2 ** (attempt - 1)
           logger.warn(
             `Attempt ${attempt}/${MAX_RETRIES} failed for collection ${collectionId}. Retrying in ${delay}ms...`,
           )

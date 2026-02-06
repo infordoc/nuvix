@@ -79,7 +79,7 @@ export const parseNumber = (
   defaultValue: number,
 ) => {
   if (!value) return defaultValue
-  const parsed = parseInt(value, 10)
+  const parsed = Number.parseInt(value, 10)
   return isNaN(parsed) ? defaultValue : parsed
 }
 

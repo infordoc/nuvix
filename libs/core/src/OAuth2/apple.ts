@@ -1,5 +1,5 @@
-import { OAuth2 } from '../OAuth2'
 import * as crypto from 'crypto'
+import { OAuth2 } from '../OAuth2'
 
 export class AppleOAuth2 extends OAuth2 {
   protected user: Record<string, any> = {}

@@ -1,44 +1,54 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
 import { EventEmitter2 } from '@nestjs/event-emitter'
-import { InjectQueue } from '@nestjs/bullmq'
-
-import { Queue } from 'bullmq'
-import { CountryResponse, Reader } from 'maxmind'
-import * as Template from 'handlebars'
-import * as fs from 'fs/promises'
-import path from 'path'
-
+import { JwtService } from '@nestjs/jwt'
+import { AppConfigService, CoreService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config'
+import { type OAuthProviders, type OAuthProviderType } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Auth, Detector, LocaleTranslator, Models } from '@nuvix/core/helpers'
+import { getOAuth2Class, OAuth2 } from '@nuvix/core/OAuth2'
 import {
-  Doc,
+  DeletesJobData,
+  MailJob,
+  MailQueueOptions,
+} from '@nuvix/core/resolvers'
+import { URLValidator } from '@nuvix/core/validators'
+import {
+  Authorization,
   Database,
-  Query,
+  Doc,
+  DuplicateException,
   ID,
   Permission,
+  Query,
   Role,
-  Authorization,
-  DuplicateException,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { Models } from '@nuvix/core/helpers'
-import { Detector } from '@nuvix/core/helpers'
-import { URLValidator } from '@nuvix/core/validators'
-import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
-import { getOAuth2Class, OAuth2 } from '@nuvix/core/OAuth2'
-import { type OAuthProviders, type OAuthProviderType } from '@nuvix/core/config'
 import {
   AppEvents,
   AuthFactor,
   configuration,
   DeleteType,
+  type HashAlgorithm,
   MessageType,
   QueueFor,
   SessionProvider,
   TokenType,
-  type HashAlgorithm,
 } from '@nuvix/utils'
 import { PhraseGenerator } from '@nuvix/utils/auth'
+import type {
+  ProjectsDoc,
+  Sessions,
+  SessionsDoc,
+  TargetsDoc,
+  Tokens,
+  UsersDoc,
+} from '@nuvix/utils/types'
+import { Queue } from 'bullmq'
+import * as fs from 'fs/promises'
+import * as Template from 'handlebars'
+import { CountryResponse, Reader } from 'maxmind'
+import path from 'path'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
@@ -51,18 +61,6 @@ import {
   CreateOAuth2TokenDTO,
   CreatePhoneTokenDTO,
 } from './DTO/token.dto'
-import type {
-  ProjectsDoc,
-  Sessions,
-  SessionsDoc,
-  TargetsDoc,
-  Tokens,
-  UsersDoc,
-} from '@nuvix/utils/types'
-import { CoreService, AppConfigService } from '@nuvix/core'
-import type { SmtpConfig } from '@nuvix/core/config'
-import { JwtService } from '@nestjs/jwt'
-import { DeletesJobData } from '@nuvix/core/resolvers'
 
 @Injectable()
 export class SessionService {

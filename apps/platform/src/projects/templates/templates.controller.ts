@@ -4,13 +4,12 @@ import {
   UseInterceptors,
   VERSION_NEUTRAL,
 } from '@nestjs/common'
-import { Exception } from '@nuvix/core/extend/exception'
-import { ResponseInterceptor } from '@nuvix/core/resolvers'
-import { ConsoleInterceptor } from '@nuvix/core/resolvers'
-import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
-import { TemplatesService } from './templates.service'
-import { TemplateParamsDTO } from './DTO/params.dto'
 import { Delete, Get, Patch } from '@nuvix/core'
+import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
+import { Exception } from '@nuvix/core/extend/exception'
+import { ConsoleInterceptor, ResponseInterceptor } from '@nuvix/core/resolvers'
+import { TemplateParamsDTO } from './DTO/params.dto'
+import { TemplatesService } from './templates.service'
 
 @Namespace('projects')
 @Controller({

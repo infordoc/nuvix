@@ -1,6 +1,6 @@
-import { Challenge } from '../challenge'
 import { MfaType } from '@nuvix/core/validators'
-import { UsersDoc, type ChallengesDoc } from '@nuvix/utils/types'
+import { type ChallengesDoc, UsersDoc } from '@nuvix/utils/types'
+import { Challenge } from '../challenge'
 
 export class Phone extends Challenge {
   static override async verify(
@@ -16,7 +16,7 @@ export class Phone extends Challenge {
     otp: string,
   ): Promise<boolean> {
     if (challenge.has('type') && challenge.get('type') === MfaType.PHONE) {
-      return this.verify(challenge as UsersDoc, otp)
+      return Phone.verify(challenge as UsersDoc, otp)
     }
     return false
   }

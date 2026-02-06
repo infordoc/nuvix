@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common'
+import { Exception } from '@nuvix/core/extend/exception'
 import { Parser } from './parser'
 import type {
   ColumnNode,
@@ -6,14 +7,13 @@ import type {
   EmbedParserResult,
   SelectNode,
 } from './types'
-import { Exception } from '@nuvix/core/extend/exception'
 
 export class SelectParser {
   private readonly QUOTE_CHARS = ['"', "'"] as const
   private readonly SEPARATOR = ','
   private readonly CAST_DELIMITER = '::'
   private readonly ALIAS_DELIMITER = ':'
-  private depth: number = 0
+  private depth = 0
   private readonly maxDepth: number = 2
   private readonly allowedAggregations = ['sum', 'count', 'min', 'max', 'avg']
 

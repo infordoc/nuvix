@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+import * as fs from 'fs/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import * as fs from 'fs/promises'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -114,7 +114,7 @@ async function prepareDeploy(appName) {
 
   try {
     const appPkgPath = path.join(__dirname, `../apps/${appName}/package.json`)
-    const mainPkgPath = path.join(__dirname, `../package.json`)
+    const mainPkgPath = path.join(__dirname, '../package.json')
     const appPkg = loadPkg(appPkgPath)
     const mainPkg = loadPkg(mainPkgPath)
 

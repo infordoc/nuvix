@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
-import { Doc, Database, Query } from '@nuvix/db'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Database, Doc, Query } from '@nuvix/db'
 import { configuration } from '@nuvix/utils'
 import type { IdentitiesDoc, UsersDoc } from '@nuvix/utils/types'
 

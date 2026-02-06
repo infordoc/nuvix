@@ -1,7 +1,7 @@
+import { Doc } from '@nuvix/db'
+import { type AuthenticatorsDoc, UsersDoc } from '@nuvix/utils/types'
 import { TOTP as BaseTOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib'
 import { Auth } from '../helpers/auth.helper'
-import { Doc } from '@nuvix/db'
-import { UsersDoc, type AuthenticatorsDoc } from '@nuvix/utils/types'
 
 enum MfaType {
   TOTP = 'totp',
@@ -63,10 +63,7 @@ abstract class Mfa {
     })
   }
 
-  public static generateBackupCodes(
-    length: number = 10,
-    total: number = 6,
-  ): string[] {
+  public static generateBackupCodes(length = 10, total = 6): string[] {
     const backups: string[] = []
 
     for (let i = 0; i < total; i++) {

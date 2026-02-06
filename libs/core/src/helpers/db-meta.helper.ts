@@ -38,7 +38,7 @@ export const setupDatabaseMeta = async ({
   }
 
   if (extra) {
-    const processValue = (obj: any, prefix: string = '') => {
+    const processValue = (obj: any, prefix = '') => {
       for (const [key, value] of Object.entries(obj)) {
         if (key && value != null) {
           const fullKey = prefix ? `${prefix}.${key}` : key

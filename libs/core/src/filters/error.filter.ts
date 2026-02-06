@@ -7,8 +7,6 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common'
-import { errorCodes, Exception } from '../extend/exception'
-import { AppConfigService } from '../config.service'
 import {
   AuthorizationException,
   ConflictException,
@@ -21,6 +19,8 @@ import {
   TimeoutException,
   TruncateException,
 } from '@nuvix/db'
+import { AppConfigService } from '../config.service'
+import { Exception, errorCodes } from '../extend/exception'
 
 @Catch()
 export class ErrorFilter implements ExceptionFilter {

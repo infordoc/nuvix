@@ -1,20 +1,18 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable, Logger } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
+import { Exception } from '@nuvix/core/extend/exception'
+import { CollectionsJob, CollectionsJobData } from '@nuvix/core/resolvers'
 import {
+  AttributeType,
   Database,
   Doc,
   DuplicateException,
   ID,
   IndexValidator,
   Query,
-  AttributeType,
 } from '@nuvix/db'
 import { configuration, QueueFor, SchemaMeta, Status } from '@nuvix/utils'
-import { InjectQueue } from '@nestjs/bullmq'
-import type { Queue } from 'bullmq'
-import { Exception } from '@nuvix/core/extend/exception'
-import type { CreateIndexDTO } from './DTO/indexes.dto'
-import { EventEmitter2 } from '@nestjs/event-emitter'
-import { CollectionsJob, CollectionsJobData } from '@nuvix/core/resolvers'
 import type {
   Attributes,
   AttributesDoc,
@@ -22,6 +20,8 @@ import type {
   IndexesDoc,
   ProjectsDoc,
 } from '@nuvix/utils/types'
+import type { Queue } from 'bullmq'
+import type { CreateIndexDTO } from './DTO/indexes.dto'
 
 @Injectable()
 export class IndexesService {

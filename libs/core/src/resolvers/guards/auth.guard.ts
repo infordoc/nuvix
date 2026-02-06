@@ -4,10 +4,10 @@ import {
   Injectable,
   SetMetadata,
 } from '@nestjs/common'
-import { Exception } from '../../extend/exception'
 import { Reflector } from '@nestjs/core'
 import { Context, IS_PUBLIC_KEY } from '@nuvix/utils'
 import { UsersDoc } from '@nuvix/utils/types'
+import { Exception } from '../../extend/exception'
 
 /**
  * @deprecated

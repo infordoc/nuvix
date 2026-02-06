@@ -5,12 +5,12 @@ import {
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common'
-import { Queue } from './queue'
-import { configuration, QueueFor, Schemas } from '@nuvix/utils'
 import { Doc } from '@nuvix/db'
+import { configuration, QueueFor, Schemas } from '@nuvix/utils'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 import { Job } from 'bullmq'
 import { CoreService } from '../../core.service.js'
-import type { ProjectsDoc } from '@nuvix/utils/types'
+import { Queue } from './queue'
 
 interface ApiLogsBuffer {
   project: ProjectsDoc

@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Context } from '@nuvix/utils'
-import { Hook } from '../../server/hooks/interface'
-import {
-  addOriginToVaryHeader,
-  addAccessControlRequestHeadersToVaryHeader,
-} from '../../helpers/vary.helper'
 import { ProjectsDoc } from '@nuvix/utils/types'
 import { AppConfigService } from '../../config.service'
+import {
+  addAccessControlRequestHeadersToVaryHeader,
+  addOriginToVaryHeader,
+} from '../../helpers/vary.helper'
+import { Hook } from '../../server/hooks/interface'
 import { Origin } from '../../validators/network/origin'
 
 interface CorsOptions {

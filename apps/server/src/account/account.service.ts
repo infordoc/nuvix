@@ -1,34 +1,34 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
 import { EventEmitter2 } from '@nestjs/event-emitter'
-import { InjectQueue } from '@nestjs/bullmq'
-import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
-import * as fs from 'fs/promises'
-import path from 'path'
+import { AppConfigService } from '@nuvix/core'
+import type { SmtpConfig } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Hooks } from '@nuvix/core/extend/hooks'
+import { Auth, LocaleTranslator } from '@nuvix/core/helpers'
+import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
 import {
-  Doc,
+  PasswordHistoryValidator,
+  PersonalDataValidator,
+} from '@nuvix/core/validators'
+import {
+  Authorization,
   Database,
-  Query,
+  Doc,
+  DuplicateException,
   ID,
   Permission,
+  Query,
   Role,
-  Authorization,
-  DuplicateException,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { PersonalDataValidator } from '@nuvix/core/validators'
-import { PasswordHistoryValidator } from '@nuvix/core/validators'
-import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
 import {
   configuration,
   DeleteType,
+  type HashAlgorithm,
   QueueFor,
   TokenType,
-  type HashAlgorithm,
 } from '@nuvix/utils'
-import { UpdateEmailDTO } from './DTO/account.dto'
 import type {
   ProjectsDoc,
   TargetsDoc,
@@ -36,10 +36,11 @@ import type {
   TokensDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { AppConfigService } from '@nuvix/core'
-import type { SmtpConfig } from '@nuvix/core/config'
-import { Hooks } from '@nuvix/core/extend/hooks'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { Queue } from 'bullmq'
+import * as fs from 'fs/promises'
+import * as Template from 'handlebars'
+import path from 'path'
+import { UpdateEmailDTO } from './DTO/account.dto'
 
 @Injectable()
 export class AccountService {
@@ -296,9 +297,8 @@ export class AccountService {
     } catch (error) {
       if (error instanceof DuplicateException) {
         throw new Exception(Exception.GENERAL_BAD_REQUEST)
-      } else {
-        throw error
       }
+      throw error
     }
   }
 

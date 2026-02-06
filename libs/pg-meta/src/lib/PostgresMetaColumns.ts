@@ -1,10 +1,10 @@
 import { ident, literal } from 'pg-format'
-import PostgresMetaTables from './PostgresMetaTables'
-import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
-import { columnsSql } from './sql/index'
-import { PostgresMetaResult, PostgresColumn } from './types'
-import { filterByList } from './helpers'
 import { PgMetaException } from '../extra/execption'
+import { DEFAULT_SYSTEM_SCHEMAS } from './constants'
+import { filterByList } from './helpers'
+import PostgresMetaTables from './PostgresMetaTables'
+import { columnsSql } from './sql/index'
+import { PostgresColumn, PostgresMetaResult } from './types'
 
 export default class PostgresMetaColumns {
   query: (sql: string) => Promise<PostgresMetaResult<any>>
@@ -95,28 +95,28 @@ WHERE
       const { data, error } = await this.query(sql)
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a column with ID ${id}`)
-      } else {
-        return { data: data[0], error }
       }
-    } else if (name && table) {
+      if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a column with ID ${id}`)
+      }
+      return { data: data[0], error }
+    }
+    if (name && table) {
       const sql = `${columnsSql} AND a.attname = ${literal(name)} AND c.relname = ${literal(
         table,
       )} AND nc.nspname = ${literal(schema)};`
       const { data, error } = await this.query(sql)
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
+      }
+      if (data.length === 0) {
         throw new PgMetaException(
           `Cannot find a column named ${name} in table ${schema}.${table}`,
         )
-      } else {
-        return { data: data[0], error }
       }
-    } else {
-      throw new PgMetaException('Invalid parameters on column retrieve')
+      return { data: data[0], error }
     }
+    throw new PgMetaException('Invalid parameters on column retrieve')
   }
 
   async create({
@@ -162,14 +162,12 @@ WHERE
       }
 
       defaultValueClause = `GENERATED ${identity_generation} AS IDENTITY`
+    } else if (default_value === undefined) {
+      // skip
+    } else if (default_value_format === 'expression') {
+      defaultValueClause = `DEFAULT ${default_value}`
     } else {
-      if (default_value === undefined) {
-        // skip
-      } else if (default_value_format === 'expression') {
-        defaultValueClause = `DEFAULT ${default_value}`
-      } else {
-        defaultValueClause = `DEFAULT ${literal(default_value)}`
-      }
+      defaultValueClause = `DEFAULT ${literal(default_value)}`
     }
 
     let isNullableClause = ''

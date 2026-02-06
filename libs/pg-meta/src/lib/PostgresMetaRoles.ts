@@ -1,9 +1,9 @@
 import { ident, literal } from 'pg-format'
-import { rolesSql } from './sql/index'
-import { PostgresMetaResult, PostgresRole } from './types'
 import { RoleCreateDTO } from '../DTO/role-create.dto'
 import { RoleUpdateDTO } from '../DTO/role-update.dto'
 import { PgMetaException } from '../extra/execption'
+import { rolesSql } from './sql/index'
+import { PostgresMetaResult, PostgresRole } from './types'
 export function changeRoleConfig2Object(config: string[]) {
   if (!config) {
     return null
@@ -89,26 +89,26 @@ WHERE
 
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a role with ID ${id}`)
-      } else {
-        data[0].config = changeRoleConfig2Object(data[0].config)
-        return { data: data[0], error }
       }
-    } else if (name) {
+      if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a role with ID ${id}`)
+      }
+      data[0].config = changeRoleConfig2Object(data[0].config)
+      return { data: data[0], error }
+    }
+    if (name) {
       const sql = `${rolesSql} WHERE rolname = ${literal(name)};`
       const { data, error } = await this.query(sql)
       if (error) {
         return { data, error }
-      } else if (data.length === 0) {
-        throw new PgMetaException(`Cannot find a role named ${name}`)
-      } else {
-        data[0].config = changeRoleConfig2Object(data[0].config)
-        return { data: data[0], error }
       }
-    } else {
-      throw new PgMetaException('Invalid parameters on role retrieve')
+      if (data.length === 0) {
+        throw new PgMetaException(`Cannot find a role named ${name}`)
+      }
+      data[0].config = changeRoleConfig2Object(data[0].config)
+      return { data: data[0], error }
     }
+    throw new PgMetaException('Invalid parameters on role retrieve')
   }
 
   async create({

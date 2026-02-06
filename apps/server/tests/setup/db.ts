@@ -1,24 +1,30 @@
 import { Logger } from '@nestjs/common'
-import {
-  Database,
-  Doc,
-  Permission,
-  Role,
-  DuplicateException,
-  Authorization,
-  ID,
-} from '@nuvix/db'
-import collections from '@nuvix/utils/collections'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { Audit } from '@nuvix/audit'
 import { AppConfigService, CoreService } from '@nuvix/core'
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { ApiKey, Schemas } from '@nuvix/utils'
-import { Auth } from '@nuvix/core/helpers'
-import type { Keys, Projects, Teams } from '@nuvix/utils/types'
+import {
+  authMethods,
+  defaultSmtpConfig,
+  OAuthProviderType,
+  oAuthProviders,
+  scopes,
+  services,
+} from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
-import { oAuthProviders, OAuthProviderType, scopes } from '@nuvix/core/config'
-import { authMethods, defaultSmtpConfig, services } from '@nuvix/core/config'
+import { Auth } from '@nuvix/core/helpers'
+import {
+  Authorization,
+  Database,
+  Doc,
+  DuplicateException,
+  ID,
+  Permission,
+  Role,
+} from '@nuvix/db'
+import { ApiKey, Schemas } from '@nuvix/utils'
+import collections from '@nuvix/utils/collections'
 import { setupDatabase } from '@nuvix/utils/database'
+import type { Keys, Projects, Teams } from '@nuvix/utils/types'
 import { loadAuthConfig } from '../../../platform/src/projects/projects.service'
 
 export async function dbSetup(
@@ -349,6 +355,7 @@ async function createProject({
   } catch (error) {
     if (error instanceof DuplicateException) {
       throw new Exception(Exception.PROJECT_ALREADY_EXISTS)
-    } else throw error
+    }
+    throw error
   }
 }

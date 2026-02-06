@@ -1,14 +1,14 @@
 import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
-import { Hook } from '../../server'
 import { Doc } from '@nuvix/db'
 import { Context, QueueFor } from '@nuvix/utils'
-import type { Queue } from 'bullmq'
 import type { ProjectsDoc } from '@nuvix/utils/types'
-import type { ApiLogsQueueJobData } from '../queues/logs.queue'
-import { Auth, type Key } from '../../helpers'
+import type { Queue } from 'bullmq'
 import { AppConfigService } from '../../config.service'
 import { AuthType } from '../../decorators'
+import { Auth, type Key } from '../../helpers'
+import { Hook } from '../../server'
+import type { ApiLogsQueueJobData } from '../queues/logs.queue'
 
 @Injectable()
 export class LogsHook implements Hook {

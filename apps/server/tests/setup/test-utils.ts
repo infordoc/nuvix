@@ -3,8 +3,8 @@
  * These utilities help standardize assertions and reduce code duplication.
  */
 
-import { expect } from 'vitest'
 import type { LightMyRequestResponse } from 'fastify'
+import { expect } from 'vitest'
 
 /**
  * Centralized JSON parser with better error messages.

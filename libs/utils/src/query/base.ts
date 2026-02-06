@@ -1,12 +1,12 @@
-import type { Condition, JsonFieldType } from './types'
-import { Token, TokenType } from './tokenizer'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Token, TokenType } from './tokenizer'
+import type { Condition, JsonFieldType } from './types'
 
 export abstract class BaseParser {
   protected tableName!: string
   protected mainTable!: string
   protected tokens: Token[] = []
-  protected current: number = 0
+  protected current = 0
 
   // Token navigation methods
   protected match(...types: TokenType[]): boolean {
@@ -260,7 +260,6 @@ export class GroupParser extends BaseParser {
       const field = this.fieldToString(this.parseFieldPath())
       fields.push(this.parseFieldString(field))
       if (this.match(TokenType.COMMA)) {
-        continue
       } else {
         break
       }

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common'
-import { Exception } from '@nuvix/core/extend/exception'
+import { CoreService } from '@nuvix/core'
 import { authMethods } from '@nuvix/core/config'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Database } from '@nuvix/db'
 import {
   AuthMembershipPrivacyDTO,
   AuthMockNumbersDTO,
 } from './DTO/project-auth.dto'
-import { Database } from '@nuvix/db'
-import { CoreService } from '@nuvix/core'
 
 @Injectable()
 export class AuthSettingsService {
@@ -19,7 +19,7 @@ export class AuthSettingsService {
   /**
    * Update session alerts of a project.
    */
-  async updateSessionAlerts(id: string, status: boolean = false) {
+  async updateSessionAlerts(id: string, status = false) {
     let project = await this.db.getDocument('projects', id)
 
     if (project.empty()) {
