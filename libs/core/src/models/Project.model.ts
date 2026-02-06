@@ -11,6 +11,7 @@ export class ProjectModel extends BaseModel {
   @Expose({ toClassOnly: true }) auths: any
   @Expose({ toClassOnly: true }) services: any
   @Expose({ toClassOnly: true }) smtp: any
+  @Expose({ toClassOnly: true }) metadata: any
 
   @Exclude() declare $permissions: string[]
   /**
@@ -371,6 +372,14 @@ export class ProjectModel extends BaseModel {
   })
   @Expose()
   declare database: Record<string, any>
+
+  /**
+   * Exposed Schemas.
+   */
+  @Expose()
+  get exposedSchemas() {
+    return this.metadata.allowedSchemas ?? []
+  }
 
   constructor() {
     super()

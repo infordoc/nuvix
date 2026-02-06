@@ -79,8 +79,6 @@ export class AuthHook implements Hook {
     Auth.unique = session.id || ''
     Auth.secret = session.secret || ''
 
-    this.logger.debug(`Auth: ${Auth.unique}`)
-
     let user: UsersDoc
     if (mode !== AppMode.ADMIN) {
       if (project.empty()) {

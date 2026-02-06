@@ -214,7 +214,7 @@ export class ApiHook implements Hook {
     req[Context.User] = user
 
     this.logger.debug(
-      `[${mode}] ${role} ${user.empty() ? 'API' : user.get('email')}`,
+      `[${mode ?? AppMode.DEFAULT}] ${role} ${user.empty() ? 'API' : user.getId()}`,
     )
 
     return
