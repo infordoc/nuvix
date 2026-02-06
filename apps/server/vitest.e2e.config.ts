@@ -19,7 +19,7 @@ export default defineConfig({
     include: ['**/*.e2e-spec.ts', '**/*.e2e.spec.ts'],
     setupFiles: ['./tests/setup/global.ts'],
     maxConcurrency: 1,
-    isolate: true,
+    isolate: false,
     maxWorkers: 1,
   },
   plugins: [

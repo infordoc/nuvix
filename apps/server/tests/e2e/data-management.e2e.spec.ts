@@ -83,7 +83,7 @@ describe('E2E: Data Management Flow', () => {
       payload: JSON.stringify(schemaDto),
     })
 
-    assertStatusCode(createSchemaRes, 202)
+    assertStatusCode(createSchemaRes, 201)
     const createdSchema = parseJson(createSchemaRes.payload)
 
     // Verify schema was created with correct properties
@@ -258,7 +258,7 @@ describe('E2E: Data Management Flow', () => {
 
     assertStatusCode(boolAttrRes, 202)
     const boolAttr = await waitForAttribute(
-      'price',
+      'available',
       'available',
       schemaName,
       collectionName,
