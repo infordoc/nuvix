@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common'
-import {
-  CreateTeamDTO,
-  UpdateTeamDTO,
-  UpdateTeamPrefsDTO,
-} from './DTO/team.dto'
-import { ID } from '@nuvix/core/helpers'
+import { CoreService } from '@nuvix/core'
 import { Exception } from '@nuvix/core/extend/exception'
+import { Auth, ID } from '@nuvix/core/helpers'
+import { DeletesQueue } from '@nuvix/core/resolvers'
 import {
   Database,
   Doc,
@@ -14,10 +11,12 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { Auth } from '@nuvix/core/helpers'
 import type { UsersDoc } from '@nuvix/utils/types'
-import { DeletesQueue } from '@nuvix/core/resolvers'
-import { CoreService } from '@nuvix/core'
+import {
+  CreateTeamDTO,
+  UpdateTeamDTO,
+  UpdateTeamPrefsDTO,
+} from './DTO/team.dto'
 
 @Injectable()
 export class TeamsService {
@@ -31,7 +30,7 @@ export class TeamsService {
       queries.push(Query.search('search', search))
     }
 
-    const filterQueries = Query.groupByType(queries)['filters']
+    const filterQueries = Query.groupByType(queries).filters
     const results = await db.find('teams', queries)
     const total = await db.count('teams', filterQueries)
 
@@ -45,7 +44,7 @@ export class TeamsService {
    * Create a new team
    */
   async create(db: Database, user: UsersDoc | null, input: CreateTeamDTO) {
-    const teamId = input.teamId == 'unique()' ? ID.unique() : input.teamId
+    const teamId = input.teamId === 'unique()' ? ID.unique() : input.teamId
 
     const team = await db
       .createDocument(
@@ -73,7 +72,7 @@ export class TeamsService {
     if (!Auth.isTrustedActor && user) {
       // Don't add user on server mode
       if (!input.roles?.includes('owner')) {
-        input.roles!.push('owner')
+        input.roles?.push('owner')
       }
 
       const membershipId = ID.unique()
@@ -136,7 +135,7 @@ export class TeamsService {
       throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 
-    const deleted = await db.deleteDocument('teams', id)
+    const deleted = await db.deleteDocument('teams', team.getId())
     if (!deleted) {
       throw new Exception(
         Exception.GENERAL_SERVER_ERROR,
@@ -156,7 +155,7 @@ export class TeamsService {
   async findOne(db: Database, id: string) {
     const team = await db.getDocument('teams', id)
 
-    if (!team) {
+    if (team.empty()) {
       throw new Exception(Exception.TEAM_NOT_FOUND)
     }
 

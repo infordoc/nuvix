@@ -1,32 +1,32 @@
 /* eslint-disable */
 export default async () => {
   const t = {
-    ['../../../libs/core/src/models/Target.model.js']: await import(
+    '../../../libs/core/src/models/Target.model.js': await import(
       '../../../libs/core/src/models/Target.model.js'
     ),
-    ['../../../libs/core/src/models/User.model.js']: await import(
+    '../../../libs/core/src/models/User.model.js': await import(
       '../../../libs/core/src/models/User.model.js'
     ),
-    ['@nuvix/db']: await import('@nuvix/db'),
-    ['../../../libs/utils/src/constants.js']: await import(
+    '@nuvix/db': await import('@nuvix/db'),
+    '../../../libs/utils/src/constants.js': await import(
       '../../../libs/utils/src/constants.js'
     ),
-    ['../../../libs/core/src/models/Index.model.js']: await import(
+    '../../../libs/core/src/models/Index.model.js': await import(
       '../../../libs/core/src/models/Index.model.js'
     ),
-    ['../../../libs/core/src/models/AuthProvider.model.js']: await import(
+    '../../../libs/core/src/models/AuthProvider.model.js': await import(
       '../../../libs/core/src/models/AuthProvider.model.js'
     ),
-    ['../../../libs/core/src/models/Platform.model.js']: await import(
+    '../../../libs/core/src/models/Platform.model.js': await import(
       '../../../libs/core/src/models/Platform.model.js'
     ),
-    ['../../../libs/core/src/models/Webhook.model.js']: await import(
+    '../../../libs/core/src/models/Webhook.model.js': await import(
       '../../../libs/core/src/models/Webhook.model.js'
     ),
-    ['../../../libs/core/src/models/Key.model.js']: await import(
+    '../../../libs/core/src/models/Key.model.js': await import(
       '../../../libs/core/src/models/Key.model.js'
     ),
-    ['./projects/auth-settings/DTO/project-auth.dto.js']: await import(
+    './projects/auth-settings/DTO/project-auth.dto.js': await import(
       './projects/auth-settings/DTO/project-auth.dto.js'
     ),
   }
@@ -584,6 +584,7 @@ export default async () => {
               },
             },
             AttributeEnumModel: {
+              formatOptions: { required: true, type: () => Object },
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
               elements: { required: true, type: () => [String] },
               format: {
@@ -599,18 +600,8 @@ export default async () => {
             },
             AttributeFloatModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
-              min: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
-              max: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
+              min: { required: true, type: () => Number, nullable: true },
+              max: { required: true, type: () => Number, nullable: true },
               default: {
                 required: true,
                 type: () => Number,
@@ -633,18 +624,8 @@ export default async () => {
             },
             AttributeIntegerModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
-              min: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
-              max: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
+              min: { required: true, type: () => Number, nullable: true },
+              max: { required: true, type: () => Number, nullable: true },
               default: {
                 required: true,
                 type: () => Number,
@@ -657,20 +638,21 @@ export default async () => {
               attributes: { required: true, type: () => [Object] },
             },
             AttributeRelationshipModel: {
+              options: { required: true, type: () => Object },
               relatedCollection: {
                 required: true,
                 type: () => String,
                 nullable: true,
-                default: null,
               },
               relationType: {
                 required: true,
                 enum: t['@nuvix/db'].RelationType,
               },
-              twoWay: { required: true, type: () => Boolean, default: false },
-              twoWayKey: { required: false, type: () => String },
+              twoWay: { required: true, type: () => Boolean },
+              twoWayKey: { required: true, type: () => String },
               onDelete: { required: true, enum: t['@nuvix/db'].OnDelete },
               side: { required: true, enum: t['@nuvix/db'].RelationSide },
+              type: { required: true, enum: t['@nuvix/db'].AttributeType },
             },
             AttributeStringModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },

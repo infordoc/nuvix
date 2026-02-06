@@ -3,36 +3,37 @@
  * @author Nuvix-Tech
  * @version 1.0
  */
-import {
-  configureDbFiltersAndFormats,
-  configurePgTypeParsers,
-} from '@nuvix/core'
-import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server'
-import { AppModule } from './app.module'
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
+
+import cookieParser from '@fastify/cookie'
+import fastifyMultipart from '@fastify/multipart'
 import {
   ConsoleLogger,
-  Logger,
+  LOG_LEVELS,
   LogLevel,
   ValidationPipe,
   VERSION_NEUTRAL,
   VersioningType,
 } from '@nestjs/common'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { SwaggerModule } from '@nestjs/swagger'
+import {
+  AppConfigService,
+  configureDbFiltersAndFormats,
+  configurePgTypeParsers,
+} from '@nuvix/core'
+import { ErrorFilter } from '@nuvix/core/filters'
+import { Auth } from '@nuvix/core/helpers'
+import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server'
+import { Authorization, Role, storage } from '@nuvix/db'
 import {
   configuration,
-  parseNumber,
   PROJECT_ROOT,
+  parseNumber,
   validateRequiredConfig,
 } from '@nuvix/utils'
-import { Authorization, Role, storage } from '@nuvix/db'
-import cookieParser from '@fastify/cookie'
-import fastifyMultipart from '@fastify/multipart'
 import QueryString from 'qs'
+import { AppModule } from './app.module'
 import { initSetup } from './utils/initial-setup'
-import { ErrorFilter } from '@nuvix/core/filters'
-import { AppConfigService } from '@nuvix/core'
-import { Auth } from '@nuvix/core/helpers'
-import { SwaggerModule } from '@nestjs/swagger'
 import { openApiSetup } from './utils/open-api'
 
 configurePgTypeParsers()
@@ -41,6 +42,16 @@ validateRequiredConfig()
 Authorization.enableAsyncLocalStorage()
 
 export async function bootstrap() {
+  const logLevels = configuration.app.isProduction
+    ? (configuration.logLevels as LogLevel[])
+    : undefined
+  const logger = new ConsoleLogger({
+    json: configuration.app.debug.json,
+    colors: configuration.app.debug.colors,
+    prefix: 'Nuvix-Platform',
+    logLevels,
+  })
+
   const adapter = new NuvixAdapter({
     trustProxy: true,
     skipMiddie: true,
@@ -64,21 +75,14 @@ export async function bootstrap() {
     adapter,
     {
       abortOnError: false,
-      logger: new ConsoleLogger({
-        json: configuration.app.debug.json,
-        colors: configuration.app.debug.colors,
-        prefix: 'Nuvix-Console',
-        logLevels: configuration.app.isProduction
-          ? (configuration.logLevels as LogLevel[])
-          : undefined,
-      }),
+      logger,
       autoFlushLogs: true,
     },
   )
 
-  // @ts-ignore
+  // @ts-expect-error
   app.register(cookieParser)
-  // @ts-ignore
+  // @ts-expect-error
   app.register(fastifyMultipart, {
     limits: {
       fileSize: 50 * 1024 * 1024, // 50MB
@@ -116,12 +120,14 @@ export async function bootstrap() {
      */
     const origin = req.headers.origin
     res.header('Access-Control-Allow-Origin', origin || '*')
-    if (origin) res.header('Access-Control-Allow-Credentials', 'true')
+    if (origin) {
+      res.header('Access-Control-Allow-Credentials', 'true')
+    }
     done()
   })
 
   app.useStaticAssets({
-    root: PROJECT_ROOT + '/public',
+    root: `${PROJECT_ROOT}/public`,
     prefix: '/public/',
   })
 
@@ -137,21 +143,21 @@ export async function bootstrap() {
   })
 
   process.on('SIGINT', () => {
-    Logger.warn('SIGINT received, shutting down gracefully...')
+    logger.warn('SIGINT received, shutting down gracefully...')
   })
   process.on('SIGTERM', () => {
-    Logger.warn('SIGTERM received, shutting down gracefully...')
+    logger.warn('SIGTERM received, shutting down gracefully...')
   })
 
   app.useGlobalFilters(new ErrorFilter(config))
   await initSetup(app, config as AppConfigService)
   await SwaggerModule.loadPluginMetadata(async () => {
     try {
-      // @ts-ignore
+      // @ts-nocheck
       return await (await import('./metadata')).default()
     } catch (err) {
-      Logger.warn('No swagger metadata found, skipping...')
-      Logger.debug((err as Error).stack || err)
+      logger.warn('No swagger metadata found, skipping...')
+      logger.debug((err as Error).stack || err)
       return {}
     }
   })
@@ -159,11 +165,20 @@ export async function bootstrap() {
 
   const port = parseNumber(config.root.get('APP_PLATFORM_PORT'), 4100)
   const host = '0.0.0.0'
+
+  logger.setLogLevels(
+    logLevels
+      ? logLevels.filter(l => l !== 'log')
+      : ['verbose', 'warn', 'error', 'fatal'],
+  )
+  await app.init()
+  logger.setLogLevels(logLevels ?? LOG_LEVELS)
+
   await app.listen(port, host)
 
-  Logger.log(
+  logger.log(
     `🚀 Platform API application is running on: http://${host}:${port}`,
-    'Nuvix-Platform',
+    'Main',
   )
 }
 

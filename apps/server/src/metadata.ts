@@ -1,29 +1,29 @@
 /* eslint-disable */
 export default async () => {
   const t = {
-    ['../../../libs/core/src/models/Target.model.js']: await import(
+    '../../../libs/core/src/models/Target.model.js': await import(
       '../../../libs/core/src/models/Target.model.js'
     ),
-    ['../../../libs/core/src/models/User.model.js']: await import(
+    '../../../libs/core/src/models/User.model.js': await import(
       '../../../libs/core/src/models/User.model.js'
     ),
-    ['@nuvix/db']: await import('@nuvix/db'),
-    ['../../../libs/utils/src/constants.js']: await import(
+    '@nuvix/db': await import('@nuvix/db'),
+    '../../../libs/utils/src/constants.js': await import(
       '../../../libs/utils/src/constants.js'
     ),
-    ['../../../libs/core/src/models/Index.model.js']: await import(
+    '../../../libs/core/src/models/Index.model.js': await import(
       '../../../libs/core/src/models/Index.model.js'
     ),
-    ['../../../libs/core/src/models/AuthProvider.model.js']: await import(
+    '../../../libs/core/src/models/AuthProvider.model.js': await import(
       '../../../libs/core/src/models/AuthProvider.model.js'
     ),
-    ['../../../libs/core/src/models/Platform.model.js']: await import(
+    '../../../libs/core/src/models/Platform.model.js': await import(
       '../../../libs/core/src/models/Platform.model.js'
     ),
-    ['../../../libs/core/src/models/Webhook.model.js']: await import(
+    '../../../libs/core/src/models/Webhook.model.js': await import(
       '../../../libs/core/src/models/Webhook.model.js'
     ),
-    ['../../../libs/core/src/models/Key.model.js']: await import(
+    '../../../libs/core/src/models/Key.model.js': await import(
       '../../../libs/core/src/models/Key.model.js'
     ),
   }
@@ -581,6 +581,7 @@ export default async () => {
               },
             },
             AttributeEnumModel: {
+              formatOptions: { required: true, type: () => Object },
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
               elements: { required: true, type: () => [String] },
               format: {
@@ -596,18 +597,8 @@ export default async () => {
             },
             AttributeFloatModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
-              min: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
-              max: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
+              min: { required: true, type: () => Number, nullable: true },
+              max: { required: true, type: () => Number, nullable: true },
               default: {
                 required: true,
                 type: () => Number,
@@ -630,18 +621,8 @@ export default async () => {
             },
             AttributeIntegerModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
-              min: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
-              max: {
-                required: true,
-                type: () => Number,
-                nullable: true,
-                default: null,
-              },
+              min: { required: true, type: () => Number, nullable: true },
+              max: { required: true, type: () => Number, nullable: true },
               default: {
                 required: true,
                 type: () => Number,
@@ -654,20 +635,21 @@ export default async () => {
               attributes: { required: true, type: () => [Object] },
             },
             AttributeRelationshipModel: {
+              options: { required: true, type: () => Object },
               relatedCollection: {
                 required: true,
                 type: () => String,
                 nullable: true,
-                default: null,
               },
               relationType: {
                 required: true,
                 enum: t['@nuvix/db'].RelationType,
               },
-              twoWay: { required: true, type: () => Boolean, default: false },
-              twoWayKey: { required: false, type: () => String },
+              twoWay: { required: true, type: () => Boolean },
+              twoWayKey: { required: true, type: () => String },
               onDelete: { required: true, enum: t['@nuvix/db'].OnDelete },
               side: { required: true, enum: t['@nuvix/db'].RelationSide },
+              type: { required: true, enum: t['@nuvix/db'].AttributeType },
             },
             AttributeStringModel: {
               type: { required: true, enum: t['@nuvix/db'].AttributeType },
@@ -3330,7 +3312,7 @@ export default async () => {
         [
           import('./database/DTO/create-schema.dto.js'),
           {
-            CreateSchema: {
+            CreateSchemaDTO: {
               name: {
                 required: true,
                 type: () => String,
@@ -3353,6 +3335,118 @@ export default async () => {
                 required: true,
                 type: () => String,
                 description: 'Schema ID.',
+              },
+            },
+          },
+        ],
+        [
+          import('./avatars/DTO/misc.dto.js'),
+          {
+            CreditCardParamDTO: {
+              code: {
+                required: true,
+                type: () => String,
+                description:
+                  "Credit card code (e.g., 'visa', 'mastercard', etc.)",
+              },
+            },
+            BrowsersParamDTO: {
+              code: {
+                required: true,
+                type: () => String,
+                description: "Browser code (e.g., 'ch', 'ff', etc.)",
+              },
+            },
+            FlagsParamDTO: {
+              code: {
+                required: true,
+                type: () => String,
+                description: "Country code (e.g., 'us', 'in', etc.)",
+              },
+            },
+            InitialsQueryDTO: {
+              name: {
+                required: true,
+                type: () => String,
+                description:
+                  "User's name to generate initials from (e.g., 'John Doe')",
+              },
+              width: {
+                required: true,
+                type: () => Number,
+                description:
+                  'Width of the generated avatar image (default: 100)',
+                default: 100,
+                minimum: 1,
+                maximum: 2000,
+              },
+              height: {
+                required: true,
+                type: () => Number,
+                description:
+                  'Height of the generated avatar image (default: 100)',
+                default: 100,
+                minimum: 1,
+                maximum: 2000,
+              },
+              background: {
+                required: true,
+                type: () => String,
+                description:
+                  "Background color for the avatar (e.g., '#ff0000')",
+                minLength: 0,
+                maxLength: 7,
+              },
+              circle: {
+                required: true,
+                type: () => Boolean,
+                description:
+                  'Whether to generate a circular avatar (default: false)',
+                default: false,
+              },
+              opacity: {
+                required: true,
+                type: () => Number,
+                description:
+                  'Opacity of the generated avatar image (default: 100, range: 0-100)',
+                default: 100,
+                minimum: 0,
+                maximum: 100,
+              },
+              quality: {
+                required: true,
+                type: () => Number,
+                description:
+                  'Quality of the generated avatar image (default: -1, range: 0-100)',
+                default: 100,
+                minimum: 0,
+                maximum: 100,
+              },
+            },
+            CodesQuerDTO: {
+              width: {
+                required: true,
+                type: () => Number,
+                description: 'Width of the image (default: 100)',
+                default: 100,
+                minimum: 1,
+                maximum: 2000,
+              },
+              height: {
+                required: true,
+                type: () => Number,
+                description: 'Height of the image (default: 100)',
+                default: 100,
+                minimum: 1,
+                maximum: 2000,
+              },
+              quality: {
+                required: true,
+                type: () => Number,
+                description: 'Quality of the image (default: 90, range: 0-100)',
+                default: 90,
+                minimum: 0,
+                maximum: 100,
               },
             },
           },
@@ -3739,6 +3833,8 @@ export default async () => {
                 required: true,
                 type: () => String,
                 description: 'User name. Max length: 128 chars.',
+                minLength: 0,
+                maxLength: 128,
               },
             },
             UpdatePhoneDTO: {
@@ -3872,6 +3968,8 @@ export default async () => {
                 type: () => String,
                 description:
                   'New user password. Must be between 8 and 256 chars.',
+                minLength: 8,
+                maxLength: 256,
               },
             },
           },
@@ -4837,7 +4935,7 @@ export default async () => {
           {
             CreateFcmProviderDTO: {
               serviceAccountJSON: {
-                required: false,
+                required: true,
                 type: () => Object,
                 description: 'FCM service account JSON.',
               },
@@ -5174,7 +5272,6 @@ export default async () => {
                 type: () => Boolean,
                 description:
                   'Default value for attribute when not provided. Cannot be set when attribute is required.',
-                default: false,
               },
             },
             CreateDatetimeAttributeDTO: {},
@@ -5338,7 +5435,14 @@ export default async () => {
         ],
         [
           import('./avatars/avatars.controller.js'),
-          { AvatarsController: { generateAvatar: {} } },
+          {
+            AvatarsController: {
+              getCreditCard: {},
+              getBrowser: {},
+              getFlag: {},
+              generateAvatar: {},
+            },
+          },
         ],
         [
           import('./users/users.controller.js'),
@@ -5695,7 +5799,7 @@ export default async () => {
               updateBooleanAttribute: { type: Object },
               updateDatetimeAttribute: { type: Object },
               updateRelationAttribute: { type: Object },
-              removeAttribute: {},
+              removeAttribute: { type: Object },
             },
           },
         ],
@@ -5706,7 +5810,7 @@ export default async () => {
               createIndex: { type: Object },
               findIndexes: {},
               findIndex: { type: Object },
-              removeIndex: {},
+              removeIndex: { type: Object },
             },
           },
         ],

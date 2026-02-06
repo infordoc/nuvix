@@ -3,14 +3,11 @@ import {
   Controller,
   Param,
   Query,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-import { DatabaseService } from './database.service'
-import { ProjectGuard } from '@nuvix/core/resolvers'
-import { ResponseInterceptor, ApiInterceptor } from '@nuvix/core/resolvers'
-import { DataSource } from '@nuvix/pg'
-import { Models } from '@nuvix/core/helpers'
+import { Get, Post } from '@nuvix/core'
 import {
   Auth,
   AuthType,
@@ -18,16 +15,22 @@ import {
   Project,
   ProjectPg,
 } from '@nuvix/core/decorators'
-
+import { Models } from '@nuvix/core/helpers'
+import {
+  ApiInterceptor,
+  ProjectGuard,
+  ResponseInterceptor,
+} from '@nuvix/core/resolvers'
+import { DataSource } from '@nuvix/pg'
+import { IListResponse, SchemaType } from '@nuvix/utils'
+import type { ProjectsDoc } from '@nuvix/utils/types'
 // DTO's
 import {
-  CreateSchema,
+  CreateSchemaDTO,
   SchemaParamsDTO,
   SchemaQueryDTO,
 } from './DTO/create-schema.dto'
-import type { ProjectsDoc } from '@nuvix/utils/types'
-import { IListResponse, SchemaType } from '@nuvix/utils'
-import { Get, Post } from '@nuvix/core'
+import { DatabaseService } from './database.service'
 
 @Controller({ version: ['1'], path: ['database'] })
 @UseGuards(ProjectGuard)
@@ -67,12 +70,18 @@ export class DatabaseController {
   })
   async createSchema(
     @ProjectPg() pg: DataSource,
-    @Body() body: CreateSchema,
+    @Body() body: CreateSchemaDTO,
     @Project() project: ProjectsDoc,
+    @Res({ passthrough: true }) res: NuvixRes,
   ) {
     const result = await (body.type !== SchemaType.Document
       ? this.databaseService.createSchema(pg, body)
       : this.databaseService.createDocumentSchema(pg, project, body))
+    if (body.type === SchemaType.Document) {
+      res.status(202)
+    } else {
+      res.status(201)
+    }
     return result
   }
 

@@ -1,22 +1,26 @@
+import { InjectQueue } from '@nestjs/bullmq'
 import { Injectable } from '@nestjs/common'
+import { Exception } from '@nuvix/core/extend/exception'
+import { Auth, Detector } from '@nuvix/core/helpers'
+import type { DeletesJobData } from '@nuvix/core/resolvers'
 import {
-  Doc,
+  Authorization,
   Database,
+  Doc,
+  DuplicateException,
   ID,
   Permission,
   Role,
-  Authorization,
-  DuplicateException,
 } from '@nuvix/db'
-import { Exception } from '@nuvix/core/extend/exception'
-import { Auth } from '@nuvix/core/helpers'
-import { Detector } from '@nuvix/core/helpers'
-import { DeleteType, MessageType, QueueFor } from '@nuvix/utils'
-import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto'
-import type { ProjectsDoc, Targets, UsersDoc } from '@nuvix/utils/types'
-import { InjectQueue } from '@nestjs/bullmq'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
+import { DeleteType, MessageType, QueueFor, Schemas } from '@nuvix/utils'
+import type {
+  ProjectsDoc,
+  ProvidersDoc,
+  Targets,
+  UsersDoc,
+} from '@nuvix/utils/types'
 import { Queue } from 'bullmq'
+import { CreatePushTargetDTO, UpdatePushTargetDTO } from './DTO/target.dto'
 
 @Injectable()
 export class TargetsService {
@@ -38,9 +42,14 @@ export class TargetsService {
   }: WithDB<WithUser<CreatePushTargetDTO & { userAgent: string }>>) {
     const finalTargetId = targetId === 'unique()' ? ID.unique() : targetId
 
-    const provider = await Authorization.skip(() =>
-      db.getDocument('providers', providerId!),
-    )
+    let provider: ProvidersDoc | null = null
+    if (providerId) {
+      provider = await Authorization.skip(() =>
+        db.withSchema(Schemas.Core, () =>
+          db.getDocument('providers', providerId!),
+        ),
+      )
+    }
 
     const target = await Authorization.skip(() =>
       db.getDocument('targets', finalTargetId),
@@ -66,15 +75,15 @@ export class TargetsService {
             Permission.update(Role.user(user.getId())),
             Permission.delete(Role.user(user.getId())),
           ],
-          providerId: providerId || null,
-          providerInternalId: providerId ? provider.getSequence() : null,
+          providerId: provider ? provider.getId() : null,
+          providerInternalId: provider ? provider.getSequence() : null,
           providerType: MessageType.PUSH,
           userId: user.getId(),
           userInternalId: user.getSequence(),
           sessionId: session.getId(),
           sessionInternalId: session.getSequence(),
           identifier: identifier,
-          name: `${device['deviceBrand']} ${device['deviceModel']}`,
+          name: `${device.deviceBrand} ${device.deviceModel}`,
         }),
       )
 
@@ -120,7 +129,7 @@ export class TargetsService {
     const detector = new Detector(request.headers['user-agent'] || 'UNKNOWN')
     const device = detector.getDevice()
 
-    target.set('name', `${device['deviceBrand']} ${device['deviceModel']}`)
+    target.set('name', `${device.deviceBrand} ${device.deviceModel}`)
 
     const updatedTarget = await db.updateDocument(
       'targets',

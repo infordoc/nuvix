@@ -1,14 +1,14 @@
-import { UsersDoc, type ChallengesDoc } from 'libs/utils/types'
+import { type ChallengesDoc, UsersDoc } from 'libs/utils/types'
 
 export abstract class Challenge {
-  public static verify(user: UsersDoc, otp: string): boolean {
+  public static async verify(_user: UsersDoc, _otp: string): Promise<boolean> {
     return false
   }
-  public static challenge(
-    challenge: ChallengesDoc,
-    user: UsersDoc,
-    otp: string,
-  ): boolean {
+  public static async challenge(
+    _challenge: ChallengesDoc,
+    _user: UsersDoc,
+    _otp: string,
+  ): Promise<boolean> {
     return false
   }
 }

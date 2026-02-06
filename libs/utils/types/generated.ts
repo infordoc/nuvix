@@ -1,5 +1,5 @@
 // This file is auto-generated. Do not edit manually.
-// Generated on: 2026-01-13T14:40:37.670Z
+// Generated on: 2026-01-27T03:05:25.248Z
 
 import { Doc, IEntity } from '@nuvix/db'
 
@@ -298,10 +298,7 @@ export interface Sessions extends IEntity {
    * @default null
    */
   ip?: string
-  /**
-   * @optional
-   * @default null
-   */
+  /** @optional */
   countryCode?: string
   /**
    * @optional

@@ -1,6 +1,6 @@
 {
   "name": "@nuvix/server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Nuvix is a Open Source Backend that provides a set of tools and services to help developers build and deploy applications quickly and efficiently.",
   "type": "module",
   "engines": {
@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --inspect --logHeapUsage --threads=false",
-    "test:e2e": "vitest run -c ./vitest.config.e2e.ts",
+    "test:e2e": "vitest run -c ./vitest.e2e.config.ts",
+    "test:unit": "vitest run -c ./vitest.unit.config.ts",
     "gen:metadata": "bun src/generate-metadata.ts"
   },
   "dependencies": {
@@ -26,7 +27,6 @@
     "@nestjs/apollo": "^13.1.0",
     "@nestjs/graphql": "^13.1.0",
     "@scalar/nestjs-api-reference": "^0.5.8",
-    "canvas": "^3.1.0",
     "graphql": "^16.11.0",
     "sharp": "^0.34.2"
   },
@@ -36,7 +36,6 @@
   },
   "trustedDependencies": [
     "@apollo/protobufjs",
-    "canvas",
     "protobufjs",
     "sharp"
   ]

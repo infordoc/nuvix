@@ -21,6 +21,6 @@ export class SubscriberParamsDTO extends TopicParamsDTO {
   /**
    * Subscriber ID.
    */
-  @IsUID()
+  @IsCustomID()
   declare subscriberId: string
 }

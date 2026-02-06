@@ -1,19 +1,22 @@
 import { MfaType } from '@nuvix/core/validators'
+import { type ChallengesDoc, UsersDoc } from '@nuvix/utils/types'
 import { Challenge } from '../challenge'
-import { UsersDoc, type ChallengesDoc } from '@nuvix/utils/types'
 
 export class Email extends Challenge {
-  public static override verify(challenge: UsersDoc, otp: string): boolean {
+  public static override async verify(
+    challenge: UsersDoc,
+    otp: string,
+  ): Promise<boolean> {
     return challenge.get('code') === otp
   }
 
-  public static override challenge(
+  public static override async challenge(
     challenge: ChallengesDoc,
-    user: UsersDoc,
+    _user: UsersDoc,
     otp: string,
-  ): boolean {
+  ): Promise<boolean> {
     if (challenge.has('type') && challenge.get('type') === MfaType.EMAIL) {
-      return this.verify(challenge as UsersDoc, otp)
+      return Email.verify(challenge as UsersDoc, otp)
     }
 
     return false

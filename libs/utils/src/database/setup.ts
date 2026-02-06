@@ -1,10 +1,17 @@
 import { Logger } from '@nestjs/common'
-import { Database, Doc, DuplicateException, type Collection } from '@nuvix/db'
-import { Schemas } from '@nuvix/utils'
-import { Exception } from '@nuvix/core/extend/exception'
 import { Audit } from '@nuvix/audit'
-import collections from '@nuvix/utils/collections'
 import { CoreService } from '@nuvix/core'
+import { Exception } from '@nuvix/core/extend/exception'
+import {
+  type Collection,
+  Database,
+  Doc,
+  DuplicateException,
+  Permission,
+  Role,
+} from '@nuvix/db'
+import { Schemas } from '@nuvix/utils'
+import collections from '@nuvix/utils/collections'
 
 const logger = new Logger('Database Setup')
 
@@ -121,15 +128,13 @@ async function setupCollections(
   )
 
   for (const [_, collection] of collectionEntries) {
-    if (collection['$collection'] !== Database.METADATA) {
+    if (collection.$collection !== Database.METADATA) {
       continue
     }
 
     const collectionId = collection.$id
-    const attributes = (collection['attributes'] || []).map(
-      attr => new Doc(attr),
-    )
-    const indexes = (collection['indexes'] || []).map(idx => new Doc(idx))
+    const attributes = (collection.attributes || []).map(attr => new Doc(attr))
+    const indexes = (collection.indexes || []).map(idx => new Doc(idx))
 
     let lastError: any = null
 
@@ -139,6 +144,8 @@ async function setupCollections(
           id: collectionId,
           attributes,
           indexes,
+          documentSecurity: true,
+          permissions: [Permission.create(Role.any())],
         })
 
         successCount++
@@ -162,7 +169,7 @@ async function setupCollections(
 
         // Retry with exponential backoff
         if (attempt < MAX_RETRIES) {
-          const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1)
+          const delay = BASE_DELAY_MS * 2 ** (attempt - 1)
           logger.warn(
             `Attempt ${attempt}/${MAX_RETRIES} failed for collection ${collectionId}. Retrying in ${delay}ms...`,
           )

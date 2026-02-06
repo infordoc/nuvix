@@ -1,5 +1,5 @@
-import { defineConfig } from 'tsup'
 import { copy } from 'esbuild-plugin-copy'
+import { defineConfig } from 'tsup'
 
 function printStylizedNuvix() {
   const logo = `
@@ -44,12 +44,14 @@ function printStylizedNuvix() {
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 `
-  console.log('\x1b[38;2;131;189;194m' + logo + '\x1b[0m')
+  console.log(`\x1b[38;2;131;189;194m${logo}\x1b[0m`)
 }
 
 export default defineConfig(options => {
   const isDev = !!options.watch
-  if (!isDev) printStylizedNuvix()
+  if (!isDev) {
+    printStylizedNuvix()
+  }
 
   return {
     entry: ['src/main.ts'],
@@ -66,7 +68,7 @@ export default defineConfig(options => {
     bundle: true,
     shims: false,
     tsconfig: './tsconfig.app.json',
-    onSuccess: !isDev ? undefined : 'bun --watch dist/main.js',
+    onSuccess: !isDev ? undefined : 'sleep 1 && bun --watch dist/main.js',
     banner({ format }) {
       const envPaths: string[] = isDev
         ? ['../../.env', '../../.env.local']

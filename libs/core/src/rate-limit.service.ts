@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
-import { CoreService } from './core.service'
 import { Redis } from 'ioredis'
+import { CoreService } from './core.service'
 
 export interface RateLimitResult {
   allowed: boolean
@@ -20,7 +20,7 @@ export class RatelimitService {
   private redisClient: Redis
 
   constructor(private readonly coreService: CoreService) {
-    this.redisClient = this.coreService.createCacheDb()
+    this.redisClient = this.coreService.getRedisInstance()
   }
 
   /**
@@ -53,7 +53,7 @@ export class RatelimitService {
       } else {
         // Just read current value
         const raw = await this.redisClient.get(redisKey)
-        count = raw ? parseInt(raw, 10) : 0
+        count = raw ? Number.parseInt(raw, 10) : 0
       }
 
       // Get remaining TTL for reset time

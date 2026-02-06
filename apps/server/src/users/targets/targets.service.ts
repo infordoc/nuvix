@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import { Exception } from '@nuvix/core/extend/exception'
 import { ID } from '@nuvix/core/helpers'
-import { configuration, MessageType } from '@nuvix/utils'
-import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
-import { EmailValidator } from '@nuvix/core/validators'
-import { PhoneValidator } from '@nuvix/core/validators'
+import { EmailValidator, PhoneValidator } from '@nuvix/core/validators'
 import {
   Database,
   Doc,
@@ -13,8 +11,9 @@ import {
   Query,
   Role,
 } from '@nuvix/db'
-import { EventEmitter2 } from '@nestjs/event-emitter'
+import { configuration, MessageType, Schemas } from '@nuvix/utils'
 import type { ProvidersDoc } from '@nuvix/utils/types'
+import { CreateTargetDTO, UpdateTargetDTO } from './DTO/target.dto'
 
 @Injectable()
 export class TargetsService {
@@ -32,7 +31,9 @@ export class TargetsService {
 
     let provider!: ProvidersDoc
     if (providerId) {
-      provider = await db.getDocument('providers', providerId)
+      provider = await db.withSchema(Schemas.Core, () =>
+        db.getDocument('providers', providerId),
+      )
     }
 
     switch (input.providerType as MessageType) {

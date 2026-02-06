@@ -6,22 +6,29 @@ import {
   Query,
   Req,
   Res,
+  Session,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
-
+import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
+import {
+  Auth,
+  AuthDatabase,
+  AuthType,
+  Locale,
+  Namespace,
+  Project,
+  User,
+} from '@nuvix/core/decorators'
+import { LocaleTranslator, Models } from '@nuvix/core/helpers'
+import {
+  ApiInterceptor,
+  ProjectGuard,
+  ResponseInterceptor,
+} from '@nuvix/core/resolvers'
 import { Database, type Doc } from '@nuvix/db'
-import { Auth, AuthType, Namespace } from '@nuvix/core/decorators'
-import { Locale } from '@nuvix/core/decorators'
-import { AuthDatabase, Project } from '@nuvix/core/decorators'
-import { User } from '@nuvix/core/decorators'
-import { LocaleTranslator } from '@nuvix/core/helpers'
-import { Models } from '@nuvix/core/helpers'
-import { ProjectGuard } from '@nuvix/core/resolvers'
-import { ApiInterceptor } from '@nuvix/core/resolvers'
-import { ResponseInterceptor } from '@nuvix/core/resolvers'
-
-import { SessionService } from './session.service'
+import type { IListResponse, IResponse } from '@nuvix/utils'
+import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 import {
   CreateEmailSessionDTO,
   CreateOAuth2SessionDTO,
@@ -37,9 +44,7 @@ import {
   CreateOAuth2TokenDTO,
   CreatePhoneTokenDTO,
 } from './DTO/token.dto'
-import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
-import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
-import type { IListResponse, IResponse } from '@nuvix/utils'
+import { SessionService } from './session.service'
 
 @Namespace('account')
 @UseGuards(ProjectGuard)
@@ -136,12 +141,17 @@ export class SessionsController {
     @Res({ passthrough: true }) response: NuvixRes,
     @Locale() locale: LocaleTranslator,
     @Project() project: ProjectsDoc,
+    @Session() session: SessionsDoc,
   ): Promise<void> {
+    let sessionId = params.sessionId
+    if (params.sessionId === 'current') {
+      sessionId = session.getId()
+    }
     return this.sessionService.deleteSession(
       db,
       user,
       project,
-      params.sessionId,
+      sessionId,
       request,
       response,
       locale,
@@ -347,8 +357,8 @@ export class SessionsController {
     const protocol = request.protocol
 
     const params: Record<string, any> = { ...input }
-    params['provider'] = provider
-    params['project'] = projectId
+    params.provider = provider
+    params.project = projectId
 
     response
       .status(302)
@@ -375,8 +385,8 @@ export class SessionsController {
     const protocol = request.protocol
 
     const params: Record<string, any> = { ...input }
-    params['provider'] = provider
-    params['project'] = projectId
+    params.provider = provider
+    params.project = projectId
 
     response
       .status(302)
@@ -459,7 +469,7 @@ export class SessionsController {
     model: Models.TOKEN,
     throttle: {
       limit: 60,
-      key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+      key: ({ body, ip }) => [`email:${body.email}`, `ip:${ip}`],
     },
     audit: {
       key: 'session.create',
@@ -498,7 +508,7 @@ export class SessionsController {
     model: Models.TOKEN,
     throttle: {
       limit: 10,
-      key: ({ body, ip }) => [`email:${body['email']}`, `ip:${ip}`],
+      key: ({ body, ip }) => [`email:${body.email}`, `ip:${ip}`],
     },
     audit: {
       key: 'session.create',
@@ -615,7 +625,7 @@ export class SessionsController {
     model: Models.SESSION,
     throttle: {
       limit: 10,
-      key: ({ body, ip }) => [`phone:${body['phone']}`, `ip:${ip}`],
+      key: ({ body, ip }) => [`phone:${body.phone}`, `ip:${ip}`],
     },
     audit: {
       key: 'session.create',

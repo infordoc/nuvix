@@ -1,12 +1,12 @@
+import { IsCustomID } from '@nuvix/core/validators'
 import {
   IsEmail,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
   IsString,
   Length,
-  IsOptional,
-  IsObject,
-  IsNotEmpty,
 } from 'class-validator'
-import { IsCustomID } from '@nuvix/core/validators'
 
 export class CreateAccountDTO {
   /**
@@ -83,6 +83,9 @@ export class UpdateNameDTO {
    */
   @IsNotEmpty()
   @IsString()
+  @Length(0, 128, {
+    message: 'User name can have a maximum length of 128 characters.',
+  })
   declare name: string
 }
 

@@ -1,13 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Authorization, Database, Doc, Role } from '@nuvix/db'
 import { ApiKey, AppMode, AuthActivity, Context } from '@nuvix/utils'
-import { Exception } from '../../extend/exception'
-import { Auth } from '../../helpers/auth.helper'
-import { roles } from '../../config/roles'
-import ParamsHelper from '../../helpers/params.helper'
-import { APP_PLATFORM_SERVER, platforms } from '../../config/platforms'
-import { Hook } from '../../server/hooks/interface'
-import { Key } from '../../helpers/key.helper'
 import {
   KeysDoc,
   MembershipsDoc,
@@ -16,9 +9,16 @@ import {
   TeamsDoc,
   UsersDoc,
 } from '@nuvix/utils/types'
-import { CoreService } from '../../core.service.js'
+import { APP_PLATFORM_SERVER, platforms } from '../../config/platforms'
+import { roles } from '../../config/roles'
 import { AppConfigService } from '../../config.service.js'
+import { CoreService } from '../../core.service.js'
 import { AuthType } from '../../decorators'
+import { Exception } from '../../extend/exception'
+import { Auth } from '../../helpers/auth.helper'
+import { Key } from '../../helpers/key.helper'
+import ParamsHelper from '../../helpers/params.helper'
+import { Hook } from '../../server/hooks/interface'
 
 @Injectable()
 export class ApiHook implements Hook {
@@ -31,7 +31,7 @@ export class ApiHook implements Hook {
     this.db = this.coreService.getPlatformDb()
   }
 
-  async onRequest(req: NuvixRequest, reply: NuvixRes): Promise<void> {
+  async onRequest(req: NuvixRequest, _reply: NuvixRes): Promise<void> {
     const params = new ParamsHelper(req)
     const project: ProjectsDoc = req[Context.Project]
     let user: UsersDoc = req[Context.User]
@@ -39,7 +39,9 @@ export class ApiHook implements Hook {
     const mode: AppMode = req[Context.Mode]
     const apiKey: Key | null = req[Context.ApiKey]
 
-    if (project.empty()) throw new Exception(Exception.PROJECT_NOT_FOUND)
+    if (project.empty()) {
+      throw new Exception(Exception.PROJECT_NOT_FOUND)
+    }
 
     if (mode === AppMode.ADMIN && project.getId() === 'console') {
       throw new Exception(
@@ -73,9 +75,10 @@ export class ApiHook implements Hook {
       if (apiKey.getRole() === 'apps') {
         user = new Doc({
           $id: '',
+          $sequence: -1,
           status: true,
           type: AuthActivity.APP,
-          email: 'app.' + project.getId() + '@service.' + req.host,
+          email: `app.${project.getId()}@service.${req.host}`,
           password: '',
           name: apiKey.getName(),
         }) as unknown as UsersDoc
@@ -84,9 +87,7 @@ export class ApiHook implements Hook {
       if (apiKey.getType() === ApiKey.STANDARD) {
         const dbKey = project.findWhere(
           'keys',
-          (key: KeysDoc) =>
-            key.get('key') === apiKey.getKey() &&
-            key.get('type') === ApiKey.STANDARD,
+          (key: KeysDoc) => key.get('secret') === apiKey.getKey(),
         )
         if (!dbKey || dbKey.empty()) {
           throw new Exception(Exception.USER_UNAUTHORIZED)
@@ -213,7 +214,7 @@ export class ApiHook implements Hook {
     req[Context.User] = user
 
     this.logger.debug(
-      `[${mode}] ${role} ${user.empty() ? 'API' : user.get('email')}`,
+      `[${mode ?? AppMode.DEFAULT}] ${role} ${user.empty() ? 'API' : user.getId()}`,
     )
 
     return

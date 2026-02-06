@@ -5,31 +5,26 @@
  * @version 0.1.0
  * @alpha
  */
+
+import fs from 'node:fs/promises'
+import { ConsoleLogger, LOG_LEVELS, LogLevel } from '@nestjs/common'
+import { NestFastifyApplication } from '@nestjs/platform-fastify'
+import { SwaggerModule } from '@nestjs/swagger'
 import {
+  AppConfigService,
   configureDbFiltersAndFormats,
   configurePgTypeParsers,
 } from '@nuvix/core'
 import { NuvixAdapter, NuvixFactory } from '@nuvix/core/server'
-import { AppModule } from './app.module'
-import { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { ConsoleLogger, Logger, LogLevel, ValidationPipe } from '@nestjs/common'
+import { Authorization } from '@nuvix/db'
 import {
   configuration,
-  Context,
   PROJECT_ROOT,
   validateRequiredConfig,
 } from '@nuvix/utils'
-import { Authorization, Doc, Role, storage } from '@nuvix/db'
-import cookieParser from '@fastify/cookie'
-import fastifyMultipart from '@fastify/multipart'
 import QueryString from 'qs'
-import fs from 'fs/promises'
-import { SwaggerModule } from '@nestjs/swagger'
-import { ErrorFilter } from '@nuvix/core/filters'
-import { AppConfigService } from '@nuvix/core'
-import { openApiSetup } from './core'
-import { Auth } from '@nuvix/core/helpers'
-import * as crypto from 'crypto'
+import { AppModule } from './app.module'
+import { applyAppConfig, openApiSetup } from './core'
 
 configurePgTypeParsers()
 configureDbFiltersAndFormats()
@@ -37,6 +32,16 @@ validateRequiredConfig()
 Authorization.enableAsyncLocalStorage()
 
 async function bootstrap() {
+  const logLevels = configuration.app.isProduction
+    ? (configuration.logLevels as LogLevel[])
+    : undefined
+  const logger = new ConsoleLogger({
+    json: configuration.app.debug.json,
+    colors: configuration.app.debug.colors,
+    prefix: 'Nuvix',
+    logLevels,
+  })
+
   const app = await NuvixFactory.create<NestFastifyApplication>(
     AppModule,
     new NuvixAdapter({
@@ -57,109 +62,32 @@ async function bootstrap() {
     }),
     {
       abortOnError: false,
-      logger: new ConsoleLogger({
-        json: configuration.app.debug.json,
-        colors: configuration.app.debug.colors,
-        prefix: 'Nuvix',
-        logLevels: configuration.app.isProduction
-          ? (configuration.logLevels as LogLevel[])
-          : undefined,
-      }),
+      logger,
     },
   )
-
-  app.enableShutdownHooks()
-  app.enableVersioning()
-  // @ts-ignore
-  app.register(cookieParser)
-  // @ts-ignore
-  app.register(fastifyMultipart, {
-    limits: {
-      fileSize: 50 * 1024 * 1024, // 50MB
-    },
-    attachFieldsToBody: true,
-  })
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      stopAtFirstError: false,
-      transform: true,
-      transformOptions: {
-        exposeDefaultValues: true,
-      },
-      whitelist: true,
-      forbidNonWhitelisted: false,
-    }),
-  )
-
-  const fastify = app.getHttpAdapter().getInstance()
-  fastify.setGenReqId((_req: any) => {
-    return crypto.randomUUID() as string
-  })
-  const config = app.get(AppConfigService)
-
-  fastify.addHook('onRequest', (req, res, done) => {
-    res.header('X-Powered-By', 'Nuvix-Server')
-    res.header('Server', 'Nuvix')
-    /**
-     * CORS headers are set here because
-     * CorsHook works after project & host hooks - if an error is thrown before CorsHook
-     * executes, we need these headers to prevent invalid CORS errors; CorsHook will
-     * properly validate and block requests that aren't allowed
-     */
-    const origin = req.headers.origin
-    res.header('Access-Control-Allow-Origin', origin || '*')
-    if (origin) res.header('Access-Control-Allow-Credentials', 'true')
-    done()
-  })
 
   app.useStaticAssets({
-    root: PROJECT_ROOT + '/public',
+    root: `${PROJECT_ROOT}/public`,
     prefix: '/public/',
   })
 
-  fastify.decorateRequest('hooks_args', null as any)
-  fastify.addHook('onRequest', (req: any, res, done) => {
-    let size = 0
-
-    // Patch the raw stream push method
-    const origPush = req.raw.push
-    req.raw.push = function (chunk: any, encoding?: BufferEncoding) {
-      if (chunk) {
-        size += Buffer.isBuffer(chunk)
-          ? chunk.length
-          : Buffer.byteLength(chunk, encoding)
-      }
-      return origPush.call(this, chunk, encoding)
-    }
-
-    req['hooks_args'] = { onRequest: { sizeRef: () => size } }
-    storage.run(new Map(), () => {
-      req[Context.Project] = new Doc()
-      Authorization.setDefaultStatus(true) // Set per-request default status
-      Authorization.cleanRoles() // Reset roles per request
-      Authorization.setRole(Role.any().toString())
-      Auth.setPlatformActor(false)
-      Auth.setTrustedActor(false)
-      done()
-    })
-  })
+  const config = app.get(AppConfigService)
+  applyAppConfig(app, config)
 
   process.on('SIGINT', async () => {
-    Logger.warn('SIGINT received, shutting down gracefully...')
+    logger.warn('SIGINT received, shutting down gracefully...')
   })
   process.on('SIGTERM', async () => {
-    Logger.warn('SIGTERM received, shutting down gracefully...')
+    logger.warn('SIGTERM received, shutting down gracefully...')
   })
 
-  app.useGlobalFilters(new ErrorFilter(config))
   await SwaggerModule.loadPluginMetadata(async () => {
     try {
-      // @ts-ignore
+      // @ts-nocheck
       return await (await import('./metadata')).default()
     } catch (err) {
-      Logger.warn('No swagger metadata found, skipping...')
-      Logger.debug((err as Error).stack || err)
+      logger.warn('No swagger metadata found, skipping...')
+      logger.debug((err as Error).stack || err)
       return {}
     }
   })
@@ -168,7 +96,7 @@ async function bootstrap() {
   // TODO: create a separate function to handle setup
   await fs.mkdir(configuration.storage.temp, { recursive: true }).catch(err => {
     if (err.code !== 'EEXIST') {
-      Logger.error(
+      logger.error(
         `Failed to create temp storage directory: ${err.message}`,
         'Bootstrap',
       )
@@ -176,13 +104,22 @@ async function bootstrap() {
     }
   })
 
-  const port = parseInt(config.root.get('APP_SERVER_PORT', '4000'), 10)
+  const port = Number.parseInt(config.root.get('APP_SERVER_PORT', '4000'), 10)
   const host = '0.0.0.0'
+
+  logger.setLogLevels(
+    logLevels
+      ? logLevels.filter(l => l !== 'log')
+      : ['verbose', 'warn', 'error', 'fatal'],
+  )
+  await app.init()
+  logger.setLogLevels(logLevels ?? LOG_LEVELS)
+
   await app.listen(port, host)
 
-  Logger.log(
-    `🚀 Nuvix SERVER application is running on:  http://${host}:${port}`,
-    'Bootstrap',
+  logger.log(
+    `🚀 Nuvix application is running on:  http://${host}:${port}`,
+    'Main',
   )
 }
 

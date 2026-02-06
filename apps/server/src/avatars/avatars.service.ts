@@ -1,11 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common'
-import { createCanvas, registerFont } from 'canvas'
-import sharp from 'sharp'
-import crypto from 'crypto'
-import { default as path } from 'path'
-
+import crypto from 'node:crypto'
+import { default as fsSync } from 'node:fs'
+import fs from 'node:fs/promises'
+import { default as path } from 'node:path'
+import { Injectable, Logger, StreamableFile } from '@nestjs/common'
 import { PROJECT_ROOT } from '@nuvix/utils'
-import fs from 'fs'
+import { createCanvas, registerFont } from 'canvas'
+import { browserCodes, creditCards, flags } from 'libs/core/src/config'
+import { Exception } from 'libs/core/src/extend/exception'
+import sharp from 'sharp'
+import { CodesQuerDTO, InitialsQueryDTO } from './DTO/misc.dto'
 
 @Injectable()
 export class AvatarsService {
@@ -20,7 +23,7 @@ export class AvatarsService {
       )
 
       // Check if font file exists before registering
-      if (fs.existsSync(fontPath)) {
+      if (fsSync.existsSync(fontPath)) {
         registerFont(fontPath, { family: 'Varela' })
         this.logger.log(`Font registered from: ${fontPath}`)
       } else {
@@ -31,31 +34,30 @@ export class AvatarsService {
     }
   }
 
+  /**
+   * Generates an avatar image based on the provided parameters.
+   */
   async generateAvatar({
     name,
-    width = 100,
-    height = 100,
+    width,
+    height,
     background,
     circle,
+    quality,
+    opacity,
     res,
   }: {
-    name: string
-    width: number | string
-    height: number | string
-    background: string
-    circle: boolean | string
     res: NuvixRes
-  }) {
+  } & InitialsQueryDTO) {
     try {
-      const MAX_DIM = 1024
-      const MIN_DIM = 16
+      const MAX_DIM = 2000
+      const MIN_DIM = 0
       const toNum = (v: number | string, fallback: number) => {
         const n = Number(v)
         return Number.isFinite(n) ? n : fallback
       }
       width = Math.min(MAX_DIM, Math.max(MIN_DIM, toNum(width, 100)))
       height = Math.min(MAX_DIM, Math.max(MIN_DIM, toNum(height, 100)))
-      circle = circle === true || circle === 'true' // Handle boolean query
       // Sanitize hex; fallback to deterministic HSL if invalid length
       if (background) {
         const hex = background.replace(/[^0-9a-fA-F]/g, '')
@@ -113,24 +115,72 @@ export class AvatarsService {
       // Process Image with Sharp (for better output)
       const processedImage = await sharp(buffer)
         .resize(width, height)
-        .png()
+        .png({
+          quality,
+          compressionLevel: 9,
+          adaptiveFiltering: true,
+          force: true,
+        })
         .toBuffer()
 
-      // Store in cache
+      // Cache the generated image
       this.cacheImage(cacheKey, processedImage)
 
       // Send Image Response
       res.header('Content-Type', 'image/png')
-      res.send(processedImage)
-    } catch (error) {
-      console.error('Error generating avatar:', error)
-      res.status(500).send('Error generating avatar')
+      return new StreamableFile(processedImage)
+    } catch (_error) {
+      throw new Exception(
+        Exception.GENERAL_SERVER_ERROR,
+        'Avatar generation failed',
+      )
     }
+  }
+
+  async getCreditCard({
+    code,
+    res,
+    ...query
+  }: { code: string; res: NuvixRes } & CodesQuerDTO) {
+    return this.avatarCallback({
+      type: 'credit-cards',
+      code,
+      ...query,
+      res,
+    })
+  }
+
+  async getBrowser({
+    code,
+    res,
+    ...query
+  }: { code: string; res: NuvixRes } & CodesQuerDTO) {
+    return this.avatarCallback({
+      type: 'browsers',
+      code,
+      ...query,
+      res,
+    })
+  }
+
+  async getFlag({
+    code,
+    res,
+    ...query
+  }: { code: string; res: NuvixRes } & CodesQuerDTO) {
+    return this.avatarCallback({
+      type: 'flags',
+      code,
+      ...query,
+      res,
+    })
   }
 
   private getInitials(name: string): string {
     const words = name.trim().split(/\s+/).filter(Boolean)
-    if (words.length === 0) return 'NA'
+    if (words.length === 0) {
+      return 'NA'
+    }
     const first = Array.from(words[0]!)[0]?.toUpperCase() ?? 'N'
     const second =
       words.length > 1
@@ -178,5 +228,55 @@ export class AvatarsService {
     const saturation = 65
     const lightness = 55
     return `hsl(${hue}, ${saturation}%, ${lightness}%)`
+  }
+
+  async avatarCallback({
+    type,
+    code,
+    width,
+    height,
+    quality,
+    res,
+  }: {
+    type: 'flags' | 'browsers' | 'credit-cards'
+    code: string
+    width: number
+    height: number
+    quality: number
+    res: NuvixRes
+  }) {
+    code = code.toLowerCase()
+    let set: Record<string, { name: string; path: string }> = {}
+    switch (type) {
+      case 'browsers':
+        set = browserCodes
+        break
+      case 'flags':
+        set = flags
+        break
+      case 'credit-cards':
+        set = creditCards
+        break
+      default:
+        throw new Exception(Exception.AVATAR_SET_NOT_FOUND)
+    }
+
+    if (!(code in set)) {
+      throw new Exception(Exception.AVATAR_NOT_FOUND)
+    }
+
+    const filePath = set[code]?.path as string
+
+    const fileBuffer = await fs.readFile(filePath).catch(() => {
+      throw new Exception(Exception.AVATAR_NOT_FOUND)
+    })
+    const processedImage = await sharp(fileBuffer)
+      .resize(width, height)
+      .png({ quality })
+      .toBuffer()
+
+    res.header('Cache-Control', 'private, max-age=2592000') // 30 days
+    res.header('Content-Type', 'image/png')
+    return new StreamableFile(processedImage)
   }
 }
