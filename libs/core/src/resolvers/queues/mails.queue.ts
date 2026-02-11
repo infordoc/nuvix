@@ -100,7 +100,7 @@ export class MailsQueue extends Queue {
 
         if (!job.data.bodyTemplate) {
           job.data.bodyTemplate = this.appConfig.assetConfig.get(
-            'assets/locale/templates/email-base-styled.tpl',
+            'locale/templates/email-base-styled.tpl',
           )
         }
 
