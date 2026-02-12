@@ -105,7 +105,7 @@ async function bootstrap() {
   })
 
   const port = Number.parseInt(config.root.get('NUVIX_API_PORT', '4000'), 10)
-  const host = 'localhost'
+  const host = '0.0.0.0'
 
   logger.setLogLevels(
     logLevels
@@ -118,7 +118,7 @@ async function bootstrap() {
   await app.listen(port, host)
 
   logger.log(
-    `🚀 Nuvix application is running on:  http://${host}:${port}`,
+    `🚀 Nuvix application is running on:  http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`,
     'Main',
   )
 }

@@ -164,7 +164,7 @@ export async function bootstrap() {
   openApiSetup(app)
 
   const port = parseNumber(config.root.get('NUVIX_PLATFORM_PORT'), 4100)
-  const host = 'localhost'
+  const host = '0.0.0.0'
 
   logger.setLogLevels(
     logLevels
@@ -177,7 +177,7 @@ export async function bootstrap() {
   await app.listen(port, host)
 
   logger.log(
-    `🚀 Platform API application is running on: http://${host}:${port}`,
+    `🚀 Platform API application is running on: http://${host === '0.0.0.0' ? '127.0.0.1' : host}:${port}`,
     'Main',
   )
 }

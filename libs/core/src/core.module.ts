@@ -10,6 +10,7 @@ import { parse as parseArray } from 'postgres-array'
 import { AppConfigService } from './config.service.js'
 import { CoreService } from './core.service.js'
 import { RatelimitService } from './rate-limit.service.js'
+import { QueueModule } from './queue.module.js'
 
 @Global()
 @Module({
@@ -43,6 +44,7 @@ import { RatelimitService } from './rate-limit.service.js'
       },
       inject: [AppConfigService],
     }),
+    QueueModule,
     EventEmitterModule.forRoot({
       global: true,
     }),
@@ -55,7 +57,7 @@ import { RatelimitService } from './rate-limit.service.js'
     CoreService,
     RatelimitService,
   ],
-  exports: [AppConfigService, CoreService, RatelimitService],
+  exports: [AppConfigService, CoreService, RatelimitService, QueueModule],
 })
 export class CoreModule implements OnModuleDestroy, OnModuleInit {
   constructor(private readonly coreService: CoreService) {}
