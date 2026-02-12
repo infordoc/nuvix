@@ -1,5 +1,6 @@
 import {
   Controller,
+  Header,
   Param,
   Query,
   StreamableFile,
@@ -30,6 +31,7 @@ export class AvatarsController {
     description:
       'Returns the image of a credit card based on the provided code',
   })
+  @Header('Cache-Control', 'public, max-age=86400, immutable')
   async getCreditCard(
     @Param() { code }: CreditCardParamDTO,
     @Query() query: CodesQuerDTO,
@@ -41,6 +43,7 @@ export class AvatarsController {
     summary: 'Get browser image',
     description: 'Returns the image of a browser based on the provided code',
   })
+  @Header('Cache-Control', 'public, max-age=86400, immutable')
   async getBrowser(
     @Param('code', ParseDuplicatePipe) code: string,
     @Query() query: CodesQuerDTO,
@@ -53,6 +56,7 @@ export class AvatarsController {
     description:
       'Returns the image of a country flag based on the provided code',
   })
+  @Header('Cache-Control', 'public, max-age=86400, immutable')
   async getFlag(
     @Param('code', ParseDuplicatePipe) code: string,
     @Query() query: CodesQuerDTO,
@@ -65,6 +69,7 @@ export class AvatarsController {
     description:
       'Generates an avatar image with user initials based on the provided name and customization options',
   })
+  @Header('Cache-Control', 'public, max-age=86400, immutable')
   async generateAvatar(
     @Query() query: InitialsQueryDTO,
   ): Promise<StreamableFile> {

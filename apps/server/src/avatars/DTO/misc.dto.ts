@@ -59,7 +59,7 @@ export class InitialsQueryDTO {
   @IsNumber()
   @Min(1)
   @Max(2000)
-  width = 100
+  width = 500
 
   /**
    * Height of the generated avatar image (default: 100)
@@ -70,7 +70,7 @@ export class InitialsQueryDTO {
   @IsNumber()
   @Min(1)
   @Max(2000)
-  height = 100
+  height = 500
 
   /**
    * Background color for the avatar (e.g., '#ff0000')

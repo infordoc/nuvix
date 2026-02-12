@@ -5,15 +5,29 @@ import { PROJECT_ROOT } from '@nuvix/utils'
 import { Resvg } from '@resvg/resvg-js'
 import { browserCodes, creditCards, flags } from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
-import sharp from 'sharp'
 import { CodesQuerDTO, InitialsQueryDTO, QrQueryDTO } from './DTO/misc.dto'
 import QRCode from 'qrcode'
 
 @Injectable()
 export class AvatarsService {
   private readonly logger = new Logger(AvatarsService.name)
+  private sharpModule?: typeof import('sharp')
 
   constructor() {}
+
+  private async getSharp() {
+    if (!this.sharpModule) {
+      this.sharpModule = await import('sharp')
+        .then(({ default: _default }) => _default)
+        .catch(() => {
+          throw new Exception(
+            Exception.GENERAL_SERVER_ERROR,
+            'Image processing library not available',
+          )
+        })
+    }
+    return this.sharpModule
+  }
 
   /**
    * Generates an avatar image based on the provided parameters.
@@ -290,6 +304,7 @@ export class AvatarsService {
     const fileBuffer = await fs.readFile(filePath).catch(() => {
       throw new Exception(Exception.AVATAR_NOT_FOUND)
     })
+    const sharp = await this.getSharp()
     const processedImage = await sharp(fileBuffer)
       .resize(width, height)
       .png({ quality })
