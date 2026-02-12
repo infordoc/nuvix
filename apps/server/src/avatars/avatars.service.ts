@@ -1,4 +1,3 @@
-import crypto from 'node:crypto'
 import fs from 'node:fs/promises'
 import { default as path } from 'node:path'
 import { Injectable, Logger, StreamableFile } from '@nestjs/common'
@@ -25,7 +24,6 @@ export class AvatarsService {
     height,
     background,
     circle,
-    quality,
   }: InitialsQueryDTO) {
     try {
       const MAX_DIM = 2000
@@ -51,23 +49,6 @@ export class AvatarsService {
       }
 
       const initials = this.getInitials(name)
-
-      const cacheKey = this.generateCacheKey(
-        initials,
-        width,
-        height,
-        background,
-        circle,
-        quality,
-      )
-
-      const cachedImage = this.getCachedImage(cacheKey)
-      if (cachedImage) {
-        return new StreamableFile(cachedImage, {
-          type: 'image/png',
-        })
-      }
-
       // Generate SVG
       const svg = this.generateAvatarSVG({
         initials,
@@ -93,20 +74,7 @@ export class AvatarsService {
       })
 
       const pngBuffer = resvg.render().asPng()
-      const processedImage = await sharp(pngBuffer)
-        .resize(width, height)
-        .png({
-          quality,
-          compressionLevel: 9,
-          adaptiveFiltering: true,
-          force: true,
-        })
-        .toBuffer()
-
-      // Cache result
-      this.cacheImage(cacheKey, processedImage)
-
-      return new StreamableFile(processedImage, {
+      return new StreamableFile(pngBuffer, {
         type: 'image/png',
       })
     } catch (error) {
@@ -264,30 +232,6 @@ export class AvatarsService {
         ? Array.from(words[1]!)[0]?.toUpperCase()
         : Array.from(words[0]!)[1]?.toUpperCase()
     return (first + (second ?? '')).slice(0, 2)
-  }
-
-  private generateCacheKey(
-    name: string,
-    width: number,
-    height: number,
-    background: string,
-    circle: boolean,
-    quality: number,
-  ): string {
-    return crypto
-      .createHash('md5')
-      .update(`${name}-${width}-${height}-${background}-${circle}-${quality}`)
-      .digest('hex')
-  }
-
-  private cache: Record<string, Buffer> = {}
-
-  private getCachedImage(key: string): Buffer | null {
-    return this.cache[key] || null
-  }
-
-  private cacheImage(key: string, image: Buffer): void {
-    this.cache[key] = image
   }
 
   private hashFnv1a(str: string): number {

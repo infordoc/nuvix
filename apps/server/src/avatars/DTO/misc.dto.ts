@@ -88,28 +88,6 @@ export class InitialsQueryDTO {
   @ArrayToLastElement()
   @TransformStringToBoolean()
   circle = false
-
-  /**
-   * Opacity of the generated avatar image (default: 100, range: 0-100)
-   */
-  @IsOptional()
-  @ArrayToLastElement()
-  @TryTransformTo('int')
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  opacity = 100
-
-  /**
-   * Quality of the generated avatar image (range: 0-100)
-   */
-  @IsOptional()
-  @ArrayToLastElement()
-  @TryTransformTo('int')
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  quality = 100
 }
 
 export class CodesQuerDTO {
