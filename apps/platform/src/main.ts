@@ -19,6 +19,7 @@ import { SwaggerModule } from '@nestjs/swagger'
 import {
   AppConfigService,
   configureDbFiltersAndFormats,
+  configureHandlebarsHelpers,
   configurePgTypeParsers,
 } from '@nuvix/core'
 import { ErrorFilter } from '@nuvix/core/filters'
@@ -39,6 +40,7 @@ import { openApiSetup } from './utils/open-api'
 configurePgTypeParsers()
 configureDbFiltersAndFormats()
 validateRequiredConfig()
+configureHandlebarsHelpers()
 Authorization.enableAsyncLocalStorage()
 
 export async function bootstrap() {

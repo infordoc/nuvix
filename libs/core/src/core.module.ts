@@ -11,6 +11,7 @@ import { AppConfigService } from './config.service.js'
 import { CoreService } from './core.service.js'
 import { RatelimitService } from './rate-limit.service.js'
 import { QueueModule } from './queue.module.js'
+import * as Template from 'handlebars'
 
 @Global()
 @Module({
@@ -103,5 +104,15 @@ export function configureDbFiltersAndFormats() {
 
   Object.entries(formats).forEach(([key, format]) => {
     StructureValidator.addFormat(key, format)
+  })
+}
+
+export function configureHandlebarsHelpers() {
+  Template.registerHelper('b', function (this: any, options: any) {
+    return new Template.SafeString(`<b>${options.fn(this)}</b>`)
+  })
+
+  Template.registerHelper('i', function (this: any, options: any) {
+    return new Template.SafeString(`<i>${options.fn(this)}</i>`)
   })
 }
