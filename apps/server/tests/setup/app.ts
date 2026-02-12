@@ -3,6 +3,7 @@ import { NestFastifyApplication } from '@nestjs/platform-fastify'
 import {
   AppConfigService,
   configureDbFiltersAndFormats,
+  configureHandlebarsHelpers,
   configurePgTypeParsers,
 } from '@nuvix/core'
 import { NuvixAdapter } from '@nuvix/core/server'
@@ -17,6 +18,7 @@ import { dbSetup } from './db'
 configurePgTypeParsers()
 configureDbFiltersAndFormats()
 validateRequiredConfig()
+configureHandlebarsHelpers()
 Authorization.enableAsyncLocalStorage()
 let app: NestFastifyApplication
 
