@@ -1,5 +1,5 @@
 import * as fs from 'node:fs'
-import { Processor } from '@nestjs/bullmq'
+import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
 import { QueueFor } from '@nuvix/utils'
 import { Job } from 'bullmq'
 import Template from 'handlebars'
@@ -7,9 +7,11 @@ import { createTransport, Transporter } from 'nodemailer'
 import type { SmtpConfig } from '../../config/smtp'
 import { AppConfigService } from '../../config.service'
 import { Queue } from './queue'
+import { Logger } from '@nestjs/common'
 
 @Processor(QueueFor.MAILS, { concurrency: 25 })
 export class MailsQueue extends Queue {
+  private readonly logger = new Logger(MailsQueue.name)
   private readonly transporter: Transporter
   private readonly templateCache = new Map<string, Template.TemplateDelegate>()
 
@@ -99,6 +101,18 @@ export class MailsQueue extends Queue {
     }
 
     return { status: 'success', recipients: emails.length }
+  }
+
+  @OnWorkerEvent('active')
+  onActive(job: Job) {
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`)
+  }
+
+  @OnWorkerEvent('failed')
+  onFailed(job: Job, err: any) {
+    this.logger.error(
+      `Job ${job.id} of type ${job.name} failed with error: ${err.message}`,
+    )
   }
 
   private loadTemplate(path: string) {

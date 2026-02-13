@@ -1,4 +1,4 @@
-import { Processor } from '@nestjs/bullmq'
+import { OnWorkerEvent, Processor } from '@nestjs/bullmq'
 import { Logger } from '@nestjs/common'
 import { Audit } from '@nuvix/audit'
 import { Database, Doc, IEntity, Query } from '@nuvix/db'
@@ -118,6 +118,18 @@ export class DeletesQueue extends Queue {
       default:
         throw new Error(`No delete operation for type: ${job.name}`)
     }
+  }
+
+  @OnWorkerEvent('active')
+  onActive(job: Job) {
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`)
+  }
+
+  @OnWorkerEvent('failed')
+  onFailed(job: Job, err: any) {
+    this.logger.error(
+      `Job ${job.id} of type ${job.name} failed with error: ${err.message}`,
+    )
   }
 
   /**

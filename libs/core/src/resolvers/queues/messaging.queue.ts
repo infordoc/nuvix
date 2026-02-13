@@ -170,7 +170,7 @@ export class MessagingQueue extends Queue {
 
   @OnWorkerEvent('active')
   onActive(job: Job) {
-    this.logger.verbose(`Processing job ${job.id} of type ${job.name}`)
+    this.logger.log(`Processing job ${job.id} of type ${job.name}`)
   }
 
   @OnWorkerEvent('failed')
