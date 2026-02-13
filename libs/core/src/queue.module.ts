@@ -10,6 +10,7 @@ import { QueueFor } from '@nuvix/utils'
       { name: QueueFor.AUDITS },
       { name: QueueFor.LOGS },
       { name: QueueFor.DELETES },
+      { name: QueueFor.MESSAGING },
     ),
   ],
   exports: [BullModule],
