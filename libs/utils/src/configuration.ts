@@ -135,8 +135,12 @@ const nxconfig = () =>
     },
 
     sms: {
-      enabled: false,
-      // to be implemented
+      enabled: parseBoolean(process.env.NUVIX_SMS_ENABLED, false),
+      twilio: {
+        accountSid: process.env.NUVIX_SMS_TWILIO_ACCOUNT_SID,
+        authToken: process.env.NUVIX_SMS_TWILIO_AUTH_TOKEN,
+        fromPhone: process.env.NUVIX_SMS_TWILIO_FROM_PHONE,
+      },
     },
 
     database: {

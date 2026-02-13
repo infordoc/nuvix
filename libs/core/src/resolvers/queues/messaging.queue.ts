@@ -41,14 +41,19 @@ import type {
 import { Job } from 'bullmq'
 import { CoreService } from '../../core.service.js'
 import { Queue } from './queue'
+import { AppConfigService } from '@nuvix/core/config.service.js'
 
 @Injectable()
 @Processor(QueueFor.MESSAGING, { concurrency: 10000 })
 export class MessagingQueue extends Queue {
   private readonly logger = new Logger(MessagingQueue.name)
   private readonly dbForPlatform: Database
+  private smsAdapter?: SMSAdapter
 
-  constructor(private readonly coreService: CoreService) {
+  constructor(
+    private readonly coreService: CoreService,
+    private readonly appConfig: AppConfigService,
+  ) {
     super()
     this.dbForPlatform = this.coreService.getPlatformDb()
   }
@@ -114,7 +119,6 @@ export class MessagingQueue extends Queue {
             message,
             deviceForFiles,
             project,
-            undefined as any,
           )
 
           // Delete schedule if present
@@ -147,7 +151,18 @@ export class MessagingQueue extends Queue {
           await this.coreService.releaseDatabaseClient(client)
         }
       }
+      case MessagingJob.INTERNAL:
+        {
+          const { message } = job.data
+          if (typeof message === 'string') {
+            throw new Error('Invalid message data for internal messaging')
+          }
 
+          await this.sendInternalMessage(
+            new Doc(message as unknown as Messages),
+          )
+        }
+        break
       default:
         throw new Error(`Invalid Job: ${job.name}`)
     }
@@ -419,8 +434,6 @@ export class MessagingQueue extends Queue {
     message: MessagesDoc,
     deviceForFiles: Device,
     project: ProjectsDoc,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _queueForStatsUsage: any,
   ): Promise<void> {
     const topicIds = message.get('topics', [])
     const targetIds = message.get('targets', [])
@@ -619,7 +632,6 @@ export class MessagingQueue extends Queue {
         } finally {
           // const errorTotal = deliveryErrors.length;
           // Add stats usage metrics
-          // queueForStatsUsage...
 
           return {
             deliveredTotal,
@@ -653,7 +665,7 @@ export class MessagingQueue extends Queue {
       message.set('status', MessageStatus.SENT)
     }
 
-    message.delete('to' as any) // Remove 'to' field as it is not needed anymore
+    message.delete<any>('to') // Remove 'to' field as it is not needed anymore
 
     for (const provider of Object.values(providers)) {
       message.set(
@@ -668,6 +680,39 @@ export class MessagingQueue extends Queue {
     await dbForProject.updateDocument('messages', message.getId(), message)
   }
 
+  private async sendInternalMessage(message: MessagesDoc) {
+    const smsConfig = this.appConfig.get('sms')
+    if (!smsConfig.enabled) {
+      this.logger.warn('SMS sending is disabled in configuration')
+      return
+    }
+
+    if (!smsConfig.twilio.accountSid || !smsConfig.twilio.authToken) {
+      this.logger.warn('Twilio credentials are not fully configured')
+      return
+    }
+
+    if (!this.smsAdapter) {
+      this.smsAdapter = new Twilio(
+        smsConfig.twilio.accountSid,
+        smsConfig.twilio.authToken,
+        smsConfig.twilio.fromPhone,
+      )
+    }
+
+    const to = message.get('to') as string[]
+    const content = message.get('data').content
+
+    try {
+      await this.smsAdapter.send(new SMS(to, content))
+      this.logger.debug(`Internal SMS sent successfully to ${to.join(', ')}`)
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to send internal SMS to ${to.join(', ')}: ${err.message}`,
+      )
+    }
+  }
+
   private chunkArray<T>(array: T[], chunkSize: number): T[][] {
     const chunks: T[][] = []
     for (let i = 0; i < array.length; i += chunkSize) {
@@ -679,10 +724,20 @@ export class MessagingQueue extends Queue {
 
 export enum MessagingJob {
   EXTERNAL = 'external',
+  INTERNAL = 'internal',
 }
 
 export interface MessagingJobData {
   scheduleId?: string
   message: MessagesDoc | string
   project: ProjectsDoc
+}
+
+export interface MessagingJobInternalData {
+  message: {
+    to: string[]
+    data: {
+      content: string
+    }
+  }
 }

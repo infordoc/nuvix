@@ -8,7 +8,11 @@ import type { SmtpConfig } from '@nuvix/core/config'
 import { Exception } from '@nuvix/core/extend/exception'
 import { Hooks } from '@nuvix/core/extend/hooks'
 import { Auth, LocaleTranslator } from '@nuvix/core/helpers'
-import type { DeletesJobData } from '@nuvix/core/resolvers'
+import {
+  DeletesJobData,
+  MessagingJob,
+  MessagingJobInternalData,
+} from '@nuvix/core/resolvers'
 import { MailJob, MailQueueOptions } from '@nuvix/core/resolvers'
 import {
   PasswordHistoryValidator,
@@ -39,7 +43,7 @@ import type {
   UsersDoc,
 } from '@nuvix/utils/types'
 import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
+import Template from 'handlebars'
 import { UpdateEmailDTO } from './DTO/account.dto'
 
 @Injectable()
@@ -51,6 +55,12 @@ export class AccountService {
     private readonly mailsQueue: Queue<MailQueueOptions>,
     @InjectQueue(QueueFor.DELETES)
     private readonly deletesQueue: Queue<DeletesJobData, unknown, DeleteType>,
+    @InjectQueue(QueueFor.MESSAGING)
+    private readonly messagingQueue: Queue<
+      MessagingJobInternalData,
+      unknown,
+      MessagingJob
+    >,
   ) {}
 
   /**
@@ -794,17 +804,23 @@ export class AccountService {
       const customTemplate =
         project.get('templates', {})[`sms.verification-${locale.default}`] ?? {}
 
-      let message = locale.getText('sms.verification.body')
+      let message = locale.getText('sms.verification.body', '{{secret}}')
       if (customTemplate?.message) {
         message = customTemplate.message
       }
 
-      const _messageContent = message
+      const messageContent = message
         .replace('{{project}}', project.get('name'))
         .replace('{{secret}}', secret)
 
-      // TODO: Implement SMS queue functionality
-      throw new Exception(Exception.GENERAL_NOT_IMPLEMENTED)
+      await this.messagingQueue.add(MessagingJob.INTERNAL, {
+        message: {
+          to: [phone],
+          data: {
+            content: messageContent,
+          },
+        },
+      })
     }
 
     createdVerification.set('secret', secret)
