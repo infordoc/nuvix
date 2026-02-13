@@ -20,7 +20,7 @@ import {
 import { configuration, QueueFor, SessionProvider } from '@nuvix/utils'
 import type { Memberships, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import type { Queue } from 'bullmq'
-import * as Template from 'handlebars'
+import Template from 'handlebars'
 import { sprintf } from 'sprintf-js'
 import {
   CreateMembershipDTO,

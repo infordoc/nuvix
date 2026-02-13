@@ -123,7 +123,7 @@
     <table style="margin-top: 32px">
         <tr>
             <td>
-                {{body}}
+                {{{body}}}
             </td>
         </tr>
     </table>

@@ -2,7 +2,7 @@ import * as fs from 'node:fs'
 import { Processor } from '@nestjs/bullmq'
 import { QueueFor } from '@nuvix/utils'
 import { Job } from 'bullmq'
-import * as Template from 'handlebars'
+import Template from 'handlebars'
 import { createTransport, Transporter } from 'nodemailer'
 import type { SmtpConfig } from '../../config/smtp'
 import { AppConfigService } from '../../config.service'
@@ -80,9 +80,9 @@ export class MailsQueue extends Queue {
       this.appConfig.assetConfig.get('locale/templates/email-base-styled.tpl')
 
     const bodyTemplate = this.loadTemplate(bodyTemplatePath)
-
+    const _body = Template.compile(body)(templateVariables)
     const renderedBody = bodyTemplate({
-      body,
+      body: _body,
       ...templateVariables,
     })
 

@@ -43,7 +43,7 @@ import type {
   UsersDoc,
 } from '@nuvix/utils/types'
 import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
+import Template from 'handlebars'
 import { CountryResponse, Reader } from 'maxmind'
 import { UpdateEmailDTO, UpdatePasswordDTO } from './DTO/account.dto'
 import { CreateEmailSessionDTO } from './DTO/session.dto'

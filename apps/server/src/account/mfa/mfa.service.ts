@@ -28,7 +28,7 @@ import type {
   UsersDoc,
 } from '@nuvix/utils/types'
 import { Queue } from 'bullmq'
-import * as Template from 'handlebars'
+import Template from 'handlebars'
 import { CreateMfaChallengeDTO, VerifyMfaChallengeDTO } from './DTO/mfa.dto'
 
 @Injectable()
