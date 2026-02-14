@@ -1,6 +1,6 @@
 <p>{{hello}},</p>
 
-<p>{{body}}</p>
+<p>{{{body}}}</p>
 
 <ol>
     <li>{{listDevice}}</li>
