@@ -15,4 +15,12 @@ export class AppController {
       status: 'ok',
     }
   }
+
+  @Get('health')
+  @Public()
+  health() {
+    return {
+      status: 'ok',
+    }
+  }
 }

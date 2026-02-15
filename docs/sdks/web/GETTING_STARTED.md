@@ -57,4 +57,4 @@ You can use the following resources to learn more and get help
 - 🚀 [Getting Started Tutorial](https://docs.nuvix.in/getting-started-for-web)
 - 📜 [Nuvix Docs](https://docs.nuvix.in)
 - 💬 [Discord Community](https://nuvix.io/discord)
-- 🚂 [Nuvix Web Playground](https://github.com/Nuvix-Tech/playground-for-web)
+- 🚂 [Nuvix Web Playground](https://github.com/nuvix-dev/playground-for-web)

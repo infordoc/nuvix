@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://github.com/Nuvix-Tech/console/raw/main/apps/www/public/images/dashboard/hero_dark.png" width="100%" alt="Nuvix" />
+<img src="https://github.com/nuvix-dev/console/raw/main/apps/www/public/images/dashboard/hero_dark.png" width="100%" alt="Nuvix" />
 
 # Nuvix
 
@@ -13,7 +13,7 @@ Auth. Database. Storage. Messaging. One platform. Self-host anywhere.
 [![X](https://img.shields.io/badge/Follow-@__nuvix-000?logo=x)](https://x.com/_nuvix)
 [![Docs](https://img.shields.io/badge/Docs-docs.nuvix.in-8b5cf6)](https://docs.nuvix.in)
 
-[Documentation](https://docs.nuvix.in) · [Discord](https://discord.gg/2fWv2T6RzK) · [Report Bug](https://github.com/Nuvix-Tech/nuvix/issues) · [Request Feature](https://github.com/Nuvix-Tech/nuvix/issues)
+[Documentation](https://docs.nuvix.in) · [Discord](https://discord.gg/2fWv2T6RzK) · [Report Bug](https://github.com/nuvix-dev/nuvix/issues) · [Request Feature](https://github.com/nuvix-dev/nuvix/issues)
 
 </div>
 
@@ -61,7 +61,7 @@ Email, SMS, and push notifications through a single API. Built-in templates and 
 Get running in under 2 minutes:
 
 ```bash
-git clone https://github.com/Nuvix-Tech/docker.git nuvix
+git clone https://github.com/nuvix-dev/docker.git nuvix
 cd nuvix
 cp .env.example .env    # Configure your secrets
 docker compose up -d
@@ -122,10 +122,10 @@ You don't "enable" security in Nuvix. It's the default.
 | | |
 |---|---|
 | 📖 **[Documentation](https://docs.nuvix.in)** | Guides, API reference, and tutorials |
-| 🖥️ **[Console](https://github.com/Nuvix-Tech/console)** | Admin dashboard (separate repo) |
+| 🖥️ **[Console](https://github.com/nuvix-dev/console)** | Admin dashboard (separate repo) |
 | 💬 **[Discord](https://discord.gg/2fWv2T6RzK)** | Community, help, and discussion |
 | 📢 **[X / Twitter](https://x.com/nuvixtech)** | Updates and announcements |
-| 🐛 **[Issues](https://github.com/Nuvix-Tech/nuvix/issues)** | Bug reports and feature requests |
+| 🐛 **[Issues](https://github.com/nuvix-dev/nuvix/issues)** | Bug reports and feature requests |
 
 ---
 
@@ -134,7 +134,7 @@ You don't "enable" security in Nuvix. It's the default.
 We welcome contributions of all kinds: code, docs, bug reports, and ideas.
 
 1. Read the [Contributing Guide](CONTRIBUTING.md)
-2. Browse [open issues](https://github.com/Nuvix-Tech/nuvix/issues)
+2. Browse [open issues](https://github.com/nuvix-dev/nuvix/issues)
 3. Join the [Discord](https://discord.gg/2fWv2T6RzK)
 
 > By submitting a pull request, you agree that Nuvix may use, modify, copy, and redistribute the contribution under terms of its choosing.
@@ -149,7 +149,7 @@ We welcome contributions of all kinds: code, docs, bug reports, and ideas.
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Nuvix-Tech/nuvix&type=Date)](https://star-history.com/#Nuvix-Tech/nuvix&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=nuvix-dev/nuvix&type=Date)](https://star-history.com/#nuvix-dev/nuvix&Date)
 
 **If Nuvix saves you time, drop a star. It helps more than you think.** ⭐
 

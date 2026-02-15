@@ -230,7 +230,7 @@
                     </a>
                 </td>
                 <td style="padding-left: 4px; padding-right: 4px">
-                    <a href="https://github.com/Nuvix-Tech/nuvix" class="social-icon">
+                    <a href="https://github.com/nuvix-dev/nuvix" class="social-icon">
                         <svg viewBox="0 0 24 24" aria-hidden="true" class="icon">
                             <g>
                                 <path

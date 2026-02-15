@@ -1,9 +1,7 @@
 /**
  * Nuvix is a Open Source Backend that allows you to create a backend for your application in minutes.
  * This file is the entry point of the application, where the application is created and started.
- * @author Nuvix-Tech
- * @version 0.1.0
- * @alpha
+ * @author Nuvix
  */
 
 import fs from 'node:fs/promises'

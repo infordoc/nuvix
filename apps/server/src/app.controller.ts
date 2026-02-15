@@ -14,4 +14,11 @@ export class AppController {
   async getFavicon() {
     return this.appService.getFavicon()
   }
+
+  @Get('health')
+  health() {
+    return {
+      status: 'ok',
+    }
+  }
 }

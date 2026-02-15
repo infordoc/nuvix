@@ -1,7 +1,6 @@
 /**
  * The main entry point for the Nuvix Platform application.
- * @author Nuvix-Tech
- * @version 1.0
+ * @author Nuvix
  */
 
 import cookieParser from '@fastify/cookie'
