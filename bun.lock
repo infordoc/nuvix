@@ -22,7 +22,7 @@
         "@nestjs/swagger": "^11.2.5",
         "@nuvix/audit": "^1.0.3",
         "@nuvix/cache": "^1.0.4",
-        "@nuvix/db": "^0.1.29-alpha.5",
+        "@nuvix/db": "^0.1.30",
         "@nuvix/messaging": "^1.0.2",
         "@nuvix/pg": "^1.0.6",
         "@nuvix/storage": "^1.0.1",
@@ -149,7 +149,6 @@
     "sharp",
     "esbuild",
     "@scarf/scarf",
-    "msgpackr-extract",
     "@nestjs/core",
   ],
   "packages": {
@@ -563,7 +562,7 @@
 
     "@nuvix/core": ["@nuvix/core@workspace:libs/core"],
 
-    "@nuvix/db": ["@nuvix/db@0.1.29-alpha.5", "", { "dependencies": { "chalk": "^5.5.0" }, "bin": { "nuvix-db": "dist/cli/generate-types.js" } }, "sha512-cMPne0xEYq8eRjm4egwj/08TmSOvZQpqaygA3JJuLBrGxL2vI7zfxUbyeRZhVsgT8Qhxtoq0P5zkXkKYosZGIg=="],
+    "@nuvix/db": ["@nuvix/db@0.1.30", "", { "dependencies": { "chalk": "^5.5.0" }, "bin": { "nuvix-db": "dist/cli/generate-types.js" } }, "sha512-g2bI11O5q8rt8ggP2xdlQyUZXlx1V38EBXwGV243i1FiEBte11U5j6Xet51ubPxlyTqU9R0e6LNbaSa4l5F13Q=="],
 
     "@nuvix/messaging": ["@nuvix/messaging@1.0.2", "", { "dependencies": { "jsonwebtoken": "^9.0.2", "libphonenumber-js": "^1.12.9" }, "peerDependencies": { "nodemailer": "^7.0.3" } }, "sha512-ALaXNHdn5owgsvG3H24rHMw8htRAT4QnlIaLSMUoYkIaN3hjXjdu/s2MaOovuKXG5dQnmLx4vY+9Lo3YrT9tow=="],
 
