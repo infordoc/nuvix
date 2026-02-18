@@ -77,6 +77,25 @@ services:
   #   restart: unless-stopped
   #   entrypoint: ["/usr/local/bin/pgcat-entrypoint.sh"]
 
+  console:
+    image: nuvix/console:1.0.0
+    container_name: nuvix-console
+
+    ports:
+      - "${NUVIX_CONSOLE_PORT:-3000}:3000"
+  
+    environment:
+      NUVIX_API_ENDPOINT: http://${NUVIX_API_INTERNAL_ENDPOINT:-localhost}:${NUVIX_API_PORT:-4000}/v1
+      NUVIX_PLATFORM_ENDPOINT: http://${NUVIX_API_INTERNAL_ENDPOINT:-localhost}:${NUVIX_PLATFORM_PORT:-4100}
+
+    depends_on:
+      server:
+        condition: service_started
+
+    networks:
+      - nuvix
+    restart: unless-stopped
+
   server:
     build:
       context: .
