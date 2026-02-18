@@ -34,9 +34,21 @@ export class AppController {
   @Get('auth/oauth2/failure')
   @Render('oauth/failure.hbs')
   renderOAuth2Failure(@Query('error') error?: string) {
+    let errorObj = {
+      message: 'An unknown error occurred.',
+    }
+
+    if (error) {
+      try {
+        errorObj = JSON.parse(error)
+      } catch (e) {
+        errorObj = { message: error }
+      }
+    }
+
     return {
       status: 'error',
-      error,
+      error: errorObj,
     }
   }
 }
