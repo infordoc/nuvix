@@ -287,6 +287,7 @@ export enum RouteContext {
   RATE_LIMIT = 'rateLimit',
   SKIP_LOGGING = 'skipLogging',
   SCHEMA_TYPE = 'schemaType',
+  SESSION_TYPE = 'sessionType',
 }
 
 export enum MetricPeriod {
@@ -319,4 +320,14 @@ export enum MessageStatus {
    * Sent with some errors
    */
   FAILED = 'failed',
+}
+
+export enum SessionType {
+  EMAIL_PASSWORD = 'email-password',
+  MAGIC_URL = 'magic-url',
+  EMAIL_OTP = 'email-otp',
+  ANONYMOUS = 'anonymous',
+  INVITES = 'invites',
+  JWT = 'jwt',
+  PHONE = 'phone',
 }

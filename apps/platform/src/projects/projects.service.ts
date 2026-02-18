@@ -82,8 +82,8 @@ export class ProjectService {
           defaultoAuthProviders.push({
             key: key,
             name: value.name,
-            appId: '',
-            secret: '',
+            appId: undefined,
+            secret: undefined,
             enabled: false,
           })
         }
