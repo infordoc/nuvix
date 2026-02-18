@@ -628,7 +628,6 @@ export class SessionService {
     project: ProjectsDoc
     provider: OAuthProviders
   }) {
-    // TODO: Handle Error Response in HTML format.
     const protocol = request.protocol
     const success = input.success || ''
     const failure = input.failure || ''
@@ -716,7 +715,6 @@ export class SessionService {
     const appId = providerInfo.appId ?? ''
     const appSecret = providerInfo.secret ?? ''
     const providerEnabled = providerInfo.enabled ?? false
-
     const AuthClass = await getOAuth2Class(provider)
     const oauth2 = new AuthClass(appId, appSecret, callback)
 
@@ -760,7 +758,7 @@ export class SessionService {
     }
 
     if (!providerEnabled) {
-      failureRedirect(
+      return failureRedirect(
         Exception.PROJECT_PROVIDER_DISABLED,
         `This provider is disabled. Please enable the provider from your ${configuration.app.name} console to continue.`,
       )
@@ -771,11 +769,11 @@ export class SessionService {
       if (input.error_description) {
         message += `: ${input.error_description}`
       }
-      failureRedirect(Exception.USER_OAUTH2_PROVIDER_ERROR, message)
+      return failureRedirect(Exception.USER_OAUTH2_PROVIDER_ERROR, message)
     }
 
     if (!input.code) {
-      failureRedirect(
+      return failureRedirect(
         Exception.USER_OAUTH2_PROVIDER_ERROR,
         'Missing OAuth2 code. Please contact the team for additional support.',
       )
@@ -794,7 +792,7 @@ export class SessionService {
       refreshToken = await oauth2.getRefreshToken(input.code!)
       accessTokenExpiry = await oauth2.getAccessTokenExpiry(input.code!)
     } catch (error: any) {
-      failureRedirect(
+      return failureRedirect(
         Exception.USER_OAUTH2_PROVIDER_ERROR,
         `Failed to obtain access token. The ${provider} OAuth2 provider returned an error: ${error.message}`,
         error.code,
@@ -803,7 +801,7 @@ export class SessionService {
 
     const oauth2ID = await oauth2.getUserID(accessToken)
     if (!oauth2ID) {
-      failureRedirect(Exception.USER_MISSING_ID)
+      return failureRedirect(Exception.USER_MISSING_ID)
     }
 
     let name = ''
@@ -836,7 +834,7 @@ export class SessionService {
         Query.notEqual('userInternalId', user.getSequence()),
       ])
       if (!identityWithMatchingEmail.empty()) {
-        failureRedirect(Exception.USER_ALREADY_EXISTS)
+        return failureRedirect(Exception.USER_ALREADY_EXISTS)
       }
 
       const userWithMatchingEmail = await db.find('users', [
@@ -844,7 +842,7 @@ export class SessionService {
         Query.notEqual('$id', userId),
       ])
       if (userWithMatchingEmail.length > 0) {
-        failureRedirect(Exception.USER_ALREADY_EXISTS)
+        return failureRedirect(Exception.USER_ALREADY_EXISTS)
       }
 
       sessionUpgrade = true
@@ -874,7 +872,7 @@ export class SessionService {
 
     if (user.empty()) {
       if (!email) {
-        failureRedirect(
+        return failureRedirect(
           Exception.USER_UNAUTHORIZED,
           'OAuth provider failed to return email.',
         )
@@ -909,7 +907,7 @@ export class SessionService {
         if (limit !== 0) {
           const total = await db.count('users', [], maxUsers)
           if (total >= limit) {
-            failureRedirect(Exception.USER_COUNT_EXCEEDED)
+            return failureRedirect(Exception.USER_COUNT_EXCEEDED)
           }
         }
 
@@ -917,7 +915,7 @@ export class SessionService {
           Query.equal('providerEmail', [email]),
         ])
         if (!identityWithMatchingEmail.empty()) {
-          failureRedirect(Exception.GENERAL_BAD_REQUEST)
+          return failureRedirect(Exception.GENERAL_BAD_REQUEST)
         }
 
         try {
@@ -964,7 +962,7 @@ export class SessionService {
           )
         } catch (error) {
           if (error instanceof DuplicateException) {
-            failureRedirect(Exception.USER_ALREADY_EXISTS)
+            return failureRedirect(Exception.USER_ALREADY_EXISTS)
           }
           throw error
         }
@@ -975,7 +973,7 @@ export class SessionService {
     Authorization.setRole(Role.users().toString())
 
     if (user.get('status') === false) {
-      failureRedirect(Exception.USER_BLOCKED)
+      return failureRedirect(Exception.USER_BLOCKED)
     }
 
     let identity = await db.findOne('identities', [
@@ -990,7 +988,7 @@ export class SessionService {
         Query.notEqual('userInternalId', user.getSequence()),
       ])
       if (identitiesWithMatchingEmail.length > 0) {
-        failureRedirect(Exception.GENERAL_BAD_REQUEST)
+        return failureRedirect(Exception.GENERAL_BAD_REQUEST)
       }
 
       identity = (await db.createDocument(

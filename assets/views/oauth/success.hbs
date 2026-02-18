@@ -1,0 +1,11 @@
+<div class="status success">Authentication successful</div>
+<div class="message">
+    You can safely close this window and return to the application.
+</div>
+
+<script>
+    if (window.opener) {
+        window.opener.postMessage({ type: "oauth-success" }, "*");
+        setTimeout(() => window.close(), 800);
+    }
+</script>

@@ -54,7 +54,7 @@ async function bootstrap() {
       },
       exposeHeadRoutes: false,
       logger: {
-        enabled: false,
+        enabled: true,
         edgeLimit: 100,
         msgPrefix: '[Nuvix] ',
         safe: true,
