@@ -1,13 +1,9 @@
 import { applyDecorators, UseGuards } from '@nestjs/common'
-import { RouteConfig } from '@nestjs/platform-fastify'
-import { RouteContext, SessionType } from '@nuvix/utils'
+import { SessionType } from '@nuvix/utils'
 import { SessionTypeGuard } from '../resolvers/guards'
+import { Reflector } from '@nestjs/core'
 
+export const AllowedSessionType = Reflector.createDecorator<SessionType>()
 export function AllowSessionType(type: SessionType): any {
-  return applyDecorators(
-    UseGuards(SessionTypeGuard),
-    RouteConfig({
-      [RouteContext.SESSION_TYPE]: type,
-    }),
-  )
+  return applyDecorators(UseGuards(SessionTypeGuard), AllowedSessionType(type))
 }

@@ -1,18 +1,24 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
 import { Doc } from '@nuvix/db'
-import { Context, RouteContext, SessionType } from '@nuvix/utils'
+import { Context, SessionType } from '@nuvix/utils'
 import { ProjectsDoc } from '@nuvix/utils/types'
 import { Exception } from '../../extend/exception'
 import { Auth } from '@nuvix/core/helpers'
 import { authMethods } from '@nuvix/core/config'
+import { Reflector } from '@nestjs/core'
+import { AllowedSessionType } from '@nuvix/core/decorators'
 
 @Injectable()
 export class SessionTypeGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request: NuvixRequest = context.switchToHttp().getRequest()
 
-    const sessionType =
-      request.routeOptions?.config?.[RouteContext.SESSION_TYPE]
+    const sessionType = this.reflector.getAllAndOverride<SessionType>(
+      AllowedSessionType,
+      [context.getHandler(), context.getClass()],
+    )
 
     if (!sessionType) {
       return true

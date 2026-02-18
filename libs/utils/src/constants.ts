@@ -287,7 +287,6 @@ export enum RouteContext {
   RATE_LIMIT = 'rateLimit',
   SKIP_LOGGING = 'skipLogging',
   SCHEMA_TYPE = 'schemaType',
-  SESSION_TYPE = 'sessionType',
 }
 
 export enum MetricPeriod {

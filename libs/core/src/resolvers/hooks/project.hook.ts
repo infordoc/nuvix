@@ -12,6 +12,7 @@ import {
   PROJECT_DB_CLIENT,
   PROJECT_PG,
   Schemas,
+  configuration,
 } from '@nuvix/utils'
 import { CoreService } from '../../core.service.js'
 import { Exception } from '../../extend/exception'
@@ -21,6 +22,7 @@ import { Hook } from '../../server/hooks/interface'
 @Injectable()
 export class ProjectHook implements Hook {
   private readonly logger = new Logger(ProjectHook.name)
+  protected defaultProjectId = configuration.app.projectId || 'default'
   private readonly db: Database
   protected dbRole: DatabaseRole = DatabaseRole.ADMIN
 
@@ -33,7 +35,7 @@ export class ProjectHook implements Hook {
     const projectId =
       params.getFromHeaders('x-nuvix-project') ||
       (req.params as { projectId: string }).projectId || // for OAuth2 callback route
-      params.getFromQuery('project', 'console')
+      params.getFromQuery('project', this.defaultProjectId)
 
     if (!projectId || projectId === 'console') {
       req[Context.Project] = new Doc({ $id: 'console' })

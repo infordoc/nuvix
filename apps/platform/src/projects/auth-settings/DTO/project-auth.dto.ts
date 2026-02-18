@@ -1,4 +1,4 @@
-import { oAuthProvidersList } from '@nuvix/core/config'
+import { authMethods } from '@nuvix/core/config'
 import { configuration } from '@nuvix/utils'
 import { Type } from 'class-transformer'
 import {
@@ -137,6 +137,6 @@ export class AuthMethodParamsDTO extends ProjectParamsDTO {
   /**
    * Auth Method.
    */
-  @IsIn(oAuthProvidersList)
-  declare method: (typeof oAuthProvidersList)[number]
+  @IsIn(Object.keys(authMethods))
+  declare method: keyof typeof authMethods
 }
