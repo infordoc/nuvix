@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common'
 import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
 import {
+  AllowSessionType,
   Auth,
   AuthDatabase,
   AuthType,
@@ -27,7 +28,7 @@ import {
   ResponseInterceptor,
 } from '@nuvix/core/resolvers'
 import { Database, type Doc } from '@nuvix/db'
-import type { IListResponse, IResponse } from '@nuvix/utils'
+import { SessionType, type IListResponse, type IResponse } from '@nuvix/utils'
 import type { ProjectsDoc, SessionsDoc, UsersDoc } from '@nuvix/utils/types'
 import {
   CreateEmailSessionDTO,
@@ -206,6 +207,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-session-email-password.md',
     },
   })
+  @AllowSessionType(SessionType.EMAIL_PASSWORD)
   async createEmailSession(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
@@ -246,6 +248,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-session-anonymous.md',
     },
   })
+  @AllowSessionType(SessionType.ANONYMOUS)
   async createAnonymousSession(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
@@ -491,6 +494,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-token-magic-url.md',
     },
   })
+  @AllowSessionType(SessionType.MAGIC_URL)
   async createMagicURLToken(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
@@ -530,6 +534,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-token-email.md',
     },
   })
+  @AllowSessionType(SessionType.EMAIL_OTP)
   async createEmailToken(
     @Body() input: CreateEmailTokenDTO,
     @Req() request: NuvixRequest,
@@ -647,6 +652,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-token-phone.md',
     },
   })
+  @AllowSessionType(SessionType.PHONE)
   async createPhoneToken(
     @AuthDatabase() db: Database,
     @User() user: UsersDoc,
@@ -681,6 +687,7 @@ export class SessionsController {
       descMd: '/docs/references/account/create-jwt.md',
     },
   })
+  @AllowSessionType(SessionType.JWT)
   async createJWT(
     @User() user: UsersDoc,
     @Res({ passthrough: true }) response: NuvixRes,

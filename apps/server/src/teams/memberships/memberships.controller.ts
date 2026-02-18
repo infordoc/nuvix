@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common'
 import { Delete, Get, Patch, Post } from '@nuvix/core'
 import {
+  AllowSessionType,
   Auth,
   AuthDatabase,
   AuthType,
@@ -27,7 +28,7 @@ import {
   ResponseInterceptor,
 } from '@nuvix/core/resolvers'
 import { Database, Query as Queries } from '@nuvix/db'
-import { IListResponse, IResponse } from '@nuvix/utils'
+import { IListResponse, IResponse, SessionType } from '@nuvix/utils'
 import type { MembershipsDoc, ProjectsDoc, UsersDoc } from '@nuvix/utils/types'
 import { TeamsParamDTO } from '../DTO/team.dto'
 import {
@@ -60,6 +61,7 @@ export class MembershipsController {
       descMd: '/docs/references/teams/create-team-membership.md',
     },
   })
+  @AllowSessionType(SessionType.INVITES)
   async addMember(
     @AuthDatabase() db: Database,
     @Param() { teamId }: TeamsParamDTO,
