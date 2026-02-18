@@ -339,6 +339,6 @@ export type OAuthProviderType = {
   key: string
   name: string
   enabled: boolean
-  appId: string
-  secret: string
+  appId?: string
+  secret?: string
 }

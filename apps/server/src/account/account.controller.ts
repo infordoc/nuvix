@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common'
 import { Delete, Get, Patch, Post, Put } from '@nuvix/core'
 import {
+  AllowSessionType,
   AuthDatabase,
   AuthType,
   Locale,
@@ -24,7 +25,7 @@ import {
   ResponseInterceptor,
 } from '@nuvix/core/resolvers'
 import { Database } from '@nuvix/db'
-import type { IResponse } from '@nuvix/utils'
+import { SessionType, type IResponse } from '@nuvix/utils'
 import type { ProjectsDoc, TokensDoc, UsersDoc } from '@nuvix/utils/types'
 import { AccountService } from './account.service'
 import {
@@ -67,6 +68,7 @@ export class AccountController {
       descMd: 'docs/references/account/create.md',
     },
   })
+  @AllowSessionType(SessionType.EMAIL_PASSWORD)
   async createAccount(
     @AuthDatabase() db: Database,
     @Body() input: CreateAccountDTO,

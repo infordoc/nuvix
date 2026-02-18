@@ -20,7 +20,7 @@ import {
   QueryFilter,
   QuerySearch,
   UploadedFile,
-  User,
+  AuthUser as User,
 } from '@nuvix/core/decorators'
 import { Exception } from '@nuvix/core/extend/exception'
 import { Models } from '@nuvix/core/helpers'

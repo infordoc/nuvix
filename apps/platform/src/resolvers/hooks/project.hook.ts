@@ -5,4 +5,5 @@ import { DatabaseRole } from '@nuvix/utils'
 @Injectable()
 export class ProjectHook extends BaseProjectHook {
   protected override dbRole: DatabaseRole = DatabaseRole.POSTGRES
+  protected override defaultProjectId = 'console'
 }
